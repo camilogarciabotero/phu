@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+# import sys
 import typer
 
 from phu import __version__
@@ -10,10 +11,16 @@ app = typer.Typer(
     help="Phage utilities CLI",
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
-    add_completion=False
-    # no_args_is_help=True
+    add_completion=False,
+    no_args_is_help=True
 )
 
+@app.callback(invoke_without_command=True)
+def _root(ctx: typer.Context) -> None:
+    # any global init here (env checks, logging setup, etc.)
+    if ctx.invoked_subcommand is None and not ctx.resilient_parsing:
+        typer.echo(ctx.get_help())
+        raise typer.Exit(0)  # exit code 0 when no subcommand is given
 
 @app.command("seqclust")
 def seqclust(
@@ -52,14 +59,9 @@ def seqclust(
         raise typer.Exit(1)
 
 
-@app.callback(invoke_without_command=True)
-def main(
-    # version_flag: bool = typer.Option(False, "--version", "-v", help="Show version."),
-) -> None:
-    try:
-        app()
-    except KeyboardInterrupt:
-        sys.exit(130)
+# @app.callback(invoke_without_command=True)
+def main() -> None:
+    app()
 
 if __name__ == "__main__":
     main()

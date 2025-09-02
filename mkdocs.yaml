@@ -8,6 +8,8 @@ theme:
   # logo: imgs/v03-phu-logo-small.svg
   # Optional dark-mode logo (Material supports this)
   # logo_dark: imgs/v03-phu-logo-small-fordark.svg
+  code:
+    highlight_theme: "material-darker"
   palette:
     - scheme: default
       primary: indigo
@@ -35,11 +37,19 @@ markdown_extensions:
   - toc:
       permalink: true
   - admonition
+  - attr_list
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra:
+  social:
+    - icon: material/github
+      link: https://github.com/camilogarciabotero/phu
+    - icon: material/book-open-variant
+      link: https://phu.readthedocs.io
 
 plugins:
   - search

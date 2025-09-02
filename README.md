@@ -1,5 +1,8 @@
 # phu
 
+
+
+
 phu (phage utilities) or phutilities, is a modular toolkit for viral genomics workflows. It provides command-line tools to handle common steps in phage bioinformatics pipelines—wrapping complex utilities behind a consistent and intuitive interface.
 
 The first implemented module, seqclust, brings flexible clustering strategies for viral contigs and genomes, with additional modules under active development.
@@ -15,6 +18,14 @@ phu will be available through Bioconda. To install (once available), use the fol
 mamba create -n phu bioconda::phu
 ```
 
+Meanwhile you can install `phu`tilities using `pip` in an a custom `conda`/`mamba` environment with the current software requirments:
+
+```bash
+mamba create -n phu -c bioconda seqkit vclust 
+mamba activate phu
+python -m pip install phu
+```
+
 ## Usage
 
 ```bash
@@ -23,7 +34,7 @@ phu <command> [options]
 
 ## Commands
 
-- `seqclust`: Cluster viral sequences into operational taxonomic units (OTUs).
+- `seqclust`: Cluster viral sequences into operational taxonomic units (OTUs) or other current standard (see this [wiki](https://github.com/refresh-bio/vclust/wiki/6-Use-cases))
 
 ## Contributing
 

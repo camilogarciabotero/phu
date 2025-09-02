@@ -1,0 +1,906 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+    
+    
+      
+        <title>seqclust - phu</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#seqclust" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="phu" class="md-header__button md-logo" aria-label="phu" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            phu
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              seqclust
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m3.55 19.09 1.41 1.41 1.8-1.79-1.42-1.42M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6c0-3.32-2.69-6-6-6m8 7h3v-2h-3m-2.76 7.71 1.8 1.79 1.41-1.41-1.79-1.8M20.45 5l-1.41-1.4-1.8 1.79 1.42 1.42M13 1h-2v3h2M6.76 5.39 4.96 3.6 3.55 5l1.79 1.81zM1 13h3v-2H1m12 9h-2v3h2"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/camilogarciabotero/phu" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    camilogarciabotero/phu
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="phu" class="md-nav__button md-logo" aria-label="phu" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    phu
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/camilogarciabotero/phu" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    camilogarciabotero/phu
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic Usage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dereplication-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dereplication Mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#votu-clustering-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      vOTU-Clustering Mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spp-clustering-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      SPP-Clustering Mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#default-parameters-by-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Parameters by Mode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output Files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic Examples
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-usage-with-custom-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Usage with Custom Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage with Custom Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#large-dataset-optimization-wiki-section-66" class="md-nav__link">
+    <span class="md-ellipsis">
+      Large Dataset Optimization (Wiki Section 6.6)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#highly-redundant-dataset-wiki-section-67" class="md-nav__link">
+    <span class="md-ellipsis">
+      Highly Redundant Dataset (Wiki Section 6.7)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-thresholds" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Thresholds
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-vclust-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported vclust Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported vclust Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prefilter-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prefilter Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#align-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Align Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster Parameters
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Tips
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Tips">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-large-datasets-1m-sequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      For Large Datasets (&gt;1M sequences)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-highly-redundant-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      For Highly Redundant Datasets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-memory-constrained-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      For Memory-Constrained Systems
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-with-direct-vclust-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparison with Direct vclust Usage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      Related
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="seqclust">seqclust<a class="headerlink" href="#seqclust" title="Permanent link">&para;</a></h1>
+<p>Sequence clustering wrapper around external 'vclust' with three preconfigured modes for common viral genomics workflows.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The <code>seqclust</code> command provides a simplified interface to the powerful <code>vclust</code> tool, implementing the most common use cases from the <a href="https://github.com/refresh-bio/vclust/wiki/6-Use-cases">vclust wiki</a> with sensible defaults while allowing advanced customization.</p>
+<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>&lt;MODE&gt;<span class="w"> </span>--input-contigs<span class="w"> </span>&lt;FASTA_FILE&gt;<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+</code></pre></div>
+<h2 id="modes">Modes<a class="headerlink" href="#modes" title="Permanent link">&para;</a></h2>
+<h3 id="dereplication-mode">Dereplication Mode<a class="headerlink" href="#dereplication-mode" title="Permanent link">&para;</a></h3>
+<p>The <a href="https://github.com/refresh-bio/vclust/wiki/6-Use-cases#63-dereplicate-viral-contigs-into-representative-genomes"><code>dereplication</code></a> mode is designed to remove redundant sequences from your dataset, retaining only representative genomes. It employs the cd-hit algorithm with an ANI (Average Nucleotide Identity) metric to identify and eliminate duplicates, ensuring a streamlined collection of unique sequences. This is particularly useful for reducing large datasets to manageable sizes, as outlined in Section 6.3 of the vclust wiki, making it ideal for preprocessing before further analysis.</p>
+<h3 id="votu-clustering-mode">vOTU-Clustering Mode<a class="headerlink" href="#votu-clustering-mode" title="Permanent link">&para;</a></h3>
+<p>For clustering into viral Operational Taxonomic Units (vOTUs), the <a href="https://github.com/refresh-bio/vclust/wiki/6-Use-cases#62-assign-viral-contigs-into-votus-following-miuvig-standards"><code>votu-clustering</code></a> mode uses the leiden algorithm alongside the ANI metric. This approach groups viral contigs according to MIUViG (Minimum Information about an Uncultivated Virus Genome) standards, facilitating the identification of distinct viral populations. As detailed in Section 6.2, it provides a standardized way to delineate vOTUs from metagenomic assemblies, enhancing comparability across studies.</p>
+<h3 id="spp-clustering-mode">SPP-Clustering Mode<a class="headerlink" href="#spp-clustering-mode" title="Permanent link">&para;</a></h3>
+<p>The <a href="https://github.com/refresh-bio/vclust/wiki/6-Use-cases#61-classify-viruses-into-species-and-genera-following-ictv-standards"><code>spp-clustering</code></a> mode classifies viruses into species-level groups using the complete algorithm and a TANI (Taxonomic Average Nucleotide Identity) metric. It adheres to ICTV (International Committee on Taxonomy of Viruses) standards for species demarcation, allowing precise taxonomic assignment of viral genomes. This mode, referenced in Section 6.1, is essential for evolutionary and ecological studies requiring accurate species-level resolution.</p>
+<h2 id="default-parameters-by-mode">Default Parameters by Mode<a class="headerlink" href="#default-parameters-by-mode" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>dereplication</th>
+<th>votu-clustering</th>
+<th>spp-clustering</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Clustering Algorithm</strong></td>
+<td>cd-hit</td>
+<td>leiden</td>
+<td>complete</td>
+</tr>
+<tr>
+<td><strong>Metric</strong></td>
+<td>ani</td>
+<td>ani</td>
+<td>tani</td>
+</tr>
+<tr>
+<td><strong>ANI cutoff</strong></td>
+<td>95%</td>
+<td>95%</td>
+<td>95%</td>
+</tr>
+<tr>
+<td><strong>Query coverage</strong></td>
+<td>85%</td>
+<td>85%</td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>Pre-filter min-ident</strong></td>
+<td>95%</td>
+<td>95%</td>
+<td>70%</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Quick run</p>
+<p>To cluster at the genus level in <code>spp-clustering</code> mode, pass <code>--tani 0.70</code> via the <code>--vclust-params</code> option. This adjusts the taxonomic threshold for genus demarcation according to ICTV standards.</p>
+</div>
+<h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>seqclust<span class="w"> </span>-h
+
+<span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span>seqclust<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w">                                                                                                  </span>
+
+<span class="w"> </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">&#39;vclust&#39;</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">                                                         </span>
+
+<span class="w"> </span>For<span class="w"> </span>advanced<span class="w"> </span>usage,<span class="w"> </span>provide<span class="w"> </span>custom<span class="w"> </span>vclust<span class="w"> </span>parameters<span class="w"> </span>as<span class="w"> </span>a<span class="w"> </span>quoted<span class="w"> </span>string.<span class="w">                                                       </span>
+<span class="w"> </span>See<span class="w"> </span>the<span class="w"> </span>vclust<span class="w"> </span>wiki<span class="w"> </span><span class="k">for</span><span class="w"> </span>parameter<span class="w"> </span>details:<span class="w"> </span>https://github.com/refresh-bio/vclust/wiki<span class="w">                                          </span>
+
+<span class="w"> </span>Example:<span class="w">                                                                                                                       </span>
+<span class="w">     </span>phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>spp-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>genomes.fna<span class="w"> </span>--vclust-params<span class="o">=</span><span class="s2">&quot;--leiden-resolution 0.9&quot;</span><span class="w">                        </span>
+
+╭─<span class="w"> </span>Options<span class="w"> </span>────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>*<span class="w">  </span>--mode<span class="w">                   </span><span class="o">[</span>dereplication<span class="p">|</span>votu-clustering<span class="p">|</span>spp-clustering<span class="o">]</span><span class="w">  </span>dereplication<span class="w"> </span><span class="p">|</span><span class="w"> </span>votu-clustering<span class="w"> </span><span class="p">|</span><span class="w"> </span>spp-clustering<span class="w"> </span>│
+│<span class="w">                                                                             </span><span class="o">[</span>required<span class="o">]</span><span class="w">                                       </span>│
+│<span class="w"> </span>*<span class="w">  </span>--input-contigs<span class="w">          </span>PATH<span class="w">                                            </span>Input<span class="w"> </span>FASTA<span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">                           </span>│
+│<span class="w">    </span>--output-folder<span class="w">          </span>PATH<span class="w">                                            </span>Output<span class="w"> </span>directory<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span>clustered-contigs<span class="o">]</span><span class="w">    </span>│
+│<span class="w">    </span>--threads<span class="w">                </span>INTEGER<span class="w"> </span>RANGE<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">0</span><span class="o">]</span><span class="w">                            </span><span class="nv">0</span><span class="o">=</span>all<span class="w"> </span>cores<span class="p">;</span><span class="w"> </span>otherwise<span class="w"> </span>N<span class="w"> </span>threads<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">0</span><span class="o">]</span><span class="w">    </span>│
+│<span class="w">    </span>--vclust-params<span class="w">          </span>TEXT<span class="w">                                            </span>Custom<span class="w"> </span>vclust<span class="w"> </span>parameters<span class="w"> </span>like:<span class="w"> </span><span class="s2">&quot;--min-kmers 20   │</span>
+<span class="s2">│                                                                             --outfmt lite --ani 0.97&quot;</span><span class="w">                        </span>│
+│<span class="w">    </span>--help<span class="w">           </span>-h<span class="w">                                                      </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                      </span>│
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+</code></pre></div>
+<h2 id="output-files">Output Files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
+<p>For all modes, the following files are generated in the output folder:</p>
+<div class="highlight"><pre><span></span><code>.
+├──<span class="w"> </span>ani.ids.tsv
+├──<span class="w"> </span>ani.tsv
+├──<span class="w"> </span>cluster_representatives_ids.txt
+├──<span class="w"> </span>fltr.txt
+├──<span class="w"> </span>representatives.fna
+└──<span class="w"> </span>species.tsv
+
+<span class="m">1</span><span class="w"> </span>directory,<span class="w"> </span><span class="m">6</span><span class="w"> </span>files
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clusters.tsv</code> / <code>species.tsv</code></td>
+<td>Tab-separated clustering results</td>
+</tr>
+<tr>
+<td><code>representatives.fna</code></td>
+<td>FASTA file with cluster representative sequences</td>
+</tr>
+<tr>
+<td><code>cluster_representatives_ids.txt</code></td>
+<td>List of representative sequence IDs</td>
+</tr>
+<tr>
+<td><code>fltr.txt</code></td>
+<td>Pre-alignment filter results</td>
+</tr>
+<tr>
+<td><code>ani.tsv</code></td>
+<td>ANI calculation results</td>
+</tr>
+<tr>
+<td><code>ani.ids.tsv</code></td>
+<td>Sequence ID mappings</td>
+</tr>
+</tbody>
+</table>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="basic-examples">Basic Examples<a class="headerlink" href="#basic-examples" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Dereplicate viral contigs</span>
+phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>dereplication<span class="w"> </span>--input-contigs<span class="w"> </span>viral_contigs.fna
+
+<span class="c1"># Cluster into vOTUs following MIUViG standards</span>
+phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>votu-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>viral_contigs.fna
+
+<span class="c1"># Classify viruses into species following ICTV standards</span>
+phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>spp-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>complete_genomes.fna
+</code></pre></div>
+<h3 id="advanced-usage-with-custom-parameters">Advanced Usage with Custom Parameters<a class="headerlink" href="#advanced-usage-with-custom-parameters" title="Permanent link">&para;</a></h3>
+<p>The <code>--vclust-params</code> option allows you to customize any vclust parameter while maintaining the convenience of predefined modes. Parameters are automatically routed to the appropriate vclust command (prefilter, align, cluster).</p>
+<h4 id="large-dataset-optimization-wiki-section-66">Large Dataset Optimization (Wiki Section 6.6)<a class="headerlink" href="#large-dataset-optimization-wiki-section-66" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># Process large diverse dataset (IMG/VR style)</span>
+phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>votu-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>large_dataset.fna<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--vclust-params<span class="o">=</span><span class="s2">&quot;--min-kmers 4 --batch-size 2000000 --kmers-fraction 0.2 --outfmt lite&quot;</span>
+</code></pre></div>
+<h4 id="highly-redundant-dataset-wiki-section-67">Highly Redundant Dataset (Wiki Section 6.7)<a class="headerlink" href="#highly-redundant-dataset-wiki-section-67" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># Process highly redundant sequences</span>
+phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>votu-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>redundant_genomes.fna<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--vclust-params<span class="o">=</span><span class="s2">&quot;--min-kmers 10 --batch-size 100000 --max-seqs 1000 --outfmt lite --ani 0.97 --qcov 0.95&quot;</span>
+</code></pre></div>
+<h4 id="custom-thresholds">Custom Thresholds<a class="headerlink" href="#custom-thresholds" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># More stringent clustering</span>
+phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>votu-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>genomes.fna<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--vclust-params<span class="o">=</span><span class="s2">&quot;--ani 0.98 --qcov 0.90&quot;</span>
+
+<span class="c1"># Species clustering with custom genus threshold</span>
+phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>spp-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>genomes.fna<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--vclust-params<span class="o">=</span><span class="s2">&quot;--tani 0.97&quot;</span>
+</code></pre></div>
+<h2 id="supported-vclust-parameters">Supported vclust Parameters<a class="headerlink" href="#supported-vclust-parameters" title="Permanent link">&para;</a></h2>
+<h3 id="prefilter-parameters">Prefilter Parameters<a class="headerlink" href="#prefilter-parameters" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>--min-kmers</code>: Minimum number of shared k-mers</li>
+<li><code>--min-ident</code>: Minimum sequence identity threshold</li>
+<li><code>--batch-size</code>: Number of sequences processed per batch</li>
+<li><code>--kmers-fraction</code>: Fraction of k-mers to analyze</li>
+<li><code>--max-seqs</code>: Maximum target sequences per query</li>
+</ul>
+<h3 id="align-parameters">Align Parameters<a class="headerlink" href="#align-parameters" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>--outfmt</code>: Output format (<code>lite</code> for large datasets)</li>
+<li><code>--out-ani</code>: Minimum ANI to report</li>
+<li><code>--out-qcov</code>: Minimum query coverage to report</li>
+</ul>
+<h3 id="cluster-parameters">Cluster Parameters<a class="headerlink" href="#cluster-parameters" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>--ani</code>, <code>--tani</code>, <code>--gani</code>: Clustering thresholds for different metrics</li>
+<li><code>--qcov</code>: Query coverage threshold</li>
+<li><code>--leiden-resolution</code>: Leiden algorithm resolution parameter</li>
+<li><code>--algorithm</code>: Override clustering algorithm</li>
+<li><code>--metric</code>: Override distance metric</li>
+</ul>
+<h2 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h2>
+<h3 id="for-large-datasets-1m-sequences">For Large Datasets (&gt;1M sequences)<a class="headerlink" href="#for-large-datasets-1m-sequences" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>--vclust-params<span class="o">=</span><span class="s2">&quot;--batch-size 2000000 --kmers-fraction 0.2 --outfmt lite&quot;</span>
+</code></pre></div>
+<h3 id="for-highly-redundant-datasets">For Highly Redundant Datasets<a class="headerlink" href="#for-highly-redundant-datasets" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>--vclust-params<span class="o">=</span><span class="s2">&quot;--batch-size 100000 --max-seqs 1000 --kmers-fraction 0.2&quot;</span>
+</code></pre></div>
+<h3 id="for-memory-constrained-systems">For Memory-Constrained Systems<a class="headerlink" href="#for-memory-constrained-systems" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>--vclust-params<span class="o">=</span><span class="s2">&quot;--batch-size 50000 --kmers-fraction 0.1&quot;</span>
+</code></pre></div>
+<h2 id="comparison-with-direct-vclust-usage">Comparison with Direct vclust Usage<a class="headerlink" href="#comparison-with-direct-vclust-usage" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>phu seqclust</th>
+<th>Direct vclust</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Steps</strong></td>
+<td>Single command</td>
+<td>3 separate commands</td>
+</tr>
+<tr>
+<td><strong>Configuration</strong></td>
+<td>Preconfigured modes</td>
+<td>Manual parameter setup</td>
+</tr>
+<tr>
+<td><strong>Customization</strong></td>
+<td><code>--vclust-params</code> option</td>
+<td>Full control</td>
+</tr>
+<tr>
+<td><strong>Learning curve</strong></td>
+<td>Minimal</td>
+<td>Requires vclust expertise</td>
+</tr>
+<tr>
+<td><strong>Use case</strong></td>
+<td>Common workflows</td>
+<td>Specialized analyses</td>
+</tr>
+</tbody>
+</table>
+<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>vclust</code> (or <code>vclust.py</code>) in PATH</li>
+<li><code>seqkit</code> in PATH</li>
+</ul>
+<h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://github.com/refresh-bio/vclust">vclust documentation</a></li>
+<li><a href="https://github.com/refresh-bio/vclust/wiki/6-Use-cases">vclust wiki use cases</a></li>
+<li><a href="https://www.nature.com/articles/nbt.4306">MIUViG standards</a></li>
+<li><a href="https://ictv.global/">ICTV classification</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/camilogarciabotero/phu" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://camilogarciabotero.github.io/phu/" target="_blank" rel="noopener" title="camilogarciabotero.github.io" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 21.5c-1.35-.85-3.8-1.5-5.5-1.5-1.65 0-3.35.3-4.75 1.05-.1.05-.15.05-.25.05-.25 0-.5-.25-.5-.5V6c.6-.45 1.25-.75 2-1 1.11-.35 2.33-.5 3.5-.5 1.95 0 4.05.4 5.5 1.5 1.45-1.1 3.55-1.5 5.5-1.5 1.17 0 2.39.15 3.5.5.75.25 1.4.55 2 1v14.6c0 .25-.25.5-.5.5-.1 0-.15 0-.25-.05-1.4-.75-3.1-1.05-4.75-1.05-1.7 0-4.15.65-5.5 1.5M12 8v11.5c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5V7c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5m1 3.5c1.11-.68 2.6-1 4.5-1 .91 0 1.76.09 2.5.28V9.23c-.87-.15-1.71-.23-2.5-.23q-2.655 0-4.5.84zm4.5.17c-1.71 0-3.21.26-4.5.79v1.69c1.11-.65 2.6-.99 4.5-.99 1.04 0 1.88.08 2.5.24v-1.5c-.87-.16-1.71-.23-2.5-.23m2.5 2.9c-.87-.16-1.71-.24-2.5-.24-1.83 0-3.33.27-4.5.8v1.69c1.11-.66 2.6-.99 4.5-.99 1.04 0 1.88.08 2.5.24z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
+      
+    
+  </body>
+</html>

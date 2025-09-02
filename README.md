@@ -34,7 +34,7 @@ phu <command> [options]
 
 ## Commands
 
-- `seqclust`: Cluster viral sequences into operational taxonomic units (OTUs) or other current standard (see this [wiki](https://github.com/refresh-bio/vclust/wiki/6-Use-cases))
+- [`seqclust`](): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 
 ## Contributing
 

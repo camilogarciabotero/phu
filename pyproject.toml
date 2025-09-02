@@ -1,13 +1,13 @@
 [project]
 name = "phu"
-version = "0.1.0"
+version = "0.1.1"
 description = "Phage bioinformatics utilities (seqclust runner and friends)."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
     { name = "Camilo García-Botero", email = "ca.garcia2@uniandes.edu.co" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "typer>=0.17.3",
 ]

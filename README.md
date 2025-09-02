@@ -12,7 +12,7 @@ The first implemented module, seqclust, brings flexible clustering strategies fo
 phu will be available through Bioconda. To install (once available), use the following command:
 
 ```bash
-mamba install -c bioconda phu
+mamba create -n phu bioconda::phu
 ```
 
 ## Usage

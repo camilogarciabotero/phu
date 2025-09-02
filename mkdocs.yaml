@@ -12,14 +12,14 @@ theme:
     highlight_theme: "material-darker"
   palette:
     - scheme: default
-      primary: indigo
-      accent: indigo
+      primary: teal
+      accent: amber
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: deep purple
+      accent: cyan
       toggle:
         icon: material/white-balance-sunny
         name: Switch to light mode
@@ -49,7 +49,7 @@ extra:
     - icon: material/github
       link: https://github.com/camilogarciabotero/phu
     - icon: material/book-open-variant
-      link: https://phu.readthedocs.io
+      link: https://camilogarciabotero.github.io/phu/
 
 plugins:
   - search

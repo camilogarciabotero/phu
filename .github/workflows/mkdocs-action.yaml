@@ -14,17 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Python + uv
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v3
 
-      # ⬅️ The key fix: --system so uv installs into the runner Python
-      - run: uv pip install --system -U mkdocs mkdocs-material "mkdocstrings[python]"
+      # Create and "activate" a local .venv (activation not needed with uv)
+      - run: uv venv
+      - run: uv pip install -U mkdocs mkdocs-material "mkdocstrings[python]"
 
-      - run: mkdocs build --strict
+      # Run inside the venv via uv (no 'source' needed)
+      - run: uv run mkdocs build --strict
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
       - uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

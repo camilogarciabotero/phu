@@ -5,28 +5,30 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write  # <-- allow pushing to gh-pages
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false  # <-- avoid using checkout's token
 
-      # Ensure a Python runtime is present (uv needs one)
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # Install uv
       - uses: astral-sh/setup-uv@v3
 
-      # Install MkDocs + plugins into the runner's Python (no venv)
       - run: uv pip install --system -U mkdocs mkdocs-material "mkdocstrings[python]"
-
-      # Build the site into ./site
       - run: mkdocs build --strict
 
-      # Publish ./site to gh-pages
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
+          # Optional safety nets:
+          # publish_branch: gh-pages   # (default)
+          # force_orphan: true         # create branch if first deploy

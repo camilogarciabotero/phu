@@ -1,10 +1,10 @@
 from __future__ import annotations
 from pathlib import Path
-# import sys
+from typing import Optional
 import typer
 
 from phu import __version__
-from .seqclust import SeqClustConfig, Mode, _seqclust
+from .seqclust import SeqClustConfig, Mode, _seqclust, _parse_vclust_params
 from ._exec import CmdNotFound
 
 app = typer.Typer(
@@ -36,20 +36,51 @@ def seqclust(
     threads: int = typer.Option(
         0, "--threads", min=0, help="0=all cores; otherwise N threads"
     ),
+    vclust_params: Optional[str] = typer.Option(
+        None,
+        "--vclust-params",
+        help='Custom vclust parameters like: "--min-kmers 20 --outfmt lite --ani 0.97"'
+    ),
 ):
     """
     Sequence clustering wrapper around external 'vclust' with three modes.
+    
+    For advanced usage, provide custom vclust parameters as a quoted string.
+    See the vclust wiki for parameter details: https://github.com/refresh-bio/vclust/wiki
+    
+    Example:
+        phu seqclust --mode spp-clustering --input-contigs genomes.fna --vclust-params="--leiden-resolution 0.9"
     """
+    
+    # Parse vclust_params
+    parsed_params = {}
+    if vclust_params:
+        try:
+            parsed_params = _parse_vclust_params(vclust_params)
+            typer.echo(f"Using custom vclust parameters: {vclust_params}")
+        except typer.BadParameter:
+            raise  # Re-raise typer errors
+        except Exception as e:
+            typer.secho(
+                f"Error parsing vclust parameters: {e}",
+                fg=typer.colors.RED,
+                err=True
+            )
+            raise typer.Exit(1)
+    
+    # Build config
     cfg = SeqClustConfig(
         mode=mode,
         input_contigs=input_contigs,
         output_folder=output_folder,
         threads=threads,
+        vclust_params=parsed_params,
     )
+    
     try:
-        _seqclust(cfg)  # the runner command
+        _seqclust(cfg)
     except FileNotFoundError as e:
-        typer.echo(str(e), fg=typer.colors.RED, err=True)
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     except CmdNotFound as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
@@ -59,7 +90,6 @@ def seqclust(
         raise typer.Exit(1)
 
 
-# @app.callback(invoke_without_command=True)
 def main() -> None:
     app()
 

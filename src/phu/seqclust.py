@@ -1,8 +1,9 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List, Union
+import shlex
 
 from ._exec import run, _executable, CmdNotFound
 
@@ -24,6 +25,17 @@ class SeqClustConfig:
     qcov_cutoff: float = 0.85
     metric: str = "ani"  # 'tani' for spp
     algorithm: Optional[str] = None  # set by mode
+    # Advanced vclust parameters for customization
+    vclust_params: Optional[Dict[str, Dict[str, Union[str, int, float, bool]]]] = field(default_factory=dict)
+    """
+    Custom vclust parameters organized by command step.
+    Example:
+    {
+        "prefilter": {"min-kmers": 20, "batch-size": 100000, "kmers-fraction": 0.2},
+        "align": {"outfmt": "lite", "out-ani": 0.90},
+        "cluster": {"leiden-resolution": 0.9}
+    }
+    """
 
     def plan(self) -> "SeqClustPlan":
         algorithm = self.algorithm
@@ -66,6 +78,7 @@ class SeqClustConfig:
             qcov_cutoff=qcov_cutoff,
             threads=self.threads,
             mode=self.mode,
+            vclust_params=self.vclust_params or {},
         )
 
 
@@ -87,6 +100,7 @@ class SeqClustPlan:
     qcov_cutoff: Optional[float]
     threads: int
     mode: Mode
+    vclust_params: Dict[str, Dict[str, Union[str, int, float, bool]]]
 
 
 def _threads(n: int) -> int:
@@ -102,6 +116,16 @@ def _binaries() -> tuple[str, str]:
     vclust = _executable(["vclust", "vclust.py"])
     seqkit = _executable(["seqkit"])
     return vclust, seqkit
+
+
+def _add_custom_params(cmd: List[str], params: Dict[str, Union[str, int, float, bool]]) -> None:
+    """Add custom parameters to a command list."""
+    for param, value in params.items():
+        if isinstance(value, bool):
+            if value:  # Only add flag if True
+                cmd.append(f"--{param}")
+        else:
+            cmd.extend([f"--{param}", str(value)])
 
 
 def _seqclust(cfg: SeqClustConfig) -> SeqClustPlan:
@@ -121,62 +145,85 @@ def _seqclust(cfg: SeqClustConfig) -> SeqClustPlan:
     # Step 1: prefilter
     min_ident = 0.7 if plan.mode == Mode.spp else 0.95
     print(f"Step 1: Creating pre-alignment filter (min-ident={min_ident})…")
-    run(
-        [
-            plan.vclust_bin,
-            "prefilter",
-            "-i",
-            plan.input_contigs,
-            "-o",
-            plan.fltr,
-            "--min-ident",
-            f"{min_ident}",
-            "--threads",
-            str(_threads(plan.threads)),
-        ]
-    )
+
+    prefilter_cmd = [
+        plan.vclust_bin,
+        "prefilter",
+        "-i",
+        str(plan.input_contigs),
+        "-o",
+        str(plan.fltr),
+        "--min-ident",
+        str(min_ident),
+        "--threads",
+        str(_threads(plan.threads)),
+    ]
+
+    # Add custom prefilter parameters
+    if "prefilter" in plan.vclust_params:
+        _add_custom_params(prefilter_cmd, plan.vclust_params["prefilter"])
+
+    run(prefilter_cmd)
 
     # Step 2: align
     print("Step 2: Calculating ANI…")
-    run(
-        [
-            plan.vclust_bin,
-            "align",
-            "-i",
-            plan.input_contigs,
-            "-o",
-            plan.ani,
-            "--filter",
-            plan.fltr,
-            "--out-ani",
-            f"{cfg.ani_cutoff}",
-            "--out-qcov",
-            f"{cfg.qcov_cutoff}",
-            "--threads",
-            str(_threads(plan.threads)),
-        ]
-    )
+
+    align_cmd = [
+        plan.vclust_bin,
+        "align",
+        "-i",
+        str(plan.input_contigs),
+        "-o",
+        str(plan.ani),
+        "--filter",
+        str(plan.fltr),
+        "--threads",
+        str(_threads(plan.threads)),
+    ]
+
+    # Add default output filtering if not overridden by custom params
+    custom_align_params = plan.vclust_params.get("align", {})
+    if "out-ani" not in custom_align_params:
+        align_cmd.extend(["--out-ani", str(cfg.ani_cutoff)])
+    if "out-qcov" not in custom_align_params and cfg.qcov_cutoff is not None:
+        align_cmd.extend(["--out-qcov", str(cfg.qcov_cutoff)])
+
+    # Add custom align parameters
+    if custom_align_params:
+        _add_custom_params(align_cmd, custom_align_params)
+
+    run(align_cmd)
 
     # Step 3: cluster
     print(f"Step 3: Clustering with {plan.algorithm} (metric={plan.metric})…")
+
     clustercmd = [
         plan.vclust_bin,
         "cluster",
         "-i",
-        plan.ani,
+        str(plan.ani),
         "-o",
-        plan.output,
+        str(plan.output),
         "--ids",
-        plan.ids,
+        str(plan.ids),
         "--algorithm",
         plan.algorithm,
         "--metric",
         plan.metric,
         "--out-repr",
     ]
-    clustercmd += ["--" + plan.metric, f"{plan.ani_cutoff}"]
-    if plan.qcov_cutoff is not None:
-        clustercmd += ["--qcov", f"{plan.qcov_cutoff}"]
+
+    # Add default metric thresholds if not overridden by custom params
+    custom_cluster_params = plan.vclust_params.get("cluster", {})
+    if plan.metric not in custom_cluster_params:
+        clustercmd.extend([f"--{plan.metric}", str(plan.ani_cutoff)])
+    if "qcov" not in custom_cluster_params and plan.qcov_cutoff is not None:
+        clustercmd.extend(["--qcov", str(plan.qcov_cutoff)])
+
+    # Add custom cluster parameters
+    if custom_cluster_params:
+        _add_custom_params(clustercmd, custom_cluster_params)
+
     run(clustercmd)
 
     # Summary
@@ -231,3 +278,87 @@ def _extract_cluster_ids(tsv: Path, out_ids: Path) -> None:
             parts = line.rstrip("\n").split("\t")
             if len(parts) >= 2:
                 out.write(parts[1] + "\n")
+
+
+def _parse_vclust_params(params_str: str) -> Dict[str, Dict[str, Union[str, int, float, bool]]]:
+    """
+    Parse vclust parameters from command-line style string.
+
+    Example: "--min-kmers 20 --min-ident 0.5 --outfmt lite"
+    Returns: {"prefilter": {"min-kmers": 20, "min-ident": 0.5}, "align": {"outfmt": "lite"}}
+    """
+    if not params_str.strip():
+        return {}
+
+    # Parse the string into tokens
+    try:
+        tokens = shlex.split(params_str)
+    except ValueError as e:
+        raise ValueError(f"Invalid parameter string: {e}")
+
+    # Parameter mapping based on vclust wiki
+    param_mapping = {
+        # Prefilter parameters
+        "min-kmers": ("prefilter", int),
+        "min-ident": ("prefilter", float),
+        "batch-size": ("prefilter", int),
+        "kmers-fraction": ("prefilter", float),
+        "max-seqs": ("prefilter", int),
+
+        # Align parameters
+        "outfmt": ("align", str),
+        "out-ani": ("align", float),
+        "out-qcov": ("align", float),
+
+        # Cluster parameters
+        "ani": ("cluster", float),
+        "tani": ("cluster", float),
+        "gani": ("cluster", float),
+        "qcov": ("cluster", float),
+        "leiden-resolution": ("cluster", float),
+        "algorithm": ("cluster", str),
+        "metric": ("cluster", str),
+    }
+
+    result = {"prefilter": {}, "align": {}, "cluster": {}}
+
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+
+        if not token.startswith("--"):
+            raise ValueError(f"Expected parameter name starting with '--', got: {token}")
+
+        param_name = token[2:]  # Remove '--'
+
+        if param_name not in param_mapping:
+            raise ValueError(f"Unknown vclust parameter: --{param_name}")
+
+        command, param_type = param_mapping[param_name]
+
+        # Check if this is a boolean flag or needs a value
+        if param_type == bool:
+            result[command][param_name] = True
+            i += 1
+        else:
+            # Need a value
+            if i + 1 >= len(tokens):
+                raise ValueError(f"Parameter --{param_name} requires a value")
+
+            value_str = tokens[i + 1]
+
+            try:
+                if param_type == int:
+                    value = int(value_str)
+                elif param_type == float:
+                    value = float(value_str)
+                else:  # str
+                    value = value_str
+
+                result[command][param_name] = value
+                i += 2
+            except ValueError:
+                raise ValueError(f"Invalid value for --{param_name}: {value_str} (expected {param_type.__name__})")
+
+    # Remove empty sections
+    return {k: v for k, v in result.items() if v}

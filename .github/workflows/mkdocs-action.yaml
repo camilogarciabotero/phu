@@ -19,12 +19,9 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v3
 
-      # Create and "activate" a local .venv (activation not needed with uv)
-      - run: uv venv
-      - run: uv pip install -U mkdocs mkdocs-material "mkdocstrings[python]"
-
-      # Run inside the venv via uv (no 'source' needed)
-      - run: uv run mkdocs build --strict
+      # uvx fetches/runs tools in an isolated cache; no project installs
+      - run: uvx --from mkdocs mkdocs --version
+      - run: uvx --with mkdocs-material --with "mkdocstrings[python]" --from mkdocs mkdocs build --strict
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,0 +1,67 @@
+site_name: phu
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - content.code.copy
+  # Use custom logo (shown in navbar) and favicon (small browser/tab icon)
+  # logo: imgs/v03-phu-logo-small.svg
+  # Optional dark-mode logo (Material supports this)
+  # logo_dark: imgs/v03-phu-logo-small-fordark.svg
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/white-balance-sunny
+        name: Switch to light mode
+
+# Top-level favicon (path is relative to docs/)
+# favicon: imgs/v01-phu-favicon.svg
+
+# Repository metadata
+repo_name: camilogarciabotero/phu
+repo_url: https://github.com/camilogarciabotero/phu
+edit_uri: edit/main/docs/
+
+# Essential markdown extensions only
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_source: true
+            separate_signature: true
+            docstring_style: numpy
+            extra:
+              paths: [src]
+
+nav:
+  - Home: index.md
+  # - Guides:
+  #     - guides/installation.md
+  #     - guides/getting-started.md
+  #     - guides/tutorial.md
+  # - Reference:
+  #     - reference/coassembly-modes.md
+  #     - reference/clustering-modes.md
+  # - API: api/index.md
+  # - Troubleshooting: troubleshooting.md

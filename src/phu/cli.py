@@ -49,7 +49,7 @@ def seqclust(
     See the vclust wiki for parameter details: https://github.com/refresh-bio/vclust/wiki
     
     Example:
-        phu seqclust --mode spp-clustering --input-contigs genomes.fna --vclust-params="--leiden-resolution 0.9"
+        phu seqclust --mode spp-clustering --input-contigs genomes.fna"
     """
     
     # Parse vclust_params

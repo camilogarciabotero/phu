@@ -9,7 +9,7 @@ The `seqclust` command provides a simplified interface to the powerful `vclust` 
 ## Basic Usage
 
 ```bash
-phu seqclust --mode <MODE> --input-contigs <FASTA_FILE> [options]
+phu seqclust --mode <MODE> --input-contigs <FASTA> [options]
 ```
 
 ## Modes
@@ -42,31 +42,33 @@ The [`spp-clustering`](https://github.com/refresh-bio/vclust/wiki/6-Use-cases#61
 ```bash
 phu seqclust -h
 
- Usage: phu seqclust [OPTIONS]                                                                            
-                                                                                                          
- Sequence clustering wrapper around external 'vclust' with three modes.                                   
-                                                                                                          
- For advanced usage, provide custom vclust parameters as a quoted string.                                 
- See the vclust wiki for parameter details: https://github.com/refresh-bio/vclust/wiki                    
-                                                                                                          
- Example:                                                                                                 
-     phu seqclust --mode spp-clustering --input-contigs genomes.fna --vclust-params="--leiden-resolution  
- 0.9"                                                                                                     
-                                                                                                          
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --mode                   [dereplication|votu-clustering|spp-c  dereplication | votu-clustering |    │
-│                             lustering]                            spp-clustering                       │
-│                                                                   [required]                           │
-│ *  --input-contigs          PATH                                  Input FASTA [required]               │
-│    --output-folder          PATH                                  Output directory                     │
-│                                                                   [default: clustered-contigs]         │
-│    --threads                INTEGER RANGE [x>=0]                  0=all cores; otherwise N threads     │
-│                                                                   [default: 0]                         │
-│    --vclust-params          TEXT                                  Custom vclust parameters like:       │
-│                                                                   "--min-kmers 20 --outfmt lite --ani  │
-│                                                                   0.97"                                │
-│    --help           -h                                            Show this message and exit.          │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Usage: phu seqclust [OPTIONS]                                                            
+                                                                                          
+ Sequence clustering wrapper around external 'vclust' with three modes.                   
+                                                                                          
+ For advanced usage, provide custom vclust parameters as a quoted string.                 
+ See the vclust wiki for parameter details: https://github.com/refresh-bio/vclust/wiki    
+                                                                                          
+ Example:                                                                                 
+     phu seqclust --mode spp-clustering --input-contigs genomes.fna                       
+                                                 
+                                                                                          
+╭─ Options ──────────────────────────────────────────────────────────────────────────────╮
+│ *  --mode                   [dereplication|votu-clusteri  dereplication |              │
+│                             ng|spp-clustering]            votu-clustering |            │
+│                                                           spp-clustering               │
+│                                                           [required]                   │
+│ *  --input-contigs          PATH                          Input FASTA [required]       │
+│    --output-folder          PATH                          Output directory             │
+│                                                           [default: clustered-contigs] │
+│    --threads                INTEGER RANGE [x>=0]          0=all cores; otherwise N     │
+│                                                           threads                      │
+│                                                           [default: 0]                 │
+│    --vclust-params          TEXT                          Custom vclust parameters     │
+│                                                           like: "--min-kmers 20        │
+│                                                           --outfmt lite --ani 0.97"    │
+│    --help           -h                                    Show this message and exit.  │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Output Files

@@ -2,7 +2,7 @@ site_name: phu
 theme:
   name: material
   features:
-    - navigation.instant
+    # - navigation.instant
     - content.code.copy
   feature:
     navigation.tabs: false

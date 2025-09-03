@@ -34,7 +34,7 @@ phu <command> [options]
 
 ## Commands
 
-- [`seqclust`](): Cluster viral sequences into species or other operational taxonomic units (OTUs).
+- [`seqclust`](https://camilogarciabotero.github.io/phu/commands/seqclust/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 
 ## Contributing
 

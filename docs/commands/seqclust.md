@@ -116,15 +116,19 @@ phu seqclust --mode spp-clustering --input-contigs complete_genomes.fna
 
 The `--vclust-params` option allows you to customize any vclust parameter while maintaining the convenience of predefined modes. Parameters are automatically routed to the appropriate vclust command (prefilter, align, cluster).
 
-#### Large Dataset Optimization (Wiki Section 6.6)
+#### Large Dataset Optimization
 
 ```bash
-# Process large diverse dataset (IMG/VR style)
+# Process large diverse dataset (IMG/VR style) (Wiki Section 6.6)
 phu seqclust --mode votu-clustering --input-contigs large_dataset.fna \
   --vclust-params="--min-kmers 4 --batch-size 2000000 --kmers-fraction 0.2 --outfmt lite"
 ```
 
-#### Highly Redundant Dataset (Wiki Section 6.7)
+#### Highly Redundant Dataset
+```bash
+# Process highly redundant dataset (Wiki Section 6.7)
+phu seqclust --mode votu-clustering --input-contigs redundant_dataset.fna \
+  --vclust-params="--min-kmers 10 --batch-size 100000 --max-seqs 1000 --outfmt lite --ani 0.97 --qcov 0.95"
 
 ```bash
 # Process highly redundant sequences

@@ -959,7 +959,7 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>The <code>seqclust</code> command provides a simplified interface to the powerful <code>vclust</code> tool, implementing the most common use cases from the <a href="https://github.com/refresh-bio/vclust/wiki/6-Use-cases">vclust wiki</a> with sensible defaults while allowing advanced customization.</p>
 <h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>&lt;MODE&gt;<span class="w"> </span>--input-contigs<span class="w"> </span>&lt;FASTA_FILE&gt;<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>&lt;MODE&gt;<span class="w"> </span>--input-contigs<span class="w"> </span>&lt;FASTA&gt;<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
 </code></pre></div>
 <h2 id="modes">Modes<a class="headerlink" href="#modes" title="Permanent link">&para;</a></h2>
 <h3 id="dereplication-mode">Dereplication Mode<a class="headerlink" href="#dereplication-mode" title="Permanent link">&para;</a></h3>
@@ -1018,31 +1018,33 @@
 <h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>seqclust<span class="w"> </span>-h
 
-<span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span>seqclust<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w">                                                                            </span>
+<span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span>seqclust<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w">                                                            </span>
 
-<span class="w"> </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">&#39;vclust&#39;</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">                                   </span>
+<span class="w"> </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">&#39;vclust&#39;</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">                   </span>
 
-<span class="w"> </span>For<span class="w"> </span>advanced<span class="w"> </span>usage,<span class="w"> </span>provide<span class="w"> </span>custom<span class="w"> </span>vclust<span class="w"> </span>parameters<span class="w"> </span>as<span class="w"> </span>a<span class="w"> </span>quoted<span class="w"> </span>string.<span class="w">                                 </span>
-<span class="w"> </span>See<span class="w"> </span>the<span class="w"> </span>vclust<span class="w"> </span>wiki<span class="w"> </span><span class="k">for</span><span class="w"> </span>parameter<span class="w"> </span>details:<span class="w"> </span>https://github.com/refresh-bio/vclust/wiki<span class="w">                    </span>
+<span class="w"> </span>For<span class="w"> </span>advanced<span class="w"> </span>usage,<span class="w"> </span>provide<span class="w"> </span>custom<span class="w"> </span>vclust<span class="w"> </span>parameters<span class="w"> </span>as<span class="w"> </span>a<span class="w"> </span>quoted<span class="w"> </span>string.<span class="w">                 </span>
+<span class="w"> </span>See<span class="w"> </span>the<span class="w"> </span>vclust<span class="w"> </span>wiki<span class="w"> </span><span class="k">for</span><span class="w"> </span>parameter<span class="w"> </span>details:<span class="w"> </span>https://github.com/refresh-bio/vclust/wiki<span class="w">    </span>
 
-<span class="w"> </span>Example:<span class="w">                                                                                                 </span>
-<span class="w">     </span>phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>spp-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>genomes.fna<span class="w"> </span>--vclust-params<span class="o">=</span><span class="s2">&quot;--leiden-resolution  </span>
-<span class="s2"> 0.9&quot;</span><span class="w">                                                                                                     </span>
+<span class="w"> </span>Example:<span class="w">                                                                                 </span>
+<span class="w">     </span>phu<span class="w"> </span>seqclust<span class="w"> </span>--mode<span class="w"> </span>spp-clustering<span class="w"> </span>--input-contigs<span class="w"> </span>genomes.fna<span class="w">                       </span>
 
-╭─<span class="w"> </span>Options<span class="w"> </span>──────────────────────────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>*<span class="w">  </span>--mode<span class="w">                   </span><span class="o">[</span>dereplication<span class="p">|</span>votu-clustering<span class="p">|</span>spp-c<span class="w">  </span>dereplication<span class="w"> </span><span class="p">|</span><span class="w"> </span>votu-clustering<span class="w"> </span><span class="p">|</span><span class="w">    </span>│
-│<span class="w">                             </span>lustering<span class="o">]</span><span class="w">                            </span>spp-clustering<span class="w">                       </span>│
-│<span class="w">                                                                   </span><span class="o">[</span>required<span class="o">]</span><span class="w">                           </span>│
-│<span class="w"> </span>*<span class="w">  </span>--input-contigs<span class="w">          </span>PATH<span class="w">                                  </span>Input<span class="w"> </span>FASTA<span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">               </span>│
-│<span class="w">    </span>--output-folder<span class="w">          </span>PATH<span class="w">                                  </span>Output<span class="w"> </span>directory<span class="w">                     </span>│
-│<span class="w">                                                                   </span><span class="o">[</span>default:<span class="w"> </span>clustered-contigs<span class="o">]</span><span class="w">         </span>│
-│<span class="w">    </span>--threads<span class="w">                </span>INTEGER<span class="w"> </span>RANGE<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">0</span><span class="o">]</span><span class="w">                  </span><span class="nv">0</span><span class="o">=</span>all<span class="w"> </span>cores<span class="p">;</span><span class="w"> </span>otherwise<span class="w"> </span>N<span class="w"> </span>threads<span class="w">     </span>│
-│<span class="w">                                                                   </span><span class="o">[</span>default:<span class="w"> </span><span class="m">0</span><span class="o">]</span><span class="w">                         </span>│
-│<span class="w">    </span>--vclust-params<span class="w">          </span>TEXT<span class="w">                                  </span>Custom<span class="w"> </span>vclust<span class="w"> </span>parameters<span class="w"> </span>like:<span class="w">       </span>│
-│<span class="w">                                                                   </span><span class="s2">&quot;--min-kmers 20 --outfmt lite --ani  │</span>
-<span class="s2">│                                                                   0.97&quot;</span><span class="w">                                </span>│
-│<span class="w">    </span>--help<span class="w">           </span>-h<span class="w">                                            </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">          </span>│
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭─<span class="w"> </span>Options<span class="w"> </span>──────────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>*<span class="w">  </span>--mode<span class="w">                   </span><span class="o">[</span>dereplication<span class="p">|</span>votu-clusteri<span class="w">  </span>dereplication<span class="w"> </span><span class="p">|</span><span class="w">              </span>│
+│<span class="w">                             </span>ng<span class="p">|</span>spp-clustering<span class="o">]</span><span class="w">            </span>votu-clustering<span class="w"> </span><span class="p">|</span><span class="w">            </span>│
+│<span class="w">                                                           </span>spp-clustering<span class="w">               </span>│
+│<span class="w">                                                           </span><span class="o">[</span>required<span class="o">]</span><span class="w">                   </span>│
+│<span class="w"> </span>*<span class="w">  </span>--input-contigs<span class="w">          </span>PATH<span class="w">                          </span>Input<span class="w"> </span>FASTA<span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">       </span>│
+│<span class="w">    </span>--output-folder<span class="w">          </span>PATH<span class="w">                          </span>Output<span class="w"> </span>directory<span class="w">             </span>│
+│<span class="w">                                                           </span><span class="o">[</span>default:<span class="w"> </span>clustered-contigs<span class="o">]</span><span class="w"> </span>│
+│<span class="w">    </span>--threads<span class="w">                </span>INTEGER<span class="w"> </span>RANGE<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">0</span><span class="o">]</span><span class="w">          </span><span class="nv">0</span><span class="o">=</span>all<span class="w"> </span>cores<span class="p">;</span><span class="w"> </span>otherwise<span class="w"> </span>N<span class="w">     </span>│
+│<span class="w">                                                           </span>threads<span class="w">                      </span>│
+│<span class="w">                                                           </span><span class="o">[</span>default:<span class="w"> </span><span class="m">0</span><span class="o">]</span><span class="w">                 </span>│
+│<span class="w">    </span>--vclust-params<span class="w">          </span>TEXT<span class="w">                          </span>Custom<span class="w"> </span>vclust<span class="w"> </span>parameters<span class="w">     </span>│
+│<span class="w">                                                           </span>like:<span class="w"> </span><span class="s2">&quot;--min-kmers 20        │</span>
+<span class="s2">│                                                           --outfmt lite --ani 0.97&quot;</span><span class="w">    </span>│
+│<span class="w">    </span>--help<span class="w">           </span>-h<span class="w">                                    </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">  </span>│
+╰────────────────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="output-files">Output Files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
 <p>For all modes, the following files are generated in the output folder:</p>

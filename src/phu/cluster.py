@@ -10,12 +10,96 @@ from ._exec import run, _executable, CmdNotFound
 
 class Mode(str, Enum):
     dereplication = "dereplication"
-    votu = "votu-clustering"
-    spp = "spp-clustering"
+    votu = "votu"
+    species = "species"
+
+
+def parse_vclust_params(params_str: str) -> Dict[str, Dict[str, Union[str, int, float, bool]]]:
+    """
+    Parse vclust parameters from command-line style string.
+    
+    Example: "--min-kmers 20 --min-ident 0.5 --outfmt lite"
+    Returns: {"prefilter": {"min-kmers": 20, "min-ident": 0.5}, "align": {"outfmt": "lite"}}
+    """
+    if not params_str.strip():
+        return {}
+    
+    # Parse the string into tokens
+    try:
+        tokens = shlex.split(params_str)
+    except ValueError as e:
+        raise ValueError(f"Invalid parameter string: {e}")
+    
+    # Parameter mapping based on vclust wiki
+    param_mapping = {
+        # Prefilter parameters
+        "min-kmers": ("prefilter", int),
+        "min-ident": ("prefilter", float),
+        "batch-size": ("prefilter", int),
+        "kmers-fraction": ("prefilter", float),
+        "max-seqs": ("prefilter", int),
+        
+        # Align parameters
+        "outfmt": ("align", str),
+        "out-ani": ("align", float),
+        "out-qcov": ("align", float),
+        
+        # Cluster parameters
+        "ani": ("cluster", float),
+        "tani": ("cluster", float),
+        "gani": ("cluster", float),
+        "qcov": ("cluster", float),
+        "leiden-resolution": ("cluster", float),
+        "algorithm": ("cluster", str),
+        "metric": ("cluster", str),
+    }
+    
+    result = {"prefilter": {}, "align": {}, "cluster": {}}
+    
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        
+        if not token.startswith("--"):
+            raise ValueError(f"Expected parameter name starting with '--', got: {token}")
+        
+        param_name = token[2:]  # Remove '--'
+        
+        if param_name not in param_mapping:
+            raise ValueError(f"Unknown vclust parameter: --{param_name}")
+        
+        command, param_type = param_mapping[param_name]
+        
+        # Check if this is a boolean flag or needs a value
+        if param_type == bool:
+            result[command][param_name] = True
+            i += 1
+        else:
+            # Need a value
+            if i + 1 >= len(tokens):
+                raise ValueError(f"Parameter --{param_name} requires a value")
+            
+            value_str = tokens[i + 1]
+            
+            try:
+                if param_type == int:
+                    value = int(value_str)
+                elif param_type == float:
+                    value = float(value_str)
+                else:  # str
+                    value = value_str
+                
+                result[command][param_name] = value
+                i += 2
+            except ValueError:
+                raise ValueError(f"Invalid value for --{param_name}: {value_str} (expected {param_type.__name__})")
+    
+    # Remove empty sections
+    return {k: v for k, v in result.items() if v}
 
 
 @dataclass
-class SeqClustConfig:
+class ClusterConfig:
     mode: Mode
     input_contigs: Path
     output_folder: Path = Path("clustered-contigs")
@@ -23,7 +107,7 @@ class SeqClustConfig:
     # defaults reflecting original bash behavior
     ani_cutoff: float = 0.95
     qcov_cutoff: float = 0.85
-    metric: str = "ani"  # 'tani' for spp
+    metric: str = "ani"  # 'tani' for species
     algorithm: Optional[str] = None  # set by mode
     # Advanced vclust parameters for customization
     vclust_params: Optional[Dict[str, Dict[str, Union[str, int, float, bool]]]] = field(default_factory=dict)
@@ -37,7 +121,7 @@ class SeqClustConfig:
     }
     """
 
-    def plan(self) -> "SeqClustPlan":
+    def plan(self) -> "ClusterPlan":
         algorithm = self.algorithm
         metric = self.metric
         ani_cutoff = self.ani_cutoff
@@ -48,7 +132,7 @@ class SeqClustConfig:
             algorithm = "cd-hit"
         elif self.mode == Mode.votu:
             algorithm = "leiden"
-        elif self.mode == Mode.spp:
+        elif self.mode == Mode.species:
             algorithm = "complete"
             metric = "tani"
             ani_cutoff = 0.95
@@ -56,7 +140,7 @@ class SeqClustConfig:
             output_name = "species.tsv"
 
         out = self.output_folder
-        return SeqClustPlan(
+        return ClusterPlan(
             vclust_bin="",
             seqkit_bin="",
             input_contigs=self.input_contigs,
@@ -83,7 +167,7 @@ class SeqClustConfig:
 
 
 @dataclass
-class SeqClustPlan:
+class ClusterPlan:
     vclust_bin: str
     seqkit_bin: str
     input_contigs: Path
@@ -128,7 +212,7 @@ def _add_custom_params(cmd: List[str], params: Dict[str, Union[str, int, float, 
             cmd.extend([f"--{param}", str(value)])
 
 
-def _seqclust(cfg: SeqClustConfig) -> SeqClustPlan:
+def _cluster(cfg: ClusterConfig) -> ClusterPlan:
     """
     Run sequence clustering with vclust.
     """
@@ -143,7 +227,7 @@ def _seqclust(cfg: SeqClustConfig) -> SeqClustPlan:
     plan.out_dir.mkdir(parents=True, exist_ok=True)
 
     # Step 1: prefilter
-    min_ident = 0.7 if plan.mode == Mode.spp else 0.95
+    min_ident = 0.7 if plan.mode == Mode.species else 0.95
     print(f"Step 1: Creating pre-alignment filter (min-ident={min_ident})…")
 
     prefilter_cmd = [
@@ -278,87 +362,3 @@ def _extract_cluster_ids(tsv: Path, out_ids: Path) -> None:
             parts = line.rstrip("\n").split("\t")
             if len(parts) >= 2:
                 out.write(parts[1] + "\n")
-
-
-def _parse_vclust_params(params_str: str) -> Dict[str, Dict[str, Union[str, int, float, bool]]]:
-    """
-    Parse vclust parameters from command-line style string.
-
-    Example: "--min-kmers 20 --min-ident 0.5 --outfmt lite"
-    Returns: {"prefilter": {"min-kmers": 20, "min-ident": 0.5}, "align": {"outfmt": "lite"}}
-    """
-    if not params_str.strip():
-        return {}
-
-    # Parse the string into tokens
-    try:
-        tokens = shlex.split(params_str)
-    except ValueError as e:
-        raise ValueError(f"Invalid parameter string: {e}")
-
-    # Parameter mapping based on vclust wiki
-    param_mapping = {
-        # Prefilter parameters
-        "min-kmers": ("prefilter", int),
-        "min-ident": ("prefilter", float),
-        "batch-size": ("prefilter", int),
-        "kmers-fraction": ("prefilter", float),
-        "max-seqs": ("prefilter", int),
-
-        # Align parameters
-        "outfmt": ("align", str),
-        "out-ani": ("align", float),
-        "out-qcov": ("align", float),
-
-        # Cluster parameters
-        "ani": ("cluster", float),
-        "tani": ("cluster", float),
-        "gani": ("cluster", float),
-        "qcov": ("cluster", float),
-        "leiden-resolution": ("cluster", float),
-        "algorithm": ("cluster", str),
-        "metric": ("cluster", str),
-    }
-
-    result = {"prefilter": {}, "align": {}, "cluster": {}}
-
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
-
-        if not token.startswith("--"):
-            raise ValueError(f"Expected parameter name starting with '--', got: {token}")
-
-        param_name = token[2:]  # Remove '--'
-
-        if param_name not in param_mapping:
-            raise ValueError(f"Unknown vclust parameter: --{param_name}")
-
-        command, param_type = param_mapping[param_name]
-
-        # Check if this is a boolean flag or needs a value
-        if param_type == bool:
-            result[command][param_name] = True
-            i += 1
-        else:
-            # Need a value
-            if i + 1 >= len(tokens):
-                raise ValueError(f"Parameter --{param_name} requires a value")
-
-            value_str = tokens[i + 1]
-
-            try:
-                if param_type == int:
-                    value = int(value_str)
-                elif param_type == float:
-                    value = float(value_str)
-                else:  # str
-                    value = value_str
-
-                result[command][param_name] = value
-                i += 2
-            except ValueError:
-                raise ValueError(f"Invalid value for --{param_name}: {value_str} (expected {param_type.__name__})")
-
-    # Remove empty sections
-    return {k: v for k, v in result.items() if v}

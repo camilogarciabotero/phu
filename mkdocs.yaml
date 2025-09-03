@@ -69,7 +69,7 @@ plugins:
 nav:
   - Home: index.md
   - Commands:
-      - commands/seqclust.md
+      - commands/cluster.md
       # - commands/another-command.md
   # - Guides:
   #     - guides/installation.md

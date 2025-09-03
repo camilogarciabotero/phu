@@ -4,7 +4,7 @@ from typing import Optional
 import typer
 
 from phu import __version__
-from .seqclust import SeqClustConfig, Mode, _seqclust, _parse_vclust_params
+from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from ._exec import CmdNotFound
 
 app = typer.Typer(
@@ -22,10 +22,10 @@ def _root(ctx: typer.Context) -> None:
         typer.echo(ctx.get_help())
         raise typer.Exit(0)  # exit code 0 when no subcommand is given
 
-@app.command("seqclust")
-def seqclust(
+@app.command("cluster")
+def cluster(
     mode: Mode = typer.Option(
-        ..., "--mode", help="dereplication | votu-clustering | spp-clustering"
+        ..., "--mode", help="dereplication | votu | species"
     ),
     input_contigs: Path = typer.Option(
         ..., "--input-contigs", exists=True, readable=True, help="Input FASTA"
@@ -39,7 +39,7 @@ def seqclust(
     vclust_params: Optional[str] = typer.Option(
         None,
         "--vclust-params",
-        help='Custom vclust parameters like: "--min-kmers 20 --outfmt lite --ani 0.97"'
+        help='Custom vclust parameters: "--min-kmers 20 --outfmt lite --ani 0.97"'
     ),
 ):
     """
@@ -49,18 +49,16 @@ def seqclust(
     See the vclust wiki for parameter details: https://github.com/refresh-bio/vclust/wiki
     
     Example:
-        phu seqclust --mode spp-clustering --input-contigs genomes.fna"
+        phu cluster --mode votu --input-contigs genomes.fna --vclust-params="--min-kmers 20 --outfmt lite"
     """
     
     # Parse vclust_params
     parsed_params = {}
     if vclust_params:
         try:
-            parsed_params = _parse_vclust_params(vclust_params)
+            parsed_params = parse_vclust_params(vclust_params)
             typer.echo(f"Using custom vclust parameters: {vclust_params}")
-        except typer.BadParameter:
-            raise  # Re-raise typer errors
-        except Exception as e:
+        except ValueError as e:
             typer.secho(
                 f"Error parsing vclust parameters: {e}",
                 fg=typer.colors.RED,
@@ -69,7 +67,7 @@ def seqclust(
             raise typer.Exit(1)
     
     # Build config
-    cfg = SeqClustConfig(
+    cfg = ClusterConfig(
         mode=mode,
         input_contigs=input_contigs,
         output_folder=output_folder,
@@ -78,7 +76,7 @@ def seqclust(
     )
     
     try:
-        _seqclust(cfg)
+        _cluster(cfg)
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -93,5 +91,7 @@ def seqclust(
 def main() -> None:
     app()
 
+if __name__ == "__main__":
+    main()
 if __name__ == "__main__":
     main()

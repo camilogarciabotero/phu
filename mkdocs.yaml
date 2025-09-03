@@ -4,6 +4,8 @@ theme:
   features:
     - navigation.instant
     - content.code.copy
+  feature:
+    navigation.tabs: false
   # Use custom logo (shown in navbar) and favicon (small browser/tab icon)
   # logo: imgs/v03-phu-logo-small.svg
   # Optional dark-mode logo (Material supports this)

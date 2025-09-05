@@ -1,5 +1,11 @@
 # phu
 
+<div align="center">
+  <a href="http://bioconda.github.io/recipes/phu/README.html">
+    <img src="https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat" alt="install with bioconda">
+  </a>
+</div>
+
 phu (phage utilities) or phutilities, is a modular toolkit for viral genomics workflows. It provides command-line tools to handle common steps in phage bioinformatics pipelines—wrapping complex utilities behind a consistent and intuitive interface.
 
 ## Installation

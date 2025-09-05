@@ -6,6 +6,8 @@
   </a>
 </div>
 
+***
+
 phu (phage utilities) or phutilities, is a modular toolkit for viral genomics workflows. It provides command-line tools to handle common steps in phage bioinformatics pipelines—wrapping complex utilities behind a consistent and intuitive interface.
 
 ## Installation

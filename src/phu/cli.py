@@ -87,11 +87,8 @@ def cluster(
         )
         raise typer.Exit(1)
 
-
 def main() -> None:
     app()
 
-if __name__ == "__main__":
-    main()
 if __name__ == "__main__":
     main()

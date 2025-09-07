@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "phu: Phage Utilities"
+version: "0.2.1"
+date-released: "2025-09-07"
+url: "https://github.com/camilogarciabotero/phu"
+repository-code: "https://github.com/camilogarciabotero/phu"
+abstract: >-
+  phu (phage utilities) is a modular toolkit for viral genomics workflows.
+  It provides command-line tools to handle common steps in phage bioinformatics
+  pipelines—wrapping complex utilities behind a consistent and intuitive interface.
+  The toolkit focuses on sequence clustering operations including dereplication,
+  viral operational taxonomic unit (vOTU) clustering, and species-level grouping.
+
+authors:
+  - family-names: "García-Botero"
+    given-names: "Camilo"
+    email: "ca.garcia2@uniandes.edu.co"
+    orcid: "https://orcid.org/0000-0002-0426-7007"
+
+license: MIT
+
+keywords:
+  - phage
+  - virus
+  - bioinformatics
+  - genomics
+  - clustering
+  - viral genomics
+  - sequence analysis
+  - taxonomy
+  - Python
+
+preferred-citation:
+  type: software
+  title: "phu: Phage Utilities - A modular toolkit for viral genomics workflows"
+  authors:
+    - family-names: "García-Botero"
+      given-names: "Camilo"
+      email: "ca.garcia2@uniandes.edu.co"
+  version: "0.2.1"
+  url: "https://github.com/camilogarciabotero/phu"
+  year: 2025

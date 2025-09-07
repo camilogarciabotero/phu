@@ -58,7 +58,7 @@ Cluster viral sequences into operational taxonomic units with three specialized 
 
 **Example:**
 ```bash
-phu cluster --mode votu --input-contigs viral_genomes.fasta --output-folder results/
+phu cluster --mode votu --input-contigs viral-genomes.fasta
 ```
 
 [Learn more about clustering →](commands/cluster.md)

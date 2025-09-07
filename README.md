@@ -1,13 +1,14 @@
 
 <div align="center">
-  <a href="http://bioconda.github.io/recipes/phu/README.html">
-    <img src="https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat" alt="install with bioconda">
+  <a href="https://anaconda.org/bioconda/phu">
+    <img src="https://img.shields.io/conda/vn/bioconda/phu?logo=anaconda&style=flat-square&maxAge=3600" alt="install with bioconda">
   </a>
   <a href="https://anaconda.org/bioconda/phu"> <img src="https://anaconda.org/bioconda/phu/badges/downloads.svg" /> </a>
     <a href="https://github.com/camilogarciabotero/phu/actions/workflows/docs.yaml"><img src="https://github.com/camilogarciabotero/phu/actions/workflows/docs.yaml/badge.svg" alt="docs">
   </a>
   <a href="https://anaconda.org/bioconda/phu"> <img src="https://anaconda.org/bioconda/phu/badges/license.svg" /> </a>
 </div>
+
 
 ***
 # phu - Phage Utilities

@@ -12,13 +12,28 @@ The `cluster` command provides a simplified interface to the powerful `vclust` t
 phu cluster --mode <MODE> --input-contigs <FASTA_FILE> [options]
 ```
 
+Output files include a TSV file with cluster assignments and a FASTA file with representative sequences.
+
+```bash
+clustered-contigs/
+├── ani.ids.tsv
+├── ani.tsv
+├── cluster_representatives_ids.txt
+├── fltr.txt
+├── representatives.fna
+└── species.tsv
+```
+
+
 ## Modes
 
-| Mode | Description | Algorithm | Metric | Use Case |
-|------|-------------|-----------|--------|----------|
-| `dereplication` | Remove redundant sequences, keep representatives | cd-hit | ani | Reduce dataset to representative genomes (Section 6.3) |
-| `votu` | Cluster into viral Operational Taxonomic Units | leiden | ani | Group contigs following MIUViG standards (Section 6.2) |
-| `species` | Classify viruses into species | complete | tani | Species classification following ICTV standards (Section 6.1) |
+### Modes
+
+The `dereplication` mode removes redundant sequences while keeping representatives, using the cd-hit algorithm and ani metric. It is designed to reduce datasets to representative genomes, as outlined in [Section 6.3](https://github.com/refresh-bio/vclust/wiki/6-Use-cases#63-dereplicate-viral-contigs-into-representative-genomes).
+
+The `votu` mode clusters sequences into viral Operational Taxonomic Units, employing the leiden algorithm and ani metric. This mode groups contigs according to MIUViG standards, detailed in [Section 6.2](https://github.com/refresh-bio/vclust/wiki/6-Use-cases#62-assign-viral-contigs-into-votus-following-miuvig-standards).
+
+The `species` mode classifies viruses into species, utilizing the complete algorithm and tani metric. It follows ICTV standards for species classification, as described in [Section 6.1](https://github.com/refresh-bio/vclust/wiki/6-Use-cases#61-classify-viruses-into-species-and-genera-following-ictv-standards).
 
 ## Default Parameters by Mode
 
@@ -34,13 +49,36 @@ phu cluster --mode <MODE> --input-contigs <FASTA_FILE> [options]
 
 ## Command Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--mode` | Choice | **Required** | dereplication \| votu \| species |
-| `--input-contigs` | Path | **Required** | Input FASTA file with viral sequences |
-| `--output-folder` | Path | clustered-contigs | Output directory for results |
-| `--threads` | Integer | 0 | Number of threads (0 = all cores) |
-| `--vclust-params` | String | None | Custom vclust parameters (see Advanced Usage) |
+```bash 
+ Sequence clustering wrapper around external 'vclust' with three modes.      
+                                                                             
+ For advanced usage, provide custom vclust parameters as a quoted string.    
+ See the vclust wiki for parameter details:                                  
+ https://github.com/refresh-bio/vclust/wiki                                  
+                                                                             
+ Example:                                                                    
+     phu cluster --mode votu --input-contigs genomes.fna                                               
+                                                                             
+╭─ Options ─────────────────────────────────────────────────────────────────╮
+│ *  --mode                   [dereplication|votu|s  dereplication | votu | │
+│                             pecies]                species                │
+│                                                    [required]             │
+│ *  --input-contigs          PATH                   Input FASTA [required] │
+│    --output-folder          PATH                   Output directory       │
+│                                                    [default:              │
+│                                                    clustered-contigs]     │
+│    --threads                INTEGER RANGE [x>=0]   0=all cores; otherwise │
+│                                                    N threads              │
+│                                                    [default: 0]           │
+│    --vclust-params          TEXT                   Custom vclust          │
+│                                                    parameters:            │
+│                                                    "--min-kmers 20        │
+│                                                    --outfmt lite --ani    │
+│                                                    0.97"                  │
+│    --help           -h                             Show this message and  │
+│                                                    exit.                  │
+╰───────────────────────────────────────────────────────────────────────────╯
+```
 
 ## Examples
 

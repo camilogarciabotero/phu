@@ -24,9 +24,6 @@
     
       <link rel="stylesheet" href="assets/stylesheets/main.7e37652d.min.css">
       
-        
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
-      
       
 
 
@@ -56,14 +53,7 @@
   </head>
   
   
-    
-    
-      
-    
-    
-    
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+    <body dir="ltr">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -114,32 +104,6 @@
         </div>
       </div>
     </div>
-    
-      
-        <form class="md-header__option" data-md-component="palette">
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
-    
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
-      </label>
-    
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
-    
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m3.55 19.09 1.41 1.41 1.8-1.79-1.42-1.42M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6c0-3.32-2.69-6-6-6m8 7h3v-2h-3m-2.76 7.71 1.8 1.79 1.41-1.41-1.79-1.8M20.45 5l-1.41-1.4-1.8 1.79 1.42 1.42M13 1h-2v3h2M6.76 5.39 4.96 3.6 3.55 5l1.79 1.81zM1 13h3v-2H1m12 9h-2v3h2"/></svg>
-      </label>
-    
-  
-</form>
-      
     
     
       <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
@@ -379,6 +343,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#simplify-taxa-taxonomy-simplification" class="md-nav__link">
+    <span class="md-ellipsis">
+      simplify-taxa - Taxonomy Simplification
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -479,6 +452,29 @@
   
   <span class="md-ellipsis">
     cluster
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="commands/simplify-taxa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    simplify-taxa
     
   </span>
   
@@ -598,6 +594,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#simplify-taxa-taxonomy-simplification" class="md-nav__link">
+    <span class="md-ellipsis">
+      simplify-taxa - Taxonomy Simplification
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -682,17 +687,17 @@ mamba<span class="w"> </span>activate<span class="w"> </span>phu
 <h3 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>-h
 
-<span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...<span class="w">                                      </span>
+<span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...<span class="w">                                                       </span>
 
-<span class="w"> </span>Phage<span class="w"> </span>utilities<span class="w"> </span>CLI<span class="w">                                                         </span>
+<span class="w"> </span>Phage<span class="w"> </span>utilities<span class="w"> </span>CLI<span class="w">                                                                          </span>
 
-╭─<span class="w"> </span>Options<span class="w"> </span>─────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>--help<span class="w">  </span>-h<span class="w">        </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                             </span>│
-╰───────────────────────────────────────────────────────────────────────────╯
-╭─<span class="w"> </span>Commands<span class="w"> </span>────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>cluster<span class="w">   </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">&#39;vclust&#39;</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>│
-│<span class="w">           </span>modes.<span class="w">                                                          </span>│
-╰───────────────────────────────────────────────────────────────────────────╯
+╭─<span class="w"> </span>Options<span class="w"> </span>──────────────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>--help<span class="w">  </span>-h<span class="w">        </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                              </span>│
+╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─<span class="w"> </span>Commands<span class="w"> </span>─────────────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>cluster<span class="w">         </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">&#39;vclust&#39;</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">     </span>│
+│<span class="w"> </span>simplify-taxa<span class="w">   </span>Simplify<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>prediction<span class="w"> </span>columns<span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>lineage<span class="w"> </span>codes.<span class="w">  </span>│
+╰────────────────────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="available-commands">Available Commands<a class="headerlink" href="#available-commands" title="Permanent link">&para;</a></h2>
 <h3 id="cluster-sequence-clustering"><code>cluster</code> - Sequence Clustering<a class="headerlink" href="#cluster-sequence-clustering" title="Permanent link">&para;</a></h3>
@@ -706,6 +711,12 @@ mamba<span class="w"> </span>activate<span class="w"> </span>phu
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>cluster<span class="w"> </span>--mode<span class="w"> </span>votu<span class="w"> </span>--input-contigs<span class="w"> </span>viral-genomes.fasta
 </code></pre></div></p>
 <p><a href="commands/cluster/">Learn more about clustering →</a></p>
+<h3 id="simplify-taxa-taxonomy-simplification"><code>simplify-taxa</code> - Taxonomy Simplification<a class="headerlink" href="#simplify-taxa-taxonomy-simplification" title="Permanent link">&para;</a></h3>
+<p>Simplify verbose vContact taxonomy predictions into compact lineage codes for easier analysis and visualization.
+<strong>Example:</strong>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>final_assignments.csv<span class="w"> </span>-o<span class="w"> </span>simplified_taxonomy.csv
+</code></pre></div></p>
+<p><a href="commands/simplify-taxa/">Learn more about taxonomy simplification →</a></p>
 <h2 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Viral Metagenomics</strong>: Dereplicate and cluster viral contigs from metagenomic assemblies</li>

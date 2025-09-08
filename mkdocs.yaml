@@ -11,20 +11,20 @@ theme:
   # Optional dark-mode logo (Material supports this)
   # logo_dark: imgs/v03-phu-logo-small-fordark.svg
   code:
-    highlight_theme: "material-darker"
-  palette:
-    - scheme: default
-      primary: teal
-      accent: amber
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - scheme: slate
-      primary: deep purple
-      accent: cyan
-      toggle:
-        icon: material/white-balance-sunny
-        name: Switch to light mode
+    highlight_theme: "github"
+    palette:
+      - scheme: default
+        primary: blue grey
+        accent: teal
+        toggle:
+          icon: material/weather-night
+          name: Switch to dark mode
+      - scheme: slate
+        primary: blue grey
+        accent: amber
+        toggle:
+          icon: material/white-balance-sunny
+          name: Switch to light mode
 
 # Top-level favicon (path is relative to docs/)
 # favicon: imgs/v01-phu-favicon.svg

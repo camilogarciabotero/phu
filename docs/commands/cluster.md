@@ -44,8 +44,6 @@ The `species` mode classifies viruses into species, utilizing the complete algor
 | **ANI cutoff** | 95% | 95% | 95% |
 | **Query coverage** | 85% | 85% | None |
 | **Pre-filter min-ident** | 95% | 95% | 70% |
-| **Output file** | clusters.tsv | clusters.tsv | species.tsv |
-| **Representatives file** | dereplicated_representatives.fna | representatives.fna | representatives.fna |
 
 ## Command Options
 

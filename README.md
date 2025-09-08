@@ -1,4 +1,3 @@
-
 <div align="center">
   <a href="https://anaconda.org/bioconda/phu">
     <img src="https://img.shields.io/conda/vn/bioconda/phu?logo=anaconda&style=flat-square&maxAge=3600" alt="install with bioconda">
@@ -34,6 +33,7 @@ phu <command> [options]
 ## Commands
 
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
+- [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
 
 ## Contributing
 

@@ -5,6 +5,7 @@ import typer
 
 from phu import __version__
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
+from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
 from ._exec import CmdNotFound
 
 app = typer.Typer(
@@ -85,6 +86,52 @@ def cluster(
         typer.echo(
             "Required executables on PATH: 'vclust' (or 'vclust.py') and 'seqkit'"
         )
+        raise typer.Exit(1)
+
+@app.command("simplify-taxa")
+def simplify_taxa(
+    input_file: Path = typer.Option(
+        ..., "--input", "-i", exists=True, readable=True, help="Input vContact final_assignments.csv"
+    ),
+    output_file: Path = typer.Option(
+        ..., "--output", "-o", help="Output path (.csv or .tsv)"
+    ),
+    add_lineage: bool = typer.Option(
+        False, "--add-lineage", help="Append compact_lineage column from deepest simplified rank"
+    ),
+    lineage_col: str = typer.Option(
+        "compact_lineage", "--lineage-col", help="Name of the lineage column"
+    ),
+    sep: Optional[str] = typer.Option(
+        None, "--sep", help="Override delimiter: ',' or '\\t'. Auto-detected from extension if not set"
+    ),
+):
+    """
+    Simplify vContact taxonomy prediction columns into compact lineage codes.
+    
+    Transforms verbose vContact taxonomy strings like 'novel_genus_1_of_novel_family_2_of_Caudoviricetes'
+    into compact codes like 'Caudoviricetes:NF2:NG1'.
+    
+    Example:
+        phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
+    """
+    
+    # Build config
+    cfg = TaxaConfig(
+        input_file=input_file,
+        output_file=output_file,
+        add_lineage=add_lineage,
+        lineage_col=lineage_col,
+        sep=sep,
+    )
+    
+    try:
+        _simplify_taxa(cfg)
+    except FileNotFoundError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    except RuntimeError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
 
 def main() -> None:

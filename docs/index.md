@@ -33,22 +33,23 @@ mamba activate phu
 ```bash
 phu -h
 
- Usage: phu [OPTIONS] COMMAND [ARGS]...                                      
-                                                                             
- Phage utilities CLI                                                         
-                                                                             
-╭─ Options ─────────────────────────────────────────────────────────────────╮
-│ --help  -h        Show this message and exit.                             │
-╰───────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ────────────────────────────────────────────────────────────────╮
-│ cluster   Sequence clustering wrapper around external 'vclust' with three │
-│           modes.                                                          │
-╰───────────────────────────────────────────────────────────────────────────╯
+ Usage: phu [OPTIONS] COMMAND [ARGS]...                                                       
+                                                                                              
+ Phage utilities CLI                                                                          
+                                                                                              
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                              │
+╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────╮
+│ cluster         Sequence clustering wrapper around external 'vclust' with three modes.     │
+│ simplify-taxa   Simplify vContact taxonomy prediction columns into compact lineage codes.  │
+╰────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Available Commands
 
 ### `cluster` - Sequence Clustering
+
 
 Cluster viral sequences into operational taxonomic units with three specialized modes:
 
@@ -63,6 +64,16 @@ phu cluster --mode votu --input-contigs viral-genomes.fasta
 
 [Learn more about clustering →](commands/cluster.md)
 
+
+### `simplify-taxa` - Taxonomy Simplification
+
+Simplify verbose vContact taxonomy predictions into compact lineage codes for easier analysis and visualization.
+**Example:**
+```bash
+phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
+```
+
+[Learn more about taxonomy simplification →](commands/simplify-taxa.md)
 
 ## Use Cases
 

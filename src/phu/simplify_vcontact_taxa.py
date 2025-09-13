@@ -64,7 +64,6 @@ class TaxaPlan:
 ANCHOR = r"([^:\|]+)"
 
 # Compile order: most specific → most general (first match wins).
-# Mirrors the R list you shared; realms are optional and easy to add later.
 TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
     "kingdom": [
         {

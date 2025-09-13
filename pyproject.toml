@@ -1,6 +1,6 @@
 [project]
 name = "phu"
-version = "0.3.0"
+version = "0.3.7"
 description = "Phage bioinformatics utilities (seqclust runner and friends)."
 readme = "README.md"
 license = { text = "MIT" }
@@ -10,6 +10,7 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.3.2",
+    "pyrodigal>=3.6.3.post1",
     "typer>=0.17.3",
 ]
 

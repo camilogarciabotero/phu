@@ -27,7 +27,7 @@ def _cmd_exists(exe: str) -> bool:
 class ScreenConfig:
     """Configuration for screening contigs for protein families."""
     input_contigs: Path
-    hmm: Path
+    hmms: List[Path]  # Changed from hmm: Path
     outdir: Path = Path("phu-screen")
     mode: str = "meta"  # pyrodigal mode: meta|single
     threads: int = 1
@@ -38,6 +38,8 @@ class ScreenConfig:
     translation_table: int = 11
     keep_proteins: bool = False
     keep_domtbl: bool = True
+    combine_mode: str = "any"  # New: "any", "all", "threshold"
+    min_hmm_hits: int = 1  # New: for threshold mode
     
     def __post_init__(self):
         """Validate configuration parameters."""
@@ -47,22 +49,31 @@ class ScreenConfig:
             # HMMER interprets --cpu 0 as "turn off multithreading"
             # This is valid, so we allow it
             pass
+        if not self.hmms:
+            raise ValueError("at least one HMM must be provided")
+        for hmm in self.hmms:
+            if not hmm.exists():
+                raise FileNotFoundError(f"HMM file not found: {hmm}")
+        if self.combine_mode not in {"any", "all", "threshold"}:
+            raise ValueError("combine_mode must be 'any', 'all', or 'threshold'")
+        if self.combine_mode == "threshold" and self.min_hmm_hits < 1:
+            raise ValueError("min_hmm_hits must be >= 1 for threshold mode")
     
     def plan(self) -> "ScreenPlan":
         """Create execution plan from configuration."""
         if self.mode not in {"meta", "single"}:
             raise ValueError("mode must be 'meta' or 'single'")
         
-        # For HMMER programs, --cpu specifies the number of worker threads
-        # The actual number of threads spawned is --cpu + 1 (including master thread)
-        # But we pass the user-specified value directly to HMMER as expected
         effective_threads = self.threads
+        
+        # Generate per-HMM domtbl paths
+        domtbl_paths = {hmm.name: self.outdir / f"hits_{hmm.name}.domtblout" for hmm in self.hmms}
         
         return ScreenPlan(
             hmmer_bin="",
             seqkit_bin="",
             input_contigs=self.input_contigs,
-            hmm=self.hmm,
+            hmms=self.hmms,
             outdir=self.outdir,
             mode=self.mode,
             threads=effective_threads,
@@ -74,10 +85,12 @@ class ScreenConfig:
             keep_proteins=self.keep_proteins,
             keep_domtbl=self.keep_domtbl,
             proteins_fa=self.outdir / "proteins.faa",
-            domtbl=self.outdir / "hits.domtblout",
+            domtbl_paths=domtbl_paths,  # Changed from domtbl: Path
             kept_json=self.outdir / "kept_hits.json",
             kept_ids=self.outdir / "kept_contigs.txt",
             out_contigs=self.outdir / "screened_contigs.fasta",
+            combine_mode=self.combine_mode,
+            min_hmm_hits=self.min_hmm_hits,
         )
 
 
@@ -87,7 +100,7 @@ class ScreenPlan:
     hmmer_bin: str
     seqkit_bin: str
     input_contigs: Path
-    hmm: Path
+    hmms: List[Path]  # Changed from hmm: Path
     outdir: Path
     mode: str
     threads: int
@@ -99,10 +112,12 @@ class ScreenPlan:
     keep_proteins: bool
     keep_domtbl: bool
     proteins_fa: Path
-    domtbl: Path
+    domtbl_paths: Dict[str, Path]  # Changed from domtbl: Path
     kept_json: Path
     kept_ids: Path
     out_contigs: Path
+    combine_mode: str  # New
+    min_hmm_hits: int  # New
 
 def _binaries() -> tuple[str, str]:
     """
@@ -134,8 +149,9 @@ class Hit:
     target: str
     bitscore: float
     evalue: float
+    hmm: str  # New: source HMM name
 
-def _parse_domtblout(domtbl_path: Path) -> Iterable[Hit]:
+def _parse_domtblout(domtbl_path: Path, hmm_name: str) -> Iterable[Hit]:  # Added hmm_name param
     """
     Parse HMMER --domtblout (hmmsearch). Returns domain-level hits.
     Format spec: https://hmmer-web-docs.readthedocs.io/en/latest/output-files/domtab.html
@@ -169,7 +185,7 @@ def _parse_domtblout(domtbl_path: Path) -> Iterable[Hit]:
             else:
                 # Fallback if no "|" found (shouldn't happen with our naming scheme)
                 contig_id = prot_id
-            yield Hit(contig=contig_id, prot_id=prot_id, target=target_name, bitscore=bits, evalue=i_evalue)
+            yield Hit(contig=contig_id, prot_id=prot_id, target=target_name, bitscore=bits, evalue=i_evalue, hmm=hmm_name)  # Added hmm
 
 
 # ---------- Core pipeline ----------
@@ -265,9 +281,11 @@ def _choose_best_contigs(
     min_bitscore: Optional[float],
     max_evalue: Optional[float],
     top_per_contig: int = 1,
+    combine_mode: str = "any",
+    min_hmm_hits: int = 1,
 ) -> Tuple[List[Hit], List[str]]:
     """
-    Filter by thresholds, then pick top N hits per contig by bitscore.
+    Filter by thresholds, combine hits per contig based on mode, then pick top N hits per contig by bitscore.
     Returns (kept_hits, list_of_contig_ids).
     """
     from collections import defaultdict
@@ -283,11 +301,30 @@ def _choose_best_contigs(
     kept: List[Hit] = []
     kept_contigs: List[str] = []
     for contig, lst in per_contig.items():
-        lst.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
-        slice_ = lst[:max(1, top_per_contig)]
-        if slice_:
-            kept.extend(slice_)
-            kept_contigs.append(contig)
+        # Group hits by HMM
+        hmm_hits = defaultdict(list)
+        for h in lst:
+            hmm_hits[h.hmm].append(h)
+        
+        # Apply combine logic
+        if combine_mode == "any":
+            if hmm_hits:  # At least one HMM hit
+                kept.extend(lst)
+                kept_contigs.append(contig)
+        elif combine_mode == "all":
+            if len(hmm_hits) == len(set(h.hmm for h in lst)):  # Hit all HMMs
+                kept.extend(lst)
+                kept_contigs.append(contig)
+        elif combine_mode == "threshold":
+            if len(hmm_hits) >= min_hmm_hits:
+                kept.extend(lst)
+                kept_contigs.append(contig)
+        
+        # If kept, sort and slice top_per_contig (but keep all for now, as per original)
+        if contig in kept_contigs:
+            lst.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+            kept = [h for h in kept if h.contig == contig][:max(1, top_per_contig)]  # Adjust kept list
+
     return kept, kept_contigs
 
 def _seqkit_extract(
@@ -316,14 +353,12 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     
     Main workflow:
     1. Predict proteins with pyrodigal
-    2. Search proteins against HMM with hmmsearch
-    3. Parse results and select best hits per contig
+    2. Search proteins against each HMM with hmmsearch
+    3. Parse results, combine, and select best hits per contig
     4. Extract screened contigs
     """
     if not cfg.input_contigs.exists():
         raise FileNotFoundError(f"Input file not found: {cfg.input_contigs}")
-    if not cfg.hmm.exists():
-        raise FileNotFoundError(f"HMM file not found: {cfg.hmm}")
     
     # Discover binaries
     hmmer_bin, seqkit_bin = _binaries()
@@ -353,23 +388,29 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             plan.proteins_fa.unlink()
         return plan
     
-    print("Running hmmsearch…")
-    _hmmsearch(
-        hmm=plan.hmm,
-        proteins_fa=plan.proteins_fa,
-        domtbl_path=plan.domtbl,
-        threads=plan.threads,
-        hmmer_bin=plan.hmmer_bin,
-        extra_args=["--noali"],  # speed & smaller output
-    )
+    print("Running hmmsearch for each HMM…")
+    all_hits = []
+    for hmm in plan.hmms:
+        domtbl_path = plan.domtbl_paths[hmm.name]
+        _hmmsearch(
+            hmm=hmm,
+            proteins_fa=plan.proteins_fa,
+            domtbl_path=domtbl_path,
+            threads=plan.threads,
+            hmmer_bin=plan.hmmer_bin,
+            extra_args=["--noali"],
+        )
+        hits = list(_parse_domtblout(domtbl_path, hmm.name))
+        all_hits.extend(hits)
     
-    print("Parsing domtblout and selecting best hits per contig…")
-    all_hits = list(_parse_domtblout(plan.domtbl))
+    print("Parsing results and selecting best hits per contig…")
     kept_hits, contig_ids = _choose_best_contigs(
         all_hits,
         min_bitscore=plan.min_bitscore,
         max_evalue=plan.max_evalue,
         top_per_contig=plan.top_per_contig,
+        combine_mode=plan.combine_mode,
+        min_hmm_hits=plan.min_hmm_hits,
     )
     
     plan.kept_ids.write_text("\n".join(contig_ids) + ("\n" if contig_ids else ""))
@@ -388,13 +429,15 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     # Clean up if requested
     if not plan.keep_proteins and plan.proteins_fa.exists():
         plan.proteins_fa.unlink()
-    if not plan.keep_domtbl and plan.domtbl.exists():
-        plan.domtbl.unlink()
+    if not plan.keep_domtbl:
+        for path in plan.domtbl_paths.values():
+            if path.exists():
+                path.unlink()
     
     print(f"Done. Output FASTA: {plan.out_contigs}")
     files_msg = f"Also wrote: {plan.kept_ids.name} (contig IDs), {plan.kept_json.name} (hits JSON)"
     if plan.keep_domtbl:
-        files_msg += " and hits.domtblout"
+        files_msg += f" and {len(plan.hmms)} domtblout files"
     print(f"{files_msg}.")
     
     return plan

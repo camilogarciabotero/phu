@@ -1,6 +1,6 @@
 [project]
 name = "phu"
-version = "0.3.7"
+version = "0.6.0"
 description = "Phage bioinformatics utilities (seqclust runner and friends)."
 readme = "README.md"
 license = { text = "MIT" }

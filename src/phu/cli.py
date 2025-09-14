@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 import typer
 
 from phu import __version__
@@ -142,8 +142,8 @@ def screen(
     input_contigs: Path = typer.Option(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
     ),
-    hmm: Path = typer.Option(
-        ..., "--hmm", "-m", exists=True, readable=True, help="HMM of protein family to screen for"
+    hmms: List[Path] = typer.Argument(  # Changed to Argument to handle wildcards naturally
+        ..., help="HMM files (supports wildcards like *.hmm)"
     ),
     outdir: Path = typer.Option(
         Path("phu-screen"), "--outdir", "-o", help="Output directory"
@@ -175,15 +175,39 @@ def screen(
     keep_domtbl: bool = typer.Option(
         True, "--keep-domtbl", help="Keep raw domtblout from hmmsearch"
     ),
+    combine_mode: str = typer.Option(
+        "any", "--combine-mode", help="How to combine hits from multiple HMMs: any|all|threshold"
+    ),
+    min_hmm_hits: int = typer.Option(
+        1, "--min-hmm-hits", help="Minimum number of HMMs that must hit a contig (for threshold mode)"
+    )
 ):
     """
-    Screen viral contigs for a target protein family:
-    1) predict CDS with pyrodigal, 2) hmmsearch proteins vs HMM, 3) extract contigs whose CDS match best.
+    Screen viral contigs for target protein families given HMMs using hmmsearch.
+    
+    Examples:
+        phu screen -i contigs.fa *.hmm
+        phu screen -i contigs.fa file1.hmm file2.hmm file3.hmm
+        phu screen -i contigs.fa path/to/*.hmm
     """
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_hmms = []
+    for p in hmms:
+        if p not in seen:
+            unique_hmms.append(p)
+            seen.add(p)
+    
+    hmm_paths = unique_hmms
+    
+    if not hmm_paths:
+        typer.secho("No HMM files specified", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    
     # Build config
     cfg = ScreenConfig(
         input_contigs=input_contigs,
-        hmm=hmm,
+        hmms=hmm_paths,
         outdir=outdir,
         mode=mode,
         threads=threads,
@@ -194,6 +218,8 @@ def screen(
         translation_table=translation_table,
         keep_proteins=keep_proteins,
         keep_domtbl=keep_domtbl,
+        combine_mode=combine_mode,
+        min_hmm_hits=min_hmm_hits,
     )
     
     try:
@@ -208,67 +234,6 @@ def screen(
         )
         raise typer.Exit(1)
 
-
-# Backwards compatibility alias
-@app.command("run", hidden=True)
-def run_alias(
-    input_contigs: Path = typer.Option(
-        ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
-    ),
-    hmm: Path = typer.Option(
-        ..., "--hmm", "-m", exists=True, readable=True, help="HMM of protein family to screen for"
-    ),
-    outdir: Path = typer.Option(
-        Path("phu-screen"), "--outdir", "-o", help="Output directory"
-    ),
-    mode: str = typer.Option(
-        "meta", "--mode", help="pyrodigal mode: meta|single"
-    ),
-    threads: int = typer.Option(
-        1, "--threads", "-t", min=1, help="Threads for hmmsearch"
-    ),
-    min_bitscore: Optional[float] = typer.Option(
-        None, "--min-bitscore", help="Minimum bitscore to keep a domain hit"
-    ),
-    max_evalue: Optional[float] = typer.Option(
-        1e-5, "--max-evalue", help="Maximum independent E-value to keep a domain hit"
-    ),
-    top_per_contig: int = typer.Option(
-        1, "--top-per-contig", help="Keep top-N hits per contig (by bitscore)"
-    ),
-    min_gene_len: int = typer.Option(
-        90, "--min-gene-len", help="Minimum gene length for pyrodigal (nt)"
-    ),
-    translation_table: int = typer.Option(
-        11, "--ttable", help="NCBI translation table for coding sequences"
-    ),
-    keep_proteins: bool = typer.Option(
-        False, "--keep-proteins", help="Write the protein FASTA used for searching"
-    ),
-    keep_domtbl: bool = typer.Option(
-        True, "--keep-domtbl", help="Keep raw domtblout from hmmsearch"
-    ),
-):
-    """DEPRECATED: Use 'screen' command instead. This alias will be removed in a future version."""
-    typer.secho(
-        "Warning: The 'run' command is deprecated. Please use 'phu screen' instead.", 
-        fg=typer.colors.YELLOW, 
-        err=True
-    )
-    screen(
-        input_contigs=input_contigs,
-        hmm=hmm,
-        outdir=outdir,
-        mode=mode,
-        threads=threads,
-        min_bitscore=min_bitscore,
-        max_evalue=max_evalue,
-        top_per_contig=top_per_contig,
-        min_gene_len=min_gene_len,
-        translation_table=translation_table,
-        keep_proteins=keep_proteins,
-        keep_domtbl=keep_domtbl,
-    )
 
 
 def main() -> None:

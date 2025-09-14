@@ -12,7 +12,7 @@ The `phu screen` command screens DNA contigs for specific protein families using
 ## Synopsis
 
 ```bash
-phu screen [OPTIONS] --input-contigs FASTA_FILE --hmm HMM_FILE
+phu screen [OPTIONS] --input-contigs FASTA_FILE --hmms HMM_FILE [HMM_FILE ...]
 ```
 
 ## Description
@@ -23,11 +23,12 @@ The screen command is designed for high-throughput screening of genomic contigs 
 - Screening for specific protein families across large contig datasets
 - Filtering assemblies based on protein domain content
 - Quality control and contamination detection
+- Multi-marker screening (e.g., detecting contigs with multiple protein families)
 
 ## Required Arguments
 
 - `--input-contigs PATH`: Input contig sequences in FASTA format
-- `--hmm PATH`: HMM profile file (single profile or database)
+- `--hmms PATH`: HMM profile file(s) (single or multiple profiles)
 
 ## Optional Arguments
 
@@ -48,6 +49,13 @@ The screen command is designed for high-throughput screening of genomic contigs 
 - `--max-evalue FLOAT`: Maximum E-value threshold (default: 1e-5)
 - `--top-per-contig INT`: Maximum hits to keep per contig (default: 1)
 
+### Multi-HMM Options
+- `--combine-mode {any,all,threshold}`: How to combine hits from multiple HMMs (default: `any`)
+  - `any`: Keep contigs that match at least one HMM
+  - `all`: Keep contigs that match all HMMs
+  - `threshold`: Keep contigs that match at least `--min-hmm-hits` HMMs
+- `--min-hmm-hits INT`: Minimum number of HMMs that must hit a contig (for `threshold` mode, default: 1)
+
 ### Performance Options
 - `--threads INT`: Number of CPU threads for HMMER (default: 1)
 
@@ -58,11 +66,11 @@ The screen command creates several output files in the specified output director
 ### Primary Outputs
 - `screened_contigs.fasta`: Contigs containing significant hits
 - `kept_contigs.txt`: List of contig IDs that passed filtering
-- `kept_hits.json`: Detailed information about significant hits
+- `kept_hits.json`: Detailed information about significant hits (includes HMM source for multi-HMM runs)
 
 ### Intermediate Files (optional)
 - `proteins.faa`: Predicted protein sequences (if `--keep-proteins`)
-- `hits.domtblout`: Raw HMMER domain table output (if `--keep-domtbl`)
+- `hits_{hmm_name}.domtblout`: Raw HMMER domain table output per HMM (if `--keep-domtbl`)
 
 ## Workflow Details
 
@@ -73,15 +81,16 @@ Uses pyrodigal to predict coding sequences from input contigs:
 - Filters genes by minimum length
 
 ### 2. Protein Search
-Runs hmmsearch against predicted proteins:
+Runs hmmsearch against predicted proteins for each HMM:
 - Uses proper HMMER command structure: `hmmsearch [options] <hmmfile> <seqfile>`
 - Includes threading support with `--cpu` parameter
-- Generates domain table output with `--domtblout`
+- Generates domain table output with `--domtblout` (one per HMM)
 
 ### 3. Hit Processing
 Parses HMMER results and applies filtering:
 - Extracts contig IDs from protein sequence names
 - Applies E-value and bitscore thresholds
+- Combines hits across HMMs based on `--combine-mode`
 - Selects top hits per contig based on bitscore
 
 ### 4. Contig Extraction
@@ -95,41 +104,53 @@ Uses seqkit to extract matching contigs:
 ### Basic Usage
 ```bash
 # Screen contigs for a specific protein family
-phu screen --input-contigs assembly.fasta --hmm pfam_domain.hmm
+phu screen --input-contigs assembly.fasta --hmms pfam_domain.hmm
 
 # Use custom output directory
-phu screen --input-contigs contigs.fa --hmm family.hmm --outdir screening_results
+phu screen --input-contigs contigs.fa --hmms family.hmm --outdir screening_results
+```
+
+### Multi-HMM Screening
+```bash
+# Screen for contigs matching any of multiple markers
+phu screen --input-contigs assembly.fasta --hmms marker1.hmm marker2.hmm marker3.hmm --combine-mode any
+
+# Require contigs to match all HMMs
+phu screen --input-contigs contigs.fa --hmms family1.hmm family2.hmm --combine-mode all
+
+# Threshold mode: match at least 2 out of 3 HMMs
+phu screen --input-contigs assembly.fasta --hmms hmm1.hmm hmm2.hmm hmm3.hmm --combine-mode threshold --min-hmm-hits 2
 ```
 
 ### Advanced Filtering
 ```bash
 # Apply strict E-value threshold
-phu screen --input-contigs assembly.fasta --hmm domain.hmm --max-evalue 1e-10
+phu screen --input-contigs assembly.fasta --hmms domain.hmm --max-evalue 1e-10
 
 # Keep multiple hits per contig
-phu screen --input-contigs contigs.fa --hmm family.hmm --top-per-contig 3
+phu screen --input-contigs contigs.fa --hmms family.hmm --top-per-contig 3
 
 # Use bitscore threshold
-phu screen --input-contigs assembly.fasta --hmm domain.hmm --min-bitscore 50
+phu screen --input-contigs assembly.fasta --hmms domain.hmm --min-bitscore 50
 ```
 
 ### Performance Optimization
 ```bash
 # Use multiple threads
-phu screen --input-contigs large_assembly.fasta --hmm domain.hmm --threads 16
+phu screen --input-contigs large_assembly.fasta --hmms domain.hmm --threads 16
 
 # Single genome mode (more accurate for complete genomes)
-phu screen --input-contigs genome.fasta --hmm family.hmm --mode single
+phu screen --input-contigs genome.fasta --hmms family.hmm --mode single
 ```
 
 ### File Management
 ```bash
 # Keep intermediate files for inspection
-phu screen --input-contigs contigs.fa --hmm domain.hmm \
+phu screen --input-contigs contigs.fa --hmms domain.hmm \
     --keep-proteins --keep-domtbl
 
 # Clean run (minimal output files)
-phu screen --input-contigs assembly.fasta --hmm family.hmm \
+phu screen --input-contigs assembly.fasta --hmms family.hmm \
     --no-keep-proteins --no-keep-domtbl
 ```
 
@@ -139,16 +160,19 @@ phu screen --input-contigs assembly.fasta --hmm family.hmm \
 - **E-value**: Statistical significance (lower = better)
 - **Bitscore**: Raw match score (higher = better)
 - **Domain coverage**: Check alignment coordinates in JSON output
+- **HMM Source**: For multi-HMM runs, check which HMM(s) matched
 
 ### Common Patterns
 - **High E-value with low bitscore**: Likely false positive
 - **Multiple hits per contig**: May indicate domain repeats or multidomain proteins
 - **Edge effects**: Partial domains at contig ends
+- **Multi-HMM matches**: Useful for identifying contigs with specific marker combinations
 
 ### Troubleshooting
 - **No proteins predicted**: Check input sequence format and minimum gene length
 - **No hits found**: Verify HMM file format and consider relaxing thresholds
 - **seqkit errors**: Ensure contig IDs don't contain special characters
+- **Multi-HMM issues**: Check HMM file paths and combine-mode settings
 
 ## Integration with Other Tools
 

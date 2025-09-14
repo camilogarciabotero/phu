@@ -142,7 +142,7 @@ def screen(
     input_contigs: Path = typer.Option(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
     ),
-    hmms: List[Path] = typer.Argument(  # Changed to Argument to handle wildcards naturally
+    hmms: List[Path] = typer.Argument(
         ..., help="HMM files (supports wildcards like *.hmm)"
     ),
     outdir: Path = typer.Option(
@@ -152,7 +152,7 @@ def screen(
         "meta", "--mode", help="pyrodigal mode: meta|single"
     ),
     threads: int = typer.Option(
-        1, "--threads", "-t", min=1, help="Threads for hmmsearch"
+        1, "--threads", "-t", min=1, help="Threads for both pyrodigal and hmmsearch"
     ),
     min_bitscore: Optional[float] = typer.Option(
         None, "--min-bitscore", help="Minimum bitscore to keep a domain hit"
@@ -170,25 +170,36 @@ def screen(
         11, "--ttable", help="NCBI translation table for coding sequences"
     ),
     keep_proteins: bool = typer.Option(
-        False, "--keep-proteins", help="Write the protein FASTA used for searching"
+        False, "--keep-proteins/--no-keep-proteins", help="Keep the protein FASTA used for searching"
     ),
     keep_domtbl: bool = typer.Option(
-        True, "--keep-domtbl", help="Keep raw domtblout from hmmsearch"
+        True, "--keep-domtbl/--no-keep-domtbl", help="Keep raw domtblout from hmmsearch"
     ),
     combine_mode: str = typer.Option(
         "any", "--combine-mode", help="How to combine hits from multiple HMMs: any|all|threshold"
     ),
     min_hmm_hits: int = typer.Option(
         1, "--min-hmm-hits", help="Minimum number of HMMs that must hit a contig (for threshold mode)"
+    ),
+    save_target_proteins: bool = typer.Option(
+        False, "--save-target-proteins/--no-save-target-proteins", 
+        help="Save matched proteins per HMM model in target_proteins/ subfolder"
     )
 ):
     """
-    Screen viral contigs for target protein families given HMMs using hmmsearch.
+    Screen contigs for protein families using HMMER on predicted CDS.
+    
+    Supports multiple HMM files with different combination modes:
+    - any: Keep contigs matching any HMM (default, most permissive)
+    - all: Keep contigs matching all HMMs (most restrictive) 
+    - threshold: Keep contigs matching at least --min-hmm-hits HMMs
     
     Examples:
         phu screen -i contigs.fa *.hmm
         phu screen -i contigs.fa file1.hmm file2.hmm file3.hmm
-        phu screen -i contigs.fa path/to/*.hmm
+        phu screen -i contigs.fa path/to/*.hmm --combine-mode all
+        phu screen -i contigs.fa *.hmm --combine-mode threshold --min-hmm-hits 2
+        phu screen -i contigs.fa *.hmm --save-target-proteins
     """
     # Remove duplicates while preserving order
     seen = set()
@@ -220,6 +231,7 @@ def screen(
         keep_domtbl=keep_domtbl,
         combine_mode=combine_mode,
         min_hmm_hits=min_hmm_hits,
+        save_target_proteins=save_target_proteins,  # New parameter
     )
     
     try:

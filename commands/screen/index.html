@@ -18,7 +18,7 @@
     
     
       
-        <title>Screen Command - phu</title>
+        <title>screen - phu</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#screen-command" class="md-skip">
+        <a href="#screen" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Screen Command
+              screen
             
           </span>
         </div>
@@ -340,7 +340,7 @@
   
   
   <span class="md-ellipsis">
-    Screen Command
+    screen
     
   </span>
   
@@ -353,7 +353,7 @@
   
   
   <span class="md-ellipsis">
-    Screen Command
+    screen
     
   </span>
   
@@ -421,9 +421,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#common-options" class="md-nav__link">
+  <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
-      Common Options
+      Command Options
     </span>
   </a>
   
@@ -544,9 +544,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#common-options" class="md-nav__link">
+  <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
-      Common Options
+      Command Options
     </span>
   </a>
   
@@ -598,7 +598,7 @@
   
 
 
-<h1 id="screen-command">Screen Command<a class="headerlink" href="#screen-command" title="Permanent link">&para;</a></h1>
+<h1 id="screen">screen<a class="headerlink" href="#screen" title="Permanent link">&para;</a></h1>
 <h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
 <p>The <code>phu screen</code> command helps you find DNA contigs that contain specific protein families. It works by predicting all the proteins in your contigs, then searching those proteins against Hidden Markov Model (HMM) profiles to find matches. Think of it as a molecular search engine for finding contigs with the proteins you care about.</p>
 <p>This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways.</p>
@@ -621,7 +621,93 @@
 <p>The main output is <code>screened_contigs.fasta</code>, which contains all the contigs that passed your filtering criteria. You'll also get <code>kept_contigs.txt</code> with just the names of these contigs.</p>
 <p>If you used multiple HMMs, pay attention to how the combine mode affects your results. In "any" mode, you might get different numbers of proteins for each HMM because some contigs only matched some of the HMMs. In "all" mode, you'll get exactly the same number of proteins for each HMM because every kept contig had to match all of them.</p>
 <p>When you use the <code>--save-target-proteins</code> option, you'll get a folder called <code>target_proteins</code> with separate files for each HMM. These contain only the proteins from contigs that made it into your final results, not all the proteins that matched during the search.</p>
-<h2 id="common-options">Common Options<a class="headerlink" href="#common-options" title="Permanent link">&para;</a></h2>
+<h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>HMMS...<span class="w">                                             </span>
+
+<span class="w"> </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>protein<span class="w"> </span>families<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">               </span>
+
+<span class="w"> </span>Supports<span class="w"> </span>multiple<span class="w"> </span>HMM<span class="w"> </span>files<span class="w"> </span>with<span class="w"> </span>different<span class="w"> </span>combination<span class="w"> </span>modes:<span class="w">                   </span>
+<span class="w"> </span>-<span class="w"> </span>any:<span class="w"> </span>Keep<span class="w"> </span>contigs<span class="w"> </span>matching<span class="w"> </span>any<span class="w"> </span>HMM<span class="w"> </span><span class="o">(</span>default,<span class="w"> </span>most<span class="w"> </span>permissive<span class="o">)</span><span class="w">                 </span>
+<span class="w"> </span>-<span class="w"> </span>all:<span class="w"> </span>Keep<span class="w"> </span>contigs<span class="w"> </span>matching<span class="w"> </span>all<span class="w"> </span>HMMs<span class="w"> </span><span class="o">(</span>most<span class="w"> </span>restrictive<span class="o">)</span><span class="w">                        </span>
+<span class="w"> </span>-<span class="w"> </span>threshold:<span class="w"> </span>Keep<span class="w"> </span>contigs<span class="w"> </span>matching<span class="w"> </span>at<span class="w"> </span>least<span class="w"> </span>--min-hmm-hits<span class="w"> </span>HMMs<span class="w">                 </span>
+
+<span class="w"> </span>Examples:<span class="w">                                                                       </span>
+<span class="w">     </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>*.hmm<span class="w">                                              </span>
+<span class="w">     </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>file1.hmm<span class="w"> </span>file2.hmm<span class="w"> </span>file3.hmm<span class="w">                      </span>
+<span class="w">     </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>path/to/*.hmm
+<span class="w">     </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>threshold<span class="w"> </span>--min-hmm-hits<span class="w"> </span><span class="m">2</span><span class="w"> </span>*.hmm
+<span class="w">     </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-proteins<span class="w"> </span>*.hmm<span class="w"> </span>
+
+╭─<span class="w"> </span>Arguments<span class="w"> </span>───────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>*<span class="w">    </span>hmms<span class="w">      </span>HMMS...<span class="w">  </span>HMM<span class="w"> </span>files<span class="w"> </span><span class="o">(</span>supports<span class="w"> </span>wildcards<span class="w"> </span>like<span class="w"> </span>*.hmm<span class="o">)</span><span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">  </span>│
+╰───────────────────────────────────────────────────────────────────────────────╯
+╭─<span class="w"> </span>Options<span class="w"> </span>─────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>*<span class="w">  </span>--input-contigs<span class="w">  </span>-i<span class="w">                     </span>PATH<span class="w">              </span>Input<span class="w"> </span>contigs<span class="w">    </span>│
+│<span class="w">                                                              </span>FASTA<span class="w">            </span>│
+│<span class="w">                                                              </span><span class="o">[</span>required<span class="o">]</span><span class="w">       </span>│
+│<span class="w">    </span>--outdir<span class="w">         </span>-o<span class="w">                     </span>PATH<span class="w">              </span>Output<span class="w"> </span>directory<span class="w"> </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w">        </span>│
+│<span class="w">                                                              </span>phu-screen<span class="o">]</span><span class="w">      </span>│
+│<span class="w">    </span>--mode<span class="w">                                  </span>TEXT<span class="w">              </span>pyrodigal<span class="w"> </span>mode:<span class="w">  </span>│
+│<span class="w">                                                              </span>meta<span class="p">|</span>single<span class="w">      </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span>meta<span class="o">]</span><span class="w">  </span>│
+│<span class="w">    </span>--threads<span class="w">        </span>-t<span class="w">                     </span>INTEGER<span class="w"> </span>RANGE<span class="w">     </span>Threads<span class="w"> </span><span class="k">for</span><span class="w"> </span>both<span class="w"> </span>│
+│<span class="w">                                            </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">            </span>pyrodigal<span class="w"> </span>and<span class="w">    </span>│
+│<span class="w">                                                              </span>hmmsearch<span class="w">        </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">     </span>│
+│<span class="w">    </span>--min-bitscore<span class="w">                          </span>FLOAT<span class="w">             </span>Minimum<span class="w"> </span>bitscore<span class="w"> </span>│
+│<span class="w">                                                              </span>to<span class="w"> </span>keep<span class="w"> </span>a<span class="w"> </span>domain<span class="w"> </span>│
+│<span class="w">                                                              </span>hit<span class="w">              </span>│
+│<span class="w">    </span>--max-evalue<span class="w">                            </span>FLOAT<span class="w">             </span>Maximum<span class="w">          </span>│
+│<span class="w">                                                              </span>independent<span class="w">      </span>│
+│<span class="w">                                                              </span>E-value<span class="w"> </span>to<span class="w"> </span>keep<span class="w">  </span>│
+│<span class="w">                                                              </span>a<span class="w"> </span>domain<span class="w"> </span>hit<span class="w">     </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span>1e-05<span class="o">]</span><span class="w"> </span>│
+│<span class="w">    </span>--top-per-cont…<span class="w">                         </span>INTEGER<span class="w">           </span>Keep<span class="w"> </span>top-N<span class="w"> </span>hits<span class="w">  </span>│
+│<span class="w">                                                              </span>per<span class="w"> </span>contig<span class="w"> </span><span class="o">(</span>by<span class="w">   </span>│
+│<span class="w">                                                              </span>bitscore<span class="o">)</span><span class="w">        </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">     </span>│
+│<span class="w">    </span>--min-gene-len<span class="w">                          </span>INTEGER<span class="w">           </span>Minimum<span class="w"> </span>gene<span class="w">     </span>│
+│<span class="w">                                                              </span>length<span class="w"> </span><span class="k">for</span><span class="w">       </span>│
+│<span class="w">                                                              </span>pyrodigal<span class="w"> </span><span class="o">(</span>nt<span class="o">)</span><span class="w">   </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span><span class="m">90</span><span class="o">]</span><span class="w">    </span>│
+│<span class="w">    </span>--ttable<span class="w">                                </span>INTEGER<span class="w">           </span>NCBI<span class="w"> </span>translation<span class="w"> </span>│
+│<span class="w">                                                              </span>table<span class="w"> </span><span class="k">for</span><span class="w"> </span>coding<span class="w"> </span>│
+│<span class="w">                                                              </span>sequences<span class="w">        </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span><span class="m">11</span><span class="o">]</span><span class="w">    </span>│
+│<span class="w">    </span>--keep-proteins<span class="w">      </span>--no-keep-prot…<span class="w">                      </span>Keep<span class="w"> </span>the<span class="w"> </span>protein<span class="w"> </span>│
+│<span class="w">                                                              </span>FASTA<span class="w"> </span>used<span class="w"> </span><span class="k">for</span><span class="w">   </span>│
+│<span class="w">                                                              </span>searching<span class="w">        </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w">        </span>│
+│<span class="w">                                                              </span>no-keep-protein…<span class="w"> </span>│
+│<span class="w">    </span>--keep-domtbl<span class="w">        </span>--no-keep-domt…<span class="w">                      </span>Keep<span class="w"> </span>raw<span class="w">         </span>│
+│<span class="w">                                                              </span>domtblout<span class="w"> </span>from<span class="w">   </span>│
+│<span class="w">                                                              </span>hmmsearch<span class="w">        </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w">        </span>│
+│<span class="w">                                                              </span>keep-domtbl<span class="o">]</span><span class="w">     </span>│
+│<span class="w">    </span>--combine-mode<span class="w">                          </span>TEXT<span class="w">              </span>How<span class="w"> </span>to<span class="w"> </span>combine<span class="w">   </span>│
+│<span class="w">                                                              </span>hits<span class="w"> </span>from<span class="w">        </span>│
+│<span class="w">                                                              </span>multiple<span class="w"> </span>HMMs:<span class="w">   </span>│
+│<span class="w">                                                              </span>any<span class="p">|</span>all<span class="p">|</span>thresho…<span class="w"> </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span>any<span class="o">]</span><span class="w">   </span>│
+│<span class="w">    </span>--min-hmm-hits<span class="w">                          </span>INTEGER<span class="w">           </span>Minimum<span class="w"> </span>number<span class="w">   </span>│
+│<span class="w">                                                              </span>of<span class="w"> </span>HMMs<span class="w"> </span>that<span class="w">     </span>│
+│<span class="w">                                                              </span>must<span class="w"> </span>hit<span class="w"> </span>a<span class="w">       </span>│
+│<span class="w">                                                              </span>contig<span class="w"> </span><span class="o">(</span><span class="k">for</span><span class="w">      </span>│
+│<span class="w">                                                              </span>threshold<span class="w"> </span>mode<span class="o">)</span><span class="w">  </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">     </span>│
+│<span class="w">    </span>--save-target-…<span class="w">      </span>--no-save-targ…<span class="w">                      </span>Save<span class="w"> </span>matched<span class="w">     </span>│
+│<span class="w">                                                              </span>proteins<span class="w"> </span>per<span class="w"> </span>HMM<span class="w"> </span>│
+│<span class="w">                                                              </span>model<span class="w"> </span><span class="k">in</span><span class="w">         </span>│
+│<span class="w">                                                              </span>target_proteins/<span class="w"> </span>│
+│<span class="w">                                                              </span>subfolder<span class="w">        </span>│
+│<span class="w">                                                              </span><span class="o">[</span>default:<span class="w">        </span>│
+│<span class="w">                                                              </span>no-save-target-…<span class="w"> </span>│
+│<span class="w">    </span>--help<span class="w">           </span>-h<span class="w">                                       </span>Show<span class="w"> </span>this<span class="w">        </span>│
+│<span class="w">                                                              </span>message<span class="w"> </span>and<span class="w">      </span>│
+│<span class="w">                                                              </span>exit.<span class="w">            </span>│
+╰───────────────────────────────────────────────────────────────────────────────╯
+</code></pre></div>
 <p>Use <code>--outdir</code> to change where the results are saved. The default is a folder called <code>phu-screen</code> in your current directory.</p>
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
 <p>Use <code>--max-evalue</code> to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.</p>

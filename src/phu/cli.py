@@ -197,9 +197,9 @@ def screen(
     Examples:
         phu screen -i contigs.fa *.hmm
         phu screen -i contigs.fa file1.hmm file2.hmm file3.hmm
-        phu screen -i contigs.fa path/to/*.hmm --combine-mode all
-        phu screen -i contigs.fa *.hmm --combine-mode threshold --min-hmm-hits 2
-        phu screen -i contigs.fa *.hmm --save-target-proteins
+        phu screen -i contigs.fa --combine-mode all path/to/*.hmm 
+        phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 2 *.hmm
+        phu screen -i contigs.fa --save-target-proteins *.hmm
     """
     # Remove duplicates while preserving order
     seen = set()

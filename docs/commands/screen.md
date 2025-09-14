@@ -1,4 +1,4 @@
-# Screen Command
+# screen
 
 ## What does it do?
 
@@ -44,7 +44,98 @@ If you used multiple HMMs, pay attention to how the combine mode affects your re
 
 When you use the `--save-target-proteins` option, you'll get a folder called `target_proteins` with separate files for each HMM. These contain only the proteins from contigs that made it into your final results, not all the proteins that matched during the search.
 
-## Common Options
+## Command Options
+
+
+```bash
+                                                                                 
+ Usage: phu screen [OPTIONS] HMMS...                                             
+                                                                                 
+ Screen contigs for protein families using HMMER on predicted CDS.               
+                                                                                 
+ Supports multiple HMM files with different combination modes:                   
+ - any: Keep contigs matching any HMM (default, most permissive)                 
+ - all: Keep contigs matching all HMMs (most restrictive)                        
+ - threshold: Keep contigs matching at least --min-hmm-hits HMMs                 
+                                                                                 
+ Examples:                                                                       
+     phu screen -i contigs.fa *.hmm                                              
+     phu screen -i contigs.fa file1.hmm file2.hmm file3.hmm                      
+     phu screen -i contigs.fa --combine-mode all path/to/*.hmm
+     phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 2 *.hmm
+     phu screen -i contigs.fa --save-target-proteins *.hmm 
+                                                                                 
+╭─ Arguments ───────────────────────────────────────────────────────────────────╮
+│ *    hmms      HMMS...  HMM files (supports wildcards like *.hmm) [required]  │
+╰───────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ─────────────────────────────────────────────────────────────────────╮
+│ *  --input-contigs  -i                     PATH              Input contigs    │
+│                                                              FASTA            │
+│                                                              [required]       │
+│    --outdir         -o                     PATH              Output directory │
+│                                                              [default:        │
+│                                                              phu-screen]      │
+│    --mode                                  TEXT              pyrodigal mode:  │
+│                                                              meta|single      │
+│                                                              [default: meta]  │
+│    --threads        -t                     INTEGER RANGE     Threads for both │
+│                                            [x>=1]            pyrodigal and    │
+│                                                              hmmsearch        │
+│                                                              [default: 1]     │
+│    --min-bitscore                          FLOAT             Minimum bitscore │
+│                                                              to keep a domain │
+│                                                              hit              │
+│    --max-evalue                            FLOAT             Maximum          │
+│                                                              independent      │
+│                                                              E-value to keep  │
+│                                                              a domain hit     │
+│                                                              [default: 1e-05] │
+│    --top-per-cont…                         INTEGER           Keep top-N hits  │
+│                                                              per contig (by   │
+│                                                              bitscore)        │
+│                                                              [default: 1]     │
+│    --min-gene-len                          INTEGER           Minimum gene     │
+│                                                              length for       │
+│                                                              pyrodigal (nt)   │
+│                                                              [default: 90]    │
+│    --ttable                                INTEGER           NCBI translation │
+│                                                              table for coding │
+│                                                              sequences        │
+│                                                              [default: 11]    │
+│    --keep-proteins      --no-keep-prot…                      Keep the protein │
+│                                                              FASTA used for   │
+│                                                              searching        │
+│                                                              [default:        │
+│                                                              no-keep-protein… │
+│    --keep-domtbl        --no-keep-domt…                      Keep raw         │
+│                                                              domtblout from   │
+│                                                              hmmsearch        │
+│                                                              [default:        │
+│                                                              keep-domtbl]     │
+│    --combine-mode                          TEXT              How to combine   │
+│                                                              hits from        │
+│                                                              multiple HMMs:   │
+│                                                              any|all|thresho… │
+│                                                              [default: any]   │
+│    --min-hmm-hits                          INTEGER           Minimum number   │
+│                                                              of HMMs that     │
+│                                                              must hit a       │
+│                                                              contig (for      │
+│                                                              threshold mode)  │
+│                                                              [default: 1]     │
+│    --save-target-…      --no-save-targ…                      Save matched     │
+│                                                              proteins per HMM │
+│                                                              model in         │
+│                                                              target_proteins/ │
+│                                                              subfolder        │
+│                                                              [default:        │
+│                                                              no-save-target-… │
+│    --help           -h                                       Show this        │
+│                                                              message and      │
+│                                                              exit.            │
+╰───────────────────────────────────────────────────────────────────────────────╯
+
+```
 
 Use `--outdir` to change where the results are saved. The default is a folder called `phu-screen` in your current directory.
 

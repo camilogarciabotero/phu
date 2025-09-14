@@ -14,13 +14,13 @@ theme:
     highlight_theme: "github"
     palette:
       - scheme: default
-        primary: blue grey
+        primary: blue-grey
         accent: teal
         toggle:
           icon: material/weather-night
           name: Switch to dark mode
       - scheme: slate
-        primary: blue grey
+        primary: blue-grey
         accent: amber
         toggle:
           icon: material/white-balance-sunny

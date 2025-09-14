@@ -335,6 +335,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#screen-protein-family-screening" class="md-nav__link">
+    <span class="md-ellipsis">
+      screen - Protein Family Screening
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cluster-sequence-clustering" class="md-nav__link">
     <span class="md-ellipsis">
       cluster - Sequence Clustering
@@ -609,6 +618,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#screen-protein-family-screening" class="md-nav__link">
+    <span class="md-ellipsis">
+      screen - Protein Family Screening
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cluster-sequence-clustering" class="md-nav__link">
     <span class="md-ellipsis">
       cluster - Sequence Clustering
@@ -718,11 +736,18 @@ mamba<span class="w"> </span>activate<span class="w"> </span>phu
 │<span class="w"> </span>--help<span class="w">  </span>-h<span class="w">        </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                              </span>│
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─<span class="w"> </span>Commands<span class="w"> </span>─────────────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>screen<span class="w">          </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>a<span class="w"> </span>protein<span class="w"> </span>family<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">          </span>│
 │<span class="w"> </span>cluster<span class="w">         </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">&#39;vclust&#39;</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">     </span>│
 │<span class="w"> </span>simplify-taxa<span class="w">   </span>Simplify<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>prediction<span class="w"> </span>columns<span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>lineage<span class="w"> </span>codes.<span class="w">  </span>│
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="available-commands">Available Commands<a class="headerlink" href="#available-commands" title="Permanent link">&para;</a></h2>
+<h3 id="screen-protein-family-screening"><code>screen</code> - Protein Family Screening<a class="headerlink" href="#screen-protein-family-screening" title="Permanent link">&para;</a></h3>
+<p>Screen DNA contigs for specific protein families using HMMER on predicted coding sequences. This is particularly useful for identifying viral contigs in metagenomic assemblies or filtering assemblies based on protein content.</p>
+<p><strong>Example:</strong>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>viral_capsid.hmm<span class="w"> </span>portal.hmm<span class="w"> </span>--combine-mode<span class="w"> </span>all
+</code></pre></div></p>
+<p><a href="commands/screen/">Learn more about protein screening →</a></p>
 <h3 id="cluster-sequence-clustering"><code>cluster</code> - Sequence Clustering<a class="headerlink" href="#cluster-sequence-clustering" title="Permanent link">&para;</a></h3>
 <p>Cluster viral sequences into operational taxonomic units with three specialized modes:</p>
 <ul>
@@ -742,6 +767,8 @@ mamba<span class="w"> </span>activate<span class="w"> </span>phu
 <p><a href="commands/simplify-taxa/">Learn more about taxonomy simplification →</a></p>
 <h2 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
 <ul>
+<li><strong>Viral Identification</strong>: Screen metagenomic assemblies for viral contigs using protein markers</li>
+<li><strong>Multi-marker Analysis</strong>: Find contigs with complete sets of viral proteins (e.g., capsid, portal, primase, terminase)</li>
 <li><strong>Viral Metagenomics</strong>: Dereplicate and cluster viral contigs from metagenomic assemblies</li>
 <li><strong>Phage Genomics</strong>: Organize phage genomes into taxonomic groups</li>
 <li><strong>Comparative Analysis</strong>: Prepare datasets for phylogenetic and comparative genomic studies</li>
@@ -767,6 +794,30 @@ GitHub repository: https://github.com/camilogarciabotero/phu
 <p><a href="https://bioinf.shenwei.me/seqkit/">seqkit</a>: A toolkit for FASTA/Q file manipulation.</p>
 <blockquote>
 <p>Wei Shen*, Botond Sipos, and Liuyang Zhao. 2024. SeqKit2: A Swiss Army Knife for Sequence and Alignment Processing. iMeta e191. doi:10.1002/imt2.191.</p>
+</blockquote>
+</li>
+<li>
+<p><a href="https://github.com/hyattpd/prodigal">Prodigal</a>: A gene prediction tool for prokaryotic genomes.</p>
+<blockquote>
+<p>Hyatt, D., Chen, G. L., LoCascio, P. F., Land, M. L., Larimer, F. W., &amp; Hauser, L. J. (2010). Prodigal: prokaryotic gene recognition and translation initiation site identification. BMC bioinformatics, 11(1), 119. https://doi.org/10.1186/1471-2105-11-119</p>
+</blockquote>
+</li>
+<li>
+<p><a href="https://pyrodigal.readthedocs.io/en/stable/">pyrodigal</a>: A tool for gene prediction in prokaryotic genomes.</p>
+<blockquote>
+<p>Larralde, M., (2022). Pyrodigal: Python bindings and interface to Prodigal, an efficient method for gene prediction in prokaryotes. Journal of Open Source Software, 7(72), 4296, https://doi.org/10.21105/joss.04296</p>
+</blockquote>
+</li>
+<li>
+<p><a href="http://hmmer.org/">HMMER</a>: A suite of tools for sequence analysis using profile hidden Markov models.</p>
+<blockquote>
+<p>Eddy, S. R. (2011). Accelerated Profile HMM Searches. PLoS Computational Biology, 7(10), e1002195. https://doi.org/10.1371/journal.pcbi.1002195</p>
+</blockquote>
+</li>
+<li>
+<p><a href="https://pyhmmer.readthedocs.io/en/latest/">pyHMMER</a>: Python bindings for HMMER.</p>
+<blockquote>
+<p>Larralde, M., &amp; Zeller, G. (2023). PyHMMER: a Python library binding to HMMER for efficient sequence analysis. Bioinformatics, 39(5). https://doi.org/10.1093/bioinformatics/btad214</p>
 </blockquote>
 </li>
 </ul>

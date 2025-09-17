@@ -42,6 +42,7 @@ class ScreenConfig:
     combine_mode: str = "any"  # New: how to combine hits from multiple HMMs
     min_hmm_hits: int = 1  # New: minimum number of HMMs that must hit a contig
     save_target_proteins: bool = False  # New: save matched proteins per HMM
+    hmm_mode: str = "pure"  # New: "pure" for single models, "mixed" for pressed/concatenated HMMs
     
     def __post_init__(self):
         """Validate configuration parameters."""
@@ -55,6 +56,8 @@ class ScreenConfig:
             raise ValueError("At least one HMM file must be provided")
         if self.combine_mode not in {"any", "all", "threshold"}:
             raise ValueError("combine_mode must be 'any', 'all', or 'threshold'")
+        if self.hmm_mode not in {"pure", "mixed"}:
+            raise ValueError("hmm_mode must be 'pure' or 'mixed'")
     
     def plan(self) -> "ScreenPlan":
         """Create execution plan from configuration."""
@@ -65,11 +68,9 @@ class ScreenConfig:
         
         # Create domtbl paths for each HMM
         domtbl_paths = {}
-        target_protein_paths = {}
         for hmm in self.hmms:
             hmm_name = hmm.stem  # filename without extension
             domtbl_paths[hmm_name] = self.outdir / f"hits_{hmm_name}.domtblout"
-            target_protein_paths[hmm_name] = self.outdir / "target_proteins" / f"{hmm_name}_proteins.mfa"
         
         return ScreenPlan(
             hmmer_bin="",
@@ -89,9 +90,9 @@ class ScreenConfig:
             combine_mode=self.combine_mode,
             min_hmm_hits=self.min_hmm_hits,
             save_target_proteins=self.save_target_proteins,
+            hmm_mode=self.hmm_mode,
             proteins_fa=self.outdir / "proteins.faa",
             domtbl_paths=domtbl_paths,
-            target_protein_paths=target_protein_paths,  # New
             kept_ids=self.outdir / "kept_contigs.txt",
             out_contigs=self.outdir / "screened_contigs.fasta",
         )
@@ -117,9 +118,9 @@ class ScreenPlan:
     combine_mode: str
     min_hmm_hits: int
     save_target_proteins: bool  # New
+    hmm_mode: str  # New
     proteins_fa: Path
     domtbl_paths: Dict[str, Path]  # Changed from domtbl: Path
-    target_protein_paths: Dict[str, Path]  # New
     kept_ids: Path
     out_contigs: Path
 
@@ -154,10 +155,19 @@ class Hit:
     bitscore: float
     evalue: float
 
-def _parse_domtblout(domtbl_path: Path, hmm_name: str) -> Iterable[Hit]:
+def _parse_domtblout(domtbl_path: Path, hmm_file_name: str, hmm_mode: str) -> Iterable[Hit]:
     """
     Parse HMMER --domtblout (hmmsearch). Returns domain-level hits.
     Format spec: https://hmmer-web-docs.readthedocs.io/en/latest/output-files/domtab.html
+    
+    Args:
+        hmm_mode: "pure" for single-model HMMs, "mixed" for concatenated HMMs
+        
+    Filtering logic:
+    - Individual hits are filtered by bitscore/evalue thresholds regardless of hmm_mode
+    - Model counting for combine_mode depends on hmm_mode:
+      * "pure": each file = 1 model, use filename as identifier
+      * "mixed": each target_name = 1 model, use actual HMM name as identifier
     """
     with domtbl_path.open() as f:
         for line in f:
@@ -165,8 +175,8 @@ def _parse_domtblout(domtbl_path: Path, hmm_name: str) -> Iterable[Hit]:
                 continue
             cols = re.split(r"\s+", line.strip())
             try:
-                target_name = cols[0]     # HMM/target name
-                query_name  = cols[3]     # our protein sequence ID
+                target_name = cols[0]     # our protein sequence ID
+                query_name  = cols[3]     # HMM model name
                 i_evalue    = float(cols[12])  # independent E-value
                 bits        = float(cols[13])
             except Exception:
@@ -176,15 +186,25 @@ def _parse_domtblout(domtbl_path: Path, hmm_name: str) -> Iterable[Hit]:
                     bits = float(cols[12])
                 except Exception:
                     continue
-            # Our protein IDs encode contig|gene index; extract original contig ID
-            prot_id = target_name
-            # Split only on the first "|" to handle contig names that might contain "|"
+            
+            # Extract contig ID from protein sequence ID (query_name is the protein ID)
+            prot_id = target_name  # This should be like "contig123|gene1"
             if "|" in prot_id:
                 contig_id = prot_id.split("|", 1)[0]
             else:
                 contig_id = prot_id
             
-            yield Hit(contig=contig_id, prot_id=prot_id, target=f"{hmm_name}:{target_name}", bitscore=bits, evalue=i_evalue)
+            # Handle model naming based on HMM mode
+            if hmm_mode == "pure":
+                # For pure HMMs, use filename as the model identifier for consistency
+                # This ensures each file is treated as a separate "model" for combine logic
+                model_id = hmm_file_name
+            else:  # mixed
+                # For mixed/pressed HMMs, use the actual model name from the file
+                # This allows proper identification of individual models within the file
+                model_id = target_name
+            
+            yield Hit(contig=contig_id, prot_id=prot_id, target=model_id, bitscore=bits, evalue=i_evalue)
 
 
 # ---------- Core pipeline ----------
@@ -310,17 +330,39 @@ def _choose_best_contigs(
     top_per_contig: int = 1,
     combine_mode: str = "any",
     min_hmm_hits: int = 1,
-    total_hmms: int = 1,
+    total_hmm_models: int = 1,
 ) -> Tuple[List[Hit], List[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
     For multiple HMMs, apply combination logic.
+    
+    Filtering criteria with hmm_mode:
+    
+    1. Individual hit filtering (same for both modes):
+       - min_bitscore: minimum score threshold per hit
+       - max_evalue: maximum E-value threshold per hit
+    
+    2. Model counting for combine logic (depends on hmm_mode):
+       - "pure" mode: each HMM file = 1 model
+         * "any": contig needs hits from ≥1 files
+         * "all": contig needs hits from ALL files  
+         * "threshold": contig needs hits from ≥min_hmm_hits files
+       
+       - "mixed" mode: each unique target name = 1 model
+         * "any": contig needs hits from ≥1 unique models
+         * "all": contig needs hits from ALL unique models found across all files
+         * "threshold": contig needs hits from ≥min_hmm_hits unique models
+    
+    3. Hit selection per contig:
+       - For "any" and "threshold": top_per_contig best hits overall
+       - For "all": exactly 1 best hit per model (ensures balanced output)
+    
     Returns (kept_hits, list_of_contig_ids).
     """
     from collections import defaultdict
     per_contig: Dict[str, List[Hit]] = defaultdict(list)
 
-    # Filter hits by thresholds
+    # Filter hits by thresholds (same for both hmm modes)
     for h in hits:
         if min_bitscore is not None and h.bitscore < min_bitscore:
             continue
@@ -328,13 +370,13 @@ def _choose_best_contigs(
             continue
         per_contig[h.contig].append(h)
 
-    # Apply combination logic
+    # Apply combination logic (behavior depends on hmm_mode through model_id assignment)
     kept: List[Hit] = []
     kept_contigs: List[str] = []
     
     for contig, contig_hits in per_contig.items():
         if combine_mode == "any":
-            # Keep contigs that have hits from any HMM
+            # Keep contigs that have hits from any model
             if contig_hits:
                 contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
                 slice_ = contig_hits[:max(1, top_per_contig)]
@@ -342,26 +384,26 @@ def _choose_best_contigs(
                 kept_contigs.append(contig)
         
         elif combine_mode == "all":
-            # Keep contigs that have hits from ALL HMMs
-            hmm_names = set(hit.target.split(':', 1)[0] for hit in contig_hits)
-            if len(hmm_names) == total_hmms:  # Must have hits from ALL HMMs
-                # For "all" mode, ensure we get exactly one hit per HMM per contig
-                hits_per_hmm = defaultdict(list)
+            # Keep contigs that have hits from ALL models
+            model_names = set(hit.target for hit in contig_hits)
+            if len(model_names) == total_hmm_models:  # Must have hits from ALL models
+                # For "all" mode, ensure we get exactly one hit per model per contig
+                hits_per_model = defaultdict(list)
                 for hit in contig_hits:
-                    hmm_name = hit.target.split(':', 1)[0]
-                    hits_per_hmm[hmm_name].append(hit)
+                    model_name = hit.target
+                    hits_per_model[model_name].append(hit)
                 
-                # Take the best hit for each HMM
-                for hmm_name, hmm_hits in hits_per_hmm.items():
-                    hmm_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
-                    kept.extend(hmm_hits[:1])  # Take only the best hit per HMM
+                # Take the best hit for each model (ensures balanced protein counts)
+                for model_name, model_hits in hits_per_model.items():
+                    model_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+                    kept.extend(model_hits[:1])  # Take only the best hit per model
                 
                 kept_contigs.append(contig)
         
         elif combine_mode == "threshold":
-            # Keep contigs that have hits from at least min_hmm_hits HMMs
-            hmm_names = set(hit.target.split(':', 1)[0] for hit in contig_hits)
-            if len(hmm_names) >= min_hmm_hits:
+            # Keep contigs that have hits from at least min_hmm_hits models
+            model_names = set(hit.target for hit in contig_hits)
+            if len(model_names) >= min_hmm_hits:
                 contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
                 slice_ = contig_hits[:max(1, top_per_contig)]
                 kept.extend(slice_)
@@ -391,41 +433,44 @@ def _seqkit_extract(
 
 def _extract_target_proteins(
     kept_hits: List[Hit],
-    kept_contig_ids: List[str],  # Add this parameter
+    kept_contig_ids: List[str],
     proteins_fa: Path,
-    target_protein_paths: Dict[str, Path],
+    outdir: Path,
+    hmm_mode: str,
     seqkit_bin: str = "seqkit",
 ) -> None:
     """
     Extract matched proteins per HMM model from the final kept contigs only.
     This ensures the proteins match those from contigs in screened_contigs.fasta
     and respects the combine_mode filtering.
+    
+    Protein extraction behavior:
+    - "pure" mode: proteins grouped by HMM filename (one group per file)
+    - "mixed" mode: proteins grouped by actual model names (multiple groups per file possible)
     """
     from collections import defaultdict
     
     # Create a set of kept contig IDs for fast lookup
     kept_contig_set = set(kept_contig_ids)
     
-    # Group protein IDs by HMM model - only from kept hits AND kept contigs
-    proteins_per_hmm: Dict[str, List[str]] = defaultdict(list)
+    # Group protein IDs by model - only from kept hits AND kept contigs
+    proteins_per_model: Dict[str, List[str]] = defaultdict(list)
     
     for hit in kept_hits:
         # Only include proteins from contigs that actually made it to the final output
         if hit.contig in kept_contig_set:
-            hmm_name = hit.target.split(':', 1)[0]  # Extract HMM name from "hmm_name:target_name"
-            proteins_per_hmm[hmm_name].append(hit.prot_id)
+            model_id = hit.target
+            proteins_per_model[model_id].append(hit.prot_id)
     
     # Create target_proteins directory
-    if target_protein_paths:
-        target_proteins_dir = next(iter(target_protein_paths.values())).parent
-        target_proteins_dir.mkdir(parents=True, exist_ok=True)
+    target_proteins_dir = outdir / "target_proteins"
+    target_proteins_dir.mkdir(parents=True, exist_ok=True)
     
-    # Extract proteins for each HMM
-    for hmm_name, protein_ids in proteins_per_hmm.items():
-        if hmm_name not in target_protein_paths:
-            continue
-            
-        output_path = target_protein_paths[hmm_name]
+    # Extract proteins for each model
+    for model_id, protein_ids in proteins_per_model.items():
+        # Create a safe filename from the model identifier
+        safe_model_name = re.sub(r'[^\w\-_.]', '_', model_id)
+        output_path = target_proteins_dir / f"{safe_model_name}_proteins.mfa"
         
         if not protein_ids:
             # Write empty file
@@ -450,9 +495,9 @@ def _extract_target_proteins(
             result = subprocess.run(cmd, stdout=out, text=True)
             
         if result.returncode != 0:
-            print(f"Warning: seqkit failed to extract proteins for {hmm_name}")
+            print(f"Warning: seqkit failed to extract proteins for {model_id}")
         else:
-            print(f"    Extracted {len(unique_protein_ids)} proteins for {hmm_name} (from screened contigs)")
+            print(f"    Extracted {len(unique_protein_ids)} proteins for {model_id} (from screened contigs)")
             
         # Cleanup temporary file
         tmp_ids_file.unlink()
@@ -505,12 +550,13 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             plan.proteins_fa.unlink()
         return plan
     
-    print(f"Running hmmsearch for {len(plan.hmms)} HMM(s)…")
+    print(f"Running hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…")
     all_hits = []
+    unique_model_ids = set()
     
     for hmm in plan.hmms:
-        hmm_name = hmm.stem
-        domtbl_path = plan.domtbl_paths[hmm_name]
+        hmm_file_name = hmm.stem
+        domtbl_path = plan.domtbl_paths[hmm_file_name]
         print(f"  Searching with {hmm.name}...")
         
         _hmmsearch(
@@ -522,9 +568,21 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             extra_args=["--noali"],
         )
         
-        hits = list(_parse_domtblout(domtbl_path, hmm_name))
+        hits = list(_parse_domtblout(domtbl_path, hmm_file_name, plan.hmm_mode))
         all_hits.extend(hits)
+        
+        # Collect unique model identifiers
+        for hit in hits:
+            unique_model_ids.add(hit.target)
+        
         print(f"    Found {len(hits)} hits")
+    
+    if plan.hmm_mode == "pure":
+        total_models = len(plan.hmms)  # Each file is one model
+        print(f"  Pure HMM mode: {total_models} models from {len(plan.hmms)} files")
+    else:
+        total_models = len(unique_model_ids)  # Count actual models found
+        print(f"  Mixed HMM mode: {total_models} unique models found from {len(plan.hmms)} files")
     
     print(f"Parsing results and selecting best hits per contig (combine_mode: {plan.combine_mode})…")
     kept_hits, contig_ids = _choose_best_contigs(
@@ -534,7 +592,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         top_per_contig=plan.top_per_contig,
         combine_mode=plan.combine_mode,
         min_hmm_hits=plan.min_hmm_hits,
-        total_hmms=len(plan.hmms),  # Pass the total number of HMMs
+        total_hmm_models=total_models,
     )
     
     plan.kept_ids.write_text("\n".join(contig_ids) + ("\n" if contig_ids else ""))
@@ -544,9 +602,10 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         print("Extracting matched proteins per HMM model from screened contigs…")
         _extract_target_proteins(
             kept_hits,
-            contig_ids,  # Pass the final list of kept contig IDs
+            contig_ids,
             plan.proteins_fa,
-            plan.target_protein_paths,
+            plan.outdir,  # Pass outdir for proper path construction
+            plan.hmm_mode,
             plan.seqkit_bin,
         )
     

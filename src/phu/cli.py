@@ -184,6 +184,9 @@ def screen(
     save_target_proteins: bool = typer.Option(
         False, "--save-target-proteins/--no-save-target-proteins", 
         help="Save matched proteins per HMM model in target_proteins/ subfolder"
+    ),
+    hmm_mode: str = typer.Option(
+        "pure", "--hmm-mode", help="HMM file type: 'pure' (one model per file) or 'mixed' (pressed/concatenated HMMs)"
     )
 ):
     """
@@ -194,11 +197,14 @@ def screen(
     - all: Keep contigs matching all HMMs (most restrictive) 
     - threshold: Keep contigs matching at least --min-hmm-hits HMMs
     
+    HMM modes:
+    - pure: Each HMM file contains one model (default, most common)
+    - mixed: HMM files contain multiple models (pressed/concatenated HMMs)
+    
     Examples:
         phu screen -i contigs.fa *.hmm
-        phu screen -i contigs.fa file1.hmm file2.hmm file3.hmm
-        phu screen -i contigs.fa --combine-mode all path/to/*.hmm 
-        phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 2 *.hmm
+        phu screen -i contigs.fa file1.hmm file2.hmm file3.hmm --combine-mode all
+        phu screen -i contigs.fa --hmm-mode mixed pfam_database.hmm --combine-mode threshold --min-hmm-hits 5
         phu screen -i contigs.fa --save-target-proteins *.hmm
     """
     # Remove duplicates while preserving order
@@ -231,7 +237,8 @@ def screen(
         keep_domtbl=keep_domtbl,
         combine_mode=combine_mode,
         min_hmm_hits=min_hmm_hits,
-        save_target_proteins=save_target_proteins,  # New parameter
+        save_target_proteins=save_target_proteins,
+        hmm_mode=hmm_mode,  # New parameter
     )
     
     try:

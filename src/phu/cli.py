@@ -13,7 +13,7 @@ app = typer.Typer(
     help="Phage utilities CLI",
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
-    add_completion=False,
+    add_completion=True,
     no_args_is_help=True
 )
 
@@ -36,7 +36,7 @@ def cluster(
         Path("clustered-contigs"), "--output-folder", help="Output directory"
     ),
     threads: int = typer.Option(
-        0, "--threads", min=0, help="0=all cores; otherwise N threads"
+        0, "--threads","-t", min=0, help="0=all cores; otherwise N threads"
     ),
     vclust_params: Optional[str] = typer.Option(
         None,
@@ -92,10 +92,10 @@ def cluster(
 @app.command("simplify-taxa")
 def simplify_taxa(
     input_file: Path = typer.Option(
-        ..., "--input", "-i", exists=True, readable=True, help="Input vContact final_assignments.csv"
+        ..., "--input-file", "-i", exists=True, readable=True, help="Input vContact final_assignments.csv"
     ),
     output_file: Path = typer.Option(
-        ..., "--output", "-o", help="Output path (.csv or .tsv)"
+        ..., "--output-file", "-o", help="Output file path (.csv or .tsv)"
     ),
     add_lineage: bool = typer.Option(
         False, "--add-lineage", help="Append compact_lineage column from deepest simplified rank"
@@ -145,8 +145,8 @@ def screen(
     hmms: List[Path] = typer.Argument(
         ..., help="HMM files (supports wildcards like *.hmm)"
     ),
-    outdir: Path = typer.Option(
-        Path("phu-screen"), "--outdir", "-o", help="Output directory"
+    output_folder: Path = typer.Option(
+        Path("phu-screen"), "--output-folder", "-o", help="Output directory"
     ),
     mode: str = typer.Option(
         "meta", "--mode", help="pyrodigal mode: meta|single"
@@ -225,7 +225,7 @@ def screen(
     cfg = ScreenConfig(
         input_contigs=input_contigs,
         hmms=hmm_paths,
-        outdir=outdir,
+        outdir=output_folder,
         mode=mode,
         threads=threads,
         min_bitscore=min_bitscore,

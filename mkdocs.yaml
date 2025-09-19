@@ -40,7 +40,6 @@ markdown_extensions:
       permalink: true
   - admonition
   - attr_list
-  - pymdownx.highlight
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

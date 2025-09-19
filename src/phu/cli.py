@@ -203,8 +203,8 @@ def screen(
     
     Examples:
         phu screen -i contigs.fa *.hmm
-        phu screen -i contigs.fa file1.hmm file2.hmm file3.hmm --combine-mode all
-        phu screen -i contigs.fa --hmm-mode mixed pfam_database.hmm --combine-mode threshold --min-hmm-hits 5
+        phu screen -i contigs.fa --combine-mode all file1.hmm file2.hmm file3.hmm
+        phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
         phu screen -i contigs.fa --save-target-proteins *.hmm
     """
     # Remove duplicates while preserving order

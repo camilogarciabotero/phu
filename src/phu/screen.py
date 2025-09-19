@@ -151,7 +151,7 @@ def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
 class Hit:
     contig: str
     prot_id: str
-    target: str
+    model: str
     bitscore: float
     evalue: float
 
@@ -200,11 +200,11 @@ def _parse_domtblout(domtbl_path: Path, hmm_file_name: str, hmm_mode: str) -> It
                 # This ensures each file is treated as a separate "model" for combine logic
                 model_id = hmm_file_name
             else:  # mixed
-                # For mixed/pressed HMMs, use the actual model name from the file
+                # For mixed/pressed HMMs, use the actual HMM model name (query_name)
                 # This allows proper identification of individual models within the file
-                model_id = target_name
+                model_id = query_name
             
-            yield Hit(contig=contig_id, prot_id=prot_id, target=model_id, bitscore=bits, evalue=i_evalue)
+            yield Hit(contig=contig_id, prot_id=prot_id, model=model_id, bitscore=bits, evalue=i_evalue)
 
 
 # ---------- Core pipeline ----------
@@ -376,21 +376,30 @@ def _choose_best_contigs(
     
     for contig, contig_hits in per_contig.items():
         if combine_mode == "any":
-            # Keep contigs that have hits from any model
+            # Keep contigs that have hits from any model.
+            # Instead of keeping only the single best hit across all models, keep
+            # the best hit per model/file. This recovers one (or up to
+            # top_per_contig) protein per model for contigs that matched
+            # multiple models.
             if contig_hits:
-                contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
-                slice_ = contig_hits[:max(1, top_per_contig)]
-                kept.extend(slice_)
+                hits_per_model = defaultdict(list)
+                for hit in contig_hits:
+                    hits_per_model[hit.model].append(hit)
+
+                # For each model, take the best hit(s) (by bitscore, then evalue)
+                for model_hits in hits_per_model.values():
+                    model_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+                    kept.extend(model_hits[:max(1, top_per_contig)])
                 kept_contigs.append(contig)
         
         elif combine_mode == "all":
             # Keep contigs that have hits from ALL models
-            model_names = set(hit.target for hit in contig_hits)
+            model_names = set(hit.model for hit in contig_hits)
             if len(model_names) == total_hmm_models:  # Must have hits from ALL models
                 # For "all" mode, ensure we get exactly one hit per model per contig
                 hits_per_model = defaultdict(list)
                 for hit in contig_hits:
-                    model_name = hit.target
+                    model_name = hit.model
                     hits_per_model[model_name].append(hit)
                 
                 # Take the best hit for each model (ensures balanced protein counts)
@@ -402,7 +411,7 @@ def _choose_best_contigs(
         
         elif combine_mode == "threshold":
             # Keep contigs that have hits from at least min_hmm_hits models
-            model_names = set(hit.target for hit in contig_hits)
+            model_names = set(hit.model for hit in contig_hits)
             if len(model_names) >= min_hmm_hits:
                 contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
                 slice_ = contig_hits[:max(1, top_per_contig)]
@@ -459,7 +468,7 @@ def _extract_target_proteins(
     for hit in kept_hits:
         # Only include proteins from contigs that actually made it to the final output
         if hit.contig in kept_contig_set:
-            model_id = hit.target
+            model_id = hit.model
             proteins_per_model[model_id].append(hit.prot_id)
     
     # Create target_proteins directory
@@ -573,7 +582,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         
         # Collect unique model identifiers
         for hit in hits:
-            unique_model_ids.add(hit.target)
+            unique_model_ids.add(hit.model)
         
         print(f"    Found {len(hits)} hits")
     

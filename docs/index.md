@@ -55,7 +55,7 @@ Screen DNA contigs for specific protein families using HMMER on predicted coding
 
 **Example:**
 ```bash
-phu screen --input-contigs assembly.fasta viral_capsid.hmm portal.hmm --combine-mode all
+ phu screen --input-contigs assembly.fasta --combine-mode all viral_capsid.hmm portal.hmm
 ```
 
 [Learn more about protein screening →](commands/screen.md)

@@ -1,15 +1,15 @@
 # simplify-taxa
 
-Simplify vContact taxonomy prediction columns into compact lineage codes for streamlined downstream analysis.
+Convert vContact taxonomy prediction strings into compact lineage codes for downstream analysis.
 
 ## Overview
 
-The `simplify-taxa` command processes vContact3 final assignment files, transforming verbose taxonomic prediction strings into compact, standardized lineage codes. This transformation makes taxonomic data more manageable for visualization, filtering, and analysis while preserving hierarchical relationships.
+`phu simplify-taxa` transforms verbose vContact3 `*_prediction` columns into compact, standardized lineage codes (e.g. `Caudoviricetes:NF2:NG1`) to make taxonomy easier to filter, visualize, and analyze.
 
-## Basic Usage
+## Synopsis
 
 ```bash
-phu simplify-taxa -i <INPUT_FILE> -o <OUTPUT_FILE> [options]
+phu simplify-taxa -i <INPUT_FILE> -o <OUTPUT_FILE> [OPTIONS]
 ```
 
 Input accepts CSV or TSV files from vContact3's `final_assignments.csv` output. Output format is automatically detected from file extension.
@@ -68,9 +68,9 @@ The transformation uses standardized rank codes:
      --add-lineage                                                           
                                                                              
 ╭─ Options ─────────────────────────────────────────────────────────────────╮
-│ *  --input           -i  PATH  Input vContact final_assignments.csv       │
+│ *  --input-file       -i  PATH  Input vContact final_assignments.csv       │
 │                              [required]                                   │
-│ *  --output          -o  PATH  Output path (.csv or .tsv) [required]      │
+│ *  --output-file      -o  PATH  Output path (.csv or .tsv) [required]      │
 │    --add-lineage         FLAG  Append compact_lineage column from deepest │
 │                              simplified rank                              │
 │    --lineage-col         TEXT  Name of the lineage column                 │
@@ -86,7 +86,7 @@ The transformation uses standardized rank codes:
 ### Basic Usage
 
 ```bash
-# Simplify taxonomy predictions in CSV format
+# Simplify CSV
 phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
 
 # Process TSV format with automatic detection
@@ -122,11 +122,18 @@ The `--add-lineage` option creates an additional column containing the deepest (
 8. `realm_prediction`
 
 ### Example Output
+
+
+
+<div align="center">
+
 | Sequence | genus_prediction | family_prediction | compact_lineage |
 |----------|------------------|-------------------|-----------------|
 | seq1 | Caudoviricetes:NF2:NG1 | Caudoviricetes:NF2 | Caudoviricetes:NF2:NG1 |
 | seq2 | - | Caudoviricetes:NF5 | Caudoviricetes:NF5 |
 | seq3 | - | - | - |
+
+</div>
 
 ## Special Cases Handled
 
@@ -183,6 +190,8 @@ phu simplify-taxa -i vcontact_output/final_assignments.csv \
 
 ## Comparison with Manual Processing
 
+<div align="center">
+
 | Task | phu simplify-taxa | Manual Processing |
 |------|-------------------|-------------------|
 | **Complexity** | Single command | Custom scripts/regex |
@@ -190,6 +199,8 @@ phu simplify-taxa -i vcontact_output/final_assignments.csv \
 | **Consistency** | Standardized format | Variable approaches |
 | **Speed** | Optimized pandas operations | Slower loops |
 | **Maintenance** | Built-in updates | Manual fixes needed |
+
+</div>
 
 ## Output File Structure
 

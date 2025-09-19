@@ -1,20 +1,20 @@
 # cluster
 
-Sequence clustering wrapper around external 'vclust' with three preconfigured modes for common viral genomics workflows.
+Sequence clustering wrapper around the external `vclust` tool with three preconfigured modes for common viral genomics workflows.
 
 ## Overview
 
-The `cluster` command provides a simplified interface to the powerful `vclust` tool, implementing the most common use cases from the [vclust wiki](https://github.com/refresh-bio/vclust/wiki/6-Use-cases) with sensible defaults while allowing advanced customization.
+The `phu cluster` command provides a simplified interface to `vclust`, implementing common use cases (see the [vclust wiki](https://github.com/refresh-bio/vclust/wiki/6-Use-cases)) while allowing advanced customization via `--vclust-params`.
 
-## Basic Usage
+## Synopsis
 
 ```bash
-phu cluster --mode <MODE> --input-contigs <FASTA_FILE> [options]
+phu cluster --mode <MODE> --input-contigs <FASTA_FILE> [OPTIONS]
 ```
 
-Output files include a TSV file with cluster assignments and a FASTA file with representative sequences.
+Outputs are placed in an output folder (default `clustered-contigs/`) and include cluster assignment TSVs and representative FASTA files, for example:
 
-```bash
+```
 clustered-contigs/
 ├── ani.ids.tsv
 ├── ani.tsv
@@ -24,26 +24,27 @@ clustered-contigs/
 └── species.tsv
 ```
 
-
 ## Modes
 
-### Modes
+- `dereplication` — remove redundant sequences while keeping representatives (cd-hit/ANI-based).
 
-The `dereplication` mode removes redundant sequences while keeping representatives, using the cd-hit algorithm and ani metric. It is designed to reduce datasets to representative genomes, as outlined in [Section 6.3](https://github.com/refresh-bio/vclust/wiki/6-Use-cases#63-dereplicate-viral-contigs-into-representative-genomes).
+- `votu` — cluster into viral Operational Taxonomic Units (leiden/ANI-based) following MIUViG-style defaults.
 
-The `votu` mode clusters sequences into viral Operational Taxonomic Units, employing the leiden algorithm and ani metric. This mode groups contigs according to MIUViG standards, detailed in [Section 6.2](https://github.com/refresh-bio/vclust/wiki/6-Use-cases#62-assign-viral-contigs-into-votus-following-miuvig-standards).
+- `species` — classify sequences into species (complete/TANI-based) following ICTV-style defaults.
 
-The `species` mode classifies viruses into species, utilizing the complete algorithm and tani metric. It follows ICTV standards for species classification, as described in [Section 6.1](https://github.com/refresh-bio/vclust/wiki/6-Use-cases#61-classify-viruses-into-species-and-genera-following-ictv-standards).
+## Default parameters by mode
 
-## Default Parameters by Mode
+<div align="center">
 
 | Parameter | dereplication | votu | species |
 |-----------|---------------|------|---------|
-| **Algorithm** | cd-hit | leiden | complete |
-| **Metric** | ani | ani | tani |
-| **ANI cutoff** | 95% | 95% | 95% |
-| **Query coverage** | 85% | 85% | None |
-| **Pre-filter min-ident** | 95% | 95% | 70% |
+| Algorithm | cd-hit | leiden | complete |
+| Metric | ani | ani | tani |
+| ANI cutoff | 95% | 95% | 95% |
+| Query coverage | 85% | 85% | None |
+| Pre-filter min-ident | 95% | 95% | 70% |
+
+</div>
 
 ## Command Options
 
@@ -80,57 +81,30 @@ The `species` mode classifies viruses into species, utilizing the complete algor
 
 ## Examples
 
-### Basic Examples
-
 ```bash
-# Dereplicate viral contigs
+# Dereplicate viral contigs (default outputs in clustered-contigs/)
 phu cluster --mode dereplication --input-contigs viral_contigs.fna
 
 # Cluster into vOTUs following MIUViG standards
 phu cluster --mode votu --input-contigs viral_contigs.fna
 
-# Classify viruses into species following ICTV standards
+# Species classification following ICTV standards
 phu cluster --mode species --input-contigs complete_genomes.fna
 ```
 
-### Advanced Usage with Custom Parameters
+## Advanced: pass custom vclust parameters
 
-The `--vclust-params` option allows you to customize any vclust parameter while maintaining the convenience of predefined modes. Parameters are automatically routed to the appropriate vclust command (prefilter, align, cluster).
-
-#### Large Dataset Optimization (Wiki Section 6.6)
-
-```bash
-# Process large diverse dataset (IMG/VR style)
-phu cluster --mode votu --input-contigs large_dataset.fna \
-  --vclust-params="--min-kmers 4 --batch-size 2000000 --kmers-fraction 0.2 --outfmt lite"
-```
-
-#### Highly Redundant Dataset (Wiki Section 6.7)
-
-```bash
-# Process highly redundant sequences
-phu cluster --mode votu --input-contigs redundant_genomes.fna \
-  --vclust-params="--min-kmers 10 --batch-size 100000 --max-seqs 1000 --outfmt lite --ani 0.97 --qcov 0.95"
-```
-
-#### Custom Thresholds
-
-```bash
-# More stringent clustering
-phu cluster --mode votu --input-contigs genomes.fna \
-  --vclust-params="--ani 0.98 --qcov 0.90"
-
-# Species clustering with custom genus threshold
+```bash {hl_lines="2"}
 phu cluster --mode species --input-contigs genomes.fna \
-  --vclust-params="--tani 0.97"
+  --vclust-params="--metric tani --tani 0.70" 
 ```
+>Treat species clustering as genus-level by lowering similarity to 70%
 
-## Comparison with Direct vclust Usage
+## Notes
 
-| Task | phu cluster | Direct vclust |
-|------|-------------|---------------|
-| **Steps** | Single command | 3 separate commands |
-| **Configuration** | Preconfigured modes | Manual parameter setup |
-| **Customization** | `--vclust-params` option | Full control |
-| **Learning curve** | Minimal | Requires vclust expertise |
-| **Use case** | Common workflows | Specialized analyses |
+- `--vclust-params` provides full control over `vclust` parameters; use it to tune behavior for large or highly-redundant datasets.
+- For reproducibility, save the full vclust command and parameters used (the tool often logs them in the output folder).
+
+## See also
+
+- vclust wiki: https://github.com/refresh-bio/vclust/wiki/6-Use-cases

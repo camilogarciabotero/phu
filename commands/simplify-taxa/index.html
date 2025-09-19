@@ -364,9 +364,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
+  <a href="#synopsis" class="md-nav__link">
     <span class="md-ellipsis">
-      Basic Usage
+      Synopsis
     </span>
   </a>
   
@@ -467,7 +467,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#basic-usage_1" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       Basic Usage
     </span>
@@ -681,9 +681,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
+  <a href="#synopsis" class="md-nav__link">
     <span class="md-ellipsis">
-      Basic Usage
+      Synopsis
     </span>
   </a>
   
@@ -784,7 +784,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#basic-usage_1" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       Basic Usage
     </span>
@@ -943,11 +943,11 @@
 
 
 <h1 id="simplify-taxa">simplify-taxa<a class="headerlink" href="#simplify-taxa" title="Permanent link">&para;</a></h1>
-<p>Simplify vContact taxonomy prediction columns into compact lineage codes for streamlined downstream analysis.</p>
+<p>Convert vContact taxonomy prediction strings into compact lineage codes for downstream analysis.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>The <code>simplify-taxa</code> command processes vContact3 final assignment files, transforming verbose taxonomic prediction strings into compact, standardized lineage codes. This transformation makes taxonomic data more manageable for visualization, filtering, and analysis while preserving hierarchical relationships.</p>
-<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>&lt;INPUT_FILE&gt;<span class="w"> </span>-o<span class="w"> </span>&lt;OUTPUT_FILE&gt;<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+<p><code>phu simplify-taxa</code> transforms verbose vContact3 <code>*_prediction</code> columns into compact, standardized lineage codes (e.g. <code>Caudoviricetes:NF2:NG1</code>) to make taxonomy easier to filter, visualize, and analyze.</p>
+<h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>&lt;INPUT_FILE&gt;<span class="w"> </span>-o<span class="w"> </span>&lt;OUTPUT_FILE&gt;<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </code></pre></div>
 <p>Input accepts CSV or TSV files from vContact3's <code>final_assignments.csv</code> output. Output format is automatically detected from file extension.</p>
 <h2 id="inputoutput-formats">Input/Output Formats<a class="headerlink" href="#inputoutput-formats" title="Permanent link">&para;</a></h2>
@@ -994,9 +994,9 @@
 <span class="w">     </span>--add-lineage<span class="w">                                                           </span>
 
 ╭─<span class="w"> </span>Options<span class="w"> </span>─────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>*<span class="w">  </span>--input<span class="w">           </span>-i<span class="w">  </span>PATH<span class="w">  </span>Input<span class="w"> </span>vContact<span class="w"> </span>final_assignments.csv<span class="w">       </span>│
+│<span class="w"> </span>*<span class="w">  </span>--input-file<span class="w">       </span>-i<span class="w">  </span>PATH<span class="w">  </span>Input<span class="w"> </span>vContact<span class="w"> </span>final_assignments.csv<span class="w">       </span>│
 │<span class="w">                              </span><span class="o">[</span>required<span class="o">]</span><span class="w">                                   </span>│
-│<span class="w"> </span>*<span class="w">  </span>--output<span class="w">          </span>-o<span class="w">  </span>PATH<span class="w">  </span>Output<span class="w"> </span>path<span class="w"> </span><span class="o">(</span>.csv<span class="w"> </span>or<span class="w"> </span>.tsv<span class="o">)</span><span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">      </span>│
+│<span class="w"> </span>*<span class="w">  </span>--output-file<span class="w">      </span>-o<span class="w">  </span>PATH<span class="w">  </span>Output<span class="w"> </span>path<span class="w"> </span><span class="o">(</span>.csv<span class="w"> </span>or<span class="w"> </span>.tsv<span class="o">)</span><span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">      </span>│
 │<span class="w">    </span>--add-lineage<span class="w">         </span>FLAG<span class="w">  </span>Append<span class="w"> </span>compact_lineage<span class="w"> </span>column<span class="w"> </span>from<span class="w"> </span>deepest<span class="w"> </span>│
 │<span class="w">                              </span>simplified<span class="w"> </span>rank<span class="w">                              </span>│
 │<span class="w">    </span>--lineage-col<span class="w">         </span>TEXT<span class="w">  </span>Name<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>lineage<span class="w"> </span>column<span class="w">                 </span>│
@@ -1007,8 +1007,8 @@
 ╰───────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<h3 id="basic-usage_1">Basic Usage<a class="headerlink" href="#basic-usage_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Simplify taxonomy predictions in CSV format</span>
+<h3 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Simplify CSV</span>
 phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>final_assignments.csv<span class="w"> </span>-o<span class="w"> </span>simplified_taxonomy.csv
 
 <span class="c1"># Process TSV format with automatic detection</span>
@@ -1039,36 +1039,16 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
 <li><code>realm_prediction</code></li>
 </ol>
 <h3 id="example-output">Example Output<a class="headerlink" href="#example-output" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Sequence</th>
-<th>genus_prediction</th>
-<th>family_prediction</th>
-<th>compact_lineage</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>seq1</td>
-<td>Caudoviricetes:NF2:NG1</td>
-<td>Caudoviricetes:NF2</td>
-<td>Caudoviricetes:NF2:NG1</td>
-</tr>
-<tr>
-<td>seq2</td>
-<td>-</td>
-<td>Caudoviricetes:NF5</td>
-<td>Caudoviricetes:NF5</td>
-</tr>
-<tr>
-<td>seq3</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-</tr>
-</tbody>
-</table>
+<div align="center">
+
+| Sequence | genus_prediction | family_prediction | compact_lineage |
+|----------|------------------|-------------------|-----------------|
+| seq1 | Caudoviricetes:NF2:NG1 | Caudoviricetes:NF2 | Caudoviricetes:NF2:NG1 |
+| seq2 | - | Caudoviricetes:NF5 | Caudoviricetes:NF5 |
+| seq3 | - | - | - |
+
+</div>
+
 <h2 id="special-cases-handled">Special Cases Handled<a class="headerlink" href="#special-cases-handled" title="Permanent link">&para;</a></h2>
 <h3 id="edge-cases-for-0-chains">Edge Cases for "0" Chains<a class="headerlink" href="#edge-cases-for-0-chains" title="Permanent link">&para;</a></h3>
 <p>The tool correctly handles vContact2's special "0" designation patterns:</p>
@@ -1108,42 +1088,18 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
 <span class="c1"># - Taxonomic filtering</span>
 </code></pre></div>
 <h2 id="comparison-with-manual-processing">Comparison with Manual Processing<a class="headerlink" href="#comparison-with-manual-processing" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Task</th>
-<th>phu simplify-taxa</th>
-<th>Manual Processing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Complexity</strong></td>
-<td>Single command</td>
-<td>Custom scripts/regex</td>
-</tr>
-<tr>
-<td><strong>Edge cases</strong></td>
-<td>Automatically handled</td>
-<td>Error-prone</td>
-</tr>
-<tr>
-<td><strong>Consistency</strong></td>
-<td>Standardized format</td>
-<td>Variable approaches</td>
-</tr>
-<tr>
-<td><strong>Speed</strong></td>
-<td>Optimized pandas operations</td>
-<td>Slower loops</td>
-</tr>
-<tr>
-<td><strong>Maintenance</strong></td>
-<td>Built-in updates</td>
-<td>Manual fixes needed</td>
-</tr>
-</tbody>
-</table>
+<div align="center">
+
+| Task | phu simplify-taxa | Manual Processing |
+|------|-------------------|-------------------|
+| **Complexity** | Single command | Custom scripts/regex |
+| **Edge cases** | Automatically handled | Error-prone |
+| **Consistency** | Standardized format | Variable approaches |
+| **Speed** | Optimized pandas operations | Slower loops |
+| **Maintenance** | Built-in updates | Manual fixes needed |
+
+</div>
+
 <h2 id="output-file-structure">Output File Structure<a class="headerlink" href="#output-file-structure" title="Permanent link">&para;</a></h2>
 <p>The output file preserves the original structure while transforming taxonomy columns:</p>
 <div class="highlight"><pre><span></span><code>Original columns + Simplified *_prediction columns [+ compact_lineage column]

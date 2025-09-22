@@ -281,11 +281,24 @@ def _hmmsearch(
         for hit in top_hits:
             if hit.included:  # pyHMMER's inclusion check
                 prot_id = hit.name.decode()
-                # Extract contig from prot_id (assumes format "contig|gene<idx>")
-                if "|" in prot_id:
-                    contig = prot_id.split("|", 1)[0]
+                
+                # Extract contig from prot_id with robust handling of multiple "|" characters
+                # Expected format: "contig_name|gene<idx>" where contig_name may contain "|"
+                # Use regex to find the last "|gene" pattern
+                import re
+                gene_pattern = r'\|gene\d+$'
+                match = re.search(gene_pattern, prot_id)
+                if match:
+                    # Split at the position where "|gene" starts
+                    contig = prot_id[:match.start()]
                 else:
-                    contig = prot_id
+                    # Fallback: if no "|gene" pattern found, try simple split
+                    if "|" in prot_id:
+                        # Take everything before the last "|" as contig ID
+                        contig = prot_id.rsplit("|", 1)[0]
+                    else:
+                        # No "|" found, use entire protein ID as contig ID
+                        contig = prot_id
                 
                 yield Hit(
                     contig=contig,

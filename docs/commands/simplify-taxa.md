@@ -124,16 +124,12 @@ The `--add-lineage` option creates an additional column containing the deepest (
 ### Example Output
 
 
-
-<div align="center">
-
 | Sequence | genus_prediction | family_prediction | compact_lineage |
 |----------|------------------|-------------------|-----------------|
 | seq1 | Caudoviricetes:NF2:NG1 | Caudoviricetes:NF2 | Caudoviricetes:NF2:NG1 |
 | seq2 | - | Caudoviricetes:NF5 | Caudoviricetes:NF5 |
 | seq3 | - | - | - |
 
-</div>
 
 ## Special Cases Handled
 
@@ -190,7 +186,6 @@ phu simplify-taxa -i vcontact_output/final_assignments.csv \
 
 ## Comparison with Manual Processing
 
-<div align="center">
 
 | Task | phu simplify-taxa | Manual Processing |
 |------|-------------------|-------------------|
@@ -200,7 +195,6 @@ phu simplify-taxa -i vcontact_output/final_assignments.csv \
 | **Speed** | Optimized pandas operations | Slower loops |
 | **Maintenance** | Built-in updates | Manual fixes needed |
 
-</div>
 
 ## Output File Structure
 

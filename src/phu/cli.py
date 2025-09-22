@@ -185,6 +185,9 @@ def screen(
         False, "--save-target-proteins/--no-save-target-proteins", 
         help="Save matched proteins per HMM model in target_proteins/ subfolder"
     ),
+    save_target_hmms: bool = typer.Option(
+        False, "--save-target-hmms/--no-save-target-hmms", help="Save HMMs built from target proteins in target_hmms/ subfolder"
+    ),
     hmm_mode: str = typer.Option(
         "pure", "--hmm-mode", help="HMM file type: 'pure' (one model per file) or 'mixed' (pressed/concatenated HMMs)"
     )
@@ -238,6 +241,7 @@ def screen(
         combine_mode=combine_mode,
         min_hmm_hits=min_hmm_hits,
         save_target_proteins=save_target_proteins,
+        save_target_hmms=save_target_hmms,
         hmm_mode=hmm_mode,  # New parameter
     )
     

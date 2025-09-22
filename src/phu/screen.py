@@ -10,13 +10,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 from multiprocessing.pool import ThreadPool
+from collections import defaultdict
 
 import typer
 from pyrodigal import GeneFinder   # pyrodigal>=3
 
+import pyhmmer
+import pyhmmer.plan7
+import pyhmmer.easel
+
 from ._exec import run, _executable, CmdNotFound
 
-app = typer.Typer(help="Screen contigs for a protein family using HMMER on predicted CDS.")
+app = typer.Typer(help="Screen contigs for a protein family using pyHMMER on predicted CDS.")
 
 
 # ---------- Utilities ----------
@@ -42,6 +47,7 @@ class ScreenConfig:
     combine_mode: str = "any"  # New: how to combine hits from multiple HMMs
     min_hmm_hits: int = 1  # New: minimum number of HMMs that must hit a contig
     save_target_proteins: bool = False  # New: save matched proteins per HMM
+    save_target_hmms: bool = False  # New: build and save HMMs from target proteins
     hmm_mode: str = "pure"  # New: "pure" for single models, "mixed" for pressed/concatenated HMMs
     
     def __post_init__(self):
@@ -58,7 +64,9 @@ class ScreenConfig:
             raise ValueError("combine_mode must be 'any', 'all', or 'threshold'")
         if self.hmm_mode not in {"pure", "mixed"}:
             raise ValueError("hmm_mode must be 'pure' or 'mixed'")
-    
+        if self.save_target_hmms and not self.save_target_proteins:
+            raise ValueError("save_target_hmms requires save_target_proteins to be True")
+
     def plan(self) -> "ScreenPlan":
         """Create execution plan from configuration."""
         if self.mode not in {"meta", "single"}:
@@ -90,6 +98,7 @@ class ScreenConfig:
             combine_mode=self.combine_mode,
             min_hmm_hits=self.min_hmm_hits,
             save_target_proteins=self.save_target_proteins,
+            save_target_hmms=self.save_target_hmms,
             hmm_mode=self.hmm_mode,
             proteins_fa=self.outdir / "proteins.faa",
             domtbl_paths=domtbl_paths,
@@ -118,19 +127,20 @@ class ScreenPlan:
     combine_mode: str
     min_hmm_hits: int
     save_target_proteins: bool  # New
+    save_target_hmms: bool  # New
     hmm_mode: str  # New
     proteins_fa: Path
     domtbl_paths: Dict[str, Path]  # Changed from domtbl: Path
     kept_ids: Path
     out_contigs: Path
 
-def _binaries() -> tuple[str, str]:
+def _binaries() -> str:
     """
     Discover required binaries for screening.
+    Only seqkit is needed since we use pyHMMER instead of HMMER binary.
     """
-    hmmer = _executable(["hmmsearch"])
     seqkit = _executable(["seqkit"])
-    return hmmer, seqkit
+    return seqkit
 
 def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
     """Tiny FASTA reader (header up to first whitespace is the id)."""
@@ -154,57 +164,6 @@ class Hit:
     model: str
     bitscore: float
     evalue: float
-
-def _parse_domtblout(domtbl_path: Path, hmm_file_name: str, hmm_mode: str) -> Iterable[Hit]:
-    """
-    Parse HMMER --domtblout (hmmsearch). Returns domain-level hits.
-    Format spec: https://hmmer-web-docs.readthedocs.io/en/latest/output-files/domtab.html
-    
-    Args:
-        hmm_mode: "pure" for single-model HMMs, "mixed" for concatenated HMMs
-        
-    Filtering logic:
-    - Individual hits are filtered by bitscore/evalue thresholds regardless of hmm_mode
-    - Model counting for combine_mode depends on hmm_mode:
-      * "pure": each file = 1 model, use filename as identifier
-      * "mixed": each target_name = 1 model, use actual HMM name as identifier
-    """
-    with domtbl_path.open() as f:
-        for line in f:
-            if not line or line.startswith("#"):
-                continue
-            cols = re.split(r"\s+", line.strip())
-            try:
-                target_name = cols[0]     # our protein sequence ID
-                query_name  = cols[3]     # HMM model name
-                i_evalue    = float(cols[12])  # independent E-value
-                bits        = float(cols[13])
-            except Exception:
-                # Fallback for slight index shifts (older HMMER versions)
-                try:
-                    i_evalue = float(cols[11])
-                    bits = float(cols[12])
-                except Exception:
-                    continue
-            
-            # Extract contig ID from protein sequence ID (query_name is the protein ID)
-            prot_id = target_name  # This should be like "contig123|gene1"
-            if "|" in prot_id:
-                contig_id = prot_id.split("|", 1)[0]
-            else:
-                contig_id = prot_id
-            
-            # Handle model naming based on HMM mode
-            if hmm_mode == "pure":
-                # For pure HMMs, use filename as the model identifier for consistency
-                # This ensures each file is treated as a separate "model" for combine logic
-                model_id = hmm_file_name
-            else:  # mixed
-                # For mixed/pressed HMMs, use the actual HMM model name (query_name)
-                # This allows proper identification of individual models within the file
-                model_id = query_name
-            
-            yield Hit(contig=contig_id, prot_id=prot_id, model=model_id, bitscore=bits, evalue=i_evalue)
 
 
 # ---------- Core pipeline ----------
@@ -270,58 +229,71 @@ def _predict_proteins_pyrodigal(
     return n_prot
 
 def _hmmsearch(
-    hmm: Path,
+    hmm_paths: List[Path],
     proteins_fa: Path,
-    domtbl_path: Path,
+    domtbl_paths: Dict[str, Path],
     threads: int = 1,
-    hmmer_bin: str = "hmmsearch",
-    extra_args: Optional[List[str]] = None,
-) -> None:
-    """Run hmmsearch with proper HMMER command structure."""
-    # Validate inputs before running
-    if not hmm.exists():
-        raise FileNotFoundError(f"HMM file not found: {hmm}")
-    if not proteins_fa.exists():
-        raise FileNotFoundError(f"Protein FASTA file not found: {proteins_fa}")
-    if proteins_fa.stat().st_size == 0:
-        raise ValueError(f"Protein FASTA file is empty: {proteins_fa}")
+    hmm_mode: str = "pure",
+    keep_domtbl: bool = True,
+) -> Iterable[Hit]:
+    """
+    Run pyhmmer.hmmsearch on loaded HMMs and proteins.
+    Returns hits directly as Hit objects and optionally writes domtbl files.
+    """
+    # Load all HMMs into memory
+    hmms = []
+    hmm_names = []
+    for hmm_path in hmm_paths:
+        with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
+            for hmm in hmm_file:
+                hmms.append(hmm)
+                hmm_names.append(hmm_path.stem)  # Use filename for pure mode
     
-    # Build command according to HMMER documentation:
-    # hmmsearch [options] <hmmfile> <seqfile>
-    cmd = [hmmer_bin]
+    # Load proteins into memory
+    with pyhmmer.easel.SequenceFile(proteins_fa, digital=True) as seq_file:
+        proteins = seq_file.read_block()
     
-    # Add all options first
-    # Note: --cpu <n> specifies number of worker threads
-    # HMMER will spawn <n>+1 total threads (workers + master)
-    cmd.extend(["--cpu", str(threads)])
-    cmd.extend(["--domtblout", str(domtbl_path)])
+    # Run hmmsearch with pyHMMER
+    hits_list = list(pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=None))
     
-    if extra_args:
-        cmd.extend(extra_args)
+    # Write domtbl files if requested
+    if keep_domtbl:
+        for i, top_hits in enumerate(hits_list):
+            # Map back to original HMM file for domtbl naming
+            hmm_name = hmm_names[i] if i < len(hmm_names) else f"hmm_{i}"
+            if hmm_name in domtbl_paths:
+                domtbl_path = domtbl_paths[hmm_name]
+                with domtbl_path.open("wb") as f:
+                    top_hits.write(f, format="domains")
     
-    # Add positional arguments: HMM file first, then sequence file
-    cmd.append(str(hmm))
-    cmd.append(str(proteins_fa))
-    
-    # Use subprocess directly for better error handling
-    try:
-        result = subprocess.run(
-            cmd, 
-            capture_output=True, 
-            text=True, 
-            check=True
-        )
-        # Log successful completion for debugging
-        if result.returncode == 0:
-            print(f"  hmmsearch completed successfully using {threads} worker threads")
-    except subprocess.CalledProcessError as e:
-        print(f"hmmsearch failed with exit code {e.returncode}")
-        print(f"Command: {' '.join(cmd)}")
-        if e.stdout:
-            print(f"STDOUT:\n{e.stdout}")
-        if e.stderr:
-            print(f"STDERR:\n{e.stderr}")
-        raise RuntimeError(f"hmmsearch failed: {e.stderr}") from e
+    # Process hits and yield Hit objects
+    for i, top_hits in enumerate(hits_list):
+        model_name = top_hits.query.name.decode()
+        
+        # Determine model identifier based on hmm_mode
+        if hmm_mode == "pure":
+            # Use filename as model ID for pure mode
+            model_id = hmm_names[i] if i < len(hmm_names) else model_name
+        else:
+            # Use actual HMM name for mixed mode
+            model_id = model_name
+        
+        for hit in top_hits:
+            if hit.included:  # pyHMMER's inclusion check
+                prot_id = hit.name.decode()
+                # Extract contig from prot_id (assumes format "contig|gene<idx>")
+                if "|" in prot_id:
+                    contig = prot_id.split("|", 1)[0]
+                else:
+                    contig = prot_id
+                
+                yield Hit(
+                    contig=contig,
+                    prot_id=prot_id,
+                    model=model_id,
+                    bitscore=hit.score,
+                    evalue=hit.evalue
+                )
 
 def _choose_best_contigs(
     hits: Iterable[Hit],
@@ -336,33 +308,11 @@ def _choose_best_contigs(
     Filter by thresholds, then pick top N hits per contig by bitscore.
     For multiple HMMs, apply combination logic.
     
-    Filtering criteria with hmm_mode:
-    
-    1. Individual hit filtering (same for both modes):
-       - min_bitscore: minimum score threshold per hit
-       - max_evalue: maximum E-value threshold per hit
-    
-    2. Model counting for combine logic (depends on hmm_mode):
-       - "pure" mode: each HMM file = 1 model
-         * "any": contig needs hits from ≥1 files
-         * "all": contig needs hits from ALL files  
-         * "threshold": contig needs hits from ≥min_hmm_hits files
-       
-       - "mixed" mode: each unique target name = 1 model
-         * "any": contig needs hits from ≥1 unique models
-         * "all": contig needs hits from ALL unique models found across all files
-         * "threshold": contig needs hits from ≥min_hmm_hits unique models
-    
-    3. Hit selection per contig:
-       - For "any" and "threshold": top_per_contig best hits overall
-       - For "all": exactly 1 best hit per model (ensures balanced output)
-    
     Returns (kept_hits, list_of_contig_ids).
     """
-    from collections import defaultdict
     per_contig: Dict[str, List[Hit]] = defaultdict(list)
 
-    # Filter hits by thresholds (same for both hmm modes)
+    # Filter hits by thresholds
     for h in hits:
         if min_bitscore is not None and h.bitscore < min_bitscore:
             continue
@@ -370,17 +320,12 @@ def _choose_best_contigs(
             continue
         per_contig[h.contig].append(h)
 
-    # Apply combination logic (behavior depends on hmm_mode through model_id assignment)
+    # Apply combination logic
     kept: List[Hit] = []
     kept_contigs: List[str] = []
     
     for contig, contig_hits in per_contig.items():
         if combine_mode == "any":
-            # Keep contigs that have hits from any model.
-            # Instead of keeping only the single best hit across all models, keep
-            # the best hit per model/file. This recovers one (or up to
-            # top_per_contig) protein per model for contigs that matched
-            # multiple models.
             if contig_hits:
                 hits_per_model = defaultdict(list)
                 for hit in contig_hits:
@@ -395,17 +340,15 @@ def _choose_best_contigs(
         elif combine_mode == "all":
             # Keep contigs that have hits from ALL models
             model_names = set(hit.model for hit in contig_hits)
-            if len(model_names) == total_hmm_models:  # Must have hits from ALL models
-                # For "all" mode, ensure we get exactly one hit per model per contig
+            if len(model_names) == total_hmm_models:
                 hits_per_model = defaultdict(list)
                 for hit in contig_hits:
-                    model_name = hit.model
-                    hits_per_model[model_name].append(hit)
+                    hits_per_model[hit.model].append(hit)
                 
-                # Take the best hit for each model (ensures balanced protein counts)
-                for model_name, model_hits in hits_per_model.items():
+                # Take the best hit for each model
+                for model_hits in hits_per_model.values():
                     model_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
-                    kept.extend(model_hits[:1])  # Take only the best hit per model
+                    kept.extend(model_hits[:1])
                 
                 kept_contigs.append(contig)
         
@@ -414,8 +357,7 @@ def _choose_best_contigs(
             model_names = set(hit.model for hit in contig_hits)
             if len(model_names) >= min_hmm_hits:
                 contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
-                slice_ = contig_hits[:max(1, top_per_contig)]
-                kept.extend(slice_)
+                kept.extend(contig_hits[:max(1, top_per_contig)])
                 kept_contigs.append(contig)
 
     return kept, kept_contigs
@@ -450,15 +392,7 @@ def _extract_target_proteins(
 ) -> None:
     """
     Extract matched proteins per HMM model from the final kept contigs only.
-    This ensures the proteins match those from contigs in screened_contigs.fasta
-    and respects the combine_mode filtering.
-    
-    Protein extraction behavior:
-    - "pure" mode: proteins grouped by HMM filename (one group per file)
-    - "mixed" mode: proteins grouped by actual model names (multiple groups per file possible)
     """
-    from collections import defaultdict
-    
     # Create a set of kept contig IDs for fast lookup
     kept_contig_set = set(kept_contig_ids)
     
@@ -466,10 +400,8 @@ def _extract_target_proteins(
     proteins_per_model: Dict[str, List[str]] = defaultdict(list)
     
     for hit in kept_hits:
-        # Only include proteins from contigs that actually made it to the final output
         if hit.contig in kept_contig_set:
-            model_id = hit.model
-            proteins_per_model[model_id].append(hit.prot_id)
+            proteins_per_model[hit.model].append(hit.prot_id)
     
     # Create target_proteins directory
     target_proteins_dir = outdir / "target_proteins"
@@ -482,7 +414,6 @@ def _extract_target_proteins(
         output_path = target_proteins_dir / f"{safe_model_name}_proteins.mfa"
         
         if not protein_ids:
-            # Write empty file
             output_path.write_text("")
             continue
         
@@ -511,14 +442,112 @@ def _extract_target_proteins(
         # Cleanup temporary file
         tmp_ids_file.unlink()
 
+def _build_target_hmms(
+    target_proteins_dir: Path,
+    outdir: Path,
+    threads: int = 1,
+) -> None:
+    """
+    Build HMM models from target protein sequences using pyHMMER.
+    Creates one HMM file per model from the corresponding protein FASTA files.
+    
+    For single sequences, builds HMM directly using builder.build().
+    For multiple sequences, aligns them by padding to the same length before MSA creation.
+    """
+    # Create target_hmms directory
+    target_hmms_dir = outdir / "target_hmms"
+    target_hmms_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Find all protein FASTA files in target_proteins directory
+    protein_files = list(target_proteins_dir.glob("*_proteins.mfa"))
+    
+    if not protein_files:
+        print("    No target protein files found for HMM building")
+        return
+    
+    # Initialize HMM builder and background
+    alphabet = pyhmmer.easel.Alphabet.amino()
+    builder = pyhmmer.plan7.Builder(alphabet)
+    background = pyhmmer.plan7.Background(alphabet)
+    
+    print(f"    Building HMMs for {len(protein_files)} protein sets...")
+    
+    for protein_file in protein_files:
+        model_name = protein_file.stem.replace("_proteins", "")
+        hmm_output_path = target_hmms_dir / f"{model_name}.hmm"
+        
+        try:
+            # Read protein sequences as text first
+            sequences = []
+            with open(protein_file, 'r') as f:
+                seq_id, seq_chunks = None, []
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('>'):
+                        if seq_id is not None and seq_chunks:
+                            sequence = ''.join(seq_chunks)
+                            if sequence:  # Only add non-empty sequences
+                                text_seq = pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=sequence)
+                                sequences.append(text_seq)
+                        seq_id = line[1:].split()[0]
+                        seq_chunks = []
+                    else:
+                        seq_chunks.append(line)
+                
+                # Don't forget the last sequence
+                if seq_id is not None and seq_chunks:
+                    sequence = ''.join(seq_chunks)
+                    if sequence:
+                        text_seq = pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=sequence)
+                        sequences.append(text_seq)
+            
+            if len(sequences) == 0:
+                print(f"      Skipping {model_name}: no valid sequences found")
+                continue
+            elif len(sequences) == 1:
+                # For single sequence, use builder.build() method
+                digital_seq = sequences[0].digitize(alphabet)
+                hmm = builder.build(digital_seq, background)
+                hmm.name = model_name.encode()
+                print(f"      Built HMM from 1 sequence: {model_name}")
+            else:
+                # For multiple sequences, align by padding to same length
+                max_len = max(len(seq.sequence) for seq in sequences)
+                
+                # Pad sequences to same length with gaps
+                aligned_sequences = []
+                for seq in sequences:
+                    padded_seq = seq.sequence + '-' * (max_len - len(seq.sequence))
+                    aligned_seq = pyhmmer.easel.TextSequence(name=seq.name, sequence=padded_seq)
+                    aligned_sequences.append(aligned_seq)
+                
+                # Create MSA from aligned sequences
+                text_msa = pyhmmer.easel.TextMSA(name=model_name.encode(), sequences=aligned_sequences)
+                digital_msa = text_msa.digitize(alphabet)
+                hmm, _, _ = builder.build_msa(digital_msa, background)
+                print(f"      Built HMM from {len(sequences)} aligned sequences: {model_name}")
+            
+            # Ensure HMM has proper name
+            if not hmm.name:
+                hmm.name = model_name.encode()
+            
+            # Write HMM to file
+            with hmm_output_path.open("wb") as f:
+                hmm.write(f)
+                
+        except Exception as e:
+            print(f"      Warning: Failed to build HMM for {model_name}: {e}")
+            import traceback
+            traceback.print_exc()
+            continue
 
 def _screen(cfg: ScreenConfig) -> ScreenPlan:
     """
-    Screen contigs for protein families using HMMER.
+    Screen contigs for protein families using pyHMMER.
     
     Main workflow:
     1. Predict proteins with pyrodigal
-    2. Search proteins against each HMM with hmmsearch
+    2. Search proteins against HMMs with pyhmmer.hmmsearch
     3. Parse results, combine, and select best hits per contig
     4. Extract screened contigs
     5. Optionally extract matched proteins per HMM model from screened contigs only
@@ -531,10 +560,10 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         if not hmm.exists():
             raise FileNotFoundError(f"HMM file not found: {hmm}")
     
-    # Discover binaries
-    hmmer_bin, seqkit_bin = _binaries()
+    # Discover binaries (only seqkit needed)
+    seqkit_bin = _binaries()
     plan = cfg.plan()
-    plan.hmmer_bin = hmmer_bin
+    plan.hmmer_bin = ""  # Not used with pyHMMER
     plan.seqkit_bin = seqkit_bin
     
     # Create output directory
@@ -547,7 +576,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         mode=plan.mode,
         min_len=plan.min_gene_len,
         translation_table=plan.translation_table,
-        threads=plan.threads,  # Added threads parameter
+        threads=plan.threads,
     )
     print(f"  Proteins predicted: {n_prot}")
     
@@ -559,39 +588,27 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             plan.proteins_fa.unlink()
         return plan
     
-    print(f"Running hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…")
-    all_hits = []
-    unique_model_ids = set()
+    print(f"Running pyhmmer.hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…")
     
-    for hmm in plan.hmms:
-        hmm_file_name = hmm.stem
-        domtbl_path = plan.domtbl_paths[hmm_file_name]
-        print(f"  Searching with {hmm.name}...")
-        
-        _hmmsearch(
-            hmm=hmm,
-            proteins_fa=plan.proteins_fa,
-            domtbl_path=domtbl_path,
-            threads=plan.threads,
-            hmmer_bin=plan.hmmer_bin,
-            extra_args=["--noali"],
-        )
-        
-        hits = list(_parse_domtblout(domtbl_path, hmm_file_name, plan.hmm_mode))
-        all_hits.extend(hits)
-        
-        # Collect unique model identifiers
-        for hit in hits:
-            unique_model_ids.add(hit.model)
-        
-        print(f"    Found {len(hits)} hits")
+    # Use pyHMMER for all searches
+    all_hits = list(_hmmsearch(
+        hmm_paths=plan.hmms,
+        proteins_fa=plan.proteins_fa,
+        domtbl_paths=plan.domtbl_paths,
+        threads=plan.threads,
+        hmm_mode=plan.hmm_mode,
+        keep_domtbl=plan.keep_domtbl,
+    ))
     
+    unique_model_ids = set(hit.model for hit in all_hits)
     if plan.hmm_mode == "pure":
         total_models = len(plan.hmms)  # Each file is one model
         print(f"  Pure HMM mode: {total_models} models from {len(plan.hmms)} files")
     else:
         total_models = len(unique_model_ids)  # Count actual models found
         print(f"  Mixed HMM mode: {total_models} unique models found from {len(plan.hmms)} files")
+    
+    print(f"    Found {len(all_hits)} hits")
     
     print(f"Parsing results and selecting best hits per contig (combine_mode: {plan.combine_mode})…")
     kept_hits, contig_ids = _choose_best_contigs(
@@ -613,10 +630,20 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             kept_hits,
             contig_ids,
             plan.proteins_fa,
-            plan.outdir,  # Pass outdir for proper path construction
+            plan.outdir,
             plan.hmm_mode,
             plan.seqkit_bin,
         )
+        
+        # Build HMMs from target proteins if requested
+        if plan.save_target_hmms:
+            print("Building HMMs from target protein sequences…")
+            target_proteins_dir = plan.outdir / "target_proteins"
+            _build_target_hmms(
+                target_proteins_dir,
+                plan.outdir,
+                threads=plan.threads,
+            )
     
     print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")
     _seqkit_extract(
@@ -640,6 +667,8 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         files_msg += f" and {len(plan.domtbl_paths)} domtblout files"
     if plan.save_target_proteins:
         files_msg += f" and target proteins in target_proteins/ folder"
+    if plan.save_target_hmms:
+        files_msg += f" and target HMMs in target_hmms/ folder"
     print(f"{files_msg}.")
     
     return plan

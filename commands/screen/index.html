@@ -412,6 +412,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#target-data-extraction-and-hmm-building" class="md-nav__link">
+    <span class="md-ellipsis">
+      Target Data Extraction and HMM Building
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#understanding-your-results" class="md-nav__link">
     <span class="md-ellipsis">
       Understanding Your Results
@@ -535,6 +544,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#target-data-extraction-and-hmm-building" class="md-nav__link">
+    <span class="md-ellipsis">
+      Target Data Extraction and HMM Building
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#understanding-your-results" class="md-nav__link">
     <span class="md-ellipsis">
       Understanding Your Results
@@ -600,8 +618,8 @@
 
 <h1 id="screen">screen<a class="headerlink" href="#screen" title="Permanent link">&para;</a></h1>
 <h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
-<p>The <code>phu screen</code> command helps you find DNA contigs that contain specific protein families. It predicts proteins from your contigs, searches those proteins against Hidden Markov Model (HMM) profiles using HMMER, and then selects contigs based on the matches and your combination/filtering rules. Think of it as a molecular search engine for pulling out contigs that contain the proteins you care about.</p>
-<p>This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways.</p>
+<p>The <code>phu screen</code> command helps you find DNA contigs that contain specific protein families. It predicts proteins from your contigs, searches those proteins against Hidden Markov Model (HMM) profiles using <strong>pyHMMER</strong> (a fast Python implementation), and then selects contigs based on the matches and your combination/filtering rules. Think of it as a molecular search engine for pulling out contigs that contain the proteins you care about.</p>
+<p>This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways. The tool now includes advanced features like building custom HMMs from your target proteins and specialized viral gene prediction.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>HMMS...<span class="o">]</span>
 </code></pre></div>
@@ -610,16 +628,21 @@
 </code></pre></div></p>
 <p>This simple command will find all contigs in <code>your_contigs.fasta</code> that contain proteins matching <code>your_protein_family.hmm</code> and save them to a new file called <code>screened_contigs.fasta</code> in a folder named <code>phu-screen</code>.</p>
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<p>The screen command follows four main steps:</p>
-<p>First, it predicts all possible proteins from your DNA contigs using a tool called <code>pyrodigal</code>. This step also translates your DNA sequences into protein sequences, creating names like <code>contig123|gene1</code>, <code>contig123|gene2</code>, and so on.</p>
-<p>Second, it searches the predicted proteins against your HMM profiles using HMMER. Each HMM file is searched separately (by default), and results are saved in per-HMM domtblout files. The parser distinguishes between two HMM file layouts (see "HMM modes" below) so the tool correctly counts which HMM model a hit belongs to.</p>
-<p>Third, it decides which contigs to keep based on the search results and your filtering criteria. This is where the "combine mode" logic becomes important if you're using multiple HMMs, and where the distinction between an HMMER "target" (the protein sequence that was searched) and an HMM "model" (the profile that matched) matters.</p>
-<p>Finally, it extracts the matching contigs from your original file and saves them to the output. If you've requested it, it also saves the matching proteins organized by which HMM they matched.</p>
+<p>The screen command follows four main steps with several optional enhancements:</p>
+<p><strong>First</strong>, it predicts all possible proteins from your DNA contigs using <strong>pyrodigal</strong> (for standard microbial genes) or <strong>pyrodigal-gv</strong> (for viral genes when available). This step translates your DNA sequences into protein sequences, creating names like <code>contig123|gene1</code>, <code>contig123|gene2</code>, etc. The tool automatically handles complex contig names with multiple <code>|</code> separators.</p>
+<p><strong>Second</strong>, it searches the predicted proteins against your HMM profiles using <strong>pyHMMER</strong>, a fast in-memory Python implementation that eliminates the need for external HMMER binaries. Each HMM file is processed efficiently with native Python threading, and results maintain compatibility with standard HMMER formats.</p>
+<p><strong>Third</strong>, it decides which contigs to keep based on the search results and your filtering criteria. This is where the "combine mode" logic becomes important if you're using multiple HMMs, distinguishing between HMMER "targets" (protein sequences) and HMM "models" (profiles that matched).</p>
+<p><strong>Finally</strong>, it extracts the matching contigs from your original file and saves them to the output. The tool can also extract target proteins per model and build custom HMM profiles from those proteins for future use.</p>
 <h2 id="using-multiple-hmms">Using Multiple HMMs<a class="headerlink" href="#using-multiple-hmms" title="Permanent link">&para;</a></h2>
 <p>When you provide multiple HMM files, you need to decide how strict you want to be about matches. There are three ways to combine results:</p>
 <p><strong>Any mode</strong> (the default) keeps contigs that match at least one model. Important detail: when a single contig matches multiple models, "any" preserves the best hit per model (rather than selecting only one overall best hit). As a result a contig that matches model A and model B will yield one protein for A and one protein for B (subject to <code>--top-per-contig</code>). This is useful when you want a representative protein per matched model from each contig.</p>
 <p><strong>All mode</strong> only keeps contigs that match every single HMM you provided. This is very strict and useful when you need complete sets of proteins. For instance, if you're looking for complete viral genomes that must have all four proteins (capsid, portal, primase, and terminase), you would use "all" mode.</p>
 <p><strong>Threshold mode</strong> lets you specify a minimum number of models that must match. This gives you flexibility between "any" and "all". You might require at least 3 out of 5 models to match, for example.</p>
+<h2 id="target-data-extraction-and-hmm-building">Target Data Extraction and HMM Building<a class="headerlink" href="#target-data-extraction-and-hmm-building" title="Permanent link">&para;</a></h2>
+<p>The tool offers powerful features for analyzing and reusing your screening results:</p>
+<p><strong>Target Protein Extraction</strong> (<code>--save-target-proteins</code>) saves the actual protein sequences that matched each HMM model, organized in separate files per model. These proteins come only from contigs that passed your final filtering criteria.</p>
+<p><strong>Custom HMM Building</strong> (<code>--save-target-hmms</code>) automatically builds new HMM profiles from your target proteins. This works independently of protein saving - if you only want HMMs, the tool will extract proteins temporarily, build the HMMs, then clean up. For single sequences, it builds individual HMMs; for multiple sequences, it creates simple alignments by padding to equal length before building consensus models.</p>
+<p><strong>Viral Mode Support</strong> - When using viral gene prediction (if pyrodigal-gv is available), the tool is optimized for shorter, more compact viral genes and can handle overlapping gene structures common in viral genomes.</p>
 <h2 id="understanding-your-results">Understanding Your Results<a class="headerlink" href="#understanding-your-results" title="Permanent link">&para;</a></h2>
 <p>The main output is <code>screened_contigs.fasta</code>, which contains all the contigs that passed your filtering criteria. You'll also get <code>kept_contigs.txt</code> with just the names of these contigs.</p>
 <p>If you used multiple HMMs, pay attention to how the combine mode affects your results. In "any" mode (see above), a contig that matches multiple models will produce one (best) protein per matched model. In "all" mode, kept contigs must have at least one hit for every model, and the tool returns one best hit per model for each kept contig — so the per-model protein counts will be balanced across models.</p>
@@ -629,10 +652,14 @@
 <li>In "mixed" HMM mode (used for concatenated/pressed HMM files), a single HMM file can contain multiple model names; in that case <code>--save-target-proteins</code> will create one output file per model name found inside the domtblout.</li>
 </ul>
 <p>All saved protein FASTA files contain only proteins that come from contigs that were kept in the final <code>screened_contigs.fasta</code>, and are de-duplicated per model file.</p>
+<p><strong>New Target Data Outputs:</strong>
+- <code>target_proteins/{model}_proteins.mfa</code> - Proteins matching each model (if <code>--save-target-proteins</code>)
+- <code>target_hmms/{model}.hmm</code> - Custom HMMs built from target proteins (if <code>--save-target-hmms</code>)</p>
+<p>These outputs respect your HMM mode settings and combination logic, ensuring consistency between your screening criteria and extracted data.</p>
 <h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>Usage:<span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>HMMS...<span class="w">                                                        </span>
 
-<span class="w"> </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>protein<span class="w"> </span>families<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">                          </span>
+<span class="w"> </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>protein<span class="w"> </span>families<span class="w"> </span>using<span class="w"> </span>pyHMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">                          </span>
 
 <span class="w"> </span>Supports<span class="w"> </span>multiple<span class="w"> </span>HMM<span class="w"> </span>files<span class="w"> </span>with<span class="w"> </span>different<span class="w"> </span>combination<span class="w"> </span>modes:<span class="w">                              </span>
 <span class="w"> </span>-<span class="w"> </span>any:<span class="w"> </span>Keep<span class="w"> </span>contigs<span class="w"> </span>matching<span class="w"> </span>any<span class="w"> </span>HMM<span class="w"> </span><span class="o">(</span>default,<span class="w"> </span>most<span class="w"> </span>permissive<span class="o">)</span><span class="w">                            </span>
@@ -648,7 +675,7 @@
 <span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>file1.hmm<span class="w"> </span>file2.hmm<span class="w"> </span>file3.hmm
 <span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>threshold<span class="w"> </span>--min-hmm-hits<span class="w"> </span><span class="m">5</span><span class="w"> </span>pfam_database.hmm
 <span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-proteins<span class="w"> </span>*.hmm
-<span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-proteins<span class="w"> </span>*.hmm
+<span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-hmms<span class="w"> </span>*.hmm
 
 ╭─<span class="w"> </span>Arguments<span class="w"> </span>──────────────────────────────────────────────────────────────────────────────╮
 │<span class="w"> </span>*<span class="w">    </span>hmms<span class="w">      </span>HMMS...<span class="w">  </span>HMM<span class="w"> </span>files<span class="w"> </span><span class="o">(</span>supports<span class="w"> </span>wildcards<span class="w"> </span>like<span class="w"> </span>*.hmm<span class="o">)</span><span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">             </span>│
@@ -664,7 +691,7 @@
 │<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w"> </span>meta<span class="o">]</span><span class="w">     </span>│
 │<span class="w">    </span>--threads<span class="w">           </span>-t<span class="w">                        </span>INTEGER<span class="w"> </span>RANGE<span class="w">       </span>Threads<span class="w"> </span><span class="k">for</span><span class="w"> </span>both<span class="w">    </span>│
 │<span class="w">                                                  </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">              </span>pyrodigal<span class="w"> </span>and<span class="w">       </span>│
-│<span class="w">                                                                      </span>hmmsearch<span class="w">           </span>│
+│<span class="w">                                                                      </span>pyHMMER<span class="w">             </span>│
 │<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">        </span>│
 │<span class="w">    </span>--min-bitscore<span class="w">                                </span>FLOAT<span class="w">               </span>Minimum<span class="w"> </span>bitscore<span class="w"> </span>to<span class="w"> </span>│
 │<span class="w">                                                                      </span>keep<span class="w"> </span>a<span class="w"> </span>domain<span class="w"> </span>hit<span class="w">   </span>│
@@ -689,7 +716,7 @@
 │<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w">           </span>│
 │<span class="w">                                                                      </span>no-keep-proteins<span class="o">]</span><span class="w">   </span>│
 │<span class="w">    </span>--keep-domtbl<span class="w">           </span>--no-keep-domtbl<span class="w">                          </span>Keep<span class="w"> </span>raw<span class="w"> </span>domtblout<span class="w">  </span>│
-│<span class="w">                                                                      </span>from<span class="w"> </span>hmmsearch<span class="w">      </span>│
+│<span class="w">                                                                      </span>from<span class="w"> </span>pyHMMER<span class="w">        </span>│
 │<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w">           </span>│
 │<span class="w">                                                                      </span>keep-domtbl<span class="o">]</span><span class="w">        </span>│
 │<span class="w">    </span>--combine-mode<span class="w">                                </span>TEXT<span class="w">                </span>How<span class="w"> </span>to<span class="w"> </span>combine<span class="w"> </span>hits<span class="w"> </span>│
@@ -708,6 +735,13 @@
 │<span class="w">                                                                      </span>subfolder<span class="w">           </span>│
 │<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w">           </span>│
 │<span class="w">                                                                      </span>no-save-target-pro…<span class="w"> </span>│
+│<span class="w">    </span>--save-target-hmms<span class="w">      </span>--no-save-target-…<span class="w">                        </span>Build<span class="w"> </span>and<span class="w"> </span>save<span class="w"> </span>HMMs<span class="w"> </span>│
+│<span class="w">                                                                      </span>from<span class="w"> </span>target<span class="w">         </span>│
+│<span class="w">                                                                      </span>proteins<span class="w"> </span><span class="k">in</span><span class="w">         </span>│
+│<span class="w">                                                                      </span>target_hmms/<span class="w">        </span>│
+│<span class="w">                                                                      </span>subfolder<span class="w">           </span>│
+│<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w">           </span>│
+│<span class="w">                                                                      </span>no-save-target-hmm…<span class="w"> </span>│
 │<span class="w">    </span>--hmm-mode<span class="w">                                    </span>TEXT<span class="w">                </span>HMM<span class="w"> </span>file<span class="w"> </span>type:<span class="w">       </span>│
 │<span class="w">                                                                      </span><span class="s1">&#39;pure&#39;</span><span class="w"> </span><span class="o">(</span>one<span class="w"> </span>model<span class="w">   </span>│
 │<span class="w">                                                                      </span>per<span class="w"> </span>file<span class="o">)</span><span class="w"> </span>or<span class="w">         </span>│
@@ -723,6 +757,7 @@
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
 <p>Use <code>--max-evalue</code> to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.</p>
 <p>Use <code>--save-target-proteins</code> if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).</p>
+<p>Use <code>--save-target-hmms</code> to build custom HMM profiles from your target proteins. This works independently of <code>--save-target-proteins</code> - the tool can extract proteins temporarily just for HMM building if needed.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>Find contigs with any viral protein (default "any" preserves best-per-model hits):
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>--combine-mode<span class="w"> </span>any<span class="w"> </span>viral_capsid.hmm<span class="w"> </span>viral_polymerase.hmm
@@ -736,13 +771,32 @@
 <p>Be more strict about matches:
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>--max-evalue<span class="w"> </span>1e-10<span class="w"> </span>protein_family.hmm
 </code></pre></div></p>
+<p>Build custom HMMs from viral proteins (works with or without saving proteins):
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>viral_assembly.fasta<span class="w"> </span>--save-target-hmms<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>capsid.hmm<span class="w"> </span>polymerase.hmm
+</code></pre></div></p>
+<p>Complete viral screening workflow with custom HMM generation:
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>metagenome.fa<span class="w"> </span>--save-target-proteins<span class="w"> </span>--save-target-hmms<span class="w"> </span>--combine-mode<span class="w"> </span>threshold<span class="w"> </span>--min-hmm-hits<span class="w"> </span><span class="m">3</span><span class="w"> </span>viral_marker1.hmm<span class="w"> </span>viral_marker2.hmm<span class="w"> </span>viral_marker3.hmm<span class="w"> </span>viral_marker4.hmm
+</code></pre></div></p>
+<p>Screen with complex contig names (automatically handled):
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>scaffolds_with_complex<span class="p">|</span>names<span class="p">|</span>assembly.fa<span class="w"> </span>protein_family.hmm
+</code></pre></div></p>
 <h2 id="what-to-expect">What to expect<a class="headerlink" href="#what-to-expect" title="Permanent link">&para;</a></h2>
-<p>Gene prediction usually takes 1-2 minutes per million base pairs of input. The HMMER searches take longer and depend on how many proteins were predicted and how many HMMs you're using. Using more threads helps significantly.</p>
+<p>Gene prediction usually takes 1-2 minutes per million base pairs of input. The pyHMMER searches are significantly faster than traditional HMMER due to in-memory processing and native Python threading. Performance scales well with the <code>--threads</code> option.</p>
 <p>The output size depends on how many contigs match your criteria. In "any" mode, you might get quite a few contigs. In "all" mode, you'll typically get fewer but higher-confidence results.</p>
+<p><strong>New performance benefits:</strong>
+- <strong>Faster execution</strong>: pyHMMER eliminates subprocess overhead and file I/O
+- <strong>Better memory usage</strong>: In-memory processing of all data
+- <strong>No binary dependencies</strong>: Pure Python implementation
+- <strong>Robust handling</strong>: Automatically deals with complex contig naming schemes</p>
 <p>If you don't get any results, try relaxing your E-value threshold or check that your HMM files are in the correct format. If you get too many results, try using "all" mode instead of "any" mode, or make your E-value threshold more strict.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<p>You need to have pyrodigal, HMMER, and seqkit installed and available in your PATH. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format (usually with .hmm extension).</p>
-<p>The command expects DNA sequences as input, not protein sequences. If you already have predicted proteins, you should use HMMER directly rather than this command.</p>
+<p>You need to have <strong>pyrodigal</strong>, <strong>pyHMMER</strong>, and <strong>seqkit</strong> installed and available. <strong>pyrodigal-gv</strong> is optional but recommended for viral genome analysis. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format.</p>
+<p><strong>Key improvements:</strong>
+- <strong>No HMMER binary required</strong>: pyHMMER provides a pure Python implementation
+- <strong>Automatic viral support</strong>: Uses pyrodigal-gv when available for viral gene prediction
+- <strong>Robust contig handling</strong>: Automatically handles complex contig naming with multiple separators
+- <strong>Flexible HMM building</strong>: Create custom profiles with or without saving intermediate proteins</p>
+<p>The command expects DNA sequences as input, not protein sequences. If you already have predicted proteins, you should use pyHMMER directly rather than this command.</p>
 
 
 

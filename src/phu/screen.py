@@ -14,6 +14,7 @@ from collections import defaultdict
 
 import typer
 from pyrodigal import GeneFinder   # pyrodigal>=3
+from pyrodigal_gv import ViralGeneFinder  # New import for viral gene prediction
 
 import pyhmmer
 import pyhmmer.plan7
@@ -184,7 +185,7 @@ def _predict_proteins_pyrodigal(
     Uses ThreadPool for parallel processing of contigs when threads > 1.
     """
     # Initialize GeneFinder according to the API
-    gf = GeneFinder(meta=(mode == "meta"), min_gene=min_len)
+    gf = ViralGeneFinder(meta=(mode == "meta"), min_gene=min_len)
     
     # Read all contigs first
     contigs = list(_read_fasta(contigs_fa))

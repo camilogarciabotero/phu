@@ -34,8 +34,6 @@ clustered-contigs/
 
 ## Default parameters by mode
 
-<div align="center">
-
 | Parameter | dereplication | votu | species |
 |-----------|---------------|------|---------|
 | Algorithm | cd-hit | leiden | complete |
@@ -43,8 +41,6 @@ clustered-contigs/
 | ANI cutoff | 95% | 95% | 95% |
 | Query coverage | 85% | 85% | None |
 | Pre-filter min-ident | 95% | 95% | 70% |
-
-</div>
 
 ## Command Options
 

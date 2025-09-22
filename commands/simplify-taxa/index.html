@@ -1075,16 +1075,36 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
 <li><code>realm_prediction</code></li>
 </ol>
 <h3 id="example-output">Example Output<a class="headerlink" href="#example-output" title="Permanent link">&para;</a></h3>
-<div align="center">
-
-| Sequence | genus_prediction | family_prediction | compact_lineage |
-|----------|------------------|-------------------|-----------------|
-| seq1 | Caudoviricetes:NF2:NG1 | Caudoviricetes:NF2 | Caudoviricetes:NF2:NG1 |
-| seq2 | - | Caudoviricetes:NF5 | Caudoviricetes:NF5 |
-| seq3 | - | - | - |
-
-</div>
-
+<table>
+<thead>
+<tr>
+<th>Sequence</th>
+<th>genus_prediction</th>
+<th>family_prediction</th>
+<th>compact_lineage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>seq1</td>
+<td>Caudoviricetes:NF2:NG1</td>
+<td>Caudoviricetes:NF2</td>
+<td>Caudoviricetes:NF2:NG1</td>
+</tr>
+<tr>
+<td>seq2</td>
+<td>-</td>
+<td>Caudoviricetes:NF5</td>
+<td>Caudoviricetes:NF5</td>
+</tr>
+<tr>
+<td>seq3</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
 <h2 id="special-cases-handled">Special Cases Handled<a class="headerlink" href="#special-cases-handled" title="Permanent link">&para;</a></h2>
 <h3 id="edge-cases-for-0-chains">Edge Cases for "0" Chains<a class="headerlink" href="#edge-cases-for-0-chains" title="Permanent link">&para;</a></h3>
 <p>The tool correctly handles vContact2's special "0" designation patterns:</p>
@@ -1124,18 +1144,42 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
 <span class="c1"># - Taxonomic filtering</span>
 </code></pre></div>
 <h2 id="comparison-with-manual-processing">Comparison with Manual Processing<a class="headerlink" href="#comparison-with-manual-processing" title="Permanent link">&para;</a></h2>
-<div align="center">
-
-| Task | phu simplify-taxa | Manual Processing |
-|------|-------------------|-------------------|
-| **Complexity** | Single command | Custom scripts/regex |
-| **Edge cases** | Automatically handled | Error-prone |
-| **Consistency** | Standardized format | Variable approaches |
-| **Speed** | Optimized pandas operations | Slower loops |
-| **Maintenance** | Built-in updates | Manual fixes needed |
-
-</div>
-
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>phu simplify-taxa</th>
+<th>Manual Processing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Complexity</strong></td>
+<td>Single command</td>
+<td>Custom scripts/regex</td>
+</tr>
+<tr>
+<td><strong>Edge cases</strong></td>
+<td>Automatically handled</td>
+<td>Error-prone</td>
+</tr>
+<tr>
+<td><strong>Consistency</strong></td>
+<td>Standardized format</td>
+<td>Variable approaches</td>
+</tr>
+<tr>
+<td><strong>Speed</strong></td>
+<td>Optimized pandas operations</td>
+<td>Slower loops</td>
+</tr>
+<tr>
+<td><strong>Maintenance</strong></td>
+<td>Built-in updates</td>
+<td>Manual fixes needed</td>
+</tr>
+</tbody>
+</table>
 <h2 id="output-file-structure">Output File Structure<a class="headerlink" href="#output-file-structure" title="Permanent link">&para;</a></h2>
 <p>The output file preserves the original structure while transforming taxonomy columns:</p>
 <div class="highlight"><pre><span></span><code>Original columns + Simplified *_prediction columns [+ compact_lineage column]

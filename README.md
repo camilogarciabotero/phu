@@ -6,6 +6,7 @@
     <a href="https://github.com/camilogarciabotero/phu/actions/workflows/docs.yaml"><img src="https://github.com/camilogarciabotero/phu/actions/workflows/docs.yaml/badge.svg" alt="docs">
   </a>
   <a href="https://anaconda.org/bioconda/phu"> <img src="https://anaconda.org/bioconda/phu/badges/license.svg" /> </a>
+  <a href="https://doi.org/10.5281/zenodo.17180799"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.17180799.svg" alt="DOI"></a>
 </div>
 
 

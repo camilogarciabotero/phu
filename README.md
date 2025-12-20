@@ -1,4 +1,10 @@
 <div align="center">
+  <img src="docs/assets/phu-logo-gray.svg" height="150" width="120"><br/>
+  <i> Combating Phage Genomes</i><br/><br/>
+</div>
+
+
+<div align="center">
   <a href="https://anaconda.org/bioconda/phu">
     <img src="https://img.shields.io/conda/vn/bioconda/phu?logo=anaconda&style=flat-square&maxAge=3600" alt="install with bioconda">
   </a>

@@ -269,7 +269,8 @@ def _hmmsearch(
     
     # Process hits and yield Hit objects
     for i, top_hits in enumerate(hits_list):
-        model_name = top_hits.query.name.decode()
+        query_name = top_hits.query.name
+        model_name = query_name.decode() if isinstance(query_name, bytes) else query_name
         
         # Determine model identifier based on hmm_mode
         if hmm_mode == "pure":
@@ -281,7 +282,7 @@ def _hmmsearch(
         
         for hit in top_hits:
             if hit.included:  # pyHMMER's inclusion check
-                prot_id = hit.name.decode()
+                prot_id = hit.name if isinstance(hit.name, str) else hit.name.decode()
                 
                 # Extract contig from prot_id with robust handling of multiple "|" characters
                 # Expected format: "contig_name|gene<idx>" where contig_name may contain "|"

@@ -18,8 +18,15 @@ app = typer.Typer(
 )
 
 @app.callback(invoke_without_command=True)
-def _root(ctx: typer.Context) -> None:
-    # any global init here (env checks, logging setup, etc.)
+def _root(
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        False, "-v", "--version", is_eager=True, help="Show version and exit."
+    ),
+) -> None:
+    if version:
+        typer.echo(f"phu {__version__}")
+        raise typer.Exit(0)
     if ctx.invoked_subcommand is None and not ctx.resilient_parsing:
         typer.echo(ctx.get_help())
         raise typer.Exit(0)  # exit code 0 when no subcommand is given

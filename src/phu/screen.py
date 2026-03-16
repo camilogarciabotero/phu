@@ -480,17 +480,17 @@ def _build_target_hmms(
         print("    No target protein files found for HMM building")
         return
 
-    alphabet = pyhmmer.easel.Alphabet.amino()
-    builder = pyhmmer.plan7.Builder(alphabet)
-    background = pyhmmer.plan7.Background(alphabet)
-
     print(f"    Building HMMs for {len(protein_files)} protein sets...")
 
-    for protein_file in protein_files:
+    def _build_single_hmm(protein_file: Path) -> None:
         model_name = protein_file.stem.replace("_proteins", "")
         hmm_output_path = target_hmms_dir / f"{model_name}.hmm"
 
         try:
+            alphabet = pyhmmer.easel.Alphabet.amino()
+            builder = pyhmmer.plan7.Builder(alphabet)
+            background = pyhmmer.plan7.Background(alphabet)
+
             sequences = [
                 pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=seq_str)
                 for seq_id, seq_str in _read_fasta(protein_file)
@@ -499,7 +499,7 @@ def _build_target_hmms(
 
             if len(sequences) == 0:
                 print(f"      Skipping {model_name}: no valid sequences found")
-                continue
+                return
             elif len(sequences) == 1:
                 # For single sequence, use builder.build() method
                 digital_seq = sequences[0].digitize(alphabet)
@@ -509,7 +509,7 @@ def _build_target_hmms(
             else:
                 # For multiple sequences, align by padding to same length
                 max_len = max(len(seq.sequence) for seq in sequences)
-                
+
                 # Pad sequences to same length with gaps
                 aligned_sequences = [
                     pyhmmer.easel.TextSequence(
@@ -518,7 +518,10 @@ def _build_target_hmms(
                     )
                     for seq in sequences
                 ]
-                text_msa = pyhmmer.easel.TextMSA(name=model_name.encode(), sequences=aligned_sequences)
+                text_msa = pyhmmer.easel.TextMSA(
+                    name=model_name.encode(),
+                    sequences=aligned_sequences,
+                )
                 digital_msa = text_msa.digitize(alphabet)
                 hmm, _, _ = builder.build_msa(digital_msa, background)
                 print(f"      Built HMM from {len(sequences)} aligned sequences: {model_name}")
@@ -533,7 +536,15 @@ def _build_target_hmms(
             print(f"      Warning: Failed to build HMM for {model_name}: {e}")
             import traceback
             traceback.print_exc()
-            continue
+
+    # Use threads if requested; otherwise fall back to sequential processing
+    if threads and threads > 1:
+        print(f"    Using {threads} threads for HMM building")
+        with ThreadPool(processes=threads) as pool:
+            pool.map(_build_single_hmm, protein_files)
+    else:
+        for protein_file in protein_files:
+            _build_single_hmm(protein_file)
 
 def _screen(cfg: ScreenConfig) -> ScreenPlan:
     """

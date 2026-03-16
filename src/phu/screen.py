@@ -152,8 +152,13 @@ def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
         for seq in seq_file:
             # seq.name is bytes, decode to str
             seq_id = seq.name.decode() if isinstance(seq.name, bytes) else seq.name
-            # seq.sequence is already a string
-            yield seq_id, seq.sequence
+            # Normalize seq.sequence to str as well (may be bytes or memoryview)
+            seq_seq = seq.sequence
+            if isinstance(seq_seq, (bytes, bytearray, memoryview)):
+                seq_seq = bytes(seq_seq).decode()
+            elif not isinstance(seq_seq, str):
+                seq_seq = str(seq_seq)
+            yield seq_id, seq_seq
 
 @dataclass
 class Hit:

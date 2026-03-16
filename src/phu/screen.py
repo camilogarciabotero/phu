@@ -144,19 +144,16 @@ def _binaries() -> str:
     return seqkit
 
 def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
-    """Tiny FASTA reader (header up to first whitespace is the id)."""
-    with fp.open() as f:
-        seq_id, chunks = None, []
-        for line in f:
-            if line.startswith(">"):
-                if seq_id is not None:
-                    yield seq_id, "".join(chunks)
-                seq_id = line[1:].strip().split()[0]
-                chunks = []
-            else:
-                chunks.append(line.strip())
-        if seq_id is not None:
-            yield seq_id, "".join(chunks)
+    """
+    Read FASTA sequences robustly using pyhmmer.easel.
+    Handles .fa, .fasta, .fa.gz, .fasta.gz and other compressed formats automatically.
+    """
+    with pyhmmer.easel.SequenceFile(str(fp)) as seq_file:
+        for seq in seq_file:
+            # seq.name is bytes, decode to str
+            seq_id = seq.name.decode() if isinstance(seq.name, bytes) else seq.name
+            # seq.sequence is already a string
+            yield seq_id, seq.sequence
 
 @dataclass
 class Hit:
@@ -465,64 +462,43 @@ def _build_target_hmms(
     """
     Build HMM models from target protein sequences using pyHMMER.
     Creates one HMM file per model from the corresponding protein FASTA files.
-    
+
     For single sequences, builds HMM directly using builder.build().
     For multiple sequences, aligns them by padding to the same length before MSA creation.
     """
-    # Create target_hmms directory
     target_hmms_dir = outdir / "target_hmms"
     target_hmms_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Find all protein FASTA files in target_proteins directory
+
     protein_files = list(target_proteins_dir.glob("*_proteins.mfa"))
-    
+
     if not protein_files:
         print("    No target protein files found for HMM building")
         return
-    
-    # Initialize HMM builder and background
+
     alphabet = pyhmmer.easel.Alphabet.amino()
     builder = pyhmmer.plan7.Builder(alphabet)
     background = pyhmmer.plan7.Background(alphabet)
-    
+
     print(f"    Building HMMs for {len(protein_files)} protein sets...")
-    
+
     for protein_file in protein_files:
         model_name = protein_file.stem.replace("_proteins", "")
         hmm_output_path = target_hmms_dir / f"{model_name}.hmm"
-        
+
         try:
-            # Read protein sequences as text first
-            sequences = []
-            with open(protein_file, 'r') as f:
-                seq_id, seq_chunks = None, []
-                for line in f:
-                    line = line.strip()
-                    if line.startswith('>'):
-                        if seq_id is not None and seq_chunks:
-                            sequence = ''.join(seq_chunks)
-                            if sequence:  # Only add non-empty sequences
-                                text_seq = pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=sequence)
-                                sequences.append(text_seq)
-                        seq_id = line[1:].split()[0]
-                        seq_chunks = []
-                    else:
-                        seq_chunks.append(line)
-                
-                # Don't forget the last sequence
-                if seq_id is not None and seq_chunks:
-                    sequence = ''.join(seq_chunks)
-                    if sequence:
-                        text_seq = pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=sequence)
-                        sequences.append(text_seq)
-            
+            sequences = [
+                pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=seq_str)
+                for seq_id, seq_str in _read_fasta(protein_file)
+                if seq_str
+            ]
+
             if len(sequences) == 0:
                 print(f"      Skipping {model_name}: no valid sequences found")
                 continue
             elif len(sequences) == 1:
                 # For single sequence, use builder.build() method
                 digital_seq = sequences[0].digitize(alphabet)
-                hmm = builder.build(digital_seq, background)
+                hmm, _, _ = builder.build(digital_seq, background)
                 hmm.name = model_name.encode()
                 print(f"      Built HMM from 1 sequence: {model_name}")
             else:
@@ -530,26 +506,24 @@ def _build_target_hmms(
                 max_len = max(len(seq.sequence) for seq in sequences)
                 
                 # Pad sequences to same length with gaps
-                aligned_sequences = []
-                for seq in sequences:
-                    padded_seq = seq.sequence + '-' * (max_len - len(seq.sequence))
-                    aligned_seq = pyhmmer.easel.TextSequence(name=seq.name, sequence=padded_seq)
-                    aligned_sequences.append(aligned_seq)
-                
-                # Create MSA from aligned sequences
+                aligned_sequences = [
+                    pyhmmer.easel.TextSequence(
+                        name=seq.name,
+                        sequence=seq.sequence + "-" * (max_len - len(seq.sequence)),
+                    )
+                    for seq in sequences
+                ]
                 text_msa = pyhmmer.easel.TextMSA(name=model_name.encode(), sequences=aligned_sequences)
                 digital_msa = text_msa.digitize(alphabet)
                 hmm, _, _ = builder.build_msa(digital_msa, background)
                 print(f"      Built HMM from {len(sequences)} aligned sequences: {model_name}")
-            
-            # Ensure HMM has proper name
+
             if not hmm.name:
                 hmm.name = model_name.encode()
-            
-            # Write HMM to file
+
             with hmm_output_path.open("wb") as f:
                 hmm.write(f)
-                
+
         except Exception as e:
             print(f"      Warning: Failed to build HMM for {model_name}: {e}")
             import traceback

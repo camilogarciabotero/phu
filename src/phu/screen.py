@@ -13,12 +13,6 @@ from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
 import typer
-from pyrodigal import GeneFinder   # pyrodigal>=3
-from pyrodigal_gv import ViralGeneFinder  # New import for viral gene prediction
-
-import pyhmmer
-import pyhmmer.plan7
-import pyhmmer.easel
 
 from ._exec import run, _executable, CmdNotFound
 
@@ -148,6 +142,8 @@ def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
     Read FASTA sequences robustly using pyhmmer.easel.
     Handles .fa, .fasta, .fa.gz, .fasta.gz and other compressed formats automatically.
     """
+    import pyhmmer.easel
+
     with pyhmmer.easel.SequenceFile(str(fp)) as seq_file:
         for seq in seq_file:
             # seq.name is bytes, decode to str
@@ -186,6 +182,8 @@ def _predict_proteins_pyrodigal(
     
     Uses ThreadPool for parallel processing of contigs when threads > 1.
     """
+    from pyrodigal_gv import ViralGeneFinder
+
     # Initialize GeneFinder according to the API
     gf = ViralGeneFinder(meta=(mode == "meta"), min_gene=min_len)
     
@@ -243,6 +241,10 @@ def _hmmsearch(
     Run pyhmmer.hmmsearch on loaded HMMs and proteins.
     Returns hits directly as Hit objects and optionally writes domtbl files.
     """
+    import pyhmmer
+    import pyhmmer.easel
+    import pyhmmer.plan7
+
     # Load all HMMs into memory
     hmms = []
     hmm_names = []
@@ -471,6 +473,8 @@ def _build_target_hmms(
     For single sequences, builds HMM directly using builder.build().
     For multiple sequences, aligns them by padding to the same length before MSA creation.
     """
+    import pyhmmer
+
     target_hmms_dir = outdir / "target_hmms"
     target_hmms_dir.mkdir(parents=True, exist_ok=True)
 

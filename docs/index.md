@@ -42,6 +42,7 @@ phu -h
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ─────────────────────────────────────────────────────────────────────────────────╮
 │ screen          Screen contigs for a protein family using HMMER on predicted CDS.          │
+│ jack            Iteratively screen contigs from a single seed protein with jackhmmer.      │
 │ cluster         Sequence clustering wrapper around external 'vclust' with three modes.     │
 │ simplify-taxa   Simplify vContact taxonomy prediction columns into compact lineage codes.  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -59,6 +60,17 @@ Screen DNA contigs for specific protein families using HMMER on predicted coding
 ```
 
 [Learn more about protein screening →](commands/screen.md)
+
+### `jack` - Seed-Based Iterative Screening
+
+Iteratively screen DNA contigs from a single seed marker protein using `pyhmmer.hmmer.jackhmmer`. This command is designed for a simple, strict v1 contract: one marker FASTA file containing exactly one protein sequence.
+
+**Example:**
+```bash
+phu jack --input-contigs assembly.fasta marker_seed.faa
+```
+
+[Learn more about iterative jack screening →](commands/jack.md)
 
 ### `cluster` - Sequence Clustering
 

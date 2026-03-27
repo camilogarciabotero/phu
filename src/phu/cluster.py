@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -188,8 +189,6 @@ class ClusterPlan:
 
 
 def _threads(n: int) -> int:
-    import os
-
     return max(1, n or (os.cpu_count() or 1))
 
 

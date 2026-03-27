@@ -6,13 +6,18 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
+import pyhmmer
+import pyhmmer.easel
+import pyhmmer.plan7
 import typer
+from pyrodigal_gv import ViralGeneFinder
 
 from ._exec import run, _executable, CmdNotFound
 
@@ -142,8 +147,6 @@ def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
     Read FASTA sequences robustly using pyhmmer.easel.
     Handles .fa, .fasta, .fa.gz, .fasta.gz and other compressed formats automatically.
     """
-    import pyhmmer.easel
-
     with pyhmmer.easel.SequenceFile(str(fp)) as seq_file:
         for seq in seq_file:
             # seq.name is bytes, decode to str
@@ -182,8 +185,6 @@ def _predict_proteins_pyrodigal(
     
     Uses ThreadPool for parallel processing of contigs when threads > 1.
     """
-    from pyrodigal_gv import ViralGeneFinder
-
     # Initialize GeneFinder according to the API
     gf = ViralGeneFinder(meta=(mode == "meta"), min_gene=min_len)
     
@@ -241,10 +242,6 @@ def _hmmsearch(
     Run pyhmmer.hmmsearch on loaded HMMs and proteins.
     Returns hits directly as Hit objects and optionally writes domtbl files.
     """
-    import pyhmmer
-    import pyhmmer.easel
-    import pyhmmer.plan7
-
     # Load all HMMs into memory
     hmms = []
     hmm_names = []
@@ -291,7 +288,6 @@ def _hmmsearch(
                 # Extract contig from prot_id with robust handling of multiple "|" characters
                 # Expected format: "contig_name|gene<idx>" where contig_name may contain "|"
                 # Use regex to find the last "|gene" pattern
-                import re
                 gene_pattern = r'\|gene\d+$'
                 match = re.search(gene_pattern, prot_id)
                 if match:
@@ -473,8 +469,6 @@ def _build_target_hmms(
     For single sequences, builds HMM directly using builder.build().
     For multiple sequences, aligns them by padding to the same length before MSA creation.
     """
-    import pyhmmer
-
     target_hmms_dir = outdir / "target_hmms"
     target_hmms_dir.mkdir(parents=True, exist_ok=True)
 
@@ -538,7 +532,6 @@ def _build_target_hmms(
 
         except Exception as e:
             print(f"      Warning: Failed to build HMM for {model_name}: {e}")
-            import traceback
             traceback.print_exc()
 
     # Use threads if requested; otherwise fall back to sequential processing

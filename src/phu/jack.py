@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import pyhmmer.easel
+import pyhmmer.hmmer
+
 from ._exec import _executable
 from .screen import Hit, _predict_proteins_pyrodigal, _read_fasta, _seqkit_extract
 
@@ -44,8 +47,6 @@ def _read_single_seed_query(seed_marker: Path):
 
     This strict v1 contract avoids ambiguity around multi-seed behavior.
     """
-    import pyhmmer.easel
-
     records = list(_read_fasta(seed_marker))
     if not records:
         raise ValueError(f"Seed marker file is empty: {seed_marker}")
@@ -71,9 +72,6 @@ def _run_jackhmmer(
     threads: int,
 ) -> Tuple[List[Hit], List[Dict[str, object]]]:
     """Run pyhmmer.hmmer.jackhmmer and return final hits plus iteration summary."""
-    import pyhmmer.easel
-    import pyhmmer.hmmer
-
     with pyhmmer.easel.SequenceFile(
         str(proteins_fa), digital=True, alphabet=alphabet
     ) as seq_file:

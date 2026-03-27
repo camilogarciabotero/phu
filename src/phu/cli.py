@@ -4,6 +4,11 @@ from typing import List, Optional
 import typer
 
 from phu import __version__
+from ._exec import CmdNotFound
+from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
+from .jack import JackConfig, _jack
+from .screen import ScreenConfig, _screen
+from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
 
 app = typer.Typer(
     help="Phage utilities CLI",
@@ -56,9 +61,6 @@ def cluster(
     Example:
         phu cluster --mode votu --input-contigs genomes.fna --vclust-params="--min-kmers 20 --outfmt lite"
     """
-    from ._exec import CmdNotFound
-    from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
-
     # Convert CLI string to enum for compatibility.
     try:
         mode_enum = Mode(mode)
@@ -132,8 +134,6 @@ def simplify_taxa(
     Example:
         phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
     """
-    from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
-    
     # Build config
     cfg = TaxaConfig(
         input_file=input_file,
@@ -227,9 +227,6 @@ def screen(
         phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
         phu screen -i contigs.fa --save-target-proteins *.hmm
     """
-    from ._exec import CmdNotFound
-    from .screen import ScreenConfig, _screen
-
     # Remove duplicates while preserving order
     seen = set()
     unique_hmms = []
@@ -326,9 +323,6 @@ def jack(
         phu jack -i contigs.fa marker_seed.faa
         phu jack -i contigs.fa marker_seed.faa --iterations 7 --inc-evalue 1e-4
     """
-    from ._exec import CmdNotFound
-    from .jack import JackConfig, _jack
-
     cfg = JackConfig(
         input_contigs=input_contigs,
         seed_marker=seed_marker,

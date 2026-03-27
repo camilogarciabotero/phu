@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from enum import Enum
+import pandas as pd
 
 class OutputFormat(str, Enum):
     csv = "csv"
@@ -228,8 +229,6 @@ RANK_CODE = {
 
 def _apply_first_match(x: str, level: str) -> str:
     """Apply the first matching regex for a single taxon string at a given level."""
-    import pandas as pd
-
     if x is None or (isinstance(x, float) and pd.isna(x)):
         return None
     # Edgecase token direct return
@@ -416,8 +415,6 @@ def _apply_first_match(x: str, level: str) -> str:
 
 
 def simplify_single_taxon(x: Optional[str], level: str) -> Optional[str]:
-    import pandas as pd
-
     if x is None or (isinstance(x, float) and pd.isna(x)):
         return None
     # Split by || (multiple candidates)
@@ -451,8 +448,6 @@ def _simplify_taxa(cfg: TaxaConfig) -> TaxaPlan:
     """
     Simplify vContact taxonomy predictions into compact lineage codes.
     """
-    import pandas as pd
-
     if not cfg.input_file.exists():
         raise FileNotFoundError(f"Input file not found: {cfg.input_file}")
 
@@ -538,8 +533,6 @@ def _simplify_series(series: pd.Series, level: str) -> pd.Series:
 
 def _simplify_single_taxon(x: Optional[str], level: str) -> Optional[str]:
     """Simplify a single taxon string, handling multiple candidates separated by ||."""
-    import pandas as pd
-
     if x is None or (isinstance(x, float) and pd.isna(x)):
         return None
     # Split by || (multiple candidates)

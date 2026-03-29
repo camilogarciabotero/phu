@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from enum import Enum
+
 import pandas as pd
 
 class OutputFormat(str, Enum):

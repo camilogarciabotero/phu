@@ -77,7 +77,7 @@ def _run_jackhmmer(
     ) as seq_file:
         targets = seq_file.read_block()
 
-    iterations_out = list(
+    results = list(
         pyhmmer.hmmer.jackhmmer(
             query,
             targets,
@@ -89,31 +89,52 @@ def _run_jackhmmer(
         )
     )
 
+    if not results:
+        return [], []
+        
+    # jackhmmer returns an iterator over results per query sequence.
+    # We provided exactly one query, so there is exactly one result item.
+    # Since checkpoints=True, that item is a list of IterationResult objects.
+    iterations_out = results[0]
+    
     if not iterations_out:
         return [], []
 
+    def _iter_hits(iteration_obj):
+        """Return hits for either pyhmmer iteration objects or plain list outputs."""
+        return getattr(iteration_obj, "hits", iteration_obj)
+
+    def _iter_meta(iteration_obj, idx: int) -> Tuple[int, bool]:
+        """Return (iteration_index, converged) with sensible fallbacks."""
+        iteration = getattr(iteration_obj, "iteration", idx)
+        converged = getattr(iteration_obj, "converged", False)
+        return int(iteration), bool(converged)
+
     summary: List[Dict[str, object]] = []
-    for it in iterations_out:
+    for idx, it in enumerate(iterations_out, start=1):
+        hits_in_iter = _iter_hits(it)
+        iter_index, iter_converged = _iter_meta(it, idx)
         n_hits = 0
         n_included = 0
-        for hit in it.hits:
+        for hit in hits_in_iter:
             n_hits += 1
             if hit.included:
                 n_included += 1
         summary.append(
             {
-                "iteration": int(it.iteration),
+                "iteration": iter_index,
                 "n_hits": n_hits,
                 "n_included": n_included,
-                "converged": bool(it.converged),
+                "converged": iter_converged,
             }
         )
 
     final = iterations_out[-1]
+    final_hits = _iter_hits(final)
     kept: List[Hit] = []
     gene_pattern = re.compile(r"\|gene\d+$")
 
-    for hit in final.hits:
+    for hit in final_hits:
         if not hit.included:
             continue
         if max_evalue is not None and hit.evalue > max_evalue:

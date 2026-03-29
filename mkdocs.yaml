@@ -70,3 +70,4 @@ nav:
       - commands/cluster.md
       - commands/simplify-taxa.md
       - commands/screen.md
+      - commands/jack.md

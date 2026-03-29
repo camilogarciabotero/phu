@@ -6,18 +6,19 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
-import pyhmmer
-import pyhmmer.easel
-import pyhmmer.plan7
 import typer
-from pyrodigal_gv import ViralGeneFinder
+from pyrodigal import GeneFinder   # pyrodigal>=3
+from pyrodigal_gv import ViralGeneFinder  # New import for viral gene prediction
+
+import pyhmmer
+import pyhmmer.plan7
+import pyhmmer.easel
 
 from ._exec import run, _executable, CmdNotFound
 
@@ -288,6 +289,7 @@ def _hmmsearch(
                 # Extract contig from prot_id with robust handling of multiple "|" characters
                 # Expected format: "contig_name|gene<idx>" where contig_name may contain "|"
                 # Use regex to find the last "|gene" pattern
+                import re
                 gene_pattern = r'\|gene\d+$'
                 match = re.search(gene_pattern, prot_id)
                 if match:
@@ -532,6 +534,7 @@ def _build_target_hmms(
 
         except Exception as e:
             print(f"      Warning: Failed to build HMM for {model_name}: {e}")
+            import traceback
             traceback.print_exc()
 
     # Use threads if requested; otherwise fall back to sequential processing

@@ -203,7 +203,7 @@ def _jack(cfg: JackConfig) -> None:
         proteins_fa,
         mode=cfg.mode,
         min_len=cfg.min_gene_len,
-        # translation_table=cfg.translation_table,
+        translation_table=cfg.translation_table,
         threads=cfg.threads,
     )
     print(f"  Proteins predicted: {n_prot}")

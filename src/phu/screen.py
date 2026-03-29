@@ -1,4 +1,5 @@
 from __future__ import annotations
+import gzip
 import json
 import os
 import re
@@ -145,20 +146,61 @@ def _binaries() -> str:
 
 def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
     """
-    Read FASTA sequences robustly using pyhmmer.easel.
-    Handles .fa, .fasta, .fa.gz, .fasta.gz and other compressed formats automatically.
+    Read FASTA sequences with two strategies:
+    1) Python parser (stdlib; robust for compressed/edge-case inputs)
+    2) pyhmmer/easel fallback (fast native parser when available)
+
+    This keeps a dependency-light default while preserving a pyhmmer-backed
+    alternative in environments where easel parsing is preferred.
     """
+    try:
+        yield from _read_fasta_python(fp)
+        return
+    except Exception:
+        # Fallback to easel parser when Python parsing fails unexpectedly.
+        yield from _read_fasta_easel(fp)
+
+
+def _read_fasta_easel(fp: Path) -> Iterable[Tuple[str, str]]:
+    """Read FASTA records using pyhmmer.easel.SequenceFile."""
     with pyhmmer.easel.SequenceFile(str(fp)) as seq_file:
         for seq in seq_file:
-            # seq.name is bytes, decode to str
             seq_id = seq.name.decode() if isinstance(seq.name, bytes) else seq.name
-            # Normalize seq.sequence to str as well (may be bytes or memoryview)
             seq_seq = seq.sequence
             if isinstance(seq_seq, (bytes, bytearray, memoryview)):
                 seq_seq = bytes(seq_seq).decode()
             elif not isinstance(seq_seq, str):
                 seq_seq = str(seq_seq)
             yield seq_id, seq_seq
+
+
+def _read_fasta_python(fp: Path) -> Iterable[Tuple[str, str]]:
+    """Read FASTA records using Python text IO (supports .gz)."""
+    opener = gzip.open if fp.suffix == ".gz" else open
+    with opener(fp, "rt") as handle:
+        seq_id: Optional[str] = None
+        seq_chunks: List[str] = []
+
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            if line.startswith(">"):
+                if seq_id is not None:
+                    yield seq_id, "".join(seq_chunks)
+                # FASTA header id is first token after '>'
+                seq_id = line[1:].split(None, 1)[0]
+                seq_chunks = []
+                continue
+
+            if seq_id is None:
+                raise ValueError(f"Invalid FASTA format in {fp}: sequence before header")
+
+            seq_chunks.append(line)
+
+        if seq_id is not None:
+            yield seq_id, "".join(seq_chunks)
 
 @dataclass
 class Hit:

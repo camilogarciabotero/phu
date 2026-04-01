@@ -42,7 +42,7 @@ phu -h
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ─────────────────────────────────────────────────────────────────────────────────╮
 │ screen          Screen contigs for a protein family using HMMER on predicted CDS.          │
-│ jack            Iteratively screen contigs from a single seed protein with jackhmmer.      │
+│ jack            Iteratively screen contigs from one or more seed proteins with jackhmmer.  │
 │ cluster         Sequence clustering wrapper around external 'vclust' with three modes.     │
 │ simplify-taxa   Simplify vContact taxonomy prediction columns into compact lineage codes.  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -63,11 +63,12 @@ Screen DNA contigs for specific protein families using HMMER on predicted coding
 
 ### `jack` - Seed-Based Iterative Screening
 
-Iteratively screen DNA contigs from a single seed marker protein using `pyhmmer.hmmer.jackhmmer`. This command is designed for a simple, strict v1 contract: one marker FASTA file containing exactly one protein sequence.
+Iteratively screen DNA contigs from one or more seed marker proteins using `pyhmmer.hmmer.jackhmmer`.
+When multiple seeds are provided, you can combine evidence with `--combine-mode any|all|threshold`.
 
 **Example:**
 ```bash
-phu jack --input-contigs assembly.fasta marker_seed.faa
+phu jack --input-contigs assembly.fasta marker_seeds.faa --combine-mode all
 ```
 
 [Learn more about iterative jack screening →](commands/jack.md)

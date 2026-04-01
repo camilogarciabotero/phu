@@ -281,7 +281,7 @@ def jack(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
     ),
     seed_marker: Path = typer.Argument(
-        ..., exists=True, readable=True, help="Seed marker protein FASTA (must contain exactly one sequence)"
+        ..., exists=True, readable=True, help="Seed marker protein FASTA (supports one or more sequences)"
     ),
     output_folder: Path = typer.Option(
         Path("phu-jack"), "--output-folder", "-o", help="Output directory"
@@ -304,6 +304,12 @@ def jack(
     top_per_contig: int = typer.Option(
         1, "--top-per-contig", "-n", min=1, help="Keep top-N hits per contig (by bitscore)"
     ),
+    combine_mode: str = typer.Option(
+        "any", "--combine-mode", "-c", help="How to combine hits from multiple seed proteins: any|all|threshold"
+    ),
+    min_seed_hits: int = typer.Option(
+        1, "--min-seed-hits", "-k", min=1, help="Minimum number of seeds that must hit a contig (for threshold mode)"
+    ),
     min_gene_len: int = typer.Option(
         90, "--min-gene-len", "-g", help="Minimum gene length for pyrodigal (nt)"
     ),
@@ -320,13 +326,17 @@ def jack(
     ),
 ):
     """
-    Iteratively screen contigs from a single seed protein marker with pyhmmer.jackhmmer.
+    Iteratively screen contigs from one or more seed protein markers with pyhmmer.jackhmmer.
 
-    This first version enforces one seed FASTA file containing exactly one protein sequence.
+    Combine modes for multi-seed screening:
+    - any: keep contigs hit by at least one seed (default)
+    - all: keep contigs hit by all seeds
+    - threshold: keep contigs hit by at least --min-seed-hits seeds
 
     Examples:
         phu jack -i contigs.fa marker_seed.faa
-        phu jack -i contigs.fa marker_seed.faa --iterations 7 --inc-evalue 1e-4
+        phu jack -i contigs.fa --combine-mode all marker_seeds.faa
+        phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
     """
     cfg = JackConfig(
         input_contigs=input_contigs,
@@ -338,6 +348,8 @@ def jack(
         inc_evalue=inc_evalue,
         max_evalue=max_evalue,
         top_per_contig=top_per_contig,
+        combine_mode=combine_mode,
+        min_seed_hits=min_seed_hits,
         min_gene_len=min_gene_len,
         translation_table=translation_table,
         keep_proteins=keep_proteins,

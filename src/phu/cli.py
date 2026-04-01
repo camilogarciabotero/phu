@@ -313,6 +313,11 @@ def jack(
     keep_proteins: bool = typer.Option(
         False, "--keep-proteins/--no-keep-proteins", help="Keep the protein FASTA used for searching"
     ),
+    save_hmm: bool = typer.Option(
+        False,
+        "--save-hmm/--no-save-hmm",
+        help="Save the last jackhmmer iteration HMM as last_iteration.hmm",
+    ),
 ):
     """
     Iteratively screen contigs from a single seed protein marker with pyhmmer.jackhmmer.
@@ -336,6 +341,7 @@ def jack(
         min_gene_len=min_gene_len,
         translation_table=translation_table,
         keep_proteins=keep_proteins,
+        save_hmm=save_hmm,
     )
 
     try:

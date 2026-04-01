@@ -25,19 +25,28 @@ class _FakeSequenceFile:
         return []
 
 
+class _FakeHMM:
+    def __init__(self, payload: bytes):
+        self.payload = payload
+
+    def write(self, fh):
+        fh.write(self.payload)
+
+
 def test_run_jackhmmer_accepts_iteration_objects(monkeypatch, tmp_path):
     class _Iteration:
-        def __init__(self, iteration, converged, hits):
+        def __init__(self, iteration, converged, hits, hmm=None):
             self.iteration = iteration
             self.converged = converged
             self.hits = hits
+            self.hmm = hmm
 
     hit1 = _FakeHit("contigA|gene1", True, 50.0, 1e-20)
     hit2 = _FakeHit("contigA|gene2", False, 10.0, 1e-2)
     iters = [_Iteration(1, False, [hit1, hit2])]
 
     monkeypatch.setattr(jack.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
-    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: iters)
+    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [iters])
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
@@ -68,7 +77,7 @@ def test_run_jackhmmer_accepts_list_iterations(monkeypatch, tmp_path):
     ]
 
     monkeypatch.setattr(jack.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
-    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [iter1, iter2])
+    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1, iter2]])
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
@@ -86,3 +95,58 @@ def test_run_jackhmmer_accepts_list_iterations(monkeypatch, tmp_path):
     assert summary[1]["iteration"] == 2
     assert summary[0]["n_hits"] == 2
     assert summary[1]["n_included"] == 1
+
+
+def test_run_jackhmmer_saves_last_iteration_hmm(monkeypatch, tmp_path):
+    class _Iteration:
+        def __init__(self, iteration, converged, hits, hmm):
+            self.iteration = iteration
+            self.converged = converged
+            self.hits = hits
+            self.hmm = hmm
+
+    hit = _FakeHit("contigD|gene1", True, 77.0, 1e-30)
+    final_hmm_path = tmp_path / "last_iteration.hmm"
+    iter1 = _Iteration(1, False, [hit], _FakeHMM(b"HMM-1\n"))
+    iter2 = _Iteration(2, True, [hit], _FakeHMM(b"HMM-2\n"))
+
+    monkeypatch.setattr(jack.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
+    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1, iter2]])
+
+    kept, summary = jack._run_jackhmmer(
+        query=object(),
+        alphabet=object(),
+        proteins_fa=tmp_path / "proteins.faa",
+        iterations=3,
+        inc_evalue=1e-3,
+        max_evalue=1e-5,
+        threads=1,
+        hmm_output_path=final_hmm_path,
+    )
+
+    assert len(kept) == 1
+    assert len(summary) == 2
+    assert final_hmm_path.read_bytes() == b"HMM-2\n"
+
+
+def test_run_jackhmmer_skip_hmm_export_when_unavailable(monkeypatch, tmp_path):
+    iter1 = [_FakeHit("contigE|gene1", True, 43.0, 1e-15)]
+    final_hmm_path = tmp_path / "last_iteration.hmm"
+
+    monkeypatch.setattr(jack.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
+    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1]])
+
+    kept, summary = jack._run_jackhmmer(
+        query=object(),
+        alphabet=object(),
+        proteins_fa=tmp_path / "proteins.faa",
+        iterations=2,
+        inc_evalue=1e-3,
+        max_evalue=1e-5,
+        threads=1,
+        hmm_output_path=final_hmm_path,
+    )
+
+    assert len(kept) == 1
+    assert len(summary) == 1
+    assert not final_hmm_path.exists()

@@ -29,6 +29,7 @@ class JackConfig:
     min_gene_len: int = 90
     translation_table: int = 11
     keep_proteins: bool = False
+    save_hmm: bool = False
 
     def __post_init__(self) -> None:
         if self.mode not in {"meta", "single"}:
@@ -70,6 +71,7 @@ def _run_jackhmmer(
     inc_evalue: float,
     max_evalue: Optional[float],
     threads: int,
+    hmm_output_path: Optional[Path] = None,
 ) -> Tuple[List[Hit], List[Dict[str, object]]]:
     """Run pyhmmer.hmmer.jackhmmer and return final hits plus iteration summary."""
     with pyhmmer.easel.SequenceFile(
@@ -130,6 +132,12 @@ def _run_jackhmmer(
         )
 
     final = iterations_out[-1]
+    if hmm_output_path is not None:
+        final_hmm = getattr(final, "hmm", None)
+        if final_hmm is not None:
+            with hmm_output_path.open("wb") as out_hmm:
+                final_hmm.write(out_hmm)
+
     final_hits = _iter_hits(final)
     kept: List[Hit] = []
     gene_pattern = re.compile(r"\|gene\d+$")
@@ -217,6 +225,10 @@ def _jack(cfg: JackConfig) -> None:
     out_contigs = cfg.outdir / "screened_contigs.fasta"
     iter_tsv = cfg.outdir / "jackhmmer_iterations.tsv"
     hits_tsv = cfg.outdir / "jackhmmer_hits.tsv"
+    final_hmm_path = cfg.outdir / "last_iteration.hmm"
+
+    if cfg.save_hmm and final_hmm_path.exists():
+        final_hmm_path.unlink()
 
     print("Predicting proteins with pyrodigal…")
     n_prot = _predict_proteins_pyrodigal(
@@ -250,6 +262,7 @@ def _jack(cfg: JackConfig) -> None:
         inc_evalue=cfg.inc_evalue,
         max_evalue=cfg.max_evalue,
         threads=cfg.threads,
+        hmm_output_path=final_hmm_path if cfg.save_hmm else None,
     )
     print(f"  Included final hits: {len(final_hits)}")
 
@@ -266,7 +279,7 @@ def _jack(cfg: JackConfig) -> None:
         proteins_fa.unlink()
 
     print(f"Done. Output FASTA: {out_contigs}")
-    print(
-        "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, "
-        "jackhmmer_iterations.tsv."
-    )
+    files_msg = "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
+    if cfg.save_hmm and final_hmm_path.exists():
+        files_msg += ", last_iteration.hmm"
+    print(f"{files_msg}.")

@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -406,6 +406,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#jack-seed-based-iterative-screening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jack - Seed-Based Iterative Screening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cluster-sequence-clustering" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -615,6 +626,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="commands/jack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    jack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -732,6 +771,17 @@
     <span class="md-ellipsis">
       
         screen - Protein Family Screening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jack-seed-based-iterative-screening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jack - Seed-Based Iterative Screening
       
     </span>
   </a>
@@ -862,6 +912,7 @@ mamba<span class="w"> </span>activate<span class="w"> </span>phu
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─<span class="w"> </span>Commands<span class="w"> </span>─────────────────────────────────────────────────────────────────────────────────╮
 │<span class="w"> </span>screen<span class="w">          </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>a<span class="w"> </span>protein<span class="w"> </span>family<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">          </span>│
+│<span class="w"> </span>jack<span class="w">            </span>Iteratively<span class="w"> </span>screen<span class="w"> </span>contigs<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>seed<span class="w"> </span>proteins<span class="w"> </span>with<span class="w"> </span>jackhmmer.<span class="w">  </span>│
 │<span class="w"> </span>cluster<span class="w">         </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">&#39;vclust&#39;</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">     </span>│
 │<span class="w"> </span>simplify-taxa<span class="w">   </span>Simplify<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>prediction<span class="w"> </span>columns<span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>lineage<span class="w"> </span>codes.<span class="w">  </span>│
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -873,6 +924,13 @@ mamba<span class="w"> </span>activate<span class="w"> </span>phu
 <div class="highlight"><pre><span></span><code><span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>viral_capsid.hmm<span class="w"> </span>portal.hmm
 </code></pre></div></p>
 <p><a href="commands/screen/">Learn more about protein screening →</a></p>
+<h3 id="jack-seed-based-iterative-screening"><code>jack</code> - Seed-Based Iterative Screening<a class="headerlink" href="#jack-seed-based-iterative-screening" title="Permanent link">&para;</a></h3>
+<p>Iteratively screen DNA contigs from one or more seed marker proteins using <code>pyhmmer.hmmer.jackhmmer</code>.
+When multiple seeds are provided, you can combine evidence with <code>--combine-mode any|all|threshold</code>.</p>
+<p><strong>Example:</strong>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>marker_seeds.faa<span class="w"> </span>--combine-mode<span class="w"> </span>all
+</code></pre></div></p>
+<p><a href="commands/jack/">Learn more about iterative jack screening →</a></p>
 <h3 id="cluster-sequence-clustering"><code>cluster</code> - Sequence Clustering<a class="headerlink" href="#cluster-sequence-clustering" title="Permanent link">&para;</a></h3>
 <p>Cluster viral sequences into operational taxonomic units with three specialized modes:</p>
 <ul>

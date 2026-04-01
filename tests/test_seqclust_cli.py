@@ -44,6 +44,10 @@ def test_jack_short_options_present_in_help():
     assert "-I" in result.stdout
     assert "--max-evalue" in result.stdout
     assert "-e" in result.stdout
+    assert "--combine-mode" in result.stdout
+    assert "-c" in result.stdout
+    assert "--min-seed-hits" in result.stdout
+    assert "-k" in result.stdout
 
 
 def test_simplify_taxa_short_options_present_in_help():

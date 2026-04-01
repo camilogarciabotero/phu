@@ -30,6 +30,8 @@ class JackConfig:
     translation_table: int = 11
     keep_proteins: bool = False
     save_hmm: bool = False
+    combine_mode: str = "any"
+    min_seed_hits: int = 1
 
     def __post_init__(self) -> None:
         if self.mode not in {"meta", "single"}:
@@ -40,32 +42,38 @@ class JackConfig:
             raise ValueError("iterations must be >= 1")
         if self.top_per_contig < 1:
             raise ValueError("top_per_contig must be >= 1")
+        if self.combine_mode not in {"any", "all", "threshold"}:
+            raise ValueError("combine_mode must be 'any', 'all', or 'threshold'")
+        if self.min_seed_hits < 1:
+            raise ValueError("min_seed_hits must be >= 1")
 
 
-def _read_single_seed_query(seed_marker: Path):
-    """
-    Read exactly one protein seed sequence from FASTA and digitize it.
-
-    This strict v1 contract avoids ambiguity around multi-seed behavior.
-    """
+def _read_seed_queries(seed_marker: Path):
+    """Read one or more seed proteins from FASTA and digitize them."""
     records = list(_read_fasta(seed_marker))
     if not records:
         raise ValueError(f"Seed marker file is empty: {seed_marker}")
-    if len(records) != 1:
-        raise ValueError(
-            "Seed marker file must contain exactly one sequence in this version. "
-            "Provide a FASTA with a single protein sequence."
-        )
 
-    seq_id, seq = records[0]
+    seen = set()
+    out = []
     alphabet = pyhmmer.easel.Alphabet.amino()
-    text_seq = pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=seq)
-    return text_seq.digitize(alphabet), alphabet
+    for seq_id, seq in records:
+        if seq_id in seen:
+            raise ValueError(
+                f"Duplicate seed sequence ID found: {seq_id}. "
+                "Seed IDs must be unique."
+            )
+        seen.add(seq_id)
+        text_seq = pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=seq)
+        out.append((seq_id, text_seq.digitize(alphabet), alphabet))
+
+    return out
 
 
 def _run_jackhmmer(
     query,
     alphabet,
+    seed_id: str,
     proteins_fa: Path,
     iterations: int,
     inc_evalue: float,
@@ -161,7 +169,7 @@ def _run_jackhmmer(
             Hit(
                 contig=contig,
                 prot_id=prot_id,
-                model="jackhmmer",
+                model=seed_id,
                 bitscore=hit.score,
                 evalue=hit.evalue,
             )
@@ -171,43 +179,74 @@ def _run_jackhmmer(
 
 
 def _choose_top_hits_per_contig(
-    hits: List[Hit], top_per_contig: int
+    hits: List[Hit],
+    top_per_contig: int,
+    combine_mode: str,
+    min_seed_hits: int,
+    total_seeds: int,
 ) -> Tuple[List[Hit], List[str]]:
-    """Keep top-N hits per contig by bitscore/evalue."""
+    """Combine seed hits and keep top hits per contig based on combine mode."""
     per_contig: Dict[str, List[Hit]] = defaultdict(list)
     for hit in hits:
         per_contig[hit.contig].append(hit)
 
     kept_hits: List[Hit] = []
     kept_contigs: List[str] = []
+
     for contig, contig_hits in per_contig.items():
-        contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
-        kept_hits.extend(contig_hits[:top_per_contig])
-        kept_contigs.append(contig)
+        seed_ids = set(hit.model for hit in contig_hits)
+
+        if combine_mode == "any":
+            contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+            kept_hits.extend(contig_hits[:top_per_contig])
+            kept_contigs.append(contig)
+            continue
+
+        if combine_mode == "all":
+            if len(seed_ids) != total_seeds:
+                continue
+            hits_per_seed: Dict[str, List[Hit]] = defaultdict(list)
+            for hit in contig_hits:
+                hits_per_seed[hit.model].append(hit)
+            for seed_hits in hits_per_seed.values():
+                seed_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+                kept_hits.extend(seed_hits[:1])
+            kept_contigs.append(contig)
+            continue
+
+        # threshold mode
+        if len(seed_ids) >= min_seed_hits:
+            contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+            kept_hits.extend(contig_hits[:top_per_contig])
+            kept_contigs.append(contig)
 
     return kept_hits, kept_contigs
 
 
 def _write_iteration_summary(path: Path, rows: List[Dict[str, object]]) -> None:
-    path.write_text("iteration\tn_hits\tn_included\tconverged\n")
+    path.write_text("seed_id\titeration\tn_hits\tn_included\tconverged\n")
     if not rows:
         return
     with path.open("a") as out:
         for row in rows:
             out.write(
-                f"{row['iteration']}\t{row['n_hits']}\t{row['n_included']}\t{row['converged']}\n"
+                f"{row['seed_id']}\t{row['iteration']}\t{row['n_hits']}\t{row['n_included']}\t{row['converged']}\n"
             )
 
 
 def _write_hits_table(path: Path, hits: List[Hit]) -> None:
-    path.write_text("contig\tprotein\tbitscore\tevalue\n")
+    path.write_text("contig\tprotein\tseed_id\tbitscore\tevalue\n")
     if not hits:
         return
     with path.open("a") as out:
         for hit in hits:
             out.write(
-                f"{hit.contig}\t{hit.prot_id}\t{hit.bitscore:.4f}\t{hit.evalue:.6g}\n"
+                f"{hit.contig}\t{hit.prot_id}\t{hit.model}\t{hit.bitscore:.4f}\t{hit.evalue:.6g}\n"
             )
+
+
+def _safe_seed_filename(seed_id: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", seed_id)
 
 
 def _jack(cfg: JackConfig) -> None:
@@ -226,9 +265,14 @@ def _jack(cfg: JackConfig) -> None:
     iter_tsv = cfg.outdir / "jackhmmer_iterations.tsv"
     hits_tsv = cfg.outdir / "jackhmmer_hits.tsv"
     final_hmm_path = cfg.outdir / "last_iteration.hmm"
+    hmm_dir = cfg.outdir / "last_iteration_hmms"
 
-    if cfg.save_hmm and final_hmm_path.exists():
-        final_hmm_path.unlink()
+    if cfg.save_hmm:
+        if final_hmm_path.exists():
+            final_hmm_path.unlink()
+        if hmm_dir.exists():
+            for p in hmm_dir.glob("*.hmm"):
+                p.unlink()
 
     print("Predicting proteins with pyrodigal…")
     n_prot = _predict_proteins_pyrodigal(
@@ -251,22 +295,55 @@ def _jack(cfg: JackConfig) -> None:
         print("No proteins predicted. Exiting with empty outputs.")
         return
 
-    query, alphabet = _read_single_seed_query(cfg.seed_marker)
+    seeds = _read_seed_queries(cfg.seed_marker)
+    n_seeds = len(seeds)
+    if cfg.combine_mode == "threshold" and cfg.min_seed_hits > n_seeds:
+        raise ValueError(
+            f"min_seed_hits ({cfg.min_seed_hits}) cannot exceed total seeds ({n_seeds})"
+        )
 
-    print("Running iterative pyhmmer.hmmer.jackhmmer…")
-    final_hits, iter_rows = _run_jackhmmer(
-        query=query,
-        alphabet=alphabet,
-        proteins_fa=proteins_fa,
-        iterations=cfg.iterations,
-        inc_evalue=cfg.inc_evalue,
-        max_evalue=cfg.max_evalue,
-        threads=cfg.threads,
-        hmm_output_path=final_hmm_path if cfg.save_hmm else None,
+    print(
+        f"Running iterative pyhmmer.hmmer.jackhmmer for {n_seeds} seed(s) "
+        f"(combine_mode={cfg.combine_mode})…"
     )
-    print(f"  Included final hits: {len(final_hits)}")
 
-    kept_hits, contig_ids = _choose_top_hits_per_contig(final_hits, cfg.top_per_contig)
+    all_hits: List[Hit] = []
+    iter_rows: List[Dict[str, object]] = []
+
+    for seed_id, query, alphabet in seeds:
+        print(f"  Seed: {seed_id}")
+        hmm_output_path: Optional[Path] = None
+        if cfg.save_hmm:
+            if n_seeds == 1:
+                hmm_output_path = final_hmm_path
+            else:
+                hmm_dir.mkdir(parents=True, exist_ok=True)
+                hmm_output_path = hmm_dir / f"{_safe_seed_filename(seed_id)}.hmm"
+
+        seed_hits, seed_iter_rows = _run_jackhmmer(
+            query=query,
+            alphabet=alphabet,
+            seed_id=seed_id,
+            proteins_fa=proteins_fa,
+            iterations=cfg.iterations,
+            inc_evalue=cfg.inc_evalue,
+            max_evalue=cfg.max_evalue,
+            threads=cfg.threads,
+            hmm_output_path=hmm_output_path,
+        )
+        print(f"    Included final hits: {len(seed_hits)}")
+        all_hits.extend(seed_hits)
+        for row in seed_iter_rows:
+            row["seed_id"] = seed_id
+        iter_rows.extend(seed_iter_rows)
+
+    kept_hits, contig_ids = _choose_top_hits_per_contig(
+        all_hits,
+        top_per_contig=cfg.top_per_contig,
+        combine_mode=cfg.combine_mode,
+        min_seed_hits=cfg.min_seed_hits,
+        total_seeds=n_seeds,
+    )
 
     kept_ids.write_text("\n".join(contig_ids) + ("\n" if contig_ids else ""))
     _write_iteration_summary(iter_tsv, iter_rows)
@@ -282,4 +359,6 @@ def _jack(cfg: JackConfig) -> None:
     files_msg = "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
     if cfg.save_hmm and final_hmm_path.exists():
         files_msg += ", last_iteration.hmm"
+    elif cfg.save_hmm and hmm_dir.exists():
+        files_msg += ", last_iteration_hmms/*.hmm"
     print(f"{files_msg}.")

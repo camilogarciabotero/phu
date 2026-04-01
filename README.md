@@ -40,7 +40,7 @@ phu <command> [options]
 ## Commands
 
 - [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Screen contigs for specific protein families using HMMER on predicted coding sequences.
-- [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine hits across seeds.
+- [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine seeds hits.
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 - [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
 

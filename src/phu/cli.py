@@ -180,8 +180,8 @@ def screen(
     top_per_contig: int = typer.Option(
         1, "--top-per-contig", "-n", help="Keep top-N hits per contig (by bitscore)"
     ),
-    min_gene_len: int = typer.Option(
-        90, "--min-gene-len", "-g", help="Minimum gene length for pyrodigal (nt)"
+    min_protein_len_aa: int = typer.Option(
+        30, "--min-protein-len-aa", "-g", min=1, help="Minimum translated protein length to keep (aa)"
     ),
     translation_table: int = typer.Option(
         11, "--ttable", "-T", help="NCBI translation table for coding sequences"
@@ -251,7 +251,7 @@ def screen(
         min_bitscore=min_bitscore,
         max_evalue=max_evalue,
         top_per_contig=top_per_contig,
-        min_gene_len=min_gene_len,
+        min_protein_len_aa=min_protein_len_aa,
         translation_table=translation_table,
         keep_proteins=keep_proteins,
         keep_domtbl=keep_domtbl,

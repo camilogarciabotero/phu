@@ -31,6 +31,8 @@ def test_screen_short_options_present_in_help():
     assert "-i" in result.stdout
     assert "--mode" in result.stdout
     assert "-m" in result.stdout
+    assert "--min-protein-len-aa" in result.stdout
+    assert "-g" in result.stdout
     assert "--combine-mode" in result.stdout
     assert "-c" in result.stdout
 

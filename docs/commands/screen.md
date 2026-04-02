@@ -25,6 +25,8 @@ The screen command follows four main steps with several optional enhancements:
 
 **First**, it predicts all possible proteins from your DNA contigs using **pyrodigal** (for standard microbial genes) or **pyrodigal-gv** (for viral genes when available). This step translates your DNA sequences into protein sequences, creating names like `contig123|gene1`, `contig123|gene2`, etc. The tool automatically handles complex contig names with multiple `|` separators.
 
+After translation, proteins shorter than `--min-protein-len-aa` are discarded before HMM searching.
+
 **Second**, it searches the predicted proteins against your HMM profiles using **pyHMMER**, a fast in-memory Python implementation that eliminates the need for external HMMER binaries. Each HMM file is processed efficiently with native Python threading, and results maintain compatibility with standard HMMER formats.
 
 **Third**, it decides which contigs to keep based on the search results and your filtering criteria. This is where the "combine mode" logic becomes important if you're using multiple HMMs, distinguishing between HMMER "targets" (protein sequences) and HMM "models" (profiles that matched).
@@ -119,9 +121,10 @@ Usage: phu screen [OPTIONS] HMMS...
 │                                                                      contig (by          │
 │                                                                      bitscore)           │
 │                                                                      [default: 1]        │
-│    --min-gene-len                                INTEGER             Minimum gene length │
-│                                                                      for pyrodigal (nt)  │
-│                                                                      [default: 90]       │
+│    --min-protein-len-aa    -g                   INTEGER RANGE       Minimum translated   │
+│                                                  [x>=1]              protein length to    │
+│                                                                      keep (aa)           │
+│                                                                      [default: 30]       │
 │    --ttable                                      INTEGER             NCBI translation    │
 │                                                                      table for coding    │
 │                                                                      sequences           │
@@ -174,6 +177,8 @@ Usage: phu screen [OPTIONS] HMMS...
 Use `--output-folder` to change where the results are saved. The default is a folder called `phu-screen` in your current directory.
 
 Use `--threads` to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.
+
+Use `--min-protein-len-aa` to keep only proteins at or above a given amino-acid length before running HMM searches.
 
 Use `--max-evalue` to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.
 

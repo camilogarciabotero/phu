@@ -42,7 +42,7 @@ class ScreenConfig:
     min_bitscore: Optional[float] = None
     max_evalue: Optional[float] = 1e-5
     top_per_contig: int = 1
-    min_gene_len: int = 90
+    min_protein_len_aa: int = 30
     translation_table: int = 11
     keep_proteins: bool = False
     keep_domtbl: bool = True
@@ -68,6 +68,8 @@ class ScreenConfig:
             raise ValueError("hmm_mode must be 'pure' or 'mixed'")
         if self.save_target_hmms and not self.save_target_proteins:
             raise ValueError("save_target_hmms requires save_target_proteins to be True")
+        if self.min_protein_len_aa < 1:
+            raise ValueError("min_protein_len_aa must be >= 1")
 
     def plan(self) -> "ScreenPlan":
         """Create execution plan from configuration."""
@@ -93,7 +95,7 @@ class ScreenConfig:
             min_bitscore=self.min_bitscore,
             max_evalue=self.max_evalue,
             top_per_contig=self.top_per_contig,
-            min_gene_len=self.min_gene_len,
+            min_protein_len_aa=self.min_protein_len_aa,
             translation_table=self.translation_table,
             keep_proteins=self.keep_proteins,
             keep_domtbl=self.keep_domtbl,
@@ -122,7 +124,7 @@ class ScreenPlan:
     min_bitscore: Optional[float]
     max_evalue: Optional[float]
     top_per_contig: int
-    min_gene_len: int
+    min_protein_len_aa: int
     translation_table: int
     keep_proteins: bool
     keep_domtbl: bool
@@ -218,6 +220,7 @@ def _predict_proteins_pyrodigal(
     output_prot_fa: Path,
     mode: str = "meta",
     min_len: int = 90,
+    min_protein_len_aa: int = 30,
     translation_table: int = 11,
     threads: int = 1,
 ) -> int:
@@ -254,6 +257,8 @@ def _predict_proteins_pyrodigal(
                     aa = gene.translate()
                     if not aa:
                         continue
+                    if len(aa) < min_protein_len_aa:
+                        continue
                     prot_id = f"{contig_id}|gene{i}"
                     out.write(f">{prot_id}\n{aa}\n")
                     n_prot += 1
@@ -266,6 +271,8 @@ def _predict_proteins_pyrodigal(
                 for i, gene in enumerate(genes, start=1):
                     aa = gene.translate()
                     if not aa:
+                        continue
+                    if len(aa) < min_protein_len_aa:
                         continue
                     prot_id = f"{contig_id}|gene{i}"
                     out.write(f">{prot_id}\n{aa}\n")
@@ -621,7 +628,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         plan.input_contigs,
         plan.proteins_fa,
         mode=plan.mode,
-        min_len=plan.min_gene_len,
+        min_protein_len_aa=plan.min_protein_len_aa,
         translation_table=plan.translation_table,
         threads=plan.threads,
     )

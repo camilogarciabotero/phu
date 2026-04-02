@@ -6,6 +6,7 @@ import typer
 from phu import __version__
 from ._exec import CmdNotFound
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
+from .gene_prediction_core import clean_prediction_cache
 from .jack import JackConfig, _jack
 from .screen import ScreenConfig, _screen
 from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
@@ -24,7 +25,25 @@ def _root(
     version: bool = typer.Option(
         False, "-v", "--version", is_eager=True, help="Show version and exit."
     ),
+    clean_cache: bool = typer.Option(
+        False,
+        "--clean-cache",
+        is_eager=True,
+        help="Remove cached protein predictions and exit.",
+    ),
 ) -> None:
+    if clean_cache:
+        try:
+            cache_dir, existed = clean_prediction_cache()
+        except OSError as exc:
+            typer.secho(f"Failed to remove cache: {exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1)
+        if existed:
+            typer.echo(f"Removed cache directory: {cache_dir}")
+        else:
+            typer.echo(f"Cache directory does not exist: {cache_dir}")
+        raise typer.Exit(0)
+
     if version:
         typer.echo(f"phu {__version__}")
         raise typer.Exit(0)
@@ -311,7 +330,10 @@ def jack(
         1, "--min-seed-hits", "-k", min=1, help="Minimum number of seeds that must hit a contig (for threshold mode)"
     ),
     min_gene_len: int = typer.Option(
-        90, "--min-gene-len", "-g", help="Minimum gene length for pyrodigal (nt)"
+            90, "--min-gene-len", "-g", help="Minimum gene length for pyrodigal (nt)"
+        ),
+    min_protein_len_aa: int = typer.Option(
+        30, "--min-protein-len-aa", min=1, help="Minimum translated protein length to keep (aa)"
     ),
     translation_table: int = typer.Option(
         11, "--ttable", "-T", help="NCBI translation table for coding sequences"
@@ -354,6 +376,7 @@ def jack(
         translation_table=translation_table,
         keep_proteins=keep_proteins,
         save_hmm=save_hmm,
+        min_protein_len_aa=min_protein_len_aa,
     )
 
     try:

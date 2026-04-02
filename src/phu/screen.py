@@ -22,6 +22,11 @@ import pyhmmer.plan7
 import pyhmmer.easel
 
 from ._exec import run, _executable, CmdNotFound
+from .gene_prediction_core import (
+    PredictionInputs,
+    get_or_predict_proteins,
+    write_prediction_metadata,
+)
 
 app = typer.Typer(help="Screen contigs for a protein family using pyHMMER on predicted CDS.")
 
@@ -623,23 +628,33 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     # Create output directory
     plan.outdir.mkdir(parents=True, exist_ok=True)
     
-    print("Predicting proteins with pyrodigal…")
-    n_prot = _predict_proteins_pyrodigal(
-        plan.input_contigs,
-        plan.proteins_fa,
+    # Use cache-aware protein prediction
+    pred_inputs = PredictionInputs(
+        input_contigs=plan.input_contigs,
         mode=plan.mode,
         min_protein_len_aa=plan.min_protein_len_aa,
         translation_table=plan.translation_table,
+    )
+    cache_enabled = os.environ.get("PHU_CACHE", "on") != "off"
+    cache_artifact = get_or_predict_proteins(
+        pred_inputs,
+        use_cache=cache_enabled,
         threads=plan.threads,
     )
-    print(f"  Proteins predicted: {n_prot}")
+    
+    print(
+        f"Predicting proteins with pyrodigal…"
+        + (" [cache hit]" if cache_artifact.cache_hit else "")
+    )
+    print(f"  Proteins predicted: {cache_artifact.protein_count}")
+    
+    n_prot = cache_artifact.protein_count
+    proteins_fa = cache_artifact.proteins_path
     
     if n_prot == 0:
         print("No proteins predicted. Exiting with empty outputs.")
         plan.out_contigs.write_text("")
         plan.kept_ids.write_text("")
-        if not plan.keep_proteins and plan.proteins_fa.exists():
-            plan.proteins_fa.unlink()
         return plan
     
     print(f"Running pyhmmer.hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…")
@@ -647,7 +662,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     # Use pyHMMER for all searches
     all_hits = list(_hmmsearch(
         hmm_paths=plan.hmms,
-        proteins_fa=plan.proteins_fa,
+        proteins_fa=proteins_fa,
         domtbl_paths=plan.domtbl_paths,
         threads=plan.threads,
         hmm_mode=plan.hmm_mode,
@@ -683,7 +698,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         _extract_target_proteins(
             kept_hits,
             contig_ids,
-            plan.proteins_fa,
+            proteins_fa,
             plan.outdir,
             plan.hmm_mode,
             plan.seqkit_bin,
@@ -707,9 +722,17 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         seqkit_bin=plan.seqkit_bin,
     )
     
-    # Clean up if requested
-    if not plan.keep_proteins and plan.proteins_fa.exists():
-        plan.proteins_fa.unlink()
+    # Output handling: copy proteins to output folder if requested
+    if plan.keep_proteins:
+        shutil.copy(proteins_fa, plan.outdir / "proteins.faa")
+        write_prediction_metadata(
+            plan.outdir / ".phu_prediction_metadata.json",
+            cache_hit=cache_artifact.cache_hit,
+            cache_key=cache_artifact.cache_key,
+            cache_dir=cache_artifact.cache_dir,
+        )
+    
+    # Clean up domtblout if not requested
     if not plan.keep_domtbl:
         for domtbl_path in plan.domtbl_paths.values():
             if domtbl_path.exists():
@@ -719,6 +742,8 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     files_msg = f"Also wrote: {plan.kept_ids.name} (contig IDs)"
     if plan.keep_domtbl:
         files_msg += f" and {len(plan.domtbl_paths)} domtblout files"
+    if plan.keep_proteins:
+        files_msg += " and proteins.faa (cached)"
     if plan.save_target_proteins:
         files_msg += f" and target proteins in target_proteins/ folder"
     if plan.save_target_hmms:

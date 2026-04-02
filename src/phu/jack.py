@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import re
+import shutil
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,7 +12,12 @@ import pyhmmer.easel
 import pyhmmer.hmmer
 
 from ._exec import _executable
-from .screen import Hit, _predict_proteins_pyrodigal, _read_fasta, _seqkit_extract
+from .screen import Hit, _read_fasta, _seqkit_extract
+from .gene_prediction_core import (
+    PredictionInputs,
+    get_or_predict_proteins,
+    write_prediction_metadata,
+)
 
 
 @dataclass
@@ -28,6 +35,7 @@ class JackConfig:
     top_per_contig: int = 1
     min_gene_len: int = 90
     translation_table: int = 11
+    min_protein_len_aa: int = 30
     keep_proteins: bool = False
     save_hmm: bool = False
     combine_mode: str = "any"
@@ -46,6 +54,8 @@ class JackConfig:
             raise ValueError("combine_mode must be 'any', 'all', or 'threshold'")
         if self.min_seed_hits < 1:
             raise ValueError("min_seed_hits must be >= 1")
+        if self.min_protein_len_aa < 1:
+            raise ValueError("min_protein_len_aa must be >= 1")
 
 
 def _read_seed_queries(seed_marker: Path):
@@ -274,24 +284,35 @@ def _jack(cfg: JackConfig) -> None:
             for p in hmm_dir.glob("*.hmm"):
                 p.unlink()
 
-    print("Predicting proteins with pyrodigal…")
-    n_prot = _predict_proteins_pyrodigal(
-        cfg.input_contigs,
-        proteins_fa,
+    # Use cache-aware protein prediction
+    pred_inputs = PredictionInputs(
+        input_contigs=cfg.input_contigs,
         mode=cfg.mode,
-        min_len=cfg.min_gene_len,
+        min_gene_len=cfg.min_gene_len,
         translation_table=cfg.translation_table,
+        min_protein_len_aa=cfg.min_protein_len_aa,
+    )
+    cache_enabled = os.environ.get("PHU_CACHE", "on") != "off"
+    cache_artifact = get_or_predict_proteins(
+        pred_inputs,
+        use_cache=cache_enabled,
         threads=cfg.threads,
     )
-    print(f"  Proteins predicted: {n_prot}")
+
+    print(
+        f"Predicting proteins with pyrodigal…"
+        + (" [cache hit]" if cache_artifact.cache_hit else "")
+    )
+    print(f"  Proteins predicted: {cache_artifact.protein_count}")
+
+    n_prot = cache_artifact.protein_count
+    proteins_fa_actual = cache_artifact.proteins_path
 
     if n_prot == 0:
         out_contigs.write_text("")
         kept_ids.write_text("")
         _write_iteration_summary(iter_tsv, [])
         _write_hits_table(hits_tsv, [])
-        if not cfg.keep_proteins and proteins_fa.exists():
-            proteins_fa.unlink()
         print("No proteins predicted. Exiting with empty outputs.")
         return
 
@@ -324,7 +345,7 @@ def _jack(cfg: JackConfig) -> None:
             query=query,
             alphabet=alphabet,
             seed_id=seed_id,
-            proteins_fa=proteins_fa,
+            proteins_fa=proteins_fa_actual,
             iterations=cfg.iterations,
             inc_evalue=cfg.inc_evalue,
             max_evalue=cfg.max_evalue,
@@ -352,11 +373,20 @@ def _jack(cfg: JackConfig) -> None:
     print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")
     _seqkit_extract(cfg.input_contigs, contig_ids, out_contigs, seqkit_bin)
 
-    if not cfg.keep_proteins and proteins_fa.exists():
-        proteins_fa.unlink()
+    # Output handling: copy proteins to output folder if requested
+    if cfg.keep_proteins:
+        shutil.copy(proteins_fa_actual, proteins_fa)
+        write_prediction_metadata(
+            cfg.outdir / ".phu_prediction_metadata.json",
+            cache_hit=cache_artifact.cache_hit,
+            cache_key=cache_artifact.cache_key,
+            cache_dir=cache_artifact.cache_dir,
+        )
 
     print(f"Done. Output FASTA: {out_contigs}")
     files_msg = "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
+    if cfg.keep_proteins:
+        files_msg += ", proteins.faa (cached)"
     if cfg.save_hmm and final_hmm_path.exists():
         files_msg += ", last_iteration.hmm"
     elif cfg.save_hmm and hmm_dir.exists():

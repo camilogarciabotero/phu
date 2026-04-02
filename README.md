@@ -44,6 +44,16 @@ phu <command> [options]
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 - [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
 
+## Cache Handling
+
+`phu` caches predicted proteins for both `screen` and `jack` so repeated runs can reuse the same translated proteins when the prediction inputs have not changed. Search settings such as HMM files, seed markers, combine mode, and output folder do not affect the cache.
+
+The cache is rebuilt when you change the contig input, `--mode`, `--ttable`, or the protein-length filter. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` participate in the cache key.
+
+To remove previously cached predictions, run `phu --clean-cache`.
+
+See the full cache guide in [docs/cache.md](docs/cache.md).
+
 ## Contributing
 
 We welcome contributions to phu! Please follow these steps:

@@ -29,6 +29,7 @@ phu jack --input-contigs contigs.fa --combine-mode threshold --min-seed-hits 3 m
 ## How it works
 
 1. Predict proteins from contigs with `pyrodigal`.
+    Proteins shorter than `--min-protein-len-aa` are discarded before iterative searching.
 2. Run iterative `jackhmmer` from each seed marker against predicted proteins.
 3. Keep included final hits and apply final `--max-evalue` filtering.
 4. Combine across seeds:
@@ -52,6 +53,12 @@ When `--save-hmm` is enabled:
 - Single-seed input: writes `last_iteration.hmm`.
 - Multi-seed input: writes one HMM per seed in `last_iteration_hmms/*.hmm`.
 
+## Cache handling
+
+Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For `phu jack`, changing `--min-gene-len`, `--min-protein-len-aa`, `--mode`, or `--ttable` rebuilds the cached proteins. Changing seed markers, combine mode, or output options does not.
+
+See [cache.md](../cache.md) for the shared cache rules used by both `screen` and `jack`.
+
 ## Command options
 
 ```bash
@@ -74,6 +81,7 @@ Options:
   -c, --combine-mode TEXT      Combine seed hits per contig: any|all|threshold [default: any]
   -k, --min-seed-hits INTEGER  Minimum number of seeds required for threshold mode [default: 1]
   -g, --min-gene-len INTEGER   Minimum gene length for pyrodigal [default: 90]
+      --min-protein-len-aa INTEGER  Minimum translated protein length to keep [default: 30]
   -T, --ttable INTEGER         NCBI translation table [default: 11]
       --keep-proteins / --no-keep-proteins
                                Keep intermediate proteins FASTA

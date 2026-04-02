@@ -109,6 +109,16 @@ phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
 - **Comparative Analysis**: Prepare datasets for phylogenetic and comparative genomic studies
 - **Database Construction**: Build reference databases of viral sequences
 
+## Cache Handling
+
+`phu` caches predicted proteins for both `screen` and `jack`. That means repeated searches can skip the gene-prediction step when the contigs and prediction inputs are unchanged. Changing HMMs, seed markers, combine mode, or output folders does not invalidate the cache.
+
+The cache is rebuilt when you change the contigs, `--mode`, `--ttable`, or the protein-length filter. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` affect cache reuse.
+
+To clear previous predictions manually, run `phu --clean-cache`.
+
+Read the full guide in [cache.md](cache.md).
+
 ## Contributing
 
 We welcome contributions! Whether it's bug reports, feature requests, or code contributions, please check out our [GitHub repository](https://github.com/camilogarciabotero/phu).

@@ -33,6 +33,12 @@ After translation, proteins shorter than `--min-protein-len-aa` are discarded be
 
 **Finally**, it extracts the matching contigs from your original file and saves them to the output. The tool can also extract target proteins per model and build custom HMM profiles from those proteins for future use.
 
+## Cache handling
+
+Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For `phu screen`, changing `--min-protein-len-aa`, `--mode`, or `--ttable` rebuilds the cached proteins. Changing HMM files, combine mode, or output options does not.
+
+See [cache.md](../cache.md) for the shared cache rules used by both `screen` and `jack`.
+
 ## Using Multiple HMMs
 
 When you provide multiple HMM files, you need to decide how strict you want to be about matches. There are three ways to combine results:

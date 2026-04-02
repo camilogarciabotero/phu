@@ -773,6 +773,7 @@
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <p>The screen command follows four main steps with several optional enhancements:</p>
 <p><strong>First</strong>, it predicts all possible proteins from your DNA contigs using <strong>pyrodigal</strong> (for standard microbial genes) or <strong>pyrodigal-gv</strong> (for viral genes when available). This step translates your DNA sequences into protein sequences, creating names like <code>contig123|gene1</code>, <code>contig123|gene2</code>, etc. The tool automatically handles complex contig names with multiple <code>|</code> separators.</p>
+<p>After translation, proteins shorter than <code>--min-protein-len-aa</code> are discarded before HMM searching.</p>
 <p><strong>Second</strong>, it searches the predicted proteins against your HMM profiles using <strong>pyHMMER</strong>, a fast in-memory Python implementation that eliminates the need for external HMMER binaries. Each HMM file is processed efficiently with native Python threading, and results maintain compatibility with standard HMMER formats.</p>
 <p><strong>Third</strong>, it decides which contigs to keep based on the search results and your filtering criteria. This is where the "combine mode" logic becomes important if you're using multiple HMMs, distinguishing between HMMER "targets" (protein sequences) and HMM "models" (profiles that matched).</p>
 <p><strong>Finally</strong>, it extracts the matching contigs from your original file and saves them to the output. The tool can also extract target proteins per model and build custom HMM profiles from those proteins for future use.</p>
@@ -846,9 +847,10 @@
 │<span class="w">                                                                      </span>contig<span class="w"> </span><span class="o">(</span>by<span class="w">          </span>│
 │<span class="w">                                                                      </span>bitscore<span class="o">)</span><span class="w">           </span>│
 │<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">        </span>│
-│<span class="w">    </span>--min-gene-len<span class="w">                                </span>INTEGER<span class="w">             </span>Minimum<span class="w"> </span>gene<span class="w"> </span>length<span class="w"> </span>│
-│<span class="w">                                                                      </span><span class="k">for</span><span class="w"> </span>pyrodigal<span class="w"> </span><span class="o">(</span>nt<span class="o">)</span><span class="w">  </span>│
-│<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w"> </span><span class="m">90</span><span class="o">]</span><span class="w">       </span>│
+│<span class="w">    </span>--min-protein-len-aa<span class="w">    </span>-g<span class="w">                   </span>INTEGER<span class="w"> </span>RANGE<span class="w">       </span>Minimum<span class="w"> </span>translated<span class="w">   </span>│
+│<span class="w">                                                  </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">              </span>protein<span class="w"> </span>length<span class="w"> </span>to<span class="w">    </span>│
+│<span class="w">                                                                      </span>keep<span class="w"> </span><span class="o">(</span>aa<span class="o">)</span><span class="w">           </span>│
+│<span class="w">                                                                      </span><span class="o">[</span>default:<span class="w"> </span><span class="m">30</span><span class="o">]</span><span class="w">       </span>│
 │<span class="w">    </span>--ttable<span class="w">                                      </span>INTEGER<span class="w">             </span>NCBI<span class="w"> </span>translation<span class="w">    </span>│
 │<span class="w">                                                                      </span>table<span class="w"> </span><span class="k">for</span><span class="w"> </span>coding<span class="w">    </span>│
 │<span class="w">                                                                      </span>sequences<span class="w">           </span>│
@@ -898,6 +900,7 @@
 </code></pre></div>
 <p>Use <code>--output-folder</code> to change where the results are saved. The default is a folder called <code>phu-screen</code> in your current directory.</p>
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
+<p>Use <code>--min-protein-len-aa</code> to keep only proteins at or above a given amino-acid length before running HMM searches.</p>
 <p>Use <code>--max-evalue</code> to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.</p>
 <p>Use <code>--save-target-proteins</code> if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).</p>
 <p>Use <code>--save-target-hmms</code> to build custom HMM profiles from your target proteins. This works independently of <code>--save-target-proteins</code> - the tool can extract proteins temporarily just for HMM building if needed.</p>

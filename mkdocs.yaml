@@ -66,6 +66,7 @@ plugins:
 
 nav:
   - Home: index.md
+  - Cache Handling: cache.md
   - Commands:
       - commands/cluster.md
       - commands/simplify-taxa.md

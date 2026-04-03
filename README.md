@@ -52,7 +52,7 @@ The cache is rebuilt when you change the contig input, `--mode`, `--ttable`, or 
 
 To remove previously cached predictions, run `phu --clean-cache`.
 
-See the full cache guide in [docs/cache.md](docs/cache.md).
+See the full cache guide in [Cache Handling](https://camilogarciabotero.github.io/phu/cache).
 
 ## Contributing
 

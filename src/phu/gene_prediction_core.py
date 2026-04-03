@@ -25,6 +25,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Tuple
+
+
 @dataclass
 class PredictionInputs:
     """Deterministic inputs to gene prediction (used for cache key)."""
@@ -57,6 +59,7 @@ class CacheArtifact:
     cache_hit: bool
     cache_key: str
     cache_dir: Optional[Path] = None
+    temp_dir: Optional[Path] = None
 
 
 def compute_cache_key(inputs: PredictionInputs) -> str:
@@ -178,6 +181,7 @@ def get_or_predict_proteins(
             cache_hit=False,
             cache_key="",
             cache_dir=None,
+            temp_dir=temp_dir,
         )
 
     # Cache-aware path
@@ -233,9 +237,13 @@ def get_or_predict_proteins(
 
         # Atomically promote partial to cache
         cache_subdir.mkdir(parents=True, exist_ok=True)
-        temp_prot.rename(cache_proteins)
+        temp_prot.replace(cache_proteins)
+
+        # Clean up partial directory after successful promotion
+        shutil.rmtree(partial_dir, ignore_errors=True)
 
         # Write manifest with prediction metadata
+        # Write manifest atomically to avoid partial writes on crash
         manifest_data = {
             "input_contigs": str(inputs.input_contigs),
             "mode": inputs.mode,
@@ -245,7 +253,9 @@ def get_or_predict_proteins(
             "protein_count": n_prot,
             "cache_key": cache_key,
         }
-        cache_manifest.write_text(json.dumps(manifest_data, indent=2))
+        tmp_manifest = cache_subdir / ".manifest.tmp"
+        tmp_manifest.write_text(json.dumps(manifest_data, indent=2))
+        tmp_manifest.replace(cache_manifest)
 
         return CacheArtifact(
             proteins_path=cache_proteins,

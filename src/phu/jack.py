@@ -386,7 +386,10 @@ def _jack(cfg: JackConfig) -> None:
     print(f"Done. Output FASTA: {out_contigs}")
     files_msg = "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
     if cfg.keep_proteins:
-        files_msg += ", proteins.faa (cached)"
+        if cache_artifact.cache_hit:
+            files_msg += ", proteins.faa (cached)"
+        else:
+            files_msg += ", proteins.faa"
     if cfg.save_hmm and final_hmm_path.exists():
         files_msg += ", last_iteration.hmm"
     elif cfg.save_hmm and hmm_dir.exists():

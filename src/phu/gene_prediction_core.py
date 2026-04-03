@@ -13,7 +13,10 @@ Key features:
 
 from __future__ import annotations
 
-import fcntl
+try:
+    import fcntl
+except ModuleNotFoundError:
+    fcntl = None
 import hashlib
 import json
 import os

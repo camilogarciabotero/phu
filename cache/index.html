@@ -9,24 +9,28 @@
       
       
       
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../commands/cluster/">
       
       
         
       
       
-      <link rel="icon" href="/assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>phu</title>
+        <title>Cache Handling - phu</title>
       
     
     
-      <link rel="stylesheet" href="/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -45,9 +49,9 @@
       
     
     
-      <link rel="stylesheet" href="/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -71,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#cache-handling" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -83,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/." title="phu" class="md-header__button md-logo" aria-label="phu" data-md-component="logo">
+    <a href=".." title="phu" class="md-header__button md-logo" aria-label="phu" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -103,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Cache Handling
             
           </span>
         </div>
@@ -219,7 +228,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/." title="phu" class="md-nav__button md-logo" aria-label="phu" data-md-component="logo">
+    <a href=".." title="phu" class="md-nav__button md-logo" aria-label="phu" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -249,7 +258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -273,10 +282,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/cache/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cache Handling
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -292,6 +328,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-cache-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the cache stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-the-cache-is-reused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the cache is reused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-the-cache-is-rebuilt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the cache is rebuilt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-control-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to control it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#practical-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related docs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -350,7 +472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/commands/cluster/" class="md-nav__link">
+      <a href="../commands/cluster/" class="md-nav__link">
         
   
   
@@ -378,7 +500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/commands/simplify-taxa/" class="md-nav__link">
+      <a href="../commands/simplify-taxa/" class="md-nav__link">
         
   
   
@@ -406,7 +528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/commands/screen/" class="md-nav__link">
+      <a href="../commands/screen/" class="md-nav__link">
         
   
   
@@ -434,7 +556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/commands/jack/" class="md-nav__link">
+      <a href="../commands/jack/" class="md-nav__link">
         
   
   
@@ -479,6 +601,82 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-cache-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the cache stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-the-cache-is-reused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the cache is reused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-the-cache-is-rebuilt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the cache is rebuilt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-control-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to control it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#practical-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related docs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -491,8 +689,70 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="cache-handling">Cache Handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h1>
+<p><code>phu</code> caches predicted proteins for both <code>screen</code> and <code>jack</code> so repeated runs can skip the gene-prediction step when the contigs and prediction inputs are unchanged.</p>
+<h2 id="what-the-cache-stores">What the cache stores<a class="headerlink" href="#what-the-cache-stores" title="Permanent link">&para;</a></h2>
+<p>The cache stores the translated protein FASTA generated from the input contigs. Search-specific inputs such as HMM files, seed markers, combine mode, and output folder are not part of the cache key.</p>
+<h2 id="when-the-cache-is-reused">When the cache is reused<a class="headerlink" href="#when-the-cache-is-reused" title="Permanent link">&para;</a></h2>
+<p>The cached proteins are reused when all prediction inputs are the same:</p>
+<ul>
+<li>the input contigs file has not changed</li>
+<li>the prediction mode is unchanged</li>
+<li>the protein-length filter is unchanged</li>
+<li>the gene-length filter is unchanged</li>
+<li>the translation table is unchanged</li>
+</ul>
+<h2 id="when-the-cache-is-rebuilt">When the cache is rebuilt<a class="headerlink" href="#when-the-cache-is-rebuilt" title="Permanent link">&para;</a></h2>
+<p>The cache is invalidated and rebuilt when any of these prediction inputs change:</p>
+<ul>
+<li><code>--mode</code></li>
+<li><code>--min-gene-len</code> in <code>phu jack</code></li>
+<li><code>--min-protein-len-aa</code></li>
+<li><code>--ttable</code></li>
+</ul>
+<p>For <code>phu screen</code>, changing <code>--min-protein-len-aa</code>, <code>--mode</code>, or <code>--ttable</code> forces a rebuild. For <code>phu jack</code>, changing either <code>--min-gene-len</code> or <code>--min-protein-len-aa</code> forces a rebuild because both values feed the shared protein-prediction cache key.</p>
+<h2 id="how-to-control-it">How to control it<a class="headerlink" href="#how-to-control-it" title="Permanent link">&para;</a></h2>
+<p>Cache behavior is controlled by environment variables:</p>
+<ul>
+<li><code>PHU_CACHE=off</code> disables caching and always recomputes proteins.</li>
+<li><code>PHU_CACHE_DIR</code> overrides the cache location.</li>
+<li>If <code>PHU_CACHE_DIR</code> is not set, <code>phu</code> uses an XDG-style cache directory under your home cache path.</li>
+</ul>
+<p>You can also remove all cached predictions explicitly:</p>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>--clean-cache
+</code></pre></div>
+<p>This removes the full cache directory resolved by <code>PHU_CACHE_DIR</code> (or the default cache path) and exits.</p>
+<h2 id="practical-cases">Practical cases<a class="headerlink" href="#practical-cases" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Changing only HMM files in <code>screen</code> reuses the cached proteins.</li>
+<li>Changing only seed markers in <code>jack</code> reuses the cached proteins.</li>
+<li>Changing the protein-length filter rebuilds the cache, which is expected because it changes the predicted protein set.</li>
+</ul>
+<h2 id="related-docs">Related docs<a class="headerlink" href="#related-docs" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../commands/screen/">screen command</a></li>
+<li><a href="../commands/jack/">jack command</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -556,10 +816,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/", "features": ["content.code.copy"], "search": "/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

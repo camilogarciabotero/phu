@@ -280,6 +280,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cache Handling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -293,10 +320,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -314,8 +341,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -520,6 +547,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cache-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -628,6 +666,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cache-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -689,7 +738,8 @@ phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span clas
 </code></pre></div>
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Predict proteins from contigs with <code>pyrodigal</code>.</li>
+<li>Predict proteins from contigs with <code>pyrodigal</code>.
+    Proteins shorter than <code>--min-protein-len-aa</code> are discarded before iterative searching.</li>
 <li>Run iterative <code>jackhmmer</code> from each seed marker against predicted proteins.</li>
 <li>Keep included final hits and apply final <code>--max-evalue</code> filtering.</li>
 <li>Combine across seeds:</li>
@@ -712,6 +762,9 @@ phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span clas
 <li>Single-seed input: writes <code>last_iteration.hmm</code>.</li>
 <li>Multi-seed input: writes one HMM per seed in <code>last_iteration_hmms/*.hmm</code>.</li>
 </ul>
+<h2 id="cache-handling">Cache handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h2>
+<p>Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For <code>phu jack</code>, changing <code>--min-gene-len</code>, <code>--min-protein-len-aa</code>, <code>--mode</code>, or <code>--ttable</code> rebuilds the cached proteins. Changing seed markers, combine mode, or output options does not.</p>
+<p>See <a href="../../cache/">cache.md</a> for the shared cache rules used by both <code>screen</code> and <code>jack</code>.</p>
 <h2 id="command-options">Command options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>Usage:<span class="w"> </span>phu<span class="w"> </span>jack<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>SEED_MARKER
 
@@ -732,6 +785,7 @@ Options:
 <span class="w">  </span>-c,<span class="w"> </span>--combine-mode<span class="w"> </span>TEXT<span class="w">      </span>Combine<span class="w"> </span>seed<span class="w"> </span>hits<span class="w"> </span>per<span class="w"> </span>contig:<span class="w"> </span>any<span class="p">|</span>all<span class="p">|</span>threshold<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span>any<span class="o">]</span>
 <span class="w">  </span>-k,<span class="w"> </span>--min-seed-hits<span class="w"> </span>INTEGER<span class="w">  </span>Minimum<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>seeds<span class="w"> </span>required<span class="w"> </span><span class="k">for</span><span class="w"> </span>threshold<span class="w"> </span>mode<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span>
 <span class="w">  </span>-g,<span class="w"> </span>--min-gene-len<span class="w"> </span>INTEGER<span class="w">   </span>Minimum<span class="w"> </span>gene<span class="w"> </span>length<span class="w"> </span><span class="k">for</span><span class="w"> </span>pyrodigal<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">90</span><span class="o">]</span>
+<span class="w">      </span>--min-protein-len-aa<span class="w"> </span>INTEGER<span class="w">  </span>Minimum<span class="w"> </span>translated<span class="w"> </span>protein<span class="w"> </span>length<span class="w"> </span>to<span class="w"> </span>keep<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">30</span><span class="o">]</span>
 <span class="w">  </span>-T,<span class="w"> </span>--ttable<span class="w"> </span>INTEGER<span class="w">         </span>NCBI<span class="w"> </span>translation<span class="w"> </span>table<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">11</span><span class="o">]</span>
 <span class="w">      </span>--keep-proteins<span class="w"> </span>/<span class="w"> </span>--no-keep-proteins
 <span class="w">                               </span>Keep<span class="w"> </span>intermediate<span class="w"> </span>proteins<span class="w"> </span>FASTA

@@ -10,7 +10,7 @@
       
       
       
-        <link rel="next" href="commands/cluster/">
+        <link rel="next" href="cache/">
       
       
         
@@ -455,6 +455,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cache-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#contributing" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -501,6 +512,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cache Handling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -510,10 +548,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -531,8 +569,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -827,6 +865,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cache-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#contributing" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -957,6 +1006,11 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 <li><strong>Comparative Analysis</strong>: Prepare datasets for phylogenetic and comparative genomic studies</li>
 <li><strong>Database Construction</strong>: Build reference databases of viral sequences</li>
 </ul>
+<h2 id="cache-handling">Cache Handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h2>
+<p><code>phu</code> caches predicted proteins for both <code>screen</code> and <code>jack</code>. That means repeated searches can skip the gene-prediction step when the contigs and prediction inputs are unchanged. Changing HMMs, seed markers, combine mode, or output folders does not invalidate the cache.</p>
+<p>The cache is rebuilt when you change the contigs, <code>--mode</code>, <code>--ttable</code>, or the protein-length filter. For <code>phu screen</code>, that is <code>--min-protein-len-aa</code>. For <code>phu jack</code>, both <code>--min-gene-len</code> and <code>--min-protein-len-aa</code> affect cache reuse.</p>
+<p>To clear previous predictions manually, run <code>phu --clean-cache</code>.</p>
+<p>Read the full guide in <a href="cache/">cache.md</a>.</p>
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
 <p>We welcome contributions! Whether it's bug reports, feature requests, or code contributions, please check out our <a href="https://github.com/camilogarciabotero/phu">GitHub repository</a>.</p>
 <h2 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">&para;</a></h2>

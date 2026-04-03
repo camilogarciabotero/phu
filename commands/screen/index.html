@@ -282,6 +282,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cache Handling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -295,10 +322,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -316,8 +343,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -476,6 +503,17 @@
     <span class="md-ellipsis">
       
         How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cache-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache handling
       
     </span>
   </a>
@@ -663,6 +701,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cache-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-multiple-hmms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -777,6 +826,9 @@
 <p><strong>Second</strong>, it searches the predicted proteins against your HMM profiles using <strong>pyHMMER</strong>, a fast in-memory Python implementation that eliminates the need for external HMMER binaries. Each HMM file is processed efficiently with native Python threading, and results maintain compatibility with standard HMMER formats.</p>
 <p><strong>Third</strong>, it decides which contigs to keep based on the search results and your filtering criteria. This is where the "combine mode" logic becomes important if you're using multiple HMMs, distinguishing between HMMER "targets" (protein sequences) and HMM "models" (profiles that matched).</p>
 <p><strong>Finally</strong>, it extracts the matching contigs from your original file and saves them to the output. The tool can also extract target proteins per model and build custom HMM profiles from those proteins for future use.</p>
+<h2 id="cache-handling">Cache handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h2>
+<p>Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For <code>phu screen</code>, changing <code>--min-protein-len-aa</code>, <code>--mode</code>, or <code>--ttable</code> rebuilds the cached proteins. Changing HMM files, combine mode, or output options does not.</p>
+<p>See <a href="../../cache/">cache.md</a> for the shared cache rules used by both <code>screen</code> and <code>jack</code>.</p>
 <h2 id="using-multiple-hmms">Using Multiple HMMs<a class="headerlink" href="#using-multiple-hmms" title="Permanent link">&para;</a></h2>
 <p>When you provide multiple HMM files, you need to decide how strict you want to be about matches. There are three ways to combine results:</p>
 <p><strong>Any mode</strong> (the default) keeps contigs that match at least one model. Important detail: when a single contig matches multiple models, "any" preserves the best hit per model (rather than selecting only one overall best hit). As a result a contig that matches model A and model B will yield one protein for A and one protein for B (subject to <code>--top-per-contig</code>). This is useful when you want a representative protein per matched model from each contig.</p>

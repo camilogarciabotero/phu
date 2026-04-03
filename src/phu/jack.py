@@ -313,6 +313,8 @@ def _jack(cfg: JackConfig) -> None:
         kept_ids.write_text("")
         _write_iteration_summary(iter_tsv, [])
         _write_hits_table(hits_tsv, [])
+        if cache_artifact.temp_dir is not None:
+            shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
         print("No proteins predicted. Exiting with empty outputs.")
         return
 
@@ -383,13 +385,15 @@ def _jack(cfg: JackConfig) -> None:
             cache_dir=cache_artifact.cache_dir,
         )
 
+    # Clean up temp prediction directory (only set when caching is disabled)
+    if cache_artifact.temp_dir is not None:
+        shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
+
     print(f"Done. Output FASTA: {out_contigs}")
     files_msg = "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
     if cfg.keep_proteins:
-        if cache_artifact.cache_hit:
-            files_msg += ", proteins.faa (cached)"
-        else:
-            files_msg += ", proteins.faa"
+        proteins_msg = "proteins.faa (cached)" if cache_artifact.cache_hit else "proteins.faa"
+        files_msg += f", {proteins_msg}"
     if cfg.save_hmm and final_hmm_path.exists():
         files_msg += ", last_iteration.hmm"
     elif cfg.save_hmm and hmm_dir.exists():

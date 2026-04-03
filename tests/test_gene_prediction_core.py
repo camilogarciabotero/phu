@@ -93,8 +93,8 @@ class TestCacheKey:
         assert len(key) == 16  # SHA256 truncated to 16 chars
         assert all(c in "0123456789abcdef" for c in key)
 
-    def test_cache_key_ignores_mode(self, tmp_path):
-        """Cache key includes mode in its seed."""
+    def test_cache_key_includes_mode(self, tmp_path):
+        """Cache key includes mode, so different modes produce different keys."""
         contigs = tmp_path / "contigs.fa"
         contigs.write_text(">c1\nATGC\n")
 
@@ -220,6 +220,8 @@ class TestGetOrPredictProteins:
         assert artifact2.cache_key == ""
         # Paths should be different (separate tempfiles)
         assert artifact1.proteins_path != artifact2.proteins_path
+        assert artifact1.temp_dir is not None
+        assert artifact2.temp_dir is not None
 
     def test_manifest_written_on_cache_build(self, tmp_path, monkeypatch):
         """Cache build writes manifest.json with metadata."""

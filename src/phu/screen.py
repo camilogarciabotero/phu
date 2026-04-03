@@ -655,6 +655,8 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         print("No proteins predicted. Exiting with empty outputs.")
         plan.out_contigs.write_text("")
         plan.kept_ids.write_text("")
+        if cache_artifact.temp_dir is not None:
+            shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
         return plan
     
     print(f"Running pyhmmer.hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…")
@@ -731,6 +733,10 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             cache_key=cache_artifact.cache_key,
             cache_dir=cache_artifact.cache_dir,
         )
+
+    # Clean up temp prediction directory (only set when caching is disabled)
+    if cache_artifact.temp_dir is not None:
+        shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
     
     # Clean up domtblout if not requested
     if not plan.keep_domtbl:
@@ -743,7 +749,8 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     if plan.keep_domtbl:
         files_msg += f" and {len(plan.domtbl_paths)} domtblout files"
     if plan.keep_proteins:
-        files_msg += " and proteins.faa (cached)"
+        proteins_msg = "proteins.faa (cached)" if cache_artifact.cache_hit else "proteins.faa"
+        files_msg += f" and {proteins_msg}"
     if plan.save_target_proteins:
         files_msg += f" and target proteins in target_proteins/ folder"
     if plan.save_target_hmms:

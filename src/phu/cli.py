@@ -8,6 +8,12 @@ from ._exec import CmdNotFound
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .gene_prediction_core import clean_prediction_cache
 from .jack import JackConfig, _jack
+from .pfam_db import (
+    get_pfam_database_status,
+    prepare_pfam_database,
+    refresh_pfam_database,
+    remove_pfam_database,
+)
 from .screen import ScreenConfig, _screen
 from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
 
@@ -18,6 +24,176 @@ app = typer.Typer(
     add_completion=True,
     no_args_is_help=True
 )
+dbs_app = typer.Typer(
+    help="Manage local phu databases",
+    rich_markup_mode="rich",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
+
+SUPPORTED_DBS = ("pfam",)
+
+
+def _normalize_db_names(databases: List[str], all_dbs: bool) -> List[str]:
+    if all_dbs and databases:
+        raise ValueError("Use either specific database names or --all, not both")
+
+    selected = list(SUPPORTED_DBS) if all_dbs or not databases else [name.lower() for name in databases]
+
+    unknown = [name for name in selected if name not in SUPPORTED_DBS]
+    if unknown:
+        raise ValueError(f"Unsupported database(s): {', '.join(sorted(set(unknown)))}")
+
+    # Deduplicate while preserving order.
+    return list(dict.fromkeys(selected))
+
+
+def _db_status_payload(db_name: str) -> dict:
+    if db_name == "pfam":
+        return get_pfam_database_status()
+    raise ValueError(f"Unsupported database: {db_name}")
+
+
+@dbs_app.command("list")
+def dbs_list() -> None:
+    """List supported databases and quick readiness state."""
+    for db_name in SUPPORTED_DBS:
+        status = _db_status_payload(db_name)
+        state = "ready" if (status.get("downloaded") and status.get("indexed")) else "not-ready"
+        typer.echo(f"{db_name}\t{state}")
+
+
+@dbs_app.command("status")
+def dbs_status(
+    databases: Optional[List[str]] = typer.Argument(
+        None,
+        help="Database names (default: all)",
+    ),
+    all_dbs: bool = typer.Option(
+        False,
+        "--all",
+        help="Show status for all supported databases",
+    ),
+) -> None:
+    """Show detailed status for one or more databases."""
+    try:
+        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
+    except ValueError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+    for db_name in selected:
+        status = _db_status_payload(db_name)
+        typer.echo(f"{db_name}:")
+        typer.echo(f"  downloaded: {status.get('downloaded')}")
+        typer.echo(f"  indexed: {status.get('indexed')}")
+        typer.echo(f"  manifest_exists: {status.get('manifest_exists')}")
+        typer.echo(f"  model_count: {status.get('model_count')}")
+        typer.echo(f"  sparse_cached_count: {status.get('sparse_cached_count')}")
+        typer.echo(f"  root: {status.get('root')}")
+
+
+@dbs_app.command("prepare")
+def dbs_prepare(
+    databases: Optional[List[str]] = typer.Argument(
+        None,
+        help="Database names (default: all)",
+    ),
+    all_dbs: bool = typer.Option(
+        False,
+        "--all",
+        help="Prepare all supported databases",
+    ),
+    force_refresh: bool = typer.Option(
+        False,
+        "--force-refresh",
+        help="Force re-download/rebuild when supported",
+    ),
+) -> None:
+    """Prepare databases for use by phu commands."""
+    try:
+        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
+    except ValueError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+    try:
+        for db_name in selected:
+            if db_name == "pfam":
+                result = prepare_pfam_database(download=True, index=True, force_refresh=force_refresh)
+                typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
+                typer.echo(f"Index ready: {result.get('offsets_path')}")
+    except FileNotFoundError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+
+@dbs_app.command("refresh")
+def dbs_refresh(
+    databases: Optional[List[str]] = typer.Argument(
+        None,
+        help="Database names (default: all)",
+    ),
+    all_dbs: bool = typer.Option(
+        False,
+        "--all",
+        help="Refresh all supported databases",
+    ),
+) -> None:
+    """Refresh database integrity and repair incomplete state."""
+    try:
+        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
+    except ValueError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+    try:
+        for db_name in selected:
+            if db_name == "pfam":
+                result = refresh_pfam_database()
+                typer.echo(f"Refreshed {db_name}: {result.get('hmm_path')}")
+                typer.echo(f"Index ready: {result.get('offsets_path')}")
+    except FileNotFoundError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+
+@dbs_app.command("remove")
+def dbs_remove(
+    databases: Optional[List[str]] = typer.Argument(
+        None,
+        help="Database names (default: all)",
+    ),
+    all_dbs: bool = typer.Option(
+        False,
+        "--all",
+        help="Remove all supported databases",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        help="Confirm database removal",
+    ),
+) -> None:
+    """Remove local database data."""
+    if not yes:
+        typer.secho("Refusing to remove databases without --yes", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+    try:
+        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
+    except ValueError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+    for db_name in selected:
+        if db_name == "pfam":
+            removed = remove_pfam_database()
+            if removed:
+                typer.echo(f"Removed {db_name} database")
+            else:
+                typer.echo(f"{db_name} database not present")
+
 
 @app.callback(invoke_without_command=True)
 def _root(

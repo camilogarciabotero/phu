@@ -521,6 +521,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pfam-accession-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PFAM accession handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-multiple-hmms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -712,6 +723,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pfam-accession-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PFAM accession handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-multiple-hmms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -815,10 +837,12 @@
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>HMMS...<span class="o">]</span>
 </code></pre></div>
+<p><code>[HMMS...]</code> accepts either local HMM file paths or PFAM accessions (e.g. <code>PF00001</code>, <code>PF00589.17</code>).</p>
 <p><strong>Example:</strong>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>your_contigs.fasta<span class="w"> </span>your_protein_family.hmm
 </code></pre></div></p>
 <p>This simple command will find all contigs in <code>your_contigs.fasta</code> that contain proteins matching <code>your_protein_family.hmm</code> and save them to a new file called <code>screened_contigs.fasta</code> in a folder named <code>phu-screen</code>.</p>
+<p>If an argument looks like a PFAM accession (<code>PF</code> + 5 digits, optionally with a version), <code>phu</code> resolves it from a local Pfam-A database automatically.</p>
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <p>The screen command follows four main steps with several optional enhancements:</p>
 <p><strong>First</strong>, it predicts all possible proteins from your DNA contigs using <strong>pyrodigal</strong> (for standard microbial genes) or <strong>pyrodigal-gv</strong> (for viral genes when available). This step translates your DNA sequences into protein sequences, creating names like <code>contig123|gene1</code>, <code>contig123|gene2</code>, etc. The tool automatically handles complex contig names with multiple <code>|</code> separators.</p>
@@ -829,6 +853,24 @@
 <h2 id="cache-handling">Cache handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h2>
 <p>Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For <code>phu screen</code>, changing <code>--min-protein-len-aa</code>, <code>--mode</code>, or <code>--ttable</code> rebuilds the cached proteins. Changing HMM files, combine mode, or output options does not.</p>
 <p>See <a href="../../cache/">cache.md</a> for the shared cache rules used by both <code>screen</code> and <code>jack</code>.</p>
+<h2 id="pfam-accession-handling">PFAM accession handling<a class="headerlink" href="#pfam-accession-handling" title="Permanent link">&para;</a></h2>
+<p>Positional arguments in <code>phu screen</code> can be mixed:</p>
+<ul>
+<li>Local HMM files (<code>capsid.hmm</code>)</li>
+<li>PFAM accessions (<code>PF00001</code>, <code>PF00589.17</code>)</li>
+</ul>
+<p>When PFAM accessions are used, <code>phu</code> will:</p>
+<ol>
+<li>Ensure a local <code>Pfam-A.hmm</code> database exists (download on first use).</li>
+<li>Resolve each accession to the normalized accession (for example, <code>PF00589.17</code> -&gt; <code>PF00589</code>).</li>
+<li>Extract those models and run screening normally.</li>
+</ol>
+<p>Database location:</p>
+<ul>
+<li><code>PHU_DB_FOLDER</code> if set.</li>
+<li>Otherwise <code>$XDG_DATA_HOME/phu/db</code> when <code>XDG_DATA_HOME</code> is set.</li>
+<li>Otherwise <code>~/.local/share/phu/db</code>.</li>
+</ul>
 <h2 id="using-multiple-hmms">Using Multiple HMMs<a class="headerlink" href="#using-multiple-hmms" title="Permanent link">&para;</a></h2>
 <p>When you provide multiple HMM files, you need to decide how strict you want to be about matches. There are three ways to combine results:</p>
 <p><strong>Any mode</strong> (the default) keeps contigs that match at least one model. Important detail: when a single contig matches multiple models, "any" preserves the best hit per model (rather than selecting only one overall best hit). As a result a contig that matches model A and model B will yield one protein for A and one protein for B (subject to <code>--top-per-contig</code>). This is useful when you want a representative protein per matched model from each contig.</p>
@@ -954,11 +996,21 @@
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
 <p>Use <code>--min-protein-len-aa</code> to keep only proteins at or above a given amino-acid length before running HMM searches.</p>
 <p>Use <code>--max-evalue</code> to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.</p>
+<p>Use <code>--cut-ga</code> to enable model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models). When enabled, pyHMMER applies profile GA thresholds during the search pipeline.</p>
 <p>Use <code>--save-target-proteins</code> if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).</p>
 <p>Use <code>--save-target-hmms</code> to build custom HMM profiles from your target proteins. This works independently of <code>--save-target-proteins</code> - the tool can extract proteins temporarily just for HMM building if needed.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>Find contigs with any viral protein (default "any" preserves best-per-model hits):
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>--combine-mode<span class="w"> </span>any<span class="w"> </span>viral_capsid.hmm<span class="w"> </span>viral_polymerase.hmm
+</code></pre></div></p>
+<p>Use PFAM accessions directly as positional targets:
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>PF00001<span class="w"> </span>PF00589
+</code></pre></div></p>
+<p>Use PFAM with GA gathering cutoffs:
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>PF00001<span class="w"> </span>PF00589<span class="w"> </span>--cut-ga
+</code></pre></div></p>
+<p>Mix local HMM files with PFAM accessions:
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>capsid.hmm<span class="w"> </span>PF00589<span class="w"> </span>--combine-mode<span class="w"> </span>all
 </code></pre></div></p>
 <p>Find contigs that have complete viral genomes (all four proteins):
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>capsid.hmm<span class="w"> </span>portal.hmm<span class="w"> </span>primase.hmm<span class="w"> </span>terminase.hmm

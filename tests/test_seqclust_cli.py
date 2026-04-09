@@ -48,6 +48,7 @@ def test_screen_short_options_present_in_help():
     assert "-g" in result.stdout
     assert "--combine-mode" in result.stdout
     assert "-c" in result.stdout
+    assert "--cut-ga" in result.stdout
 
 
 def test_jack_short_options_present_in_help():

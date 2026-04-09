@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+import phu.pfam_db as pfam_db
 from phu.pfam_db import extract_pfam_models, is_pfam_id, normalize_pfam_id
 
 
@@ -74,3 +75,89 @@ def test_extract_pfam_models_reports_missing_ids(tmp_path: Path):
 
     assert len(extracted) == 1
     assert missing == ["PF99999"]
+
+
+def test_extract_pfam_models_reuses_split_cache_without_rescanning(tmp_path: Path, monkeypatch):
+    hmm_db = tmp_path / "Pfam-A.hmm"
+    hmm_db.write_text(
+        "HMMER3/f\n"
+        "NAME  ModelA\n"
+        "ACC   PF00001.1\n"
+        "LENG  42\n"
+        "//\n"
+        "NAME  ModelB\n"
+        "ACC   PF00002.3\n"
+        "LENG  33\n"
+        "//\n"
+    )
+
+    first_out = tmp_path / "resolved_first"
+    extracted_1, missing_1 = extract_pfam_models(
+        hmm_db_path=hmm_db,
+        requested_ids=["PF00001"],
+        output_dir=first_out,
+    )
+    assert missing_1 == []
+    assert len(extracted_1) == 1
+
+    index_path = tmp_path / "offsets.json"
+    assert index_path.exists()
+
+    def _fail_rebuild(*args, **kwargs):
+        raise AssertionError("unexpected offsets-index rebuild")
+
+    monkeypatch.setattr(pfam_db, "_build_offsets_index", _fail_rebuild)
+
+    second_out = tmp_path / "resolved_second"
+    extracted_2, missing_2 = extract_pfam_models(
+        hmm_db_path=hmm_db,
+        requested_ids=["PF00002"],
+        output_dir=second_out,
+    )
+
+    assert missing_2 == []
+    assert len(extracted_2) == 1
+    assert (second_out / "PF00002.hmm").exists()
+
+
+def test_extract_pfam_models_rebuilds_split_cache_when_source_changes(tmp_path: Path):
+    hmm_db = tmp_path / "Pfam-A.hmm"
+    hmm_db.write_text(
+        "HMMER3/f\n"
+        "NAME  ModelA\n"
+        "ACC   PF00001.1\n"
+        "LENG  42\n"
+        "//\n"
+    )
+
+    first_out = tmp_path / "resolved_first"
+    extracted_1, missing_1 = extract_pfam_models(
+        hmm_db_path=hmm_db,
+        requested_ids=["PF00001"],
+        output_dir=first_out,
+    )
+    assert missing_1 == []
+    assert len(extracted_1) == 1
+
+    hmm_db.write_text(
+        "HMMER3/f\n"
+        "NAME  ModelA\n"
+        "ACC   PF00001.1\n"
+        "LENG  42\n"
+        "//\n"
+        "NAME  ModelZ\n"
+        "ACC   PF99999.4\n"
+        "LENG  17\n"
+        "//\n"
+    )
+
+    second_out = tmp_path / "resolved_second"
+    extracted_2, missing_2 = extract_pfam_models(
+        hmm_db_path=hmm_db,
+        requested_ids=["PF99999"],
+        output_dir=second_out,
+    )
+
+    assert missing_2 == []
+    assert len(extracted_2) == 1
+    assert (second_out / "PF99999.hmm").exists()

@@ -1,5 +1,6 @@
 from typer.testing import CliRunner
 from phu.cli import app
+import phu.cli as cli_module
 
 runner = CliRunner()
 
@@ -10,6 +11,7 @@ def test_root_help_runs():
     assert "cluster" in result.stdout
     assert "screen" in result.stdout
     assert "jack" in result.stdout
+    assert "dbs" in result.stdout
     assert "simplify-taxa" in result.stdout
     assert "--clean-cache" in result.stdout
 
@@ -25,6 +27,90 @@ def test_clean_cache_removes_prediction_cache(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert "Removed cache directory" in result.stdout
     assert not cache_dir.exists()
+
+
+def test_dbs_help_runs():
+    result = runner.invoke(app, ["dbs", "--help"])
+    assert result.exit_code == 0
+    assert "list" in result.stdout
+    assert "status" in result.stdout
+    assert "prepare" in result.stdout
+    assert "refresh" in result.stdout
+    assert "remove" in result.stdout
+
+
+def test_dbs_prepare_calls_pfam_prepare(monkeypatch, tmp_path):
+    hmm_path = tmp_path / "Pfam-A.hmm"
+    offsets_path = tmp_path / "offsets.json"
+
+    def fake_prepare_pfam_database(*, download, index, force_refresh):
+        assert download is True
+        assert index is True
+        assert force_refresh is False
+        hmm_path.write_text("dummy")
+        return {"hmm_path": str(hmm_path), "offsets_path": str(offsets_path), "downloaded": True, "indexed": True}
+
+    monkeypatch.setattr(cli_module, "prepare_pfam_database", fake_prepare_pfam_database)
+
+    result = runner.invoke(app, ["dbs", "prepare", "pfam"])
+
+    assert result.exit_code == 0
+    assert "Prepared pfam" in result.stdout
+    assert "Index ready" in result.stdout
+
+
+def test_dbs_refresh_calls_pfam_refresh(monkeypatch, tmp_path):
+    hmm_path = tmp_path / "Pfam-A.hmm"
+    hmm_path.write_text("dummy")
+    offsets_path = tmp_path / "offsets.json"
+
+    def fake_refresh_pfam_database():
+        offsets_path.write_text("{}")
+        return {"hmm_path": str(hmm_path), "offsets_path": str(offsets_path), "downloaded": True, "indexed": True}
+
+    monkeypatch.setattr(cli_module, "refresh_pfam_database", fake_refresh_pfam_database)
+
+    result = runner.invoke(app, ["dbs", "refresh", "pfam"])
+
+    assert result.exit_code == 0
+    assert "Refreshed pfam" in result.stdout
+    assert "Index ready" in result.stdout
+
+
+def test_dbs_status_shows_pfam_state(monkeypatch):
+    def fake_status():
+        return {
+            "name": "pfam",
+            "downloaded": True,
+            "indexed": True,
+            "manifest_exists": True,
+            "model_count": 100,
+            "sparse_cached_count": 5,
+            "root": "/tmp/pfam",
+        }
+
+    monkeypatch.setattr(cli_module, "get_pfam_database_status", fake_status)
+
+    result = runner.invoke(app, ["dbs", "status", "pfam"])
+
+    assert result.exit_code == 0
+    assert "pfam:" in result.stdout
+    assert "downloaded: True" in result.stdout
+    assert "indexed: True" in result.stdout
+
+
+def test_dbs_remove_requires_yes():
+    result = runner.invoke(app, ["dbs", "remove", "pfam"])
+    assert result.exit_code == 1
+
+
+def test_dbs_remove_calls_pfam_remove(monkeypatch):
+    monkeypatch.setattr(cli_module, "remove_pfam_database", lambda: True)
+
+    result = runner.invoke(app, ["dbs", "remove", "pfam", "--yes"])
+
+    assert result.exit_code == 0
+    assert "Removed pfam database" in result.stdout
 
 
 def test_cluster_short_options_present_in_help():

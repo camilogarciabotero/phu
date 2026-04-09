@@ -13,6 +13,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
+import click
 import typer
 from pyrodigal import GeneFinder   # pyrodigal>=3
 from pyrodigal_gv import ViralGeneFinder  # New import for viral gene prediction
@@ -27,6 +28,7 @@ from .gene_prediction_core import (
     get_or_predict_proteins,
     write_prediction_metadata,
 )
+from .pfam_db import ensure_pfam_database, extract_pfam_models, is_pfam_id, normalize_pfam_id
 
 app = typer.Typer(help="Screen contigs for a protein family using pyHMMER on predicted CDS.")
 
@@ -35,6 +37,72 @@ app = typer.Typer(help="Screen contigs for a protein family using pyHMMER on pre
 
 def _cmd_exists(exe: str) -> bool:
     return shutil.which(exe) is not None
+
+
+def _run_click_task(label: str, func, *args, **kwargs):
+    """Run a blocking task with a minimal Click progress indicator."""
+    with click.progressbar(
+        length=1,
+        label=label,
+        show_eta=False,
+        show_percent=False,
+        show_pos=False,
+    ) as bar:
+        result = func(*args, **kwargs)
+        bar.update(1)
+    return result
+
+
+def _resolve_hmm_inputs(hmm_inputs: List[Path], outdir: Path) -> List[Path]:
+    """
+    Resolve positional inputs into concrete HMM file paths.
+
+    Input tokens may be either local HMM file paths or PFAM accessions (e.g. PF00001).
+    PFAM accessions are resolved from the local PFAM database, downloading it on demand.
+    """
+    local_hmms: List[Path] = []
+    pfam_ids: List[str] = []
+
+    for token_path in hmm_inputs:
+        token = str(token_path)
+
+        if token_path.exists():
+            local_hmms.append(token_path)
+            continue
+
+        if is_pfam_id(token):
+            pfam_ids.append(normalize_pfam_id(token))
+            continue
+
+        raise FileNotFoundError(f"HMM file not found: {token_path}")
+
+    # Preserve order while deduplicating PFAM IDs.
+    dedup_pfam_ids = list(dict.fromkeys(pfam_ids))
+
+    if not dedup_pfam_ids:
+        return local_hmms
+
+    pfam_meta = _run_click_task("Preparing PFAM database", ensure_pfam_database)
+    pfam_hmm_db_path = Path(pfam_meta["hmm_path"])
+
+    extracted_dir = outdir / "resolved_pfam_hmms"
+    pfam_hmms, missing = _run_click_task(
+        "Resolving PFAM accessions",
+        extract_pfam_models,
+        hmm_db_path=pfam_hmm_db_path,
+        requested_ids=dedup_pfam_ids,
+        output_dir=extracted_dir,
+    )
+
+    if missing:
+        missing_msg = ", ".join(missing)
+        raise FileNotFoundError(
+            f"PFAM accession(s) not found in local database: {missing_msg}. "
+            "Run again later to refresh the DB source if needed."
+        )
+
+    print(f"Resolved {len(pfam_hmms)} PFAM model(s) from local database: {', '.join(dedup_pfam_ids)}")
+    return local_hmms + pfam_hmms
 
 @dataclass
 class ScreenConfig:
@@ -46,6 +114,7 @@ class ScreenConfig:
     threads: int = 1
     min_bitscore: Optional[float] = None
     max_evalue: Optional[float] = 1e-5
+    cut_ga: bool = False
     top_per_contig: int = 1
     min_protein_len_aa: int = 30
     translation_table: int = 11
@@ -99,6 +168,7 @@ class ScreenConfig:
             threads=effective_threads,
             min_bitscore=self.min_bitscore,
             max_evalue=self.max_evalue,
+            cut_ga=self.cut_ga,
             top_per_contig=self.top_per_contig,
             min_protein_len_aa=self.min_protein_len_aa,
             translation_table=self.translation_table,
@@ -128,6 +198,7 @@ class ScreenPlan:
     threads: int
     min_bitscore: Optional[float]
     max_evalue: Optional[float]
+    cut_ga: bool
     top_per_contig: int
     min_protein_len_aa: int
     translation_table: int
@@ -292,6 +363,7 @@ def _hmmsearch(
     threads: int = 1,
     hmm_mode: str = "pure",
     keep_domtbl: bool = True,
+    cut_ga: bool = False,
 ) -> Iterable[Hit]:
     """
     Run pyhmmer.hmmsearch on loaded HMMs and proteins.
@@ -311,7 +383,8 @@ def _hmmsearch(
         proteins = seq_file.read_block()
     
     # Run hmmsearch with pyHMMER
-    hits_list = list(pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=None))
+    bit_cutoffs = "gathering" if cut_ga else None
+    hits_list = list(pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=bit_cutoffs))
     
     # Write domtbl files if requested
     if keep_domtbl:
@@ -613,8 +686,11 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     """
     if not cfg.input_contigs.exists():
         raise FileNotFoundError(f"Input file not found: {cfg.input_contigs}")
-    
-    # Check all HMM files exist
+
+    # Resolve positional inputs: local HMM paths and/or PFAM accessions.
+    cfg.hmms = _resolve_hmm_inputs(cfg.hmms, cfg.outdir)
+
+    # Check all resolved HMM files exist.
     for hmm in cfg.hmms:
         if not hmm.exists():
             raise FileNotFoundError(f"HMM file not found: {hmm}")
@@ -636,7 +712,9 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         translation_table=plan.translation_table,
     )
     cache_enabled = os.environ.get("PHU_CACHE", "on") != "off"
-    cache_artifact = get_or_predict_proteins(
+    cache_artifact = _run_click_task(
+        "Predicting proteins",
+        get_or_predict_proteins,
         pred_inputs,
         use_cache=cache_enabled,
         threads=plan.threads,
@@ -662,14 +740,20 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     print(f"Running pyhmmer.hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…")
     
     # Use pyHMMER for all searches
-    all_hits = list(_hmmsearch(
-        hmm_paths=plan.hmms,
-        proteins_fa=proteins_fa,
-        domtbl_paths=plan.domtbl_paths,
-        threads=plan.threads,
-        hmm_mode=plan.hmm_mode,
-        keep_domtbl=plan.keep_domtbl,
-    ))
+    all_hits = _run_click_task(
+        "Running HMM searches",
+        lambda: list(
+            _hmmsearch(
+                hmm_paths=plan.hmms,
+                proteins_fa=proteins_fa,
+                domtbl_paths=plan.domtbl_paths,
+                threads=plan.threads,
+                hmm_mode=plan.hmm_mode,
+                keep_domtbl=plan.keep_domtbl,
+                cut_ga=plan.cut_ga,
+            )
+        ),
+    )
     
     unique_model_ids = set(hit.model for hit in all_hits)
     if plan.hmm_mode == "pure":
@@ -717,7 +801,9 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             )
     
     print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")
-    _seqkit_extract(
+    _run_click_task(
+        "Extracting contigs",
+        _seqkit_extract,
         input_fa=plan.input_contigs,
         ids=contig_ids,
         output_fa=plan.out_contigs,

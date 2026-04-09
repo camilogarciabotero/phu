@@ -56,6 +56,12 @@ When PFAM accessions are used, `phu` will:
 2. Resolve each accession to the normalized accession (for example, `PF00589.17` -> `PF00589`).
 3. Extract those models and run screening normally.
 
+Tip: prepare PFAM ahead of time to avoid first-run setup delays:
+
+```bash
+phu dbs prepare pfam
+```
+
 Database location:
 
 - `PHU_DB_FOLDER` if set.

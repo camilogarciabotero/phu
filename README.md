@@ -44,6 +44,12 @@ phu <command> [options]
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 - [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
 
+## Database Management
+
+An special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Right now, `pfam` is wired first.
+
+- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove), with `pfam` wired first.
+
 ## Cache Handling
 
 `phu` caches predicted proteins for both `screen` and `jack` so repeated runs can reuse the same translated proteins when the prediction inputs have not changed. Search settings such as HMM files, seed markers, combine mode, and output folder do not affect the cache.
@@ -101,3 +107,6 @@ This program uses several key tools and libraries, make sure to acknowledge them
 
 - [pyHMMER](https://pyhmmer.readthedocs.io/en/latest/): Python bindings for HMMER.
 > Larralde, M., & Zeller, G. (2023). PyHMMER: a Python library binding to HMMER for efficient sequence analysis. Bioinformatics, 39(5). https://doi.org/10.1093/bioinformatics/btad214
+
+- [Pfams](https://pfam.xfam.org/): A comprehensive collection of protein families and domains based on hidden Markov models.
+> Pfam: The protein families database in 2021: J. Mistry, S. Chuguransky, L. Williams, M. Qureshi, G.A. Salazar, E.L.L. Sonnhammer, S.C.E. Tosatto, L. Paladin, S. Raj, L.J. Richardson, R.D. Finn, A. Bateman, Nucleic Acids Research (2021) doi: 10.1093/nar/gkaa913

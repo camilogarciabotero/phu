@@ -13,7 +13,6 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
-import click
 import typer
 from pyrodigal import GeneFinder   # pyrodigal>=3
 from pyrodigal_gv import ViralGeneFinder  # New import for viral gene prediction
@@ -23,6 +22,7 @@ import pyhmmer.plan7
 import pyhmmer.easel
 
 from ._exec import run, _executable, CmdNotFound
+from ._click import run_click_task
 from .gene_prediction_core import (
     PredictionInputs,
     get_or_predict_proteins,
@@ -37,20 +37,6 @@ app = typer.Typer(help="Screen contigs for a protein family using pyHMMER on pre
 
 def _cmd_exists(exe: str) -> bool:
     return shutil.which(exe) is not None
-
-
-def _run_click_task(label: str, func, *args, **kwargs):
-    """Run a blocking task with a minimal Click progress indicator."""
-    with click.progressbar(
-        length=1,
-        label=label,
-        show_eta=False,
-        show_percent=False,
-        show_pos=False,
-    ) as bar:
-        result = func(*args, **kwargs)
-        bar.update(1)
-    return result
 
 
 def _resolve_hmm_inputs(hmm_inputs: List[Path], outdir: Path) -> List[Path]:
@@ -82,11 +68,11 @@ def _resolve_hmm_inputs(hmm_inputs: List[Path], outdir: Path) -> List[Path]:
     if not dedup_pfam_ids:
         return local_hmms
 
-    pfam_meta = _run_click_task("Preparing PFAM database", ensure_pfam_database)
+    pfam_meta = run_click_task("Preparing PFAM database", ensure_pfam_database)
     pfam_hmm_db_path = Path(pfam_meta["hmm_path"])
 
     extracted_dir = outdir / "resolved_pfam_hmms"
-    pfam_hmms, missing = _run_click_task(
+    pfam_hmms, missing = run_click_task(
         "Resolving PFAM accessions",
         extract_pfam_models,
         hmm_db_path=pfam_hmm_db_path,
@@ -712,7 +698,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         translation_table=plan.translation_table,
     )
     cache_enabled = os.environ.get("PHU_CACHE", "on") != "off"
-    cache_artifact = _run_click_task(
+    cache_artifact = run_click_task(
         "Predicting proteins",
         get_or_predict_proteins,
         pred_inputs,
@@ -740,7 +726,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     print(f"Running pyhmmer.hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…")
     
     # Use pyHMMER for all searches
-    all_hits = _run_click_task(
+    all_hits = run_click_task(
         "Running HMM searches",
         lambda: list(
             _hmmsearch(
@@ -801,7 +787,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             )
     
     print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")
-    _run_click_task(
+    run_click_task(
         "Extracting contigs",
         _seqkit_extract,
         input_fa=plan.input_contigs,

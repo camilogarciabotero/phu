@@ -12,24 +12,11 @@ from urllib.request import urlopen
 
 import click
 
+from ._click import run_click_task
+
 PFAM_HMM_GZ_URL = "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz"
 PFAM_ID_PREFIX = "PF"
 PFAM_NAME = "Pfam-A"
-
-
-def _run_click_task(label: str, func, *args, **kwargs):
-    """Run a blocking task with a minimal Click progress indicator."""
-    with click.progressbar(
-        length=1,
-        label=label,
-        show_eta=False,
-        show_percent=False,
-        show_pos=False,
-    ) as bar:
-        result = func(*args, **kwargs)
-        bar.update(1)
-    return result
-
 
 def is_pfam_id(token: str) -> bool:
     """Return True if token looks like a PFAM accession (with optional version)."""
@@ -108,7 +95,7 @@ def _stream_download_to_path(url: str, destination: Path) -> None:
                             break
                         tmp.write(chunk)
 
-                _run_click_task("Downloading Pfam-A", _copy_stream)
+                run_click_task("Downloading Pfam-A", _copy_stream)
 
     tmp_path.replace(destination)
 
@@ -270,7 +257,7 @@ def extract_pfam_models(
                     if line.strip() == "//":
                         _flush_block()
 
-        _run_click_task("Scanning Pfam-A", _scan_file)
+        run_click_task("Scanning Pfam-A", _scan_file)
 
     missing = sorted(normalized_ids - found)
     return out_paths, missing

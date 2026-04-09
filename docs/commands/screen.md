@@ -12,12 +12,16 @@ This is especially useful when you have metagenomic assemblies and want to pull 
 phu screen --input-contigs [INPUT_CONTIGS] [HMMS...]
 ```
 
+`[HMMS...]` accepts either local HMM file paths or PFAM accessions (e.g. `PF00001`, `PF00589.17`).
+
 **Example:**
 ```bash
 phu screen --input-contigs your_contigs.fasta your_protein_family.hmm
 ```
 
 This simple command will find all contigs in `your_contigs.fasta` that contain proteins matching `your_protein_family.hmm` and save them to a new file called `screened_contigs.fasta` in a folder named `phu-screen`.
+
+If an argument looks like a PFAM accession (`PF` + 5 digits, optionally with a version), `phu` resolves it from a local Pfam-A database automatically.
 
 ## How it works
 
@@ -38,6 +42,25 @@ After translation, proteins shorter than `--min-protein-len-aa` are discarded be
 Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For `phu screen`, changing `--min-protein-len-aa`, `--mode`, or `--ttable` rebuilds the cached proteins. Changing HMM files, combine mode, or output options does not.
 
 See [cache.md](../cache.md) for the shared cache rules used by both `screen` and `jack`.
+
+## PFAM accession handling
+
+Positional arguments in `phu screen` can be mixed:
+
+- Local HMM files (`capsid.hmm`)
+- PFAM accessions (`PF00001`, `PF00589.17`)
+
+When PFAM accessions are used, `phu` will:
+
+1. Ensure a local `Pfam-A.hmm` database exists (download on first use).
+2. Resolve each accession to the normalized accession (for example, `PF00589.17` -> `PF00589`).
+3. Extract those models and run screening normally.
+
+Database location:
+
+- `PHU_DB_FOLDER` if set.
+- Otherwise `$XDG_DATA_HOME/phu/db` when `XDG_DATA_HOME` is set.
+- Otherwise `~/.local/share/phu/db`.
 
 ## Using Multiple HMMs
 
@@ -188,6 +211,8 @@ Use `--min-protein-len-aa` to keep only proteins at or above a given amino-acid 
 
 Use `--max-evalue` to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.
 
+Use `--cut-ga` to enable model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models). When enabled, pyHMMER applies profile GA thresholds during the search pipeline.
+
 Use `--save-target-proteins` if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).
 
 Use `--save-target-hmms` to build custom HMM profiles from your target proteins. This works independently of `--save-target-proteins` - the tool can extract proteins temporarily just for HMM building if needed.
@@ -197,6 +222,21 @@ Use `--save-target-hmms` to build custom HMM profiles from your target proteins.
 Find contigs with any viral protein (default "any" preserves best-per-model hits):
 ```bash
 phu screen --input-contigs assembly.fasta --combine-mode any viral_capsid.hmm viral_polymerase.hmm
+```
+
+Use PFAM accessions directly as positional targets:
+```bash
+phu screen --input-contigs assembly.fasta PF00001 PF00589
+```
+
+Use PFAM with GA gathering cutoffs:
+```bash
+phu screen --input-contigs assembly.fasta PF00001 PF00589 --cut-ga
+```
+
+Mix local HMM files with PFAM accessions:
+```bash
+phu screen --input-contigs contigs.fa capsid.hmm PF00589 --combine-mode all
 ```
 
 Find contigs that have complete viral genomes (all four proteins):

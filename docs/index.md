@@ -90,6 +90,28 @@ phu cluster --mode votu --input-contigs viral-genomes.fasta
 [Learn more about clustering →](commands/cluster.md)
 
 
+### `dbs` - Database Management
+
+Manage local database lifecycle with a command group designed for multiple backends.
+
+Available operations:
+
+- `phu dbs list`
+- `phu dbs status [DB ...]`
+- `phu dbs prepare [DB ...]`
+- `phu dbs refresh [DB ...]`
+- `phu dbs remove [DB ...] --yes`
+
+`pfam` is wired first and can be prepared ahead of screening runs.
+
+**Example:**
+```bash
+phu dbs prepare pfam
+```
+
+[Learn more about database management →](commands/dbs.md)
+
+
 ### `simplify-taxa` - Taxonomy Simplification
 
 Simplify verbose vContact taxonomy predictions into compact lineage codes for easier analysis and visualization.
@@ -153,3 +175,6 @@ This program uses several key tools and libraries, make sure to acknowledge them
 
 - [pyHMMER](https://pyhmmer.readthedocs.io/en/latest/): Python bindings for HMMER.
 > Larralde, M., & Zeller, G. (2023). PyHMMER: a Python library binding to HMMER for efficient sequence analysis. Bioinformatics, 39(5). https://doi.org/10.1093/bioinformatics/btad214
+
+- [Pfams](https://pfam.xfam.org/): A comprehensive collection of protein families and domains based on hidden Markov models.
+> Pfam: The protein families database in 2021: J. Mistry, S. Chuguransky, L. Williams, M. Qureshi, G.A. Salazar, E.L.L. Sonnhammer, S.C.E. Tosatto, L. Paladin, S. Raj, L.J. Richardson, R.D. Finn, A. Bateman, Nucleic Acids Research (2021) doi: 10.1093/nar/gkaa913

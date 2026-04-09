@@ -179,7 +179,7 @@ def screen(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
     ),
     hmms: List[Path] = typer.Argument(
-        ..., help="HMM files (supports wildcards like *.hmm)"
+        ..., help="HMM files and/or PFAM accessions (e.g. PF00001; supports wildcards like *.hmm)"
     ),
     output_folder: Path = typer.Option(
         Path("phu-screen"), "--output-folder", "-o", help="Output directory"
@@ -195,6 +195,11 @@ def screen(
     ),
     max_evalue: Optional[float] = typer.Option(
         1e-5, "--max-evalue", "-e", help="Maximum independent E-value to keep a domain hit"
+    ),
+    cut_ga: bool = typer.Option(
+        False,
+        "--cut-ga/--no-cut-ga",
+        help="Use model GA gathering cutoffs during HMM search (PFAM-style thresholding)",
     ),
     top_per_contig: int = typer.Option(
         1, "--top-per-contig", "-n", help="Keep top-N hits per contig (by bitscore)"
@@ -242,6 +247,8 @@ def screen(
     
     Examples:
         phu screen -i contigs.fa *.hmm
+        phu screen -i contigs.fa PF00001 PF00589
+        phu screen -i contigs.fa PF00001 PF00589 --cut-ga
         phu screen -i contigs.fa --combine-mode all file1.hmm file2.hmm file3.hmm
         phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
         phu screen -i contigs.fa --save-target-proteins *.hmm
@@ -269,6 +276,7 @@ def screen(
         threads=threads,
         min_bitscore=min_bitscore,
         max_evalue=max_evalue,
+        cut_ga=cut_ga,
         top_per_contig=top_per_contig,
         min_protein_len_aa=min_protein_len_aa,
         translation_table=translation_table,

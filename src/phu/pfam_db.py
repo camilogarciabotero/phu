@@ -14,7 +14,7 @@ import click
 
 from ._click import run_click_task
 
-PFAM_HMM_GZ_URL = "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz"
+PFAM_HMM_GZ_URL = "https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz"
 PFAM_ID_PREFIX = "PF"
 PFAM_NAME = "Pfam-A"
 

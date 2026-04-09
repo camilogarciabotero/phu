@@ -126,6 +126,17 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _write_manifest_atomically(manifest_path: Path, metadata: Dict[str, str]) -> None:
+    """Write manifest JSON atomically to avoid corruption on interruption."""
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", delete=False, dir=manifest_path.parent, suffix=".json"
+    ) as tmp:
+        tmp_path = Path(tmp.name)
+        json.dump(metadata, tmp, indent=2)
+    tmp_path.replace(manifest_path)
+
+
 def ensure_pfam_database(force_refresh: bool = False) -> Dict[str, str]:
     """
     Ensure local Pfam-A database exists and return metadata.
@@ -153,7 +164,7 @@ def ensure_pfam_database(force_refresh: bool = False) -> Dict[str, str]:
             "hmm_sha256": _sha256(hmm),
             "hmm_gz_sha256": _sha256(hmm_gz),
         }
-        manifest.write_text(json.dumps(metadata, indent=2))
+        _write_manifest_atomically(manifest, metadata)
 
     if manifest.exists():
         data = json.loads(manifest.read_text())

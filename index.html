@@ -428,6 +428,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dbs-database-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbs - Database Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#simplify-taxa-taxonomy-simplification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -838,6 +849,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dbs-database-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbs - Database Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#simplify-taxa-taxonomy-simplification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -991,6 +1013,21 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>cluster<span class="w"> </span>--mode<span class="w"> </span>votu<span class="w"> </span>--input-contigs<span class="w"> </span>viral-genomes.fasta
 </code></pre></div></p>
 <p><a href="commands/cluster/">Learn more about clustering →</a></p>
+<h3 id="dbs-database-management"><code>dbs</code> - Database Management<a class="headerlink" href="#dbs-database-management" title="Permanent link">&para;</a></h3>
+<p>Manage local database lifecycle with a command group designed for multiple backends.</p>
+<p>Available operations:</p>
+<ul>
+<li><code>phu dbs list</code></li>
+<li><code>phu dbs status [DB ...]</code></li>
+<li><code>phu dbs prepare [DB ...]</code></li>
+<li><code>phu dbs refresh [DB ...]</code></li>
+<li><code>phu dbs remove [DB ...] --yes</code></li>
+</ul>
+<p><code>pfam</code> is wired first and can be prepared ahead of screening runs.</p>
+<p><strong>Example:</strong>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>pfam
+</code></pre></div></p>
+<p><a href="commands/dbs/">Learn more about database management →</a></p>
 <h3 id="simplify-taxa-taxonomy-simplification"><code>simplify-taxa</code> - Taxonomy Simplification<a class="headerlink" href="#simplify-taxa-taxonomy-simplification" title="Permanent link">&para;</a></h3>
 <p>Simplify verbose vContact taxonomy predictions into compact lineage codes for easier analysis and visualization.
 <strong>Example:</strong>
@@ -1055,6 +1092,12 @@ GitHub repository: https://github.com/camilogarciabotero/phu
 <p><a href="https://pyhmmer.readthedocs.io/en/latest/">pyHMMER</a>: Python bindings for HMMER.</p>
 <blockquote>
 <p>Larralde, M., &amp; Zeller, G. (2023). PyHMMER: a Python library binding to HMMER for efficient sequence analysis. Bioinformatics, 39(5). https://doi.org/10.1093/bioinformatics/btad214</p>
+</blockquote>
+</li>
+<li>
+<p><a href="https://pfam.xfam.org/">Pfams</a>: A comprehensive collection of protein families and domains based on hidden Markov models.</p>
+<blockquote>
+<p>Pfam: The protein families database in 2021: J. Mistry, S. Chuguransky, L. Williams, M. Qureshi, G.A. Salazar, E.L.L. Sonnhammer, S.C.E. Tosatto, L. Paladin, S. Raj, L.J. Richardson, R.D. Finn, A. Bateman, Nucleic Acids Research (2021) doi: 10.1093/nar/gkaa913</p>
 </blockquote>
 </li>
 </ul>

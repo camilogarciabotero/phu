@@ -74,6 +74,15 @@ def _pfam_offsets_index_path(hmm_db_path: Path) -> Path:
     return hmm_db_path.parent / "offsets.json"
 
 
+def _clear_sparse_models_cache(hmm_db_path: Path) -> None:
+    """Remove cached per-model HMM files to avoid serving stale entries."""
+    models_dir = _pfam_models_dir(hmm_db_path)
+    if not models_dir.exists():
+        return
+    for model_file in models_dir.glob("*.hmm"):
+        model_file.unlink()
+
+
 def _stream_download_to_path(url: str, destination: Path) -> None:
     """Download URL content to destination atomically via a temporary file."""
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -323,6 +332,12 @@ def _extract_from_split_cache(
     output_dir: Path,
 ) -> Tuple[List[Path], List[str]]:
     """Resolve requested PFAM IDs via offset index and sparse local model cache."""
+    # Validate index against source DB before serving any sparse cached models.
+    # If source changed, clear stale per-model cache and rebuild offsets.
+    if not _is_offsets_index_valid(hmm_db_path):
+        _clear_sparse_models_cache(hmm_db_path)
+        _build_offsets_index(hmm_db_path)
+
     models_dir = _pfam_models_dir(hmm_db_path)
     models_dir.mkdir(parents=True, exist_ok=True)
     normalized_ordered = list(dict.fromkeys(normalize_pfam_id(token) for token in requested_ids))
@@ -342,9 +357,6 @@ def _extract_from_split_cache(
 
     offsets: Dict[str, object] = {}
     if needs_index:
-        if not _is_offsets_index_valid(hmm_db_path):
-            _build_offsets_index(hmm_db_path)
-
         index_data = _read_json(_pfam_offsets_index_path(hmm_db_path))
         offsets_obj = index_data.get("offsets")
         if isinstance(offsets_obj, dict):
@@ -433,7 +445,7 @@ def prepare_pfam_database(
     else:
         if not hmm.exists():
             raise FileNotFoundError(
-                f"PFAM HMM database not found: {hmm}. Run `phu prepare-dbs` with download enabled first."
+                f"PFAM HMM database not found: {hmm}. Run `phu dbs prepare pfam` first."
             )
         pfam_meta = ensure_pfam_database(force_refresh=False)
 

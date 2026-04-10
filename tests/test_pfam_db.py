@@ -161,3 +161,55 @@ def test_extract_pfam_models_rebuilds_split_cache_when_source_changes(tmp_path: 
     assert missing_2 == []
     assert len(extracted_2) == 1
     assert (second_out / "PF99999.hmm").exists()
+
+
+def test_extract_pfam_models_invalidates_stale_sparse_cache_when_source_changes(tmp_path: Path):
+    hmm_db = tmp_path / "Pfam-A.hmm"
+    hmm_db.write_text(
+        "HMMER3/f\n"
+        "NAME  OldModel\n"
+        "ACC   PF00001.1\n"
+        "LENG  42\n"
+        "//\n"
+    )
+
+    out_first = tmp_path / "resolved_first"
+    extracted_1, missing_1 = extract_pfam_models(
+        hmm_db_path=hmm_db,
+        requested_ids=["PF00001"],
+        output_dir=out_first,
+    )
+    assert missing_1 == []
+    assert len(extracted_1) == 1
+
+    # Change source DB for same accession; stale sparse model cache must not be reused.
+    hmm_db.write_text(
+        "HMMER3/f\n"
+        "NAME  NewModel\n"
+        "ACC   PF00001.2\n"
+        "LENG  55\n"
+        "DESC  updated\n"
+        "//\n"
+    )
+
+    out_second = tmp_path / "resolved_second"
+    extracted_2, missing_2 = extract_pfam_models(
+        hmm_db_path=hmm_db,
+        requested_ids=["PF00001"],
+        output_dir=out_second,
+    )
+
+    assert missing_2 == []
+    assert len(extracted_2) == 1
+    contents = (out_second / "PF00001.hmm").read_text()
+    assert "NAME  NewModel" in contents
+    assert "DESC  updated" in contents
+
+
+def test_prepare_pfam_database_missing_hmm_message_points_to_dbs_command(tmp_path: Path, monkeypatch):
+    missing_hmm = tmp_path / "pfam" / "Pfam-A.hmm"
+
+    monkeypatch.setattr(pfam_db, "_pfam_hmm_path", lambda: missing_hmm)
+
+    with pytest.raises(FileNotFoundError, match="phu dbs prepare pfam"):
+        pfam_db.prepare_pfam_database(download=False, index=False, force_refresh=False)

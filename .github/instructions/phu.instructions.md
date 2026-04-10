@@ -16,6 +16,8 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml"
 - Preserve separation of concerns:
 - CLI entry points and argument parsing in `src/phu/cli.py`.
 - Per-command orchestration and config dataclasses in command modules (`screen.py`, `jack.py`, `cluster.py`, `simplify_vcontact_taxa.py`).
+- Database lifecycle commands live under the `dbs` Typer command group in `src/phu/cli.py`; keep backend routing there and avoid scattering DB setup logic into feature commands.
+- Database backend operations should be implemented as explicit helpers in `src/phu/pfam_db.py` or backend-specific modules with a common contract: `list`, `status`, `prepare`, `refresh`, and `remove`.
 - External command discovery/execution helpers in `_exec.py`.
 - Shared protein-prediction cache lifecycle in `gene_prediction_core.py`.
 - Use `from __future__ import annotations` in Python source files.
@@ -28,6 +30,7 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml"
 - Validate user-facing parameters early and fail with clear messages.
 - Use `typer.secho(..., err=True, fg=typer.colors.RED)` for command errors and `typer.Exit(1)` for failure exits.
 - Preserve root-level eager options (`--version`, `--clean-cache`) behavior.
+- Group commands by concern when the surface grows: keep workflow commands together and place database lifecycle commands under `phu dbs` with its own help panel.
 
 ## Configuration and Validation Patterns
 
@@ -70,6 +73,7 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml"
 - `README.md`.
 - Matching page in `docs/commands/`.
 - `docs/cache.md` for prediction/cache impacts.
+- When changing database lifecycle behavior, update the `dbs` command docs and any backend-specific notes, especially for PFAM preparation/indexing semantics.
 - Avoid documenting behavior that code does not enforce.
 
 ## Dependency and Packaging Guidelines

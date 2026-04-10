@@ -8,6 +8,8 @@ runner = CliRunner()
 def test_root_help_runs():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
+    assert "Workflow" in result.stdout
+    assert "Database Management" in result.stdout
     assert "cluster" in result.stdout
     assert "screen" in result.stdout
     assert "jack" in result.stdout

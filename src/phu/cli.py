@@ -227,7 +227,7 @@ def _root(
         typer.echo(ctx.get_help())
         raise typer.Exit(0)  # exit code 0 when no subcommand is given
 
-@app.command("cluster")
+@app.command("cluster", rich_help_panel="Workflow")
 def cluster(
     mode: str = typer.Option(
         ..., "--mode", help="dereplication | votu | species"
@@ -302,7 +302,7 @@ def cluster(
         )
         raise typer.Exit(1)
 
-@app.command("simplify-taxa")
+@app.command("simplify-taxa", rich_help_panel="Workflow")
 def simplify_taxa(
     input_file: Path = typer.Option(
         ..., "--input-file", "-i", exists=True, readable=True, help="Input vContact final_assignments.csv"
@@ -349,7 +349,7 @@ def simplify_taxa(
 
 
 
-@app.command("screen")
+@app.command("screen", rich_help_panel="Workflow")
 def screen(
     input_contigs: Path = typer.Option(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
@@ -478,7 +478,7 @@ def screen(
         raise typer.Exit(1)
 
 
-@app.command("jack")
+@app.command("jack", rich_help_panel="Workflow")
 def jack(
     input_contigs: Path = typer.Option(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"

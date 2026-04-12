@@ -139,6 +139,25 @@ def test_screen_short_options_present_in_help():
     assert "--cut-ga" in result.stdout
 
 
+def test_screen_cut_ga_enabled_by_default(tmp_path, monkeypatch):
+    contigs = tmp_path / "contigs.fa"
+    contigs.write_text(">c1\nATGATGATG\n")
+    hmm = tmp_path / "model.hmm"
+    hmm.write_text("HMMER3/f\n")
+
+    captured = {}
+
+    def fake_screen(cfg):
+        captured["cut_ga"] = cfg.cut_ga
+
+    monkeypatch.setattr(cli_module, "_screen", fake_screen)
+
+    result = runner.invoke(app, ["screen", "-i", str(contigs), str(hmm)])
+
+    assert result.exit_code == 0
+    assert captured["cut_ga"] is True
+
+
 def test_jack_short_options_present_in_help():
     result = runner.invoke(app, ["jack", "--help"], terminal_width=200)
     assert result.exit_code == 0

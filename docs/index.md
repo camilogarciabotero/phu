@@ -61,6 +61,8 @@ Screen DNA contigs for specific protein families using HMMER on predicted coding
 
 [Learn more about protein screening →](commands/screen.md)
 
+For pass/fail and threshold rules (PFAM and KOfam), see [Screen Thresholds and Decision Logic](commands/screen-thresholds.md).
+
 ### `jack` - Seed-Based Iterative Screening
 
 Iteratively screen DNA contigs from one or more seed marker proteins using `pyhmmer.hmmer.jackhmmer`.
@@ -102,11 +104,11 @@ Available operations:
 - `phu dbs refresh [DB ...]`
 - `phu dbs remove [DB ...] --yes`
 
-`pfam` is wired first and can be prepared ahead of screening runs.
+`pfam` and `kofam` are available and can be prepared ahead of screening runs.
 
 **Example:**
 ```bash
-phu dbs prepare pfam
+phu dbs prepare pfam kofam
 ```
 
 [Learn more about database management →](commands/dbs.md)

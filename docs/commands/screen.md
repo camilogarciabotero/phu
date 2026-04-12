@@ -6,6 +6,8 @@ The `phu screen` command helps you find DNA contigs that contain specific protei
 
 This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways. The tool now includes advanced features like building custom HMMs from your target proteins and specialized viral gene prediction.
 
+For implementation-level details on pass/fail decisions, see [screen thresholds and decision logic](screen-thresholds.md).
+
 ## Synopsis
 
 ```bash
@@ -100,6 +102,18 @@ When you use the `--save-target-proteins` option, you'll get a folder called `ta
 - In "mixed" HMM mode (used for concatenated/pressed HMM files), a single HMM file can contain multiple model names; in that case `--save-target-proteins` will create one output file per model name found inside the domtblout.
 
 All saved protein FASTA files contain only proteins that come from contigs that were kept in the final `screened_contigs.fasta`, and are de-duplicated per model file.
+
+## Pass/fail behavior summary
+
+The screening decision uses pyHMMER hit objects, not a second parsing pass over domtblout text files.
+
+- Effective score is full-sequence score by default.
+- For KOfam models, if `score_type=domain`, effective score switches to domain score.
+- If `--use-kofam-thresholds` is enabled, KO thresholds from `ko_list` are applied per model.
+- If both `--min-bitscore` and KO threshold exist, the stricter value is used (`max` of both).
+- `--max-evalue` is applied to hit-level E-value.
+
+See the full rule set and examples in [screen thresholds and decision logic](screen-thresholds.md).
 
 **New Target Data Outputs:**
 - `target_proteins/{model}_proteins.mfa` - Proteins matching each model (if `--save-target-proteins`)
@@ -217,7 +231,9 @@ Use `--min-protein-len-aa` to keep only proteins at or above a given amino-acid 
 
 Use `--max-evalue` to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.
 
-Use `--cut-ga` to enable model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models). When enabled, pyHMMER applies profile GA thresholds during the search pipeline.
+`--cut-ga` is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).
+
+Use `--no-cut-ga` if you want to disable GA filtering and rely only on explicit score/E-value filters.
 
 Use `--save-target-proteins` if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).
 
@@ -235,9 +251,14 @@ Use PFAM accessions directly as positional targets:
 phu screen --input-contigs assembly.fasta PF00001 PF00589
 ```
 
-Use PFAM with GA gathering cutoffs:
+Use PFAM with GA gathering cutoffs (default behavior):
 ```bash
-phu screen --input-contigs assembly.fasta PF00001 PF00589 --cut-ga
+phu screen --input-contigs assembly.fasta PF00001 PF00589
+```
+
+Disable GA gathering cutoffs explicitly:
+```bash
+phu screen --input-contigs assembly.fasta PF00001 PF00589 --no-cut-ga
 ```
 
 Mix local HMM files with PFAM accessions:

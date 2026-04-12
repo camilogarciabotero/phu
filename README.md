@@ -46,9 +46,11 @@ phu <command> [options]
 
 ## Database Management
 
-A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Right now, `pfam` is wired first.
+A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Built-in backends currently include `pfam` and `kofam`.
 
-- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove), with `pfam` wired first.
+- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam` and `kofam`.
+
+For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 
 ## Cache Handling
 

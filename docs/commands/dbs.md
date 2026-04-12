@@ -4,7 +4,7 @@
 
 The `phu dbs` command group manages local databases used by `phu`. It provides a scalable contract so each database can define its own preparation logic while sharing a common user interface.
 
-Right now, `pfam` is wired first.
+Current built-in backends are `pfam` and `kofam`.
 
 ## Synopsis
 
@@ -34,6 +34,14 @@ For `pfam`, preparation includes:
 1. Ensuring `Pfam-A.hmm` is present locally.
 2. Building the byte-offset index used for accession lookup.
 
+For `kofam`, preparation includes:
+
+1. Ensuring `kofam.hmm` and `ko_list` are present locally.
+2. Building KO metadata index from `ko_list` (`threshold`, `score_type`, etc.).
+3. Building the byte-offset index for sparse KO model extraction.
+
+KOfam metadata drives threshold behavior in `phu screen`; see [screen thresholds and decision logic](screen-thresholds.md).
+
 ## Examples
 
 Prepare only PFAM:
@@ -48,22 +56,34 @@ Prepare all supported databases:
 phu dbs prepare --all
 ```
 
+Prepare only KOfam:
+
+```bash
+phu dbs prepare kofam
+```
+
 Check status:
 
 ```bash
-phu dbs status pfam
+phu dbs status pfam kofam
 ```
 
 Refresh integrity:
 
 ```bash
-phu dbs refresh pfam
+phu dbs refresh pfam kofam
 ```
 
 Remove PFAM data:
 
 ```bash
 phu dbs remove pfam --yes
+```
+
+Remove KOfam data:
+
+```bash
+phu dbs remove kofam --yes
 ```
 
 List supported databases:

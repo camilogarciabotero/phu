@@ -8,6 +8,12 @@ from ._exec import CmdNotFound
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .gene_prediction_core import clean_prediction_cache
 from .jack import JackConfig, _jack
+from .kofam_db import (
+    get_kofam_database_status,
+    prepare_kofam_database,
+    refresh_kofam_database,
+    remove_kofam_database,
+)
 from .pfam_db import (
     get_pfam_database_status,
     prepare_pfam_database,
@@ -31,7 +37,7 @@ dbs_app = typer.Typer(
 )
 app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
 
-SUPPORTED_DBS = ("pfam",)
+SUPPORTED_DBS = ("pfam", "kofam")
 
 
 def _normalize_db_names(databases: List[str], all_dbs: bool) -> List[str]:
@@ -51,6 +57,8 @@ def _normalize_db_names(databases: List[str], all_dbs: bool) -> List[str]:
 def _db_status_payload(db_name: str) -> dict:
     if db_name == "pfam":
         return get_pfam_database_status()
+    if db_name == "kofam":
+        return get_kofam_database_status()
     raise ValueError(f"Unsupported database: {db_name}")
 
 
@@ -123,6 +131,11 @@ def dbs_prepare(
                 result = prepare_pfam_database(download=True, index=True, force_refresh=force_refresh)
                 typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
                 typer.echo(f"Index ready: {result.get('offsets_path')}")
+            elif db_name == "kofam":
+                result = prepare_kofam_database(force_refresh=force_refresh)
+                typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
+                typer.echo(f"Index ready: {result.get('offsets_path')}")
+                typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -153,6 +166,11 @@ def dbs_refresh(
                 result = refresh_pfam_database()
                 typer.echo(f"Refreshed {db_name}: {result.get('hmm_path')}")
                 typer.echo(f"Index ready: {result.get('offsets_path')}")
+            elif db_name == "kofam":
+                result = refresh_kofam_database()
+                typer.echo(f"Refreshed {db_name}: {result.get('hmm_path')}")
+                typer.echo(f"Index ready: {result.get('offsets_path')}")
+                typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -189,6 +207,12 @@ def dbs_remove(
     for db_name in selected:
         if db_name == "pfam":
             removed = remove_pfam_database()
+            if removed:
+                typer.echo(f"Removed {db_name} database")
+            else:
+                typer.echo(f"{db_name} database not present")
+        elif db_name == "kofam":
+            removed = remove_kofam_database()
             if removed:
                 typer.echo(f"Removed {db_name} database")
             else:
@@ -355,7 +379,7 @@ def screen(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
     ),
     hmms: List[Path] = typer.Argument(
-        ..., help="HMM files and/or PFAM accessions (e.g. PF00001; supports wildcards like *.hmm)"
+        ..., help="HMM files, PFAM accessions (PF00001), and/or KO IDs (K00001); supports wildcards like *.hmm"
     ),
     output_folder: Path = typer.Option(
         Path("phu-screen"), "--output-folder", "-o", help="Output directory"
@@ -373,9 +397,14 @@ def screen(
         1e-5, "--max-evalue", "-e", help="Maximum independent E-value to keep a domain hit"
     ),
     cut_ga: bool = typer.Option(
-        False,
+        True,
         "--cut-ga/--no-cut-ga",
         help="Use model GA gathering cutoffs during HMM search (PFAM-style thresholding)",
+    ),
+    use_kofam_thresholds: bool = typer.Option(
+        True,
+        "--use-kofam-thresholds/--no-use-kofam-thresholds",
+        help="Use per-KO thresholds from ko_list according to score_type (full/domain)",
     ),
     top_per_contig: int = typer.Option(
         1, "--top-per-contig", "-n", help="Keep top-N hits per contig (by bitscore)"
@@ -414,8 +443,11 @@ def screen(
     
     Supports multiple HMM files with different combination modes:
     - any: Keep contigs matching any HMM (default, most permissive)
-    - all: Keep contigs matching all HMMs (most restrictive) 
+    - all: Keep contigs matching all HMMs (most restrictive)
     - threshold: Keep contigs matching at least --min-hmm-hits HMMs
+
+    KO IDs (K00001-style) are resolved from local KOFam DB. By default,
+    KO-specific thresholds from ko_list are applied using each KO score_type.
     
     HMM modes:
     - pure: Each HMM file contains one model (default, most common)
@@ -424,7 +456,7 @@ def screen(
     Examples:
         phu screen -i contigs.fa *.hmm
         phu screen -i contigs.fa PF00001 PF00589
-        phu screen -i contigs.fa PF00001 PF00589 --cut-ga
+        phu screen -i contigs.fa PF00001 --no-cut-ga PF00589 
         phu screen -i contigs.fa --combine-mode all file1.hmm file2.hmm file3.hmm
         phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
         phu screen -i contigs.fa --save-target-proteins *.hmm
@@ -453,6 +485,7 @@ def screen(
         min_bitscore=min_bitscore,
         max_evalue=max_evalue,
         cut_ga=cut_ga,
+        use_kofam_thresholds=use_kofam_thresholds,
         top_per_contig=top_per_contig,
         min_protein_len_aa=min_protein_len_aa,
         translation_table=translation_table,

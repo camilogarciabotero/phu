@@ -28,6 +28,14 @@ from .gene_prediction_core import (
     get_or_predict_proteins,
     write_prediction_metadata,
 )
+from .kofam_db import (
+    KOFamMetadata,
+    ensure_kofam_database,
+    extract_kofam_models,
+    get_kofam_metadata_map,
+    is_kofam_id,
+    normalize_kofam_id,
+)
 from .pfam_db import ensure_pfam_database, extract_pfam_models, is_pfam_id, normalize_pfam_id
 
 app = typer.Typer(help="Screen contigs for a protein family using pyHMMER on predicted CDS.")
@@ -39,15 +47,19 @@ def _cmd_exists(exe: str) -> bool:
     return shutil.which(exe) is not None
 
 
-def _resolve_hmm_inputs(hmm_inputs: List[Path], outdir: Path) -> List[Path]:
+def _resolve_hmm_inputs(
+    hmm_inputs: List[Path],
+    outdir: Path,
+) -> Tuple[List[Path], Dict[str, KOFamMetadata]]:
     """
     Resolve positional inputs into concrete HMM file paths.
 
-    Input tokens may be either local HMM file paths or PFAM accessions (e.g. PF00001).
-    PFAM accessions are resolved from the local PFAM database, downloading it on demand.
+    Input tokens may be local HMM file paths, PFAM accessions, and KO identifiers.
+    PFAM and KO IDs are resolved from their local databases, downloading on demand.
     """
     local_hmms: List[Path] = []
     pfam_ids: List[str] = []
+    ko_ids: List[str] = []
 
     for token_path in hmm_inputs:
         token = str(token_path)
@@ -60,35 +72,70 @@ def _resolve_hmm_inputs(hmm_inputs: List[Path], outdir: Path) -> List[Path]:
             pfam_ids.append(normalize_pfam_id(token))
             continue
 
+        if is_kofam_id(token):
+            ko_ids.append(normalize_kofam_id(token))
+            continue
+
         raise FileNotFoundError(f"HMM file not found: {token_path}")
 
-    # Preserve order while deduplicating PFAM IDs.
     dedup_pfam_ids = list(dict.fromkeys(pfam_ids))
+    dedup_ko_ids = list(dict.fromkeys(ko_ids))
 
-    if not dedup_pfam_ids:
-        return local_hmms
+    resolved: List[Path] = list(local_hmms)
 
-    pfam_meta = run_click_task("Preparing PFAM database", ensure_pfam_database)
-    pfam_hmm_db_path = Path(pfam_meta["hmm_path"])
+    if dedup_pfam_ids:
+        pfam_meta = run_click_task("Preparing PFAM database", ensure_pfam_database)
+        pfam_hmm_db_path = Path(pfam_meta["hmm_path"])
 
-    extracted_dir = outdir / "resolved_pfam_hmms"
-    pfam_hmms, missing = run_click_task(
-        "Resolving PFAM accessions",
-        extract_pfam_models,
-        hmm_db_path=pfam_hmm_db_path,
-        requested_ids=dedup_pfam_ids,
-        output_dir=extracted_dir,
-    )
-
-    if missing:
-        missing_msg = ", ".join(missing)
-        raise FileNotFoundError(
-            f"PFAM accession(s) not found in local database: {missing_msg}. "
-            "Run again later to refresh the DB source if needed."
+        pfam_dir = outdir / "resolved_pfam_hmms"
+        pfam_hmms, missing = run_click_task(
+            "Resolving PFAM accessions",
+            extract_pfam_models,
+            hmm_db_path=pfam_hmm_db_path,
+            requested_ids=dedup_pfam_ids,
+            output_dir=pfam_dir,
         )
 
-    print(f"Resolved {len(pfam_hmms)} PFAM model(s) from local database: {', '.join(dedup_pfam_ids)}")
-    return local_hmms + pfam_hmms
+        if missing:
+            missing_msg = ", ".join(missing)
+            raise FileNotFoundError(
+                f"PFAM accession(s) not found in local database: {missing_msg}. "
+                "Run again later to refresh the DB source if needed."
+            )
+
+        print(
+            f"Resolved {len(pfam_hmms)} PFAM model(s) from local database: "
+            f"{', '.join(dedup_pfam_ids)}"
+        )
+        resolved.extend(pfam_hmms)
+
+    ko_metadata: Dict[str, KOFamMetadata] = {}
+    if dedup_ko_ids:
+        run_click_task("Preparing KOFam database", ensure_kofam_database)
+
+        kofam_dir = outdir / "resolved_kofam_hmms"
+        kofam_hmms, missing = run_click_task(
+            "Resolving KO identifiers",
+            extract_kofam_models,
+            requested_ids=dedup_ko_ids,
+            output_dir=kofam_dir,
+        )
+
+        if missing:
+            missing_msg = ", ".join(missing)
+            raise FileNotFoundError(
+                f"KO identifier(s) not found in local KOFam database: {missing_msg}. "
+                "Run `phu dbs refresh kofam` and try again."
+            )
+
+        ko_metadata = get_kofam_metadata_map(dedup_ko_ids)
+        print(
+            f"Resolved {len(kofam_hmms)} KOFam model(s) from local database: "
+            f"{', '.join(dedup_ko_ids)}"
+        )
+        resolved.extend(kofam_hmms)
+
+    return resolved, ko_metadata
 
 @dataclass
 class ScreenConfig:
@@ -100,7 +147,8 @@ class ScreenConfig:
     threads: int = 1
     min_bitscore: Optional[float] = None
     max_evalue: Optional[float] = 1e-5
-    cut_ga: bool = False
+    cut_ga: bool = True
+    use_kofam_thresholds: bool = True
     top_per_contig: int = 1
     min_protein_len_aa: int = 30
     translation_table: int = 11
@@ -155,6 +203,7 @@ class ScreenConfig:
             min_bitscore=self.min_bitscore,
             max_evalue=self.max_evalue,
             cut_ga=self.cut_ga,
+            use_kofam_thresholds=self.use_kofam_thresholds,
             top_per_contig=self.top_per_contig,
             min_protein_len_aa=self.min_protein_len_aa,
             translation_table=self.translation_table,
@@ -185,6 +234,7 @@ class ScreenPlan:
     min_bitscore: Optional[float]
     max_evalue: Optional[float]
     cut_ga: bool
+    use_kofam_thresholds: bool
     top_per_contig: int
     min_protein_len_aa: int
     translation_table: int
@@ -272,6 +322,7 @@ class Hit:
     prot_id: str
     model: str
     bitscore: float
+    domain_bitscore: Optional[float]
     evalue: float
 
 
@@ -349,7 +400,7 @@ def _hmmsearch(
     threads: int = 1,
     hmm_mode: str = "pure",
     keep_domtbl: bool = True,
-    cut_ga: bool = False,
+    cut_ga: bool = True,
 ) -> Iterable[Hit]:
     """
     Run pyhmmer.hmmsearch on loaded HMMs and proteins.
@@ -417,13 +468,31 @@ def _hmmsearch(
                         # No "|" found, use entire protein ID as contig ID
                         contig = prot_id
                 
+                domain_bitscore: Optional[float] = None
+                hit_domains = getattr(hit, "domains", None)
+                if hit_domains is not None:
+                    included_scores = [
+                        domain.score
+                        for domain in hit_domains
+                        if getattr(domain, "included", True)
+                    ]
+                    if included_scores:
+                        domain_bitscore = max(included_scores)
+
                 yield Hit(
                     contig=contig,
                     prot_id=prot_id,
                     model=model_id,
                     bitscore=hit.score,
-                    evalue=hit.evalue
+                    domain_bitscore=domain_bitscore,
+                    evalue=hit.evalue,
                 )
+
+def _effective_hit_score(hit: Hit, score_type: str) -> float:
+    if score_type == "domain" and hit.domain_bitscore is not None:
+        return hit.domain_bitscore
+    return hit.bitscore
+
 
 def _choose_best_contigs(
     hits: Iterable[Hit],
@@ -433,27 +502,44 @@ def _choose_best_contigs(
     combine_mode: str = "any",
     min_hmm_hits: int = 1,
     total_hmm_models: int = 1,
+    kofam_metadata_by_model: Optional[Dict[str, KOFamMetadata]] = None,
+    use_kofam_thresholds: bool = True,
 ) -> Tuple[List[Hit], List[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
-    For multiple HMMs, apply combination logic.
-    
+    For KO models, ko_list thresholds are used by their score_type (full/domain).
+
     Returns (kept_hits, list_of_contig_ids).
     """
     per_contig: Dict[str, List[Hit]] = defaultdict(list)
+    kofam_metadata_by_model = kofam_metadata_by_model or {}
 
-    # Filter hits by thresholds
     for h in hits:
-        if min_bitscore is not None and h.bitscore < min_bitscore:
+        score_type = "full"
+        ko_threshold: Optional[float] = None
+        ko_meta = kofam_metadata_by_model.get(h.model)
+        if ko_meta is not None:
+            score_type = ko_meta.score_type
+            ko_threshold = ko_meta.threshold
+
+        effective_score = _effective_hit_score(h, score_type)
+
+        effective_min_bitscore = min_bitscore
+        if use_kofam_thresholds and ko_threshold is not None:
+            if effective_min_bitscore is None:
+                effective_min_bitscore = ko_threshold
+            else:
+                effective_min_bitscore = max(effective_min_bitscore, ko_threshold)
+
+        if effective_min_bitscore is not None and effective_score < effective_min_bitscore:
             continue
         if max_evalue is not None and h.evalue > max_evalue:
             continue
         per_contig[h.contig].append(h)
 
-    # Apply combination logic
     kept: List[Hit] = []
     kept_contigs: List[str] = []
-    
+
     for contig, contig_hits in per_contig.items():
         if combine_mode == "any":
             if contig_hits:
@@ -461,29 +547,25 @@ def _choose_best_contigs(
                 for hit in contig_hits:
                     hits_per_model[hit.model].append(hit)
 
-                # For each model, take the best hit(s) (by bitscore, then evalue)
                 for model_hits in hits_per_model.values():
                     model_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
                     kept.extend(model_hits[:max(1, top_per_contig)])
                 kept_contigs.append(contig)
-        
+
         elif combine_mode == "all":
-            # Keep contigs that have hits from ALL models
             model_names = set(hit.model for hit in contig_hits)
             if len(model_names) == total_hmm_models:
                 hits_per_model = defaultdict(list)
                 for hit in contig_hits:
                     hits_per_model[hit.model].append(hit)
-                
-                # Take the best hit for each model
+
                 for model_hits in hits_per_model.values():
                     model_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
                     kept.extend(model_hits[:1])
-                
+
                 kept_contigs.append(contig)
-        
+
         elif combine_mode == "threshold":
-            # Keep contigs that have hits from at least min_hmm_hits models
             model_names = set(hit.model for hit in contig_hits)
             if len(model_names) >= min_hmm_hits:
                 contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
@@ -519,16 +601,19 @@ def _extract_target_proteins(
     outdir: Path,
     hmm_mode: str,
     seqkit_bin: str = "seqkit",
+    kofam_metadata_by_model: Optional[Dict[str, KOFamMetadata]] = None,
 ) -> None:
     """
     Extract matched proteins per HMM model from the final kept contigs only.
+    For KOFam models, headers are enriched as KO|definition.
     """
     # Create a set of kept contig IDs for fast lookup
     kept_contig_set = set(kept_contig_ids)
-    
+    kofam_metadata_by_model = kofam_metadata_by_model or {}
+
     # Group protein IDs by model - only from kept hits AND kept contigs
     proteins_per_model: Dict[str, List[str]] = defaultdict(list)
-    
+
     for hit in kept_hits:
         if hit.contig in kept_contig_set:
             proteins_per_model[hit.model].append(hit.prot_id)
@@ -567,8 +652,20 @@ def _extract_target_proteins(
         if result.returncode != 0:
             print(f"Warning: seqkit failed to extract proteins for {model_id}")
         else:
+            ko_meta = kofam_metadata_by_model.get(model_id)
+            if ko_meta is not None and ko_meta.definition:
+                original = output_path.read_text()
+                label = f"{ko_meta.ko_id}|{ko_meta.definition}"
+                lines: List[str] = []
+                for line in original.splitlines():
+                    if line.startswith(">"):
+                        lines.append(f"{line}|{label}")
+                    else:
+                        lines.append(line)
+                output_path.write_text("\n".join(lines) + ("\n" if lines else ""))
+
             print(f"    Extracted {len(unique_protein_ids)} proteins for {model_id} (from screened contigs)")
-            
+
         # Cleanup temporary file
         tmp_ids_file.unlink()
 
@@ -673,8 +770,8 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
     if not cfg.input_contigs.exists():
         raise FileNotFoundError(f"Input file not found: {cfg.input_contigs}")
 
-    # Resolve positional inputs: local HMM paths and/or PFAM accessions.
-    cfg.hmms = _resolve_hmm_inputs(cfg.hmms, cfg.outdir)
+    # Resolve positional inputs: local HMM paths, PFAM accessions, and KO IDs.
+    cfg.hmms, kofam_metadata_by_model = _resolve_hmm_inputs(cfg.hmms, cfg.outdir)
 
     # Check all resolved HMM files exist.
     for hmm in cfg.hmms:
@@ -760,6 +857,8 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         combine_mode=plan.combine_mode,
         min_hmm_hits=plan.min_hmm_hits,
         total_hmm_models=total_models,
+        kofam_metadata_by_model=kofam_metadata_by_model,
+        use_kofam_thresholds=plan.use_kofam_thresholds,
     )
     
     plan.kept_ids.write_text("\n".join(contig_ids) + ("\n" if contig_ids else ""))
@@ -774,6 +873,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
             plan.outdir,
             plan.hmm_mode,
             plan.seqkit_bin,
+            kofam_metadata_by_model=kofam_metadata_by_model,
         )
         
         # Build HMMs from target proteins if requested

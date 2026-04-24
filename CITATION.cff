@@ -35,8 +35,6 @@ keywords:
   - Python
 
 preferred-citation:
-  type: software
-  title: "phu: Phage Utilities - A modular toolkit for viral genomics workflows"
   authors:
     - family-names: "García-Botero"
       given-names: "Camilo"
@@ -45,6 +43,9 @@ preferred-citation:
       given-names: "Alejandro"
       email: "a.reyes@uniandes.edu.co"
       orcid: "https://orcid.org/0000-0003-2907-3265"
+  type: software
+  title: "phu: Phage Utilities - A modular toolkit for viral genomics workflows"
+  doi: "10.5281/zenodo.19489078"
   version: "0.7.1"
   url: "https://github.com/camilogarciabotero/phu"
   year: 2026

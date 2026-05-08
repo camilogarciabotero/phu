@@ -421,7 +421,22 @@ def _hmmsearch(
     
     # Run hmmsearch with pyHMMER
     bit_cutoffs = "gathering" if cut_ga else None
-    hits_list = list(pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=bit_cutoffs))
+    try:
+        hits_list = list(pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=bit_cutoffs))
+    except Exception as exc:
+        missing_cutoffs_exc = getattr(pyhmmer.plan7, "MissingCutoffs", None)
+        if (
+            cut_ga
+            and missing_cutoffs_exc is not None
+            and isinstance(exc, missing_cutoffs_exc)
+        ):
+            print(
+                "Warning: One or more models are missing gathering cutoffs; "
+                "retrying without --cut-ga."
+            )
+            hits_list = list(pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=None))
+        else:
+            raise
     
     # Write domtbl files if requested
     if keep_domtbl:

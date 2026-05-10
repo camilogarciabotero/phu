@@ -322,8 +322,8 @@ class Hit:
     prot_id: str
     model: str
     bitscore: float
-    domain_bitscore: Optional[float]
     evalue: float
+    domain_bitscore: Optional[float] = None
 
 
 # ---------- Core pipeline ----------
@@ -431,7 +431,7 @@ def _hmmsearch(
             and isinstance(exc, missing_cutoffs_exc)
         ):
             print(
-                "Warning: One or more models are missing gathering cutoffs; "
+                " Warning: One or more models are missing gathering cutoffs; "
                 "retrying without --cut-ga."
             )
             hits_list = list(pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=None))
@@ -509,6 +509,10 @@ def _effective_hit_score(hit: Hit, score_type: str) -> float:
     return hit.bitscore
 
 
+def _hit_sort_key(hit: Hit, score_type: str) -> Tuple[float, float]:
+    return (-_effective_hit_score(hit, score_type), hit.evalue)
+
+
 def _choose_best_contigs(
     hits: Iterable[Hit],
     min_bitscore: Optional[float],
@@ -563,7 +567,10 @@ def _choose_best_contigs(
                     hits_per_model[hit.model].append(hit)
 
                 for model_hits in hits_per_model.values():
-                    model_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+                    score_type = "full"
+                    if model_hits[0].model in kofam_metadata_by_model:
+                        score_type = kofam_metadata_by_model[model_hits[0].model].score_type
+                    model_hits.sort(key=lambda hit: _hit_sort_key(hit, score_type))
                     kept.extend(model_hits[:max(1, top_per_contig)])
                 kept_contigs.append(contig)
 
@@ -575,7 +582,10 @@ def _choose_best_contigs(
                     hits_per_model[hit.model].append(hit)
 
                 for model_hits in hits_per_model.values():
-                    model_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+                    score_type = "full"
+                    if model_hits[0].model in kofam_metadata_by_model:
+                        score_type = kofam_metadata_by_model[model_hits[0].model].score_type
+                    model_hits.sort(key=lambda hit: _hit_sort_key(hit, score_type))
                     kept.extend(model_hits[:1])
 
                 kept_contigs.append(contig)
@@ -583,7 +593,14 @@ def _choose_best_contigs(
         elif combine_mode == "threshold":
             model_names = set(hit.model for hit in contig_hits)
             if len(model_names) >= min_hmm_hits:
-                contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
+                contig_hits.sort(
+                    key=lambda hit: _hit_sort_key(
+                        hit,
+                        kofam_metadata_by_model[hit.model].score_type
+                        if hit.model in kofam_metadata_by_model
+                        else "full",
+                    )
+                )
                 kept.extend(contig_hits[:max(1, top_per_contig)])
                 kept_contigs.append(contig)
 
@@ -669,15 +686,15 @@ def _extract_target_proteins(
         else:
             ko_meta = kofam_metadata_by_model.get(model_id)
             if ko_meta is not None and ko_meta.definition:
-                original = output_path.read_text()
                 label = f"{ko_meta.ko_id}|{ko_meta.definition}"
-                lines: List[str] = []
-                for line in original.splitlines():
-                    if line.startswith(">"):
-                        lines.append(f"{line}|{label}")
-                    else:
-                        lines.append(line)
-                output_path.write_text("\n".join(lines) + ("\n" if lines else ""))
+                rewritten_path = output_path.parent / f"{output_path.name}.tmp"
+                with output_path.open("r") as src, rewritten_path.open("w") as dst:
+                    for line in src:
+                        if line.startswith(">"):
+                            dst.write(f"{line.rstrip()}|{label}\n")
+                        else:
+                            dst.write(line)
+                rewritten_path.replace(output_path)
 
             print(f"    Extracted {len(unique_protein_ids)} proteins for {model_id} (from screened contigs)")
 

@@ -112,3 +112,6 @@ This program uses several key tools and libraries, make sure to acknowledge them
 
 - [Pfams](https://pfam.xfam.org/): A comprehensive collection of protein families and domains based on hidden Markov models.
 > Pfam: The protein families database in 2021: J. Mistry, S. Chuguransky, L. Williams, M. Qureshi, G.A. Salazar, E.L.L. Sonnhammer, S.C.E. Tosatto, L. Paladin, S. Raj, L.J. Richardson, R.D. Finn, A. Bateman, Nucleic Acids Research (2021) doi: 10.1093/nar/gkaa913
+
+- [KOFamKOALA](https://www.genome.jp/tools/kofamkoala/): KEGG ortholog assignment based on profile HMM and adaptive score threshold.
+> Aramaki T., Blanc-Mathieu R., Endo H., Ohkubo K., Kanehisa M., Goto S., Ogata H. KofamKOALA: KEGG ortholog assignment based on profile HMM and adaptive score threshold. Bioinformatics. 2019 Nov 19. pii: btz859. doi: 10.1093/bioinformatics/btz859.

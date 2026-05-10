@@ -147,6 +147,13 @@ def _download_range(
     req.add_header("Range", f"bytes={start}-{end}")
 
     with urlopen(req) as response:
+        status = getattr(response, "status", response.getcode())
+        content_range = response.headers.get("Content-Range")
+        if status != 206 or not content_range:
+            raise RuntimeError(
+                "Server did not honor byte-range request; falling back to single-stream download"
+            )
+
         chunk_file = destination.parent / f"{destination.name}.part.{start}-{end}"
         with chunk_file.open("wb") as out:
             while True:
@@ -158,12 +165,31 @@ def _download_range(
                     progress_callback(len(chunk))
 
 
+def _range_download_supported(url: str) -> bool:
+    """Probe whether the server supports partial-content downloads."""
+    req = Request(url)
+    req.add_header("Range", "bytes=0-0")
+
+    try:
+        with urlopen(req) as response:
+            status = getattr(response, "status", response.getcode())
+            content_range = response.headers.get("Content-Range", "")
+            return status == 206 and content_range.startswith("bytes 0-0/")
+    except Exception:
+        return False
+
+
 def _download_parallel_chunked(url: str, destination: Path, label: str, num_chunks: int = 4) -> None:
     """Download file with HTTP range requests (pget-like parallel mode)."""
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     file_size = _get_file_size(url)
     if file_size is None or file_size < 1024 * 1024:
+        typer.secho(f"Downloading {label} (single connection)...", fg="cyan")
+        _stream_download_to_path(url, destination, label)
+        return
+
+    if not _range_download_supported(url):
         typer.secho(f"Downloading {label} (single connection)...", fg="cyan")
         _stream_download_to_path(url, destination, label)
         return
@@ -205,7 +231,8 @@ def _download_parallel_chunked(url: str, destination: Path, label: str, num_chun
     with tmp_path.open("wb") as out:
         for start, end in ranges:
             chunk_file = destination.parent / f"{destination.name}.part.{start}-{end}"
-            out.write(chunk_file.read_bytes())
+            with chunk_file.open("rb") as src:
+                shutil.copyfileobj(src, out, length=1024 * 1024)
             chunk_file.unlink()
 
     tmp_path.replace(destination)

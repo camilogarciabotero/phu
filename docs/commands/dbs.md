@@ -42,6 +42,10 @@ For `kofam`, preparation includes:
 
 KOfam metadata drives threshold behavior in `phu screen`; see [screen thresholds and decision logic](screen-thresholds.md).
 
+KOfam support follows the KofamKOALA method for KO assignment and thresholding:
+
+> Aramaki T., Blanc-Mathieu R., Endo H., Ohkubo K., Kanehisa M., Goto S., Ogata H. KofamKOALA: KEGG ortholog assignment based on profile HMM and adaptive score threshold. Bioinformatics. 2019 Nov 19. pii: btz859. doi: 10.1093/bioinformatics/btz859.
+
 ## Examples
 
 Prepare only PFAM:

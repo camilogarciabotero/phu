@@ -69,8 +69,8 @@ nav:
   - Cache Handling: cache.md
   - Commands:
       - commands/cluster.md
-    - commands/dbs.md
+      - commands/dbs.md
       - commands/simplify-taxa.md
       - commands/screen.md
       - commands/jack.md
-    - commands/screen-thresholds.md
+      - commands/screen-thresholds.md

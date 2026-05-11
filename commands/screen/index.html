@@ -389,6 +389,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../dbs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../simplify-taxa/" class="md-nav__link">
         
   
@@ -565,6 +593,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#passfail-behavior-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass/fail behavior summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -632,6 +671,34 @@
     
   
     jack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../screen-thresholds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    screen thresholds and decision logic
   
 
     
@@ -767,6 +834,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#passfail-behavior-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass/fail behavior summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -834,6 +912,7 @@
 <h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
 <p>The <code>phu screen</code> command helps you find DNA contigs that contain specific protein families. It predicts proteins from your contigs, searches those proteins against Hidden Markov Model (HMM) profiles using <strong>pyHMMER</strong> (a fast Python implementation), and then selects contigs based on the matches and your combination/filtering rules. Think of it as a molecular search engine for pulling out contigs that contain the proteins you care about.</p>
 <p>This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways. The tool now includes advanced features like building custom HMMs from your target proteins and specialized viral gene prediction.</p>
+<p>For implementation-level details on pass/fail decisions, see <a href="../screen-thresholds/">screen thresholds and decision logic</a>.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>HMMS...<span class="o">]</span>
 </code></pre></div>
@@ -893,6 +972,16 @@
 <li>In "mixed" HMM mode (used for concatenated/pressed HMM files), a single HMM file can contain multiple model names; in that case <code>--save-target-proteins</code> will create one output file per model name found inside the domtblout.</li>
 </ul>
 <p>All saved protein FASTA files contain only proteins that come from contigs that were kept in the final <code>screened_contigs.fasta</code>, and are de-duplicated per model file.</p>
+<h2 id="passfail-behavior-summary">Pass/fail behavior summary<a class="headerlink" href="#passfail-behavior-summary" title="Permanent link">&para;</a></h2>
+<p>The screening decision uses pyHMMER hit objects, not a second parsing pass over domtblout text files.</p>
+<ul>
+<li>Effective score is full-sequence score by default.</li>
+<li>For KOfam models, if <code>score_type=domain</code>, effective score switches to domain score.</li>
+<li>If <code>--use-kofam-thresholds</code> is enabled, KO thresholds from <code>ko_list</code> are applied per model.</li>
+<li>If both <code>--min-bitscore</code> and KO threshold exist, the stricter value is used (<code>max</code> of both).</li>
+<li><code>--max-evalue</code> is applied to hit-level E-value.</li>
+</ul>
+<p>See the full rule set and examples in <a href="../screen-thresholds/">screen thresholds and decision logic</a>.</p>
 <p><strong>New Target Data Outputs:</strong>
 - <code>target_proteins/{model}_proteins.mfa</code> - Proteins matching each model (if <code>--save-target-proteins</code>)
 - <code>target_hmms/{model}.hmm</code> - Custom HMMs built from target proteins (if <code>--save-target-hmms</code>)</p>
@@ -999,7 +1088,8 @@
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
 <p>Use <code>--min-protein-len-aa</code> to keep only proteins at or above a given amino-acid length before running HMM searches.</p>
 <p>Use <code>--max-evalue</code> to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.</p>
-<p>Use <code>--cut-ga</code> to enable model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models). When enabled, pyHMMER applies profile GA thresholds during the search pipeline.</p>
+<p><code>--cut-ga</code> is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).</p>
+<p>Use <code>--no-cut-ga</code> if you want to disable GA filtering and rely only on explicit score/E-value filters.</p>
 <p>Use <code>--save-target-proteins</code> if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).</p>
 <p>Use <code>--save-target-hmms</code> to build custom HMM profiles from your target proteins. This works independently of <code>--save-target-proteins</code> - the tool can extract proteins temporarily just for HMM building if needed.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
@@ -1009,8 +1099,11 @@
 <p>Use PFAM accessions directly as positional targets:
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>PF00001<span class="w"> </span>PF00589
 </code></pre></div></p>
-<p>Use PFAM with GA gathering cutoffs:
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>PF00001<span class="w"> </span>PF00589<span class="w"> </span>--cut-ga
+<p>Use PFAM with GA gathering cutoffs (default behavior):
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>PF00001<span class="w"> </span>PF00589
+</code></pre></div></p>
+<p>Disable GA gathering cutoffs explicitly:
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>PF00001<span class="w"> </span>PF00589<span class="w"> </span>--no-cut-ga
 </code></pre></div></p>
 <p>Mix local HMM files with PFAM accessions:
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>capsid.hmm<span class="w"> </span>PF00589<span class="w"> </span>--combine-mode<span class="w"> </span>all

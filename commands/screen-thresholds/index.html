@@ -9,10 +9,8 @@
       
       
       
-        <link rel="prev" href="../screen/">
+        <link rel="prev" href="../jack/">
       
-      
-        <link rel="next" href="../screen-thresholds/">
       
       
         
@@ -23,7 +21,7 @@
     
     
       
-        <title>jack - phu</title>
+        <title>screen thresholds and decision logic - phu</title>
       
     
     
@@ -76,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#jack" class="md-skip">
+        <a href="#screen-thresholds-and-decision-logic" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              jack
+              screen thresholds and decision logic
             
           </span>
         </div>
@@ -470,6 +468,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../jack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    jack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -489,7 +515,7 @@
   <span class="md-ellipsis">
     
   
-    jack
+    screen thresholds and decision logic
   
 
     
@@ -507,7 +533,7 @@
   <span class="md-ellipsis">
     
   
-    jack
+    screen thresholds and decision logic
   
 
     
@@ -533,10 +559,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-does-it-do" class="md-nav__link">
+  <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What does it do?
+        Scope
       
     </span>
   </a>
@@ -544,10 +570,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synopsis" class="md-nav__link">
+  <a href="#core-passfail-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Synopsis
+        Core pass/fail flow
       
     </span>
   </a>
@@ -555,10 +581,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#which-score-is-used" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it works
+        Which score is used
       
     </span>
   </a>
@@ -566,10 +592,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#outputs" class="md-nav__link">
+  <a href="#threshold-precedence" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Outputs
+        Threshold precedence
       
     </span>
   </a>
@@ -577,10 +603,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cache-handling" class="md-nav__link">
+  <a href="#e-value-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cache handling
+        E-value behavior
       
     </span>
   </a>
@@ -588,10 +614,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#command-options" class="md-nav__link">
+  <a href="#pfam-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Command options
+        PFAM behavior
       
     </span>
   </a>
@@ -599,10 +625,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
+  <a href="#kofam-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notes
+        KOfam behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domtblout-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        domtblout interpretation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combine-mode-after-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        combine mode after filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-interpretation-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked interpretation example
       
     </span>
   </a>
@@ -613,34 +672,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../screen-thresholds/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    screen thresholds and decision logic
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -680,10 +711,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-does-it-do" class="md-nav__link">
+  <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What does it do?
+        Scope
       
     </span>
   </a>
@@ -691,10 +722,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synopsis" class="md-nav__link">
+  <a href="#core-passfail-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Synopsis
+        Core pass/fail flow
       
     </span>
   </a>
@@ -702,10 +733,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#which-score-is-used" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it works
+        Which score is used
       
     </span>
   </a>
@@ -713,10 +744,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#outputs" class="md-nav__link">
+  <a href="#threshold-precedence" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Outputs
+        Threshold precedence
       
     </span>
   </a>
@@ -724,10 +755,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cache-handling" class="md-nav__link">
+  <a href="#e-value-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cache handling
+        E-value behavior
       
     </span>
   </a>
@@ -735,10 +766,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#command-options" class="md-nav__link">
+  <a href="#pfam-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Command options
+        PFAM behavior
       
     </span>
   </a>
@@ -746,10 +777,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
+  <a href="#kofam-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notes
+        KOfam behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domtblout-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        domtblout interpretation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combine-mode-after-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        combine mode after filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-interpretation-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked interpretation example
       
     </span>
   </a>
@@ -776,83 +840,83 @@
   
 
 
-<h1 id="jack">jack<a class="headerlink" href="#jack" title="Permanent link">&para;</a></h1>
-<h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
-<p>The <code>phu jack</code> command screens contigs using an iterative protein-seed search with <code>pyhmmer.hmmer.jackhmmer</code>.</p>
-<p>It predicts proteins from your contigs, runs iterative searches from one or more seed proteins, and extracts contigs that contain significant included hits.</p>
-<p>This implementation supports multi-seed workflows:</p>
-<ul>
-<li>It accepts one seed marker FASTA file containing one or more protein sequences.</li>
-<li>Seed IDs in FASTA headers must be unique.</li>
-<li>You can combine seed evidence with <code>--combine-mode any|all|threshold</code>.</li>
-</ul>
-<h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>SEED_MARKER<span class="o">]</span>
-</code></pre></div>
-<p><strong>Example:</strong></p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>marker_seed.faa
-phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>marker_seeds.faa
-phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>threshold<span class="w"> </span>--min-seed-hits<span class="w"> </span><span class="m">3</span><span class="w"> </span>marker_seeds.faa<span class="w"> </span>
-</code></pre></div>
-<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<h1 id="screen-thresholds-and-decision-logic">screen thresholds and decision logic<a class="headerlink" href="#screen-thresholds-and-decision-logic" title="Permanent link">&para;</a></h1>
+<p>This page documents how <code>phu screen</code> decides whether a hit, protein, or contig passes filtering.</p>
+<p>It is meant as an implementation-aligned reference for PFAM and KOfam behavior.</p>
+<h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
+<p>These rules apply to the screening workflow in <code>phu screen</code> after protein prediction and HMM search.</p>
+<h2 id="core-passfail-flow">Core pass/fail flow<a class="headerlink" href="#core-passfail-flow" title="Permanent link">&para;</a></h2>
+<p>For each hit emitted by pyHMMER:</p>
 <ol>
-<li>Predict proteins from contigs with <code>pyrodigal</code>.
-    Proteins shorter than <code>--min-protein-len-aa</code> are discarded before iterative searching.</li>
-<li>Run iterative <code>jackhmmer</code> from each seed marker against predicted proteins.</li>
-<li>Keep included final hits and apply final <code>--max-evalue</code> filtering.</li>
-<li>Combine across seeds:</li>
-<li><code>any</code>: keep contigs hit by at least one seed.</li>
-<li><code>all</code>: keep contigs hit by all seeds.</li>
-<li><code>threshold</code>: keep contigs hit by at least <code>--min-seed-hits</code> seeds.</li>
-<li>Keep top hits per contig (<code>--top-per-contig</code>) using the selected combine mode.</li>
-<li>Extract matching contigs to <code>screened_contigs.fasta</code>.</li>
+<li>Start from hits marked as included by pyHMMER.</li>
+<li>Compute an effective score.</li>
+<li>Compute an effective minimum bitscore threshold.</li>
+<li>Apply score and E-value filters.</li>
+<li>Group remaining hits by contig and apply <code>--combine-mode</code> rules.</li>
 </ol>
-<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
-<p>By default in <code>phu-jack/</code>:</p>
+<p>Only contigs with at least one remaining hit after all filters can be kept.</p>
+<h2 id="which-score-is-used">Which score is used<a class="headerlink" href="#which-score-is-used" title="Permanent link">&para;</a></h2>
+<p>Each hit has:</p>
 <ul>
-<li><code>screened_contigs.fasta</code>: extracted contigs that matched iterative search.</li>
-<li><code>kept_contigs.txt</code>: contig IDs kept in final output.</li>
-<li><code>jackhmmer_hits.tsv</code>: final retained protein-level hits with <code>seed_id</code>.</li>
-<li><code>jackhmmer_iterations.tsv</code>: iteration-level summary with <code>seed_id</code>, <code>n_hits</code>, <code>n_included</code>, <code>converged</code>.</li>
+<li>Full-sequence bitscore (HMMER "full sequence score").</li>
+<li>Domain bitscore derived as the maximum score among included domains for that hit.</li>
 </ul>
-<p>When <code>--save-hmm</code> is enabled:</p>
+<p>Effective score selection:</p>
 <ul>
-<li>Single-seed input: writes <code>last_iteration.hmm</code>.</li>
-<li>Multi-seed input: writes one HMM per seed in <code>last_iteration_hmms/*.hmm</code>.</li>
+<li>Default: use full-sequence bitscore.</li>
+<li>KOfam model with <code>score_type = domain</code>: use domain bitscore when available.</li>
+<li>KOfam model with <code>score_type = full</code>: use full-sequence bitscore.</li>
 </ul>
-<h2 id="cache-handling">Cache handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h2>
-<p>Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For <code>phu jack</code>, changing <code>--min-gene-len</code>, <code>--min-protein-len-aa</code>, <code>--mode</code>, or <code>--ttable</code> rebuilds the cached proteins. Changing seed markers, combine mode, or output options does not.</p>
-<p>See <a href="../../cache/">cache.md</a> for the shared cache rules used by both <code>screen</code> and <code>jack</code>.</p>
-<h2 id="command-options">Command options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>Usage:<span class="w"> </span>phu<span class="w"> </span>jack<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>SEED_MARKER
-
-Iteratively<span class="w"> </span>screen<span class="w"> </span>contigs<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>seed<span class="w"> </span>protein<span class="w"> </span>markers<span class="w"> </span>with<span class="w"> </span>pyhmmer.jackhmmer.
-
-Arguments:
-<span class="w">  </span>SEED_MARKER<span class="w">                  </span>Seed<span class="w"> </span>marker<span class="w"> </span>protein<span class="w"> </span>FASTA<span class="w"> </span><span class="o">(</span>supports<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>sequences<span class="o">)</span>
-
-Options:
-<span class="w">  </span>-i,<span class="w"> </span>--input-contigs<span class="w"> </span>PATH<span class="w">     </span>Input<span class="w"> </span>contigs<span class="w"> </span>FASTA<span class="w"> </span><span class="o">[</span>required<span class="o">]</span>
-<span class="w">  </span>-o,<span class="w"> </span>--output-folder<span class="w"> </span>PATH<span class="w">     </span>Output<span class="w"> </span>directory<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span>phu-jack<span class="o">]</span>
-<span class="w">  </span>-m,<span class="w"> </span>--mode<span class="w"> </span>TEXT<span class="w">              </span>pyrodigal<span class="w"> </span>mode:<span class="w"> </span>meta<span class="p">|</span>single<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span>meta<span class="o">]</span>
-<span class="w">  </span>-t,<span class="w"> </span>--threads<span class="w"> </span>INTEGER<span class="w">        </span>Threads<span class="w"> </span><span class="k">for</span><span class="w"> </span>pyrodigal<span class="w"> </span>and<span class="w"> </span>pyhmmer<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span>
-<span class="w">  </span>-I,<span class="w"> </span>--iterations<span class="w"> </span>INTEGER<span class="w">     </span>Maximum<span class="w"> </span>jackhmmer<span class="w"> </span>iterations<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">5</span><span class="o">]</span>
-<span class="w">      </span>--inc-evalue<span class="w"> </span>FLOAT<span class="w">       </span>Inclusion<span class="w"> </span>E-value<span class="w"> </span>threshold<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">0</span>.001<span class="o">]</span>
-<span class="w">  </span>-e,<span class="w"> </span>--max-evalue<span class="w"> </span>FLOAT<span class="w">       </span>Max<span class="w"> </span>independent<span class="w"> </span>E-value<span class="w"> </span><span class="k">for</span><span class="w"> </span>final<span class="w"> </span>hits<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span>1e-05<span class="o">]</span>
-<span class="w">  </span>-n,<span class="w"> </span>--top-per-contig<span class="w"> </span>INTEGER<span class="w"> </span>Keep<span class="w"> </span>top-N<span class="w"> </span>hits<span class="w"> </span>per<span class="w"> </span>contig<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span>
-<span class="w">  </span>-c,<span class="w"> </span>--combine-mode<span class="w"> </span>TEXT<span class="w">      </span>Combine<span class="w"> </span>seed<span class="w"> </span>hits<span class="w"> </span>per<span class="w"> </span>contig:<span class="w"> </span>any<span class="p">|</span>all<span class="p">|</span>threshold<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span>any<span class="o">]</span>
-<span class="w">  </span>-k,<span class="w"> </span>--min-seed-hits<span class="w"> </span>INTEGER<span class="w">  </span>Minimum<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>seeds<span class="w"> </span>required<span class="w"> </span><span class="k">for</span><span class="w"> </span>threshold<span class="w"> </span>mode<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span>
-<span class="w">  </span>-g,<span class="w"> </span>--min-gene-len<span class="w"> </span>INTEGER<span class="w">   </span>Minimum<span class="w"> </span>gene<span class="w"> </span>length<span class="w"> </span><span class="k">for</span><span class="w"> </span>pyrodigal<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">90</span><span class="o">]</span>
-<span class="w">      </span>--min-protein-len-aa<span class="w"> </span>INTEGER<span class="w">  </span>Minimum<span class="w"> </span>translated<span class="w"> </span>protein<span class="w"> </span>length<span class="w"> </span>to<span class="w"> </span>keep<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">30</span><span class="o">]</span>
-<span class="w">  </span>-T,<span class="w"> </span>--ttable<span class="w"> </span>INTEGER<span class="w">         </span>NCBI<span class="w"> </span>translation<span class="w"> </span>table<span class="w"> </span><span class="o">[</span>default:<span class="w"> </span><span class="m">11</span><span class="o">]</span>
-<span class="w">      </span>--keep-proteins<span class="w"> </span>/<span class="w"> </span>--no-keep-proteins
-<span class="w">                               </span>Keep<span class="w"> </span>intermediate<span class="w"> </span>proteins<span class="w"> </span>FASTA
-<span class="w">      </span>--save-hmm<span class="w"> </span>/<span class="w"> </span>--no-save-hmm
-<span class="w">                               </span>Save<span class="w"> </span>final<span class="w"> </span>jackhmmer<span class="w"> </span>HMM<span class="w"> </span>output<span class="o">(</span>s<span class="o">)</span>
-<span class="w">  </span>-h,<span class="w"> </span>--help<span class="w">                   </span>Show<span class="w"> </span><span class="nb">help</span><span class="w"> </span>and<span class="w"> </span><span class="nb">exit</span>
-</code></pre></div>
-<h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
-<p>If you use <code>--combine-mode threshold</code>, <code>--min-seed-hits</code> cannot exceed the number of seed sequences in <code>SEED_MARKER</code>.</p>
+<h2 id="threshold-precedence">Threshold precedence<a class="headerlink" href="#threshold-precedence" title="Permanent link">&para;</a></h2>
+<p>Let:</p>
+<ul>
+<li><code>min_bitscore</code> be the CLI value from <code>--min-bitscore</code> (can be unset).</li>
+<li><code>ko_threshold</code> be the KOfam threshold from <code>ko_list</code> for that KO (can be missing).</li>
+</ul>
+<p>If <code>--use-kofam-thresholds</code> is enabled and <code>ko_threshold</code> exists:</p>
+<ul>
+<li>If <code>min_bitscore</code> is unset: effective minimum bitscore is <code>ko_threshold</code>.</li>
+<li>If <code>min_bitscore</code> is set: effective minimum bitscore is <code>max(min_bitscore, ko_threshold)</code>.</li>
+</ul>
+<p>If KOfam thresholds are disabled (or no KO threshold exists), effective minimum bitscore is just <code>min_bitscore</code>.</p>
+<p>This means user thresholds can only make filtering stricter when KOfam thresholds are active.</p>
+<h2 id="e-value-behavior">E-value behavior<a class="headerlink" href="#e-value-behavior" title="Permanent link">&para;</a></h2>
+<p><code>--max-evalue</code> is always applied using the hit independent E-value from the top-level hit.</p>
+<p>Important: even when KOfam <code>score_type</code> is <code>domain</code>, the E-value filter is still based on the hit-level E-value, not domain i-Evalue or c-Evalue from domtblout rows.</p>
+<h2 id="pfam-behavior">PFAM behavior<a class="headerlink" href="#pfam-behavior" title="Permanent link">&para;</a></h2>
+<p>PFAM accessions are resolved to local models, then screened like any other HMM model.</p>
+<p>Threshold behavior for PFAM depends on CLI options:</p>
+<ul>
+<li><code>--cut-ga</code> on (default): pyHMMER applies profile GA gathering cutoffs during search.</li>
+<li><code>--no-cut-ga</code>: no model GA cutoff is forced by pyHMMER; filtering relies on <code>--min-bitscore</code> and <code>--max-evalue</code>.</li>
+</ul>
+<p>PFAM does not use KOfam <code>ko_list</code> thresholds.</p>
+<h2 id="kofam-behavior">KOfam behavior<a class="headerlink" href="#kofam-behavior" title="Permanent link">&para;</a></h2>
+<p>KOfam models are resolved by KO ID and enriched with metadata parsed from <code>ko_list</code>, including:</p>
+<ul>
+<li><code>threshold</code></li>
+<li><code>score_type</code> (<code>full</code> or <code>domain</code>)</li>
+</ul>
+<p>When <code>--use-kofam-thresholds</code> is enabled (default), KOfam thresholding is applied per KO using the KO <code>score_type</code> logic above.</p>
+<h2 id="domtblout-interpretation">domtblout interpretation<a class="headerlink" href="#domtblout-interpretation" title="Permanent link">&para;</a></h2>
+<p><code>--keep-domtbl</code> keeps raw <code>domtblout</code> files for inspection and audit.</p>
+<p>In current implementation, pass/fail filtering does not re-parse domtblout text. The selection is performed from in-memory hit objects produced by pyHMMER.</p>
+<p>Use domtblout as an audit artifact to interpret why a hit likely passed or failed.</p>
+<h2 id="combine-mode-after-filtering">combine mode after filtering<a class="headerlink" href="#combine-mode-after-filtering" title="Permanent link">&para;</a></h2>
+<p>After score/E-value filtering, contigs are retained by combine mode:</p>
+<ul>
+<li><code>any</code>: keep contigs with at least one passing model; keep top hits per model per contig.</li>
+<li><code>all</code>: keep contigs that match all models.</li>
+<li><code>threshold</code>: keep contigs with at least <code>--min-hmm-hits</code> distinct matching models.</li>
+</ul>
+<h2 id="worked-interpretation-example">Worked interpretation example<a class="headerlink" href="#worked-interpretation-example" title="Permanent link">&para;</a></h2>
+<p>If KO metadata says:</p>
+<ul>
+<li><code>threshold = 136.43</code></li>
+<li><code>score_type = full</code></li>
+</ul>
+<p>Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in domtblout.</p>
+<p>If <code>--max-evalue</code> remains default (<code>1e-5</code>), many such hits also fail the E-value filter.</p>
 
 
 

@@ -9,6 +9,10 @@
       
       
       
+        <link rel="prev" href="../cluster/">
+      
+      
+        <link rel="next" href="../simplify-taxa/">
       
       
         
@@ -305,18 +309,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
@@ -337,7 +343,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -371,6 +377,136 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbs
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-does-it-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What does it do?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#synopsis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synopsis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behavior-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -447,6 +583,34 @@
     
   
     jack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../screen-thresholds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    screen thresholds and decision logic
   
 
     
@@ -571,7 +735,7 @@
 <h1 id="dbs">dbs<a class="headerlink" href="#dbs" title="Permanent link">&para;</a></h1>
 <h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
 <p>The <code>phu dbs</code> command group manages local databases used by <code>phu</code>. It provides a scalable contract so each database can define its own preparation logic while sharing a common user interface.</p>
-<p>Right now, <code>pfam</code> is wired first.</p>
+<p>Current built-in backends are <code>pfam</code> and <code>kofam</code>.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>DATABASES...<span class="o">]</span>
 </code></pre></div>
@@ -596,6 +760,17 @@
 <li>Ensuring <code>Pfam-A.hmm</code> is present locally.</li>
 <li>Building the byte-offset index used for accession lookup.</li>
 </ol>
+<p>For <code>kofam</code>, preparation includes:</p>
+<ol>
+<li>Ensuring <code>kofam.hmm</code> and <code>ko_list</code> are present locally.</li>
+<li>Building KO metadata index from <code>ko_list</code> (<code>threshold</code>, <code>score_type</code>, etc.).</li>
+<li>Building the byte-offset index for sparse KO model extraction.</li>
+</ol>
+<p>KOfam metadata drives threshold behavior in <code>phu screen</code>; see <a href="../screen-thresholds/">screen thresholds and decision logic</a>.</p>
+<p>KOfam support follows the KofamKOALA method for KO assignment and thresholding:</p>
+<blockquote>
+<p>Aramaki T., Blanc-Mathieu R., Endo H., Ohkubo K., Kanehisa M., Goto S., Ogata H. KofamKOALA: KEGG ortholog assignment based on profile HMM and adaptive score threshold. Bioinformatics. 2019 Nov 19. pii: btz859. doi: 10.1093/bioinformatics/btz859.</p>
+</blockquote>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>Prepare only PFAM:</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>pfam
@@ -603,14 +778,20 @@
 <p>Prepare all supported databases:</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>--all
 </code></pre></div>
+<p>Prepare only KOfam:</p>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>kofam
+</code></pre></div>
 <p>Check status:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>status<span class="w"> </span>pfam
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>status<span class="w"> </span>pfam<span class="w"> </span>kofam
 </code></pre></div>
 <p>Refresh integrity:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>refresh<span class="w"> </span>pfam
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>refresh<span class="w"> </span>pfam<span class="w"> </span>kofam
 </code></pre></div>
 <p>Remove PFAM data:</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>remove<span class="w"> </span>pfam<span class="w"> </span>--yes
+</code></pre></div>
+<p>Remove KOfam data:</p>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>remove<span class="w"> </span>kofam<span class="w"> </span>--yes
 </code></pre></div>
 <p>List supported databases:</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>list

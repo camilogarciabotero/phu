@@ -9,13 +9,29 @@ from phu import __version__
 
 from ._exec import CmdNotFound
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
-from .gene_prediction_core import clean_prediction_cache
+from .gene_prediction_core import (
+    PredictionInputs,
+    clean_prediction_cache,
+    get_or_predict_proteins,
+)
+from .avger_annotation import (
+    AnnotationConfig,
+    annotate_proteins_complete_databases,
+    write_best_hits_tsv,
+)
 from .jack import JackConfig, _jack
 from .kofam_db import (
     get_kofam_database_status,
     prepare_kofam_database,
     refresh_kofam_database,
     remove_kofam_database,
+)
+from .vscore_db import (
+    ensure_vscore_database,
+    get_vscore_database_status,
+    get_vscore_map,
+    refresh_vscore_database,
+    remove_vscore_database,
 )
 from .pfam_db import (
     get_pfam_database_status,
@@ -40,7 +56,7 @@ dbs_app = typer.Typer(
 )
 app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
 
-SUPPORTED_DBS = ("pfam", "kofam")
+SUPPORTED_DBS = ("pfam", "kofam", "vscore")
 
 
 def _normalize_db_names(databases: list[str], all_dbs: bool) -> list[str]:
@@ -66,6 +82,8 @@ def _db_status_payload(db_name: str) -> dict:
         return get_pfam_database_status()
     if db_name == "kofam":
         return get_kofam_database_status()
+    if db_name == "vscore":
+        return get_vscore_database_status()
     raise ValueError(f"Unsupported database: {db_name}")
 
 
@@ -149,6 +167,10 @@ def dbs_prepare(
                 typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
                 typer.echo(f"Index ready: {result.get('offsets_path')}")
                 typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
+            elif db_name == "vscore":
+                result = ensure_vscore_database(force_refresh=force_refresh)
+                typer.echo(f"Prepared {db_name}: {result.get('csv_path')}")
+                typer.echo(f"Records ready: {result.get('record_count')}")
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -184,6 +206,10 @@ def dbs_refresh(
                 typer.echo(f"Refreshed {db_name}: {result.get('hmm_path')}")
                 typer.echo(f"Index ready: {result.get('offsets_path')}")
                 typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
+            elif db_name == "vscore":
+                result = refresh_vscore_database()
+                typer.echo(f"Refreshed {db_name}: {result.get('csv_path')}")
+                typer.echo(f"Records ready: {result.get('record_count')}")
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -228,6 +254,12 @@ def dbs_remove(
                 typer.echo(f"{db_name} database not present")
         elif db_name == "kofam":
             removed = remove_kofam_database()
+            if removed:
+                typer.echo(f"Removed {db_name} database")
+            else:
+                typer.echo(f"{db_name} database not present")
+        elif db_name == "vscore":
+            removed = remove_vscore_database()
             if removed:
                 typer.echo(f"Removed {db_name} database")
             else:
@@ -395,6 +427,80 @@ def simplify_taxa(
     except RuntimeError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
+
+
+@app.command("avger", rich_help_panel="Workflow")
+def avger(
+    input_contigs: Path = typer.Option(
+        ...,
+        "--input-contigs",
+        "-i",
+        exists=True,
+        readable=True,
+        help="Input contigs FASTA",
+    ),
+    output_folder: Path = typer.Option(
+        Path("phu-avger"), "--output-folder", "-o", help="Output directory"
+    ),
+    mode: str = typer.Option("meta", "--mode", "-m", help="pyrodigal mode: meta|single"),
+    threads: int = typer.Option(
+        1, "--threads", "-t", min=1, help="Threads for prediction and HMMER"
+    ),
+    max_evalue: float = typer.Option(
+        1e-5, "--max-evalue", "-e", min=0.0, help="Maximum hit E-value"
+    ),
+    min_gene_len: int = typer.Option(
+        90, "--min-gene-len", min=1, help="Minimum predicted CDS length (nt)"
+    ),
+    min_protein_len_aa: int = typer.Option(
+        30, "--min-protein-len-aa", min=1, help="Minimum predicted protein length (aa)"
+    ),
+    translation_table: int = typer.Option(
+        11, "--ttable", "-T", help="NCBI translation table for coding sequences"
+    ),
+    keep_all_hits: bool = typer.Option(
+        False, "--keep-all-hits/--no-keep-all-hits", help="Write all passing HMM hits"
+    ),
+    use_vscore: bool = typer.Option(
+        True, "--use-vscore/--no-use-vscore", help="Add V-score annotations for KOs"
+    ),
+):
+    """Predict proteins and annotate them against complete Pfam and KOfam databases."""
+    output_folder.mkdir(parents=True, exist_ok=True)
+    prediction_inputs = PredictionInputs(
+        input_contigs=input_contigs,
+        mode=mode,
+        min_gene_len=min_gene_len,
+        min_protein_len_aa=min_protein_len_aa,
+        translation_table=translation_table,
+    )
+    try:
+        proteins = get_or_predict_proteins(
+            prediction_inputs, use_cache=True, threads=threads
+        )
+        all_hits_path = output_folder / "all_hits.tsv.gz" if keep_all_hits else None
+        results = annotate_proteins_complete_databases(
+            proteins.proteins_path,
+            AnnotationConfig(
+                threads=threads,
+                max_evalue=max_evalue,
+                keep_all_hits=keep_all_hits,
+                all_hits_path=all_hits_path,
+            ),
+        )
+        vscore_map = get_vscore_map() if use_vscore else None
+        best_path = output_folder / "best_hits.tsv"
+        row_count = write_best_hits_tsv(results, best_path, vscore_map)
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"Predicted proteins: {proteins.protein_count}")
+    typer.echo(f"Passing annotations: {results.passing_hit_count}")
+    typer.echo(f"Best-hit rows: {row_count}")
+    typer.echo(f"Results: {best_path}")
+    if all_hits_path is not None:
+        typer.echo(f"All hits: {all_hits_path}")
 
 
 @app.command("screen", rich_help_panel="Workflow")

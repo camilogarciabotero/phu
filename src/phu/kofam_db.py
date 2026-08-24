@@ -768,3 +768,8 @@ def get_kofam_metadata_map(ko_ids: Iterable[str]) -> dict[str, KOFamMetadata]:
         if ko_id in metadata:
             selected[ko_id] = metadata[ko_id]
     return selected
+
+
+def get_all_kofam_metadata() -> dict[str, KOFamMetadata]:
+    """Return full KO metadata map loaded from the local metadata index."""
+    return _load_kofam_metadata()

@@ -70,6 +70,7 @@ nav:
   - Commands:
       - commands/cluster.md
       - commands/dbs.md
+      - commands/avger.md
       - commands/simplify-taxa.md
       - commands/screen.md
       - commands/jack.md

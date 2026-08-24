@@ -1,3 +1,5 @@
+import re
+
 from typer.testing import CliRunner
 from phu.cli import app
 import phu.cli as cli_module
@@ -5,17 +7,22 @@ import phu.cli as cli_module
 runner = CliRunner()
 
 
+def plain_output(result) -> str:
+    return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", result.stdout)
+
+
 def test_root_help_runs():
     result = runner.invoke(app, ["--help"])
+    output = plain_output(result)
     assert result.exit_code == 0
-    assert "Workflow" in result.stdout
-    assert "Database Management" in result.stdout
-    assert "cluster" in result.stdout
-    assert "screen" in result.stdout
-    assert "jack" in result.stdout
-    assert "dbs" in result.stdout
-    assert "simplify-taxa" in result.stdout
-    assert "--clean-cache" in result.stdout
+    assert "Workflow" in output
+    assert "Database Management" in output
+    assert "cluster" in output
+    assert "screen" in output
+    assert "jack" in output
+    assert "dbs" in output
+    assert "simplify-taxa" in output
+    assert "--clean-cache" in output
 
 
 def test_clean_cache_removes_prediction_cache(tmp_path, monkeypatch):
@@ -33,12 +40,13 @@ def test_clean_cache_removes_prediction_cache(tmp_path, monkeypatch):
 
 def test_dbs_help_runs():
     result = runner.invoke(app, ["dbs", "--help"])
+    output = plain_output(result)
     assert result.exit_code == 0
-    assert "list" in result.stdout
-    assert "status" in result.stdout
-    assert "prepare" in result.stdout
-    assert "refresh" in result.stdout
-    assert "remove" in result.stdout
+    assert "list" in output
+    assert "status" in output
+    assert "prepare" in output
+    assert "refresh" in output
+    assert "remove" in output
 
 
 def test_dbs_prepare_calls_pfam_prepare(monkeypatch, tmp_path):
@@ -117,26 +125,28 @@ def test_dbs_remove_calls_pfam_remove(monkeypatch):
 
 def test_cluster_short_options_present_in_help():
     result = runner.invoke(app, ["cluster", "--help"])
+    output = plain_output(result)
     assert result.exit_code == 0
-    assert "--input-contigs" in result.stdout
-    assert "-i" in result.stdout
-    assert "--output-folder" in result.stdout
-    assert "-o" in result.stdout
-    assert "--threads" in result.stdout
-    assert "-t" in result.stdout
+    assert "--input-contigs" in output
+    assert "-i" in output
+    assert "--output-folder" in output
+    assert "-o" in output
+    assert "--threads" in output
+    assert "-t" in output
 
 
 def test_screen_short_options_present_in_help():
     result = runner.invoke(app, ["screen", "--help"], terminal_width=200)
+    output = plain_output(result)
     assert result.exit_code == 0
-    assert "--input-contigs" in result.stdout
-    assert "-i" in result.stdout
-    assert "--mode" in result.stdout
-    assert "-m" in result.stdout
-    assert "-g" in result.stdout
-    assert "--combine-mode" in result.stdout
-    assert "-c" in result.stdout
-    assert "--cut-ga" in result.stdout
+    assert "--input-contigs" in output
+    assert "-i" in output
+    assert "--mode" in output
+    assert "-m" in output
+    assert "-g" in output
+    assert "--combine-mode" in output
+    assert "-c" in output
+    assert "--cut-ga" in output
 
 
 def test_screen_cut_ga_enabled_by_default(tmp_path, monkeypatch):
@@ -160,25 +170,27 @@ def test_screen_cut_ga_enabled_by_default(tmp_path, monkeypatch):
 
 def test_jack_short_options_present_in_help():
     result = runner.invoke(app, ["jack", "--help"], terminal_width=200)
+    output = plain_output(result)
     assert result.exit_code == 0
-    assert "--input-contigs" in result.stdout
-    assert "-i" in result.stdout
-    assert "--iterations" in result.stdout
-    assert "-I" in result.stdout
-    assert "--max-evalue" in result.stdout
-    assert "-e" in result.stdout
-    assert "--combine-mode" in result.stdout
-    assert "-c" in result.stdout
-    assert "--min-seed-hits" in result.stdout
-    assert "-k" in result.stdout
+    assert "--input-contigs" in output
+    assert "-i" in output
+    assert "--iterations" in output
+    assert "-I" in output
+    assert "--max-evalue" in output
+    assert "-e" in output
+    assert "--combine-mode" in output
+    assert "-c" in output
+    assert "--min-seed-hits" in output
+    assert "-k" in output
 
 
 def test_simplify_taxa_short_options_present_in_help():
     result = runner.invoke(app, ["simplify-taxa", "--help"])
+    output = plain_output(result)
     assert result.exit_code == 0
-    assert "--input-file" in result.stdout
-    assert "-i" in result.stdout
-    assert "--output-file" in result.stdout
-    assert "-o" in result.stdout
-    assert "--sep" in result.stdout
-    assert "-s" in result.stdout
+    assert "--input-file" in output
+    assert "-i" in output
+    assert "--output-file" in output
+    assert "-o" in output
+    assert "--sep" in output
+    assert "-s" in output

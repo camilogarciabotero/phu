@@ -4,7 +4,7 @@
 
 The `phu dbs` command group manages local databases used by `phu`. It provides a scalable contract so each database can define its own preparation logic while sharing a common user interface.
 
-Current built-in backends are `pfam` and `kofam`.
+Current built-in backends are `pfam`, `kofam`, and `vscore`.
 
 ## Synopsis
 
@@ -40,6 +40,11 @@ For `kofam`, preparation includes:
 2. Building KO metadata index from `ko_list` (`threshold`, `score_type`, etc.).
 3. Building the byte-offset index for sparse KO model extraction.
 
+For `vscore`, preparation downloads and validates the V-Score CSV from the
+AnantharamanLab repository and stores it locally with a manifest and checksum.
+The parser requires the columns `Accession`, `Protein Function`, `V-Score`,
+`Log10[Hit Number]`, and `Database Origin`.
+
 KOfam metadata drives threshold behavior in `phu screen`; see [screen thresholds and decision logic](screen-thresholds.md).
 
 KOfam support follows the KofamKOALA method for KO assignment and thresholding:
@@ -70,6 +75,12 @@ Check status:
 
 ```bash
 phu dbs status pfam kofam
+```
+
+Prepare the V-score table:
+
+```bash
+phu dbs prepare vscore
 ```
 
 Refresh integrity:

@@ -90,7 +90,10 @@ def _patch_sequencefile(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def read_block(self):
+        def read_block(self, sequences=None):
+            if getattr(self, "_read", False):
+                return []
+            self._read = True
             return [object()]
 
     monkeypatch.setattr(ann.pyhmmer.easel, "SequenceFile", FakeSequenceFile)

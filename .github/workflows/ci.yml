@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install project and dev dependencies
+        run: uv sync --python ${{ matrix.python-version }} --group dev
+
+      - name: Run test suite
+        run: uv run pytest -q
+
+      - name: Build source and wheel distributions
+        run: uv build
+
+      - name: Smoke install wheel and verify CLI
+        run: |
+          uv venv .venv-smoke --python ${{ matrix.python-version }}
+          uv pip install --python .venv-smoke/bin/python dist/*.whl
+          .venv-smoke/bin/phu --version

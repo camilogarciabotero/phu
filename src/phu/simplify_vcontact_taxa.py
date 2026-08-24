@@ -1,10 +1,11 @@
 from __future__ import annotations
-import re
+
 import logging
+import re
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Optional
 from enum import Enum
+from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 
@@ -72,7 +73,7 @@ class TaxaPlan:
 ANCHOR = r"([^:\|]+)"
 
 # Compile order: most specific → most general (first match wins).
-TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
+TAXA_PATTERNS: dict[str, list[dict[str, re.Pattern]]] = {
     "kingdom": [
         {
             "pattern": re.compile(rf"novel_kingdom_(\d+)_of_{ANCHOR}"),
@@ -554,7 +555,7 @@ def _simplify_taxa(cfg: TaxaConfig) -> TaxaPlan:
     return plan
 
 
-def _clean_cols(cols: List[str]) -> List[str]:
+def _clean_cols(cols: list[str]) -> list[str]:
     """Basic snake_case & trimming; avoids janitor dependency."""
     out = []
     for c in cols:
@@ -564,7 +565,7 @@ def _clean_cols(cols: List[str]) -> List[str]:
     return out
 
 
-def _detect_level_map(df: pd.DataFrame) -> Dict[str, str]:
+def _detect_level_map(df: pd.DataFrame) -> dict[str, str]:
     """Detect *_prediction columns and map them to taxonomic levels."""
     want = {f"{lvl}_prediction": lvl for lvl in PRED_LEVELS}
     return {col: lvl for col, lvl in want.items() if col in df.columns}

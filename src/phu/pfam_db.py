@@ -6,9 +6,9 @@ import json
 import os
 import shutil
 import tempfile
+from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Tuple
 from urllib.request import urlopen
 
 import click
@@ -156,7 +156,7 @@ def _sha256(path: Path) -> str:
 
 
 def _write_manifest_atomically(
-    manifest_path: Path, metadata: Dict[str, object]
+    manifest_path: Path, metadata: dict[str, object]
 ) -> None:
     """Write manifest JSON atomically to avoid corruption on interruption."""
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -168,7 +168,7 @@ def _write_manifest_atomically(
     tmp_path.replace(manifest_path)
 
 
-def _read_json(path: Path) -> Dict[str, object]:
+def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text())
 
 
@@ -176,11 +176,11 @@ def _scan_hmm_blocks(
     hmm_db_path: Path,
     *,
     label: str,
-    on_block: Callable[[str | None, List[str]], None],
+    on_block: Callable[[str | None, list[str]], None],
 ) -> None:
     """Scan an HMM database and invoke on_block(accession, lines) for each model block."""
     total_size = hmm_db_path.stat().st_size if hmm_db_path.exists() else None
-    block_lines: List[str] = []
+    block_lines: list[str] = []
     block_acc: str | None = None
 
     def _flush_block() -> None:
@@ -272,7 +272,7 @@ def _build_offsets_index(hmm_db_path: Path) -> None:
         raise FileNotFoundError(f"PFAM HMM database not found: {hmm_db_path}")
 
     source_stat = hmm_db_path.stat()
-    offsets: Dict[str, List[int]] = {}
+    offsets: dict[str, list[int]] = {}
 
     def _scan_offsets(update_progress: Callable[[int], None] | None = None) -> None:
         block_start = 0
@@ -324,7 +324,7 @@ def _build_offsets_index(hmm_db_path: Path) -> None:
     else:
         run_click_task("Indexing Pfam-A", _scan_offsets)
 
-    metadata: Dict[str, object] = {
+    metadata: dict[str, object] = {
         "schema_version": PFAM_OFFSETS_SCHEMA_VERSION,
         "name": PFAM_NAME,
         "built_at": datetime.now(timezone.utc).isoformat(),
@@ -342,7 +342,7 @@ def _extract_from_split_cache(
     hmm_db_path: Path,
     requested_ids: Iterable[str],
     output_dir: Path,
-) -> Tuple[List[Path], List[str]]:
+) -> tuple[list[Path], list[str]]:
     """Resolve requested PFAM IDs via offset index and sparse local model cache."""
     # Validate index against source DB before serving any sparse cached models.
     # If source changed, clear stale per-model cache and rebuild offsets.
@@ -356,8 +356,8 @@ def _extract_from_split_cache(
         dict.fromkeys(normalize_pfam_id(token) for token in requested_ids)
     )
 
-    out_paths_by_id: Dict[str, Path] = {}
-    missing: List[str] = []
+    out_paths_by_id: dict[str, Path] = {}
+    missing: list[str] = []
 
     needs_index = False
     for pfam_id in normalized_ordered:
@@ -369,7 +369,7 @@ def _extract_from_split_cache(
         out_path.write_bytes(model_path.read_bytes())
         out_paths_by_id[pfam_id] = out_path
 
-    offsets: Dict[str, object] = {}
+    offsets: dict[str, object] = {}
     if needs_index:
         index_data = _read_json(_pfam_offsets_index_path(hmm_db_path))
         offsets_obj = index_data.get("offsets")
@@ -411,7 +411,7 @@ def _extract_from_split_cache(
     return out_paths, missing
 
 
-def ensure_pfam_database(force_refresh: bool = False) -> Dict[str, str]:
+def ensure_pfam_database(force_refresh: bool = False) -> dict[str, str]:
     """
     Ensure local Pfam-A database exists and return metadata.
 
@@ -458,7 +458,7 @@ def prepare_pfam_database(
     download: bool = True,
     index: bool = True,
     force_refresh: bool = False,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """Prepare the local Pfam database by downloading and/or indexing it."""
     hmm = _pfam_hmm_path()
 
@@ -471,7 +471,7 @@ def prepare_pfam_database(
             )
         pfam_meta = ensure_pfam_database(force_refresh=False)
 
-    result: Dict[str, object] = dict(pfam_meta)
+    result: dict[str, object] = dict(pfam_meta)
     result["downloaded"] = bool(download or force_refresh)
 
     if index:
@@ -485,7 +485,7 @@ def prepare_pfam_database(
     return result
 
 
-def refresh_pfam_database() -> Dict[str, object]:
+def refresh_pfam_database() -> dict[str, object]:
     """Refresh PFAM metadata/index integrity and repair incomplete local state."""
     hmm = _pfam_hmm_path()
     hmm_gz = _pfam_hmm_gz_path()
@@ -497,7 +497,7 @@ def refresh_pfam_database() -> Dict[str, object]:
         return result
 
     if not manifest.exists():
-        metadata: Dict[str, object] = {
+        metadata: dict[str, object] = {
             "name": PFAM_NAME,
             "source_url": PFAM_HMM_GZ_URL,
             "downloaded_at": datetime.now(timezone.utc).isoformat(),
@@ -534,7 +534,7 @@ def remove_pfam_database() -> bool:
     return True
 
 
-def get_pfam_database_status() -> Dict[str, object]:
+def get_pfam_database_status() -> dict[str, object]:
     """Return local PFAM database status metadata."""
     pfam_root = _pfam_root()
     hmm = _pfam_hmm_path()
@@ -576,7 +576,7 @@ def extract_pfam_models(
     hmm_db_path: Path,
     requested_ids: Iterable[str],
     output_dir: Path,
-) -> Tuple[List[Path], List[str]]:
+) -> tuple[list[Path], list[str]]:
     """
     Extract requested PFAM models from a Pfam-A HMM database into individual files.
 

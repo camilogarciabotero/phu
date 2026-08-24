@@ -6,18 +6,18 @@ import shutil
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import pyhmmer.easel
 import pyhmmer.hmmer
 
 from ._exec import _executable
-from .screen import Hit, _read_fasta, _seqkit_extract
 from .gene_prediction_core import (
     PredictionInputs,
     get_or_predict_proteins,
     write_prediction_metadata,
 )
+from .screen import Hit, _read_fasta, _seqkit_extract
 
 
 @dataclass
@@ -89,7 +89,7 @@ def _run_jackhmmer(
     max_evalue: Optional[float],
     threads: int,
     hmm_output_path: Optional[Path] = None,
-) -> Tuple[List[Hit], List[Dict[str, object]]]:
+) -> tuple[list[Hit], list[dict[str, object]]]:
     """Run pyhmmer.hmmer.jackhmmer and return final hits plus iteration summary."""
     with pyhmmer.easel.SequenceFile(
         str(proteins_fa), digital=True, alphabet=alphabet
@@ -123,13 +123,13 @@ def _run_jackhmmer(
         """Return hits for either pyhmmer iteration objects or plain list outputs."""
         return getattr(iteration_obj, "hits", iteration_obj)
 
-    def _iter_meta(iteration_obj, idx: int) -> Tuple[int, bool]:
+    def _iter_meta(iteration_obj, idx: int) -> tuple[int, bool]:
         """Return (iteration_index, converged) with sensible fallbacks."""
         iteration = getattr(iteration_obj, "iteration", idx)
         converged = getattr(iteration_obj, "converged", False)
         return int(iteration), bool(converged)
 
-    summary: List[Dict[str, object]] = []
+    summary: list[dict[str, object]] = []
     for idx, it in enumerate(iterations_out, start=1):
         hits_in_iter = _iter_hits(it)
         iter_index, iter_converged = _iter_meta(it, idx)
@@ -156,7 +156,7 @@ def _run_jackhmmer(
                 final_hmm.write(out_hmm)
 
     final_hits = _iter_hits(final)
-    kept: List[Hit] = []
+    kept: list[Hit] = []
     gene_pattern = re.compile(r"\|gene\d+$")
 
     for hit in final_hits:
@@ -188,19 +188,19 @@ def _run_jackhmmer(
 
 
 def _choose_top_hits_per_contig(
-    hits: List[Hit],
+    hits: list[Hit],
     top_per_contig: int,
     combine_mode: str,
     min_seed_hits: int,
     total_seeds: int,
-) -> Tuple[List[Hit], List[str]]:
+) -> tuple[list[Hit], list[str]]:
     """Combine seed hits and keep top hits per contig based on combine mode."""
-    per_contig: Dict[str, List[Hit]] = defaultdict(list)
+    per_contig: dict[str, list[Hit]] = defaultdict(list)
     for hit in hits:
         per_contig[hit.contig].append(hit)
 
-    kept_hits: List[Hit] = []
-    kept_contigs: List[str] = []
+    kept_hits: list[Hit] = []
+    kept_contigs: list[str] = []
 
     for contig, contig_hits in per_contig.items():
         seed_ids = set(hit.model for hit in contig_hits)
@@ -214,7 +214,7 @@ def _choose_top_hits_per_contig(
         if combine_mode == "all":
             if len(seed_ids) != total_seeds:
                 continue
-            hits_per_seed: Dict[str, List[Hit]] = defaultdict(list)
+            hits_per_seed: dict[str, list[Hit]] = defaultdict(list)
             for hit in contig_hits:
                 hits_per_seed[hit.model].append(hit)
             for seed_hits in hits_per_seed.values():
@@ -232,7 +232,7 @@ def _choose_top_hits_per_contig(
     return kept_hits, kept_contigs
 
 
-def _write_iteration_summary(path: Path, rows: List[Dict[str, object]]) -> None:
+def _write_iteration_summary(path: Path, rows: list[dict[str, object]]) -> None:
     path.write_text("seed_id\titeration\tn_hits\tn_included\tconverged\n")
     if not rows:
         return
@@ -243,7 +243,7 @@ def _write_iteration_summary(path: Path, rows: List[Dict[str, object]]) -> None:
             )
 
 
-def _write_hits_table(path: Path, hits: List[Hit]) -> None:
+def _write_hits_table(path: Path, hits: list[Hit]) -> None:
     path.write_text("contig\tprotein\tseed_id\tbitscore\tevalue\n")
     if not hits:
         return
@@ -329,8 +329,8 @@ def _jack(cfg: JackConfig) -> None:
         f"(combine_mode={cfg.combine_mode})…"
     )
 
-    all_hits: List[Hit] = []
-    iter_rows: List[Dict[str, object]] = []
+    all_hits: list[Hit] = []
+    iter_rows: list[dict[str, object]] = []
 
     for seed_id, query, alphabet in seeds:
         print(f"  Seed: {seed_id}")

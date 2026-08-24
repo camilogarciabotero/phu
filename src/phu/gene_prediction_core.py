@@ -24,7 +24,7 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 
 @dataclass
@@ -93,7 +93,7 @@ def get_cache_dir() -> Path:
     return Path.home() / ".cache" / "phu"
 
 
-def clean_prediction_cache() -> Tuple[Path, bool]:
+def clean_prediction_cache() -> tuple[Path, bool]:
     """Remove the full prediction cache directory and report whether it existed."""
     cache_dir = get_cache_dir()
     existed = cache_dir.exists()

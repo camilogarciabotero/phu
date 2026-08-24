@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from phu.screen import _predict_proteins_pyrodigal
 from phu.gene_prediction_core import (
     CacheArtifact,
     PredictionInputs,
@@ -326,3 +327,50 @@ class TestWritePredictionMetadata:
 
         meta = json.loads(metadata_path.read_text())
         assert meta["cache_dir"] is None
+
+
+def test_pyproject_declares_click_runtime_dependency():
+    """Packaging metadata should declare click directly for clean installs."""
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    text = pyproject.read_text()
+    assert "click" in text
+
+
+def test_predict_proteins_single_mode_trains_and_respects_translation_table(tmp_path, monkeypatch):
+    """Single mode must train before finding genes and must pass the requested table to translation."""
+    contigs = tmp_path / "contigs.fa"
+    contigs.write_text(">c1\nATGAAAGGTGAAGGTGAATGA\n")
+
+    recorded = {}
+
+    class FakeGene:
+        def translate(self, translation_table=None, **kwargs):
+            recorded["translation_table"] = translation_table
+            return "MKGEGE"
+
+    class FakeFinder:
+        def __init__(self, *args, **kwargs):
+            recorded["finder_kwargs"] = kwargs
+
+        def train(self, sequence, *args, **kwargs):
+            recorded["trained_table"] = kwargs.get("translation_table")
+
+        def find_genes(self, sequence):
+            return [FakeGene()]
+
+    monkeypatch.setattr("phu.screen.ViralGeneFinder", FakeFinder)
+
+    proteins = tmp_path / "proteins.faa"
+    count = _predict_proteins_pyrodigal(
+        contigs_fa=contigs,
+        output_prot_fa=proteins,
+        mode="single",
+        min_len=9,
+        min_protein_len_aa=4,
+        translation_table=4,
+        threads=1,
+    )
+
+    assert count == 1
+    assert recorded["trained_table"] == 4
+    assert recorded["translation_table"] == 4

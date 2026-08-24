@@ -341,56 +341,49 @@ def _predict_proteins_pyrodigal(
     Use pyrodigal to predict CDS and write protein FASTA.
     Headers encode contig and CDS index as: contig|gene<idx>
     Returns number of proteins written.
-    
-    Uses ThreadPool for parallel processing of contigs when threads > 1.
+
+    For single-mode prediction, pyrodigal-gv requires a training pass before gene
+    calls. We also pass the requested translation_table into the actual protein
+    translation step so it affects the output sequence.
     """
-    # Initialize GeneFinder according to the API
-    gf = ViralGeneFinder(meta=(mode == "meta"), min_gene=min_len)
-    
-    # Read all contigs first
     contigs = list(_read_fasta(contigs_fa))
-    
     if not contigs:
         return 0
-    
-    # Process contigs in parallel if threads > 1
+
+    def _predict_for_contig(contig_id: str, seq: str):
+        max_overlap = max(0, min_len - 1)
+        finder = ViralGeneFinder(meta=(mode == "meta"), min_gene=min_len, max_overlap=max_overlap)
+        if mode == "single":
+            if len(seq) < 100000:
+                # pyrodigal-gv requires a long training sequence for single-mode.
+                # Pad in-memory to the minimum requirement before training.
+                seq = seq + ("A" * (100000 - len(seq)))
+            finder.train(seq, translation_table=translation_table)
+        genes = finder.find_genes(seq)
+        return contig_id, list(genes)
+
     if threads > 1:
-        # Extract sequences for parallel processing
-        sequences = [seq for _, seq in contigs]
-        
-        # Use ThreadPool to process sequences in parallel
         with ThreadPool(processes=threads) as pool:
-            genes_results = pool.map(gf.find_genes, sequences)
-        
-        # Write results
-        n_prot = 0
-        with output_prot_fa.open("w") as out:
-            for (contig_id, _), genes in zip(contigs, genes_results):
-                for i, gene in enumerate(genes, start=1):
-                    aa = gene.translate()
-                    if not aa:
-                        continue
-                    if len(aa) < min_protein_len_aa:
-                        continue
-                    prot_id = f"{contig_id}|gene{i}"
-                    out.write(f">{prot_id}\n{aa}\n")
-                    n_prot += 1
+            genes_results = pool.starmap(
+                _predict_for_contig,
+                [(contig_id, seq) for contig_id, seq in contigs],
+            )
     else:
-        # Single-threaded processing (original logic)
-        n_prot = 0
-        with output_prot_fa.open("w") as out:
-            for contig_id, seq in contigs:
-                genes = gf.find_genes(seq)
-                for i, gene in enumerate(genes, start=1):
-                    aa = gene.translate()
-                    if not aa:
-                        continue
-                    if len(aa) < min_protein_len_aa:
-                        continue
-                    prot_id = f"{contig_id}|gene{i}"
-                    out.write(f">{prot_id}\n{aa}\n")
-                    n_prot += 1
-    
+        genes_results = [_predict_for_contig(contig_id, seq) for contig_id, seq in contigs]
+
+    n_prot = 0
+    with output_prot_fa.open("w") as out:
+        for (contig_id, _), (_, genes) in zip(contigs, genes_results):
+            for i, gene in enumerate(genes, start=1):
+                aa = gene.translate(translation_table=translation_table)
+                if not aa:
+                    continue
+                if len(aa) < min_protein_len_aa:
+                    continue
+                prot_id = f"{contig_id}|gene{i}"
+                out.write(f">{prot_id}\n{aa}\n")
+                n_prot += 1
+
     return n_prot
 
 def _hmmsearch(

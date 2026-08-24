@@ -354,11 +354,12 @@ def _predict_proteins_pyrodigal(
         max_overlap = max(0, min_len - 1)
         finder = ViralGeneFinder(meta=(mode == "meta"), min_gene=min_len, max_overlap=max_overlap)
         if mode == "single":
+            train_seq = seq
             if len(seq) < 100000:
                 # pyrodigal-gv requires a long training sequence for single-mode.
                 # Pad in-memory to the minimum requirement before training.
-                seq = seq + ("A" * (100000 - len(seq)))
-            finder.train(seq, translation_table=translation_table)
+                train_seq = seq + ("A" * (100000 - len(seq)))
+            finder.train(train_seq, translation_table=translation_table)
         genes = finder.find_genes(seq)
         return contig_id, list(genes)
 

@@ -84,12 +84,11 @@ def test_choose_best_contigs_uses_kofam_domain_thresholds():
     assert contigs == ["c2"]
 
 
-def test_extract_target_proteins_adds_ko_definition_to_headers(tmp_path: Path, monkeypatch):
+def test_extract_target_proteins_adds_ko_definition_to_headers(
+    tmp_path: Path, monkeypatch
+):
     proteins_fa = tmp_path / "proteins.faa"
-    proteins_fa.write_text(
-        ">contigA|gene1\nMPEPTIDE\n"
-        ">contigB|gene1\nMSEQUENCE\n"
-    )
+    proteins_fa.write_text(">contigA|gene1\nMPEPTIDE\n>contigB|gene1\nMSEQUENCE\n")
 
     class _FakeCompleted:
         def __init__(self, returncode: int):

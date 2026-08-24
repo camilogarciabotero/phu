@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Dict, List, Union
 import shlex
 
-from ._exec import run, _executable, CmdNotFound
+from ._exec import run, _executable
 
 
 class Mode(str, Enum):
@@ -15,22 +15,24 @@ class Mode(str, Enum):
     species = "species"
 
 
-def parse_vclust_params(params_str: str) -> Dict[str, Dict[str, Union[str, int, float, bool]]]:
+def parse_vclust_params(
+    params_str: str,
+) -> Dict[str, Dict[str, Union[str, int, float, bool]]]:
     """
     Parse vclust parameters from command-line style string.
-    
+
     Example: "--min-kmers 20 --min-ident 0.5 --outfmt lite"
     Returns: {"prefilter": {"min-kmers": 20, "min-ident": 0.5}, "align": {"outfmt": "lite"}}
     """
     if not params_str.strip():
         return {}
-    
+
     # Parse the string into tokens
     try:
         tokens = shlex.split(params_str)
     except ValueError as e:
         raise ValueError(f"Invalid parameter string: {e}")
-    
+
     # Parameter mapping based on vclust wiki
     param_mapping = {
         # Prefilter parameters
@@ -39,12 +41,10 @@ def parse_vclust_params(params_str: str) -> Dict[str, Dict[str, Union[str, int, 
         "batch-size": ("prefilter", int),
         "kmers-fraction": ("prefilter", float),
         "max-seqs": ("prefilter", int),
-        
         # Align parameters
         "outfmt": ("align", str),
         "out-ani": ("align", float),
         "out-qcov": ("align", float),
-        
         # Cluster parameters
         "ani": ("cluster", float),
         "tani": ("cluster", float),
@@ -54,47 +54,51 @@ def parse_vclust_params(params_str: str) -> Dict[str, Dict[str, Union[str, int, 
         "algorithm": ("cluster", str),
         "metric": ("cluster", str),
     }
-    
+
     result = {"prefilter": {}, "align": {}, "cluster": {}}
-    
+
     i = 0
     while i < len(tokens):
         token = tokens[i]
-        
+
         if not token.startswith("--"):
-            raise ValueError(f"Expected parameter name starting with '--', got: {token}")
-        
+            raise ValueError(
+                f"Expected parameter name starting with '--', got: {token}"
+            )
+
         param_name = token[2:]  # Remove '--'
-        
+
         if param_name not in param_mapping:
             raise ValueError(f"Unknown vclust parameter: --{param_name}")
-        
+
         command, param_type = param_mapping[param_name]
-        
+
         # Check if this is a boolean flag or needs a value
-        if param_type == bool:
+        if param_type is bool:
             result[command][param_name] = True
             i += 1
         else:
             # Need a value
             if i + 1 >= len(tokens):
                 raise ValueError(f"Parameter --{param_name} requires a value")
-            
+
             value_str = tokens[i + 1]
-            
+
             try:
-                if param_type == int:
+                if param_type is int:
                     value = int(value_str)
-                elif param_type == float:
+                elif param_type is float:
                     value = float(value_str)
                 else:  # str
                     value = value_str
-                
+
                 result[command][param_name] = value
                 i += 2
             except ValueError:
-                raise ValueError(f"Invalid value for --{param_name}: {value_str} (expected {param_type.__name__})")
-    
+                raise ValueError(
+                    f"Invalid value for --{param_name}: {value_str} (expected {param_type.__name__})"
+                )
+
     # Remove empty sections
     return {k: v for k, v in result.items() if v}
 
@@ -111,7 +115,9 @@ class ClusterConfig:
     metric: str = "ani"  # 'tani' for species
     algorithm: Optional[str] = None  # set by mode
     # Advanced vclust parameters for customization
-    vclust_params: Optional[Dict[str, Dict[str, Union[str, int, float, bool]]]] = field(default_factory=dict)
+    vclust_params: Optional[Dict[str, Dict[str, Union[str, int, float, bool]]]] = field(
+        default_factory=dict
+    )
     """
     Custom vclust parameters organized by command step.
     Example:
@@ -201,7 +207,9 @@ def _binaries() -> tuple[str, str]:
     return vclust, seqkit
 
 
-def _add_custom_params(cmd: List[str], params: Dict[str, Union[str, int, float, bool]]) -> None:
+def _add_custom_params(
+    cmd: List[str], params: Dict[str, Union[str, int, float, bool]]
+) -> None:
     """Add custom parameters to a command list."""
     for param, value in params.items():
         if isinstance(value, bool):

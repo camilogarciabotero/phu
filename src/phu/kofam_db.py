@@ -106,7 +106,11 @@ def _stream_download_to_path(url: str, destination: Path, label: str) -> None:
         tmp_path = Path(tmp.name)
         with urlopen(url) as response:
             content_length = response.info().get("Content-Length")
-            total_size = int(content_length) if content_length and content_length.isdigit() else None
+            total_size = (
+                int(content_length)
+                if content_length and content_length.isdigit()
+                else None
+            )
 
             if total_size is not None and total_size > 0:
                 with click.progressbar(
@@ -123,6 +127,7 @@ def _stream_download_to_path(url: str, destination: Path, label: str) -> None:
                         tmp.write(chunk)
                         bar.update(len(chunk))
             else:
+
                 def _copy_stream() -> None:
                     while True:
                         chunk = response.read(1024 * 1024)
@@ -179,7 +184,9 @@ def _range_download_supported(url: str) -> bool:
         return False
 
 
-def _download_parallel_chunked(url: str, destination: Path, label: str, num_chunks: int = 4) -> None:
+def _download_parallel_chunked(
+    url: str, destination: Path, label: str, num_chunks: int = 4
+) -> None:
     """Download file with HTTP range requests (pget-like parallel mode)."""
     destination.parent.mkdir(parents=True, exist_ok=True)
 
@@ -194,7 +201,9 @@ def _download_parallel_chunked(url: str, destination: Path, label: str, num_chun
         _stream_download_to_path(url, destination, label)
         return
 
-    typer.secho(f"Downloading {label} ({num_chunks} parallel connections)...", fg="cyan")
+    typer.secho(
+        f"Downloading {label} ({num_chunks} parallel connections)...", fg="cyan"
+    )
     chunk_size = file_size // num_chunks
 
     with tempfile.NamedTemporaryFile(delete=False, dir=destination.parent) as tmp:
@@ -220,7 +229,9 @@ def _download_parallel_chunked(url: str, destination: Path, label: str, num_chun
 
     with ThreadPoolExecutor(max_workers=num_chunks) as executor:
         futures = [
-            executor.submit(_download_range, url, start, end, destination, _progress_callback)
+            executor.submit(
+                _download_range, url, start, end, destination, _progress_callback
+            )
             for start, end in ranges
         ]
         for future in as_completed(futures):
@@ -277,7 +288,9 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _write_manifest_atomically(manifest_path: Path, metadata: Dict[str, object]) -> None:
+def _write_manifest_atomically(
+    manifest_path: Path, metadata: Dict[str, object]
+) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
         mode="w", delete=False, dir=manifest_path.parent, suffix=".json"
@@ -469,13 +482,17 @@ def _build_offsets_index(hmm_db_path: Path) -> None:
                 if raw_line.startswith(b"ACC"):
                     parts = raw_line.split()
                     if len(parts) >= 2:
-                        token = parts[1].decode("utf-8", errors="replace").strip().upper()
+                        token = (
+                            parts[1].decode("utf-8", errors="replace").strip().upper()
+                        )
                         if is_kofam_id(token):
                             block_ko = token
                 elif raw_line.startswith(b"NAME") and block_ko is None:
                     parts = raw_line.split()
                     if len(parts) >= 2:
-                        token = parts[1].decode("utf-8", errors="replace").strip().upper()
+                        token = (
+                            parts[1].decode("utf-8", errors="replace").strip().upper()
+                        )
                         if is_kofam_id(token):
                             block_ko = token
 
@@ -532,7 +549,9 @@ def ensure_kofam_database(force_refresh: bool = False) -> Dict[str, str]:
         typer.secho("Downloading KOFam database files...", fg="cyan")
 
         _stream_download_to_path(KOFAM_KO_LIST_GZ_URL, ko_list_gz, "ko_list.gz")
-        _download_parallel_chunked(KOFAM_HMM_XZ_URL, hmm_xz, "kofam.hmm.xz", num_chunks=4)
+        _download_parallel_chunked(
+            KOFAM_HMM_XZ_URL, hmm_xz, "kofam.hmm.xz", num_chunks=4
+        )
 
         typer.secho("Decompressing KOFam files...", fg="cyan")
         _decompress_gzip_to_path(ko_list_gz, ko_list)
@@ -630,7 +649,9 @@ def get_kofam_database_status() -> Dict[str, object]:
         except (json.JSONDecodeError, OSError, ValueError):
             model_count = 0
 
-    sparse_cached_count = len(list(models_dir.glob("*.hmm"))) if models_dir.exists() else 0
+    sparse_cached_count = (
+        len(list(models_dir.glob("*.hmm"))) if models_dir.exists() else 0
+    )
 
     return {
         "name": KOFAM_NAME,
@@ -667,7 +688,9 @@ def extract_kofam_models(
     models_dir = _kofam_models_dir()
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    normalized_ids = list(dict.fromkeys(normalize_kofam_id(token) for token in requested_ids))
+    normalized_ids = list(
+        dict.fromkeys(normalize_kofam_id(token) for token in requested_ids)
+    )
 
     out_paths_by_id: Dict[str, Path] = {}
     missing: List[str] = []
@@ -700,7 +723,11 @@ def extract_kofam_models(
                     continue
 
                 start, end = span_obj
-                if not isinstance(start, int) or not isinstance(end, int) or end <= start:
+                if (
+                    not isinstance(start, int)
+                    or not isinstance(end, int)
+                    or end <= start
+                ):
                     missing.append(ko_id)
                     continue
 
@@ -714,7 +741,9 @@ def extract_kofam_models(
                 out_path.write_bytes(model_blob)
                 out_paths_by_id[ko_id] = out_path
 
-    extracted_paths = [out_paths_by_id[ko_id] for ko_id in normalized_ids if ko_id in out_paths_by_id]
+    extracted_paths = [
+        out_paths_by_id[ko_id] for ko_id in normalized_ids if ko_id in out_paths_by_id
+    ]
     return extracted_paths, missing
 
 

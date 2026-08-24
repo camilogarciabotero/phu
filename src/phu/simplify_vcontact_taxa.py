@@ -2,10 +2,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 from enum import Enum
 
 import pandas as pd
+
 
 class OutputFormat(str, Enum):
     csv = "csv"
@@ -15,12 +16,13 @@ class OutputFormat(str, Enum):
 @dataclass
 class TaxaConfig:
     """Configuration for taxa simplification."""
+
     input_file: Path
     output_file: Path
     add_lineage: bool = False
     lineage_col: str = "compact_lineage"
     sep: Optional[str] = None
-    
+
     def plan(self) -> "TaxaPlan":
         """Create execution plan from configuration."""
         # Auto-detect separator if not provided
@@ -30,14 +32,14 @@ class TaxaConfig:
                 separator = "\t"
             else:
                 separator = ","
-        
+
         # Determine output format
         output_path_lower = str(self.output_file).lower()
         if output_path_lower.endswith(".tsv"):
             output_format = OutputFormat.tsv
         else:
             output_format = OutputFormat.csv
-            
+
         return TaxaPlan(
             input_file=self.input_file,
             output_file=self.output_file,
@@ -51,12 +53,15 @@ class TaxaConfig:
 @dataclass
 class TaxaPlan:
     """Execution plan for taxa simplification."""
+
     input_file: Path
     output_file: Path
     add_lineage: bool
     lineage_col: str
     separator: str
     output_format: OutputFormat
+
+
 # --- Pattern helpers ---------------------------------------------------------
 
 # Capture for the known ancestor/anchor name:
@@ -73,7 +78,9 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
     ],
     "phylum": [
         {
-            "pattern": re.compile(rf"novel_phylum_(\d+)_of_novel_kingdom_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_phylum_(\d+)_of_novel_kingdom_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
@@ -84,7 +91,9 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
     "class": [
         # Edge cases for class 0 chains - MUST be first to match before regular patterns
         {
-            "pattern": re.compile(rf"novel_class_0_of_novel_phylum_0_of_novel_kingdom_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_class_0_of_novel_phylum_0_of_novel_kingdom_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"EDGECASE_WITH_ANCHOR",
         },
         {
@@ -93,11 +102,15 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
         },
         # Regular class patterns
         {
-            "pattern": re.compile(rf"novel_class_(\d+)_of_novel_phylum_(\d+)_of_novel_kingdom_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_class_(\d+)_of_novel_phylum_(\d+)_of_novel_kingdom_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_class_(\d+)_of_novel_phylum_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_class_(\d+)_of_novel_phylum_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
@@ -108,11 +121,15 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
     "order": [
         # Edge cases for order 0 chains - MUST be first to match before regular patterns
         {
-            "pattern": re.compile(rf"novel_order_0_of_novel_class_0_of_novel_phylum_0_of_novel_kingdom_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_order_0_of_novel_class_0_of_novel_phylum_0_of_novel_kingdom_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"EDGECASE_ORDER_WITH_ANCHOR",
         },
         {
-            "pattern": re.compile(r"novel_order_0_of_novel_class_0_of_novel_phylum_0_of_novel_kingdom"),
+            "pattern": re.compile(
+                r"novel_order_0_of_novel_class_0_of_novel_phylum_0_of_novel_kingdom"
+            ),
             "replacement": r"EDGECASE_ORDER_NK0:NP0:NC0:NO0",
         },
         # Regular order patterns
@@ -123,7 +140,9 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_order_(\d+)_of_novel_family_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_order_(\d+)_of_novel_family_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
@@ -139,7 +158,9 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
@@ -155,11 +176,13 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_subfamily_(\d+)_of_novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_subfamily_(\d+)_of_novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_subfamily_(\d+)_of_novel_family_(\d+)$"),
+            "pattern": re.compile(r"novel_subfamily_(\d+)_of_novel_family_(\d+)$"),
             "replacement": r"\1",
         },
         {
@@ -168,7 +191,9 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
         },
         # helper fallbacks mirroring R
         {
-            "pattern": re.compile(rf"novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
@@ -190,15 +215,19 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_genus_(\d+)_of_novel_subfamily_(\d+)_of_novel_family_(\d+)$"),
+            "pattern": re.compile(
+                r"novel_genus_(\d+)_of_novel_subfamily_(\d+)_of_novel_family_(\d+)$"
+            ),
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_genus_(\d+)_of_novel_subfamily_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_genus_(\d+)_of_novel_subfamily_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
-            "pattern": re.compile(rf"novel_genus_(\d+)_of_novel_subfamily_(\d+)$"),
+            "pattern": re.compile(r"novel_genus_(\d+)_of_novel_subfamily_(\d+)$"),
             "replacement": r"\1",
         },
         {
@@ -207,7 +236,9 @@ TAXA_PATTERNS: Dict[str, List[Dict[str, re.Pattern]]] = {
         },
         # helper fallbacks
         {
-            "pattern": re.compile(rf"novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"),
+            "pattern": re.compile(
+                rf"novel_family_(\d+)_of_novel_order_(\d+)_of_{ANCHOR}"
+            ),
             "replacement": r"\1",
         },
         {
@@ -228,6 +259,7 @@ RANK_CODE = {
     "genus": "NG",
 }
 
+
 def _apply_first_match(x: str, level: str) -> str:
     """Apply the first matching regex for a single taxon string at a given level."""
     if x is None or (isinstance(x, float) and pd.isna(x)):
@@ -245,7 +277,7 @@ def _apply_first_match(x: str, level: str) -> str:
             # Handle novel_class_0_of_novel_phylum_0_of_novel_kingdom_X_of_Anchor
             groups = m.groups()
             kingdom_id = groups[0]  # First captured group is kingdom ID
-            anchor = groups[1]      # Second captured group is anchor
+            anchor = groups[1]  # Second captured group is anchor
             return f"{anchor}:NK{kingdom_id}:NP0:NC0"
         elif m and "EDGECASE_ORDER_NK0:NP0:NC0:NO0" in rule["replacement"]:
             return "NK0:NP0:NC0:NO0"
@@ -253,7 +285,7 @@ def _apply_first_match(x: str, level: str) -> str:
             # Handle novel_order_0_of_novel_class_0_of_novel_phylum_0_of_novel_kingdom_X_of_Anchor
             groups = m.groups()
             kingdom_id = groups[0]  # First captured group is kingdom ID
-            anchor = groups[1]      # Second captured group is anchor
+            anchor = groups[1]  # Second captured group is anchor
             return f"{anchor}:NK{kingdom_id}:NP0:NC0:NO0"
 
         # We reconstruct the output using captured groups explicitly,
@@ -280,8 +312,6 @@ def _apply_first_match(x: str, level: str) -> str:
         # We don’t know which ID corresponds to which rank purely from regex
         # position across all patterns, so we infer from level and the
         # count of IDs captured. The patterns are ordered to keep this safe.
-        tag = RANK_CODE[level]
-
         # For mixed patterns above, the *last* captured number is the target level’s ID.
         # Upstream lineage numbers come before it. We emit upstream tags when we
         # can infer them (based on count) in descending rank order.
@@ -453,15 +483,12 @@ def _simplify_taxa(cfg: TaxaConfig) -> TaxaPlan:
         raise FileNotFoundError(f"Input file not found: {cfg.input_file}")
 
     plan = cfg.plan()
-    
+
     print(f"Reading taxonomy data from {plan.input_file}...")
-    
+
     try:
         df = pd.read_csv(
-            plan.input_file, 
-            sep=plan.separator, 
-            dtype=str, 
-            na_values=["", "NA", "NaN"]
+            plan.input_file, sep=plan.separator, dtype=str, na_values=["", "NA", "NaN"]
         )
     except Exception as e:
         raise RuntimeError(f"Error reading {plan.input_file}: {e}")
@@ -485,18 +512,28 @@ def _simplify_taxa(cfg: TaxaConfig) -> TaxaPlan:
     # Optional lineage column from deepest available rank
     if plan.add_lineage:
         print(f"Adding {plan.lineage_col} column...")
-        ordered = [c for c in [ 
-            "genus_prediction", "subfamily_prediction", "family_prediction", "order_prediction",
-            "class_prediction", "phylum_prediction", "kingdom_prediction", "realm_prediction" 
-        ] if c in df.columns]
-        
+        ordered = [
+            c
+            for c in [
+                "genus_prediction",
+                "subfamily_prediction",
+                "family_prediction",
+                "order_prediction",
+                "class_prediction",
+                "phylum_prediction",
+                "kingdom_prediction",
+                "realm_prediction",
+            ]
+            if c in df.columns
+        ]
+
         def deepest(row):
             for c in ordered:
                 val = row.get(c)
                 if isinstance(val, str) and val.strip():
                     return val
             return pd.NA
-            
+
         df[plan.lineage_col] = df.apply(deepest, axis=1)
 
     print(f"Writing results to {plan.output_file}...")
@@ -505,7 +542,9 @@ def _simplify_taxa(cfg: TaxaConfig) -> TaxaPlan:
     # QA summary
     print("\nQA Summary:")
     for col in level_map:
-        remaining_novel = df[col].astype("string").str.contains(r"novel_", na=False).sum()
+        remaining_novel = (
+            df[col].astype("string").str.contains(r"novel_", na=False).sum()
+        )
         print(f"  {col}: {remaining_novel} remaining 'novel_' strings")
 
     return plan

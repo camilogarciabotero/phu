@@ -31,12 +31,7 @@ def test_normalize_kofam_id_raises_on_invalid_id():
 
 def test_extract_kofam_models_extracts_from_profiles(tmp_path: Path, monkeypatch):
     hmm_db_path = tmp_path / "kofam.hmm"
-    hmm_db_path.write_text(
-        "HMMER3/f\n"
-        "NAME  K00001\n"
-        "LENG  100\n"
-        "//\n"
-    )
+    hmm_db_path.write_text("HMMER3/f\nNAME  K00001\nLENG  100\n//\n")
 
     models_dir = tmp_path / "kofam" / "models"
     out_dir = tmp_path / "resolved"
@@ -45,7 +40,9 @@ def test_extract_kofam_models_extracts_from_profiles(tmp_path: Path, monkeypatch
 
     monkeypatch.setattr(kofam_db, "_kofam_hmm_path", lambda: hmm_db_path)
     monkeypatch.setattr(kofam_db, "_kofam_models_dir", lambda: models_dir)
-    monkeypatch.setattr(kofam_db, "_kofam_offsets_index_path", lambda: tmp_path / "offsets.json")
+    monkeypatch.setattr(
+        kofam_db, "_kofam_offsets_index_path", lambda: tmp_path / "offsets.json"
+    )
 
     extracted, missing = extract_kofam_models(["K00001"], out_dir)
 

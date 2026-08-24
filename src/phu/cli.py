@@ -28,7 +28,7 @@ app = typer.Typer(
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
     add_completion=True,
-    no_args_is_help=True
+    no_args_is_help=True,
 )
 dbs_app = typer.Typer(
     help="Manage local phu databases",
@@ -44,7 +44,11 @@ def _normalize_db_names(databases: List[str], all_dbs: bool) -> List[str]:
     if all_dbs and databases:
         raise ValueError("Use either specific database names or --all, not both")
 
-    selected = list(SUPPORTED_DBS) if all_dbs or not databases else [name.lower() for name in databases]
+    selected = (
+        list(SUPPORTED_DBS)
+        if all_dbs or not databases
+        else [name.lower() for name in databases]
+    )
 
     unknown = [name for name in selected if name not in SUPPORTED_DBS]
     if unknown:
@@ -67,7 +71,11 @@ def dbs_list() -> None:
     """List supported databases and quick readiness state."""
     for db_name in SUPPORTED_DBS:
         status = _db_status_payload(db_name)
-        state = "ready" if (status.get("downloaded") and status.get("indexed")) else "not-ready"
+        state = (
+            "ready"
+            if (status.get("downloaded") and status.get("indexed"))
+            else "not-ready"
+        )
         typer.echo(f"{db_name}\t{state}")
 
 
@@ -128,7 +136,9 @@ def dbs_prepare(
     try:
         for db_name in selected:
             if db_name == "pfam":
-                result = prepare_pfam_database(download=True, index=True, force_refresh=force_refresh)
+                result = prepare_pfam_database(
+                    download=True, index=True, force_refresh=force_refresh
+                )
                 typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
                 typer.echo(f"Index ready: {result.get('offsets_path')}")
             elif db_name == "kofam":
@@ -195,7 +205,9 @@ def dbs_remove(
 ) -> None:
     """Remove local database data."""
     if not yes:
-        typer.secho("Refusing to remove databases without --yes", fg=typer.colors.RED, err=True)
+        typer.secho(
+            "Refusing to remove databases without --yes", fg=typer.colors.RED, err=True
+        )
         raise typer.Exit(1)
 
     try:
@@ -251,11 +263,10 @@ def _root(
         typer.echo(ctx.get_help())
         raise typer.Exit(0)  # exit code 0 when no subcommand is given
 
+
 @app.command("cluster", rich_help_panel="Workflow")
 def cluster(
-    mode: str = typer.Option(
-        ..., "--mode", help="dereplication | votu | species"
-    ),
+    mode: str = typer.Option(..., "--mode", help="dereplication | votu | species"),
     input_contigs: Path = typer.Option(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input FASTA"
     ),
@@ -263,20 +274,21 @@ def cluster(
         Path("clustered-contigs"), "--output-folder", "-o", help="Output directory"
     ),
     threads: int = typer.Option(
-        0, "--threads","-t", min=0, help="0=all cores; otherwise N threads"
+        0, "--threads", "-t", min=0, help="0=all cores; otherwise N threads"
     ),
     vclust_params: Optional[str] = typer.Option(
         None,
-        "--vclust-params", "-p",
-        help='Custom vclust parameters: "--min-kmers 20 --outfmt lite --ani 0.97"'
+        "--vclust-params",
+        "-p",
+        help='Custom vclust parameters: "--min-kmers 20 --outfmt lite --ani 0.97"',
     ),
 ):
     """
     Sequence clustering wrapper around external 'vclust' with three modes.
-    
+
     For advanced usage, provide custom vclust parameters as a quoted string.
     See the vclust wiki for parameter details: https://github.com/refresh-bio/vclust/wiki
-    
+
     Example:
         phu cluster --mode votu --input-contigs genomes.fna --vclust-params="--min-kmers 20 --outfmt lite"
     """
@@ -290,7 +302,7 @@ def cluster(
             err=True,
         )
         raise typer.Exit(1)
-    
+
     # Parse vclust_params
     parsed_params = {}
     if vclust_params:
@@ -299,12 +311,10 @@ def cluster(
             typer.echo(f"Using custom vclust parameters: {vclust_params}")
         except ValueError as e:
             typer.secho(
-                f"Error parsing vclust parameters: {e}",
-                fg=typer.colors.RED,
-                err=True
+                f"Error parsing vclust parameters: {e}", fg=typer.colors.RED, err=True
             )
             raise typer.Exit(1)
-    
+
     # Build config
     cfg = ClusterConfig(
         mode=mode_enum,
@@ -313,7 +323,7 @@ def cluster(
         threads=threads,
         vclust_params=parsed_params,
     )
-    
+
     try:
         _cluster(cfg)
     except FileNotFoundError as e:
@@ -326,30 +336,42 @@ def cluster(
         )
         raise typer.Exit(1)
 
+
 @app.command("simplify-taxa", rich_help_panel="Workflow")
 def simplify_taxa(
     input_file: Path = typer.Option(
-        ..., "--input-file", "-i", exists=True, readable=True, help="Input vContact final_assignments.csv"
+        ...,
+        "--input-file",
+        "-i",
+        exists=True,
+        readable=True,
+        help="Input vContact final_assignments.csv",
     ),
     output_file: Path = typer.Option(
         ..., "--output-file", "-o", help="Output file path (.csv or .tsv)"
     ),
     add_lineage: bool = typer.Option(
-        False, "--add-lineage", "-a", help="Append compact_lineage column from deepest simplified rank"
+        False,
+        "--add-lineage",
+        "-a",
+        help="Append compact_lineage column from deepest simplified rank",
     ),
     lineage_col: str = typer.Option(
         "compact_lineage", "--lineage-col", "-l", help="Name of the lineage column"
     ),
     sep: Optional[str] = typer.Option(
-        None, "--sep", "-s", help="Override delimiter: ',' or '\\t'. Auto-detected from extension if not set"
+        None,
+        "--sep",
+        "-s",
+        help="Override delimiter: ',' or '\\t'. Auto-detected from extension if not set",
     ),
 ):
     """
     Simplify vContact taxonomy prediction columns into compact lineage codes.
-    
+
     Transforms verbose vContact taxonomy strings like 'novel_genus_1_of_novel_family_2_of_Caudoviricetes'
     into compact codes like 'Caudoviricetes:NF2:NG1'.
-    
+
     Example:
         phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
     """
@@ -361,7 +383,7 @@ def simplify_taxa(
         lineage_col=lineage_col,
         sep=sep,
     )
-    
+
     try:
         _simplify_taxa(cfg)
     except FileNotFoundError as e:
@@ -372,14 +394,19 @@ def simplify_taxa(
         raise typer.Exit(1)
 
 
-
 @app.command("screen", rich_help_panel="Workflow")
 def screen(
     input_contigs: Path = typer.Option(
-        ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
+        ...,
+        "--input-contigs",
+        "-i",
+        exists=True,
+        readable=True,
+        help="Input contigs FASTA",
     ),
     hmms: List[Path] = typer.Argument(
-        ..., help="HMM files, PFAM accessions (PF00001), and/or KO IDs (K00001); supports wildcards like *.hmm"
+        ...,
+        help="HMM files, PFAM accessions (PF00001), and/or KO IDs (K00001); supports wildcards like *.hmm",
     ),
     output_folder: Path = typer.Option(
         Path("phu-screen"), "--output-folder", "-o", help="Output directory"
@@ -394,7 +421,10 @@ def screen(
         None, "--min-bitscore", "-b", help="Minimum bitscore to keep a domain hit"
     ),
     max_evalue: Optional[float] = typer.Option(
-        1e-5, "--max-evalue", "-e", help="Maximum independent E-value to keep a domain hit"
+        1e-5,
+        "--max-evalue",
+        "-e",
+        help="Maximum independent E-value to keep a domain hit",
     ),
     cut_ga: bool = typer.Option(
         True,
@@ -410,37 +440,55 @@ def screen(
         1, "--top-per-contig", "-n", help="Keep top-N hits per contig (by bitscore)"
     ),
     min_protein_len_aa: int = typer.Option(
-        30, "--min-protein-len-aa", "-g", min=1, help="Minimum translated protein length to keep (aa)"
+        30,
+        "--min-protein-len-aa",
+        "-g",
+        min=1,
+        help="Minimum translated protein length to keep (aa)",
     ),
     translation_table: int = typer.Option(
         11, "--ttable", "-T", help="NCBI translation table for coding sequences"
     ),
     keep_proteins: bool = typer.Option(
-        False, "--keep-proteins/--no-keep-proteins", help="Keep the protein FASTA used for searching"
+        False,
+        "--keep-proteins/--no-keep-proteins",
+        help="Keep the protein FASTA used for searching",
     ),
     keep_domtbl: bool = typer.Option(
         True, "--keep-domtbl/--no-keep-domtbl", help="Keep raw domtblout from hmmsearch"
     ),
     combine_mode: str = typer.Option(
-        "any", "--combine-mode", "-c", help="How to combine hits from multiple HMMs: any|all|threshold"
+        "any",
+        "--combine-mode",
+        "-c",
+        help="How to combine hits from multiple HMMs: any|all|threshold",
     ),
     min_hmm_hits: int = typer.Option(
-        1, "--min-hmm-hits", "-k", help="Minimum number of HMMs that must hit a contig (for threshold mode)"
+        1,
+        "--min-hmm-hits",
+        "-k",
+        help="Minimum number of HMMs that must hit a contig (for threshold mode)",
     ),
     save_target_proteins: bool = typer.Option(
-        False, "--save-target-proteins/--no-save-target-proteins", 
-        help="Save matched proteins per HMM model in target_proteins/ subfolder"
+        False,
+        "--save-target-proteins/--no-save-target-proteins",
+        help="Save matched proteins per HMM model in target_proteins/ subfolder",
     ),
     save_target_hmms: bool = typer.Option(
-        False, "--save-target-hmms/--no-save-target-hmms", help="Save HMMs built from target proteins in target_hmms/ subfolder"
+        False,
+        "--save-target-hmms/--no-save-target-hmms",
+        help="Save HMMs built from target proteins in target_hmms/ subfolder",
     ),
     hmm_mode: str = typer.Option(
-        "pure", "--hmm-mode", "-M", help="HMM file type: 'pure' (one model per file) or 'mixed' (pressed/concatenated HMMs)"
-    )
+        "pure",
+        "--hmm-mode",
+        "-M",
+        help="HMM file type: 'pure' (one model per file) or 'mixed' (pressed/concatenated HMMs)",
+    ),
 ):
     """
     Screen contigs for protein families using HMMER on predicted CDS.
-    
+
     Supports multiple HMM files with different combination modes:
     - any: Keep contigs matching any HMM (default, most permissive)
     - all: Keep contigs matching all HMMs (most restrictive)
@@ -448,15 +496,15 @@ def screen(
 
     KO IDs (K00001-style) are resolved from local KOFam DB. By default,
     KO-specific thresholds from ko_list are applied using each KO score_type.
-    
+
     HMM modes:
     - pure: Each HMM file contains one model (default, most common)
     - mixed: HMM files contain multiple models (pressed/concatenated HMMs)
-    
+
     Examples:
         phu screen -i contigs.fa *.hmm
         phu screen -i contigs.fa PF00001 PF00589
-        phu screen -i contigs.fa PF00001 --no-cut-ga PF00589 
+        phu screen -i contigs.fa PF00001 --no-cut-ga PF00589
         phu screen -i contigs.fa --combine-mode all file1.hmm file2.hmm file3.hmm
         phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
         phu screen -i contigs.fa --save-target-proteins *.hmm
@@ -468,13 +516,13 @@ def screen(
         if p not in seen:
             unique_hmms.append(p)
             seen.add(p)
-    
+
     hmm_paths = unique_hmms
-    
+
     if not hmm_paths:
         typer.secho("No HMM files specified", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
-    
+
     # Build config
     cfg = ScreenConfig(
         input_contigs=input_contigs,
@@ -497,7 +545,7 @@ def screen(
         save_target_hmms=save_target_hmms,
         hmm_mode=hmm_mode,  # New parameter
     )
-    
+
     try:
         _screen(cfg)
     except FileNotFoundError as e:
@@ -505,19 +553,25 @@ def screen(
         raise typer.Exit(1)
     except CmdNotFound as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
-        typer.echo(
-            "Required executables on PATH: 'seqkit'"
-        )
+        typer.echo("Required executables on PATH: 'seqkit'")
         raise typer.Exit(1)
 
 
 @app.command("jack", rich_help_panel="Workflow")
 def jack(
     input_contigs: Path = typer.Option(
-        ..., "--input-contigs", "-i", exists=True, readable=True, help="Input contigs FASTA"
+        ...,
+        "--input-contigs",
+        "-i",
+        exists=True,
+        readable=True,
+        help="Input contigs FASTA",
     ),
     seed_marker: Path = typer.Argument(
-        ..., exists=True, readable=True, help="Seed marker protein FASTA (supports one or more sequences)"
+        ...,
+        exists=True,
+        readable=True,
+        help="Seed marker protein FASTA (supports one or more sequences)",
     ),
     output_folder: Path = typer.Option(
         Path("phu-jack"), "--output-folder", "-o", help="Output directory"
@@ -535,28 +589,47 @@ def jack(
         1e-3, "--inc-evalue", help="Inclusion E-value threshold for iterative jackhmmer"
     ),
     max_evalue: Optional[float] = typer.Option(
-        1e-5, "--max-evalue", "-e", help="Maximum independent E-value to keep a final hit"
+        1e-5,
+        "--max-evalue",
+        "-e",
+        help="Maximum independent E-value to keep a final hit",
     ),
     top_per_contig: int = typer.Option(
-        1, "--top-per-contig", "-n", min=1, help="Keep top-N hits per contig (by bitscore)"
+        1,
+        "--top-per-contig",
+        "-n",
+        min=1,
+        help="Keep top-N hits per contig (by bitscore)",
     ),
     combine_mode: str = typer.Option(
-        "any", "--combine-mode", "-c", help="How to combine hits from multiple seed proteins: any|all|threshold"
+        "any",
+        "--combine-mode",
+        "-c",
+        help="How to combine hits from multiple seed proteins: any|all|threshold",
     ),
     min_seed_hits: int = typer.Option(
-        1, "--min-seed-hits", "-k", min=1, help="Minimum number of seeds that must hit a contig (for threshold mode)"
+        1,
+        "--min-seed-hits",
+        "-k",
+        min=1,
+        help="Minimum number of seeds that must hit a contig (for threshold mode)",
     ),
     min_gene_len: int = typer.Option(
-            90, "--min-gene-len", "-g", help="Minimum gene length for pyrodigal (nt)"
-        ),
+        90, "--min-gene-len", "-g", help="Minimum gene length for pyrodigal (nt)"
+    ),
     min_protein_len_aa: int = typer.Option(
-        30, "--min-protein-len-aa", min=1, help="Minimum translated protein length to keep (aa)"
+        30,
+        "--min-protein-len-aa",
+        min=1,
+        help="Minimum translated protein length to keep (aa)",
     ),
     translation_table: int = typer.Option(
         11, "--ttable", "-T", help="NCBI translation table for coding sequences"
     ),
     keep_proteins: bool = typer.Option(
-        False, "--keep-proteins/--no-keep-proteins", help="Keep the protein FASTA used for searching"
+        False,
+        "--keep-proteins/--no-keep-proteins",
+        help="Keep the protein FASTA used for searching",
     ),
     save_hmm: bool = typer.Option(
         False,
@@ -606,15 +679,13 @@ def jack(
         raise typer.Exit(1)
     except CmdNotFound as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
-        typer.echo(
-            "Required executables on PATH: 'seqkit'"
-        )
+        typer.echo("Required executables on PATH: 'seqkit'")
         raise typer.Exit(1)
-
 
 
 def main() -> None:
     app()
+
 
 if __name__ == "__main__":
     main()

@@ -1,14 +1,12 @@
 """Tests for gene_prediction_core caching functionality."""
 
 import json
-import os
 from pathlib import Path
 
 import pytest
 
 from phu.screen import _predict_proteins_pyrodigal
 from phu.gene_prediction_core import (
-    CacheArtifact,
     PredictionInputs,
     compute_cache_key,
     get_cache_dir,
@@ -88,7 +86,7 @@ class TestCacheKey:
         contigs.write_text(">c1\nATGC\n")
 
         inputs = PredictionInputs(input_contigs=contigs)
-        
+
         # Verify key is deterministic and includes stat (by checking it's a hash)
         key = compute_cache_key(inputs)
         assert len(key) == 16  # SHA256 truncated to 16 chars
@@ -336,7 +334,9 @@ def test_pyproject_declares_click_runtime_dependency():
     assert "click" in text
 
 
-def test_predict_proteins_single_mode_trains_and_respects_translation_table(tmp_path, monkeypatch):
+def test_predict_proteins_single_mode_trains_and_respects_translation_table(
+    tmp_path, monkeypatch
+):
     """Single mode must train before finding genes and must pass the requested table to translation."""
     seq = "ATGAAAGGTGAAGGTGAATGA"
     contigs = tmp_path / "contigs.fa"

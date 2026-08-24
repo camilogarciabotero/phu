@@ -58,13 +58,7 @@ def test_extract_pfam_models_extracts_requested_models(tmp_path: Path):
 
 def test_extract_pfam_models_reports_missing_ids(tmp_path: Path):
     hmm_db = tmp_path / "Pfam-A.hmm"
-    hmm_db.write_text(
-        "HMMER3/f\n"
-        "NAME  ModelA\n"
-        "ACC   PF00001.1\n"
-        "LENG  42\n"
-        "//\n"
-    )
+    hmm_db.write_text("HMMER3/f\nNAME  ModelA\nACC   PF00001.1\nLENG  42\n//\n")
 
     out_dir = tmp_path / "resolved"
     extracted, missing = extract_pfam_models(
@@ -77,7 +71,9 @@ def test_extract_pfam_models_reports_missing_ids(tmp_path: Path):
     assert missing == ["PF99999"]
 
 
-def test_extract_pfam_models_reuses_split_cache_without_rescanning(tmp_path: Path, monkeypatch):
+def test_extract_pfam_models_reuses_split_cache_without_rescanning(
+    tmp_path: Path, monkeypatch
+):
     hmm_db = tmp_path / "Pfam-A.hmm"
     hmm_db.write_text(
         "HMMER3/f\n"
@@ -122,13 +118,7 @@ def test_extract_pfam_models_reuses_split_cache_without_rescanning(tmp_path: Pat
 
 def test_extract_pfam_models_rebuilds_split_cache_when_source_changes(tmp_path: Path):
     hmm_db = tmp_path / "Pfam-A.hmm"
-    hmm_db.write_text(
-        "HMMER3/f\n"
-        "NAME  ModelA\n"
-        "ACC   PF00001.1\n"
-        "LENG  42\n"
-        "//\n"
-    )
+    hmm_db.write_text("HMMER3/f\nNAME  ModelA\nACC   PF00001.1\nLENG  42\n//\n")
 
     first_out = tmp_path / "resolved_first"
     extracted_1, missing_1 = extract_pfam_models(
@@ -163,15 +153,11 @@ def test_extract_pfam_models_rebuilds_split_cache_when_source_changes(tmp_path: 
     assert (second_out / "PF99999.hmm").exists()
 
 
-def test_extract_pfam_models_invalidates_stale_sparse_cache_when_source_changes(tmp_path: Path):
+def test_extract_pfam_models_invalidates_stale_sparse_cache_when_source_changes(
+    tmp_path: Path,
+):
     hmm_db = tmp_path / "Pfam-A.hmm"
-    hmm_db.write_text(
-        "HMMER3/f\n"
-        "NAME  OldModel\n"
-        "ACC   PF00001.1\n"
-        "LENG  42\n"
-        "//\n"
-    )
+    hmm_db.write_text("HMMER3/f\nNAME  OldModel\nACC   PF00001.1\nLENG  42\n//\n")
 
     out_first = tmp_path / "resolved_first"
     extracted_1, missing_1 = extract_pfam_models(
@@ -184,12 +170,7 @@ def test_extract_pfam_models_invalidates_stale_sparse_cache_when_source_changes(
 
     # Change source DB for same accession; stale sparse model cache must not be reused.
     hmm_db.write_text(
-        "HMMER3/f\n"
-        "NAME  NewModel\n"
-        "ACC   PF00001.2\n"
-        "LENG  55\n"
-        "DESC  updated\n"
-        "//\n"
+        "HMMER3/f\nNAME  NewModel\nACC   PF00001.2\nLENG  55\nDESC  updated\n//\n"
     )
 
     out_second = tmp_path / "resolved_second"
@@ -206,7 +187,9 @@ def test_extract_pfam_models_invalidates_stale_sparse_cache_when_source_changes(
     assert "DESC  updated" in contents
 
 
-def test_prepare_pfam_database_missing_hmm_message_points_to_dbs_command(tmp_path: Path, monkeypatch):
+def test_prepare_pfam_database_missing_hmm_message_points_to_dbs_command(
+    tmp_path: Path, monkeypatch
+):
     missing_hmm = tmp_path / "pfam" / "Pfam-A.hmm"
 
     monkeypatch.setattr(pfam_db, "_pfam_hmm_path", lambda: missing_hmm)

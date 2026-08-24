@@ -58,7 +58,12 @@ def test_dbs_prepare_calls_pfam_prepare(monkeypatch, tmp_path):
         assert index is True
         assert force_refresh is False
         hmm_path.write_text("dummy")
-        return {"hmm_path": str(hmm_path), "offsets_path": str(offsets_path), "downloaded": True, "indexed": True}
+        return {
+            "hmm_path": str(hmm_path),
+            "offsets_path": str(offsets_path),
+            "downloaded": True,
+            "indexed": True,
+        }
 
     monkeypatch.setattr(cli_module, "prepare_pfam_database", fake_prepare_pfam_database)
 
@@ -76,7 +81,12 @@ def test_dbs_refresh_calls_pfam_refresh(monkeypatch, tmp_path):
 
     def fake_refresh_pfam_database():
         offsets_path.write_text("{}")
-        return {"hmm_path": str(hmm_path), "offsets_path": str(offsets_path), "downloaded": True, "indexed": True}
+        return {
+            "hmm_path": str(hmm_path),
+            "offsets_path": str(offsets_path),
+            "downloaded": True,
+            "indexed": True,
+        }
 
     monkeypatch.setattr(cli_module, "refresh_pfam_database", fake_refresh_pfam_database)
 

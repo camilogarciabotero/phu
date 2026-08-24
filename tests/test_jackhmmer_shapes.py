@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import phu.jack as jack
 
 
@@ -79,7 +77,9 @@ def test_run_jackhmmer_accepts_list_iterations(monkeypatch, tmp_path):
     ]
 
     monkeypatch.setattr(jack.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
-    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1, iter2]])
+    monkeypatch.setattr(
+        jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1, iter2]]
+    )
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
@@ -115,7 +115,9 @@ def test_run_jackhmmer_saves_last_iteration_hmm(monkeypatch, tmp_path):
     iter2 = _Iteration(2, True, [hit], _FakeHMM(b"HMM-2\n"))
 
     monkeypatch.setattr(jack.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
-    monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1, iter2]])
+    monkeypatch.setattr(
+        jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1, iter2]]
+    )
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
@@ -160,9 +162,15 @@ def test_run_jackhmmer_skip_hmm_export_when_unavailable(monkeypatch, tmp_path):
 
 def test_choose_top_hits_any_mode():
     hits = [
-        jack.Hit(contig="c1", prot_id="c1|gene1", model="seed1", bitscore=100.0, evalue=1e-20),
-        jack.Hit(contig="c1", prot_id="c1|gene2", model="seed2", bitscore=90.0, evalue=1e-10),
-        jack.Hit(contig="c2", prot_id="c2|gene1", model="seed2", bitscore=80.0, evalue=1e-8),
+        jack.Hit(
+            contig="c1", prot_id="c1|gene1", model="seed1", bitscore=100.0, evalue=1e-20
+        ),
+        jack.Hit(
+            contig="c1", prot_id="c1|gene2", model="seed2", bitscore=90.0, evalue=1e-10
+        ),
+        jack.Hit(
+            contig="c2", prot_id="c2|gene1", model="seed2", bitscore=80.0, evalue=1e-8
+        ),
     ]
     kept, contigs = jack._choose_top_hits_per_contig(
         hits,
@@ -178,9 +186,15 @@ def test_choose_top_hits_any_mode():
 
 def test_choose_top_hits_all_mode():
     hits = [
-        jack.Hit(contig="c1", prot_id="c1|gene1", model="seed1", bitscore=100.0, evalue=1e-20),
-        jack.Hit(contig="c1", prot_id="c1|gene2", model="seed2", bitscore=90.0, evalue=1e-10),
-        jack.Hit(contig="c2", prot_id="c2|gene1", model="seed1", bitscore=80.0, evalue=1e-8),
+        jack.Hit(
+            contig="c1", prot_id="c1|gene1", model="seed1", bitscore=100.0, evalue=1e-20
+        ),
+        jack.Hit(
+            contig="c1", prot_id="c1|gene2", model="seed2", bitscore=90.0, evalue=1e-10
+        ),
+        jack.Hit(
+            contig="c2", prot_id="c2|gene1", model="seed1", bitscore=80.0, evalue=1e-8
+        ),
     ]
     kept, contigs = jack._choose_top_hits_per_contig(
         hits,
@@ -197,10 +211,18 @@ def test_choose_top_hits_all_mode():
 
 def test_choose_top_hits_threshold_mode():
     hits = [
-        jack.Hit(contig="c1", prot_id="c1|gene1", model="seed1", bitscore=100.0, evalue=1e-20),
-        jack.Hit(contig="c1", prot_id="c1|gene2", model="seed2", bitscore=90.0, evalue=1e-10),
-        jack.Hit(contig="c1", prot_id="c1|gene3", model="seed3", bitscore=85.0, evalue=1e-9),
-        jack.Hit(contig="c2", prot_id="c2|gene1", model="seed1", bitscore=80.0, evalue=1e-8),
+        jack.Hit(
+            contig="c1", prot_id="c1|gene1", model="seed1", bitscore=100.0, evalue=1e-20
+        ),
+        jack.Hit(
+            contig="c1", prot_id="c1|gene2", model="seed2", bitscore=90.0, evalue=1e-10
+        ),
+        jack.Hit(
+            contig="c1", prot_id="c1|gene3", model="seed3", bitscore=85.0, evalue=1e-9
+        ),
+        jack.Hit(
+            contig="c2", prot_id="c2|gene1", model="seed1", bitscore=80.0, evalue=1e-8
+        ),
     ]
     kept, contigs = jack._choose_top_hits_per_contig(
         hits,

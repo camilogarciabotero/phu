@@ -6,7 +6,9 @@ from typing import Any
 import click
 
 
-def run_click_task(label: str, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+def run_click_task(
+    label: str, func: Callable[..., Any], *args: Any, **kwargs: Any
+) -> Any:
     """Run a blocking task with a minimal Click progress indicator."""
     with click.progressbar(
         length=1,

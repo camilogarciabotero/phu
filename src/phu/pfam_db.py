@@ -15,10 +15,13 @@ import click
 
 from ._click import run_click_task
 
-PFAM_HMM_GZ_URL = "https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz"
+PFAM_HMM_GZ_URL = (
+    "https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz"
+)
 PFAM_ID_PREFIX = "PF"
 PFAM_NAME = "Pfam-A"
 PFAM_OFFSETS_SCHEMA_VERSION = 1
+
 
 def is_pfam_id(token: str) -> bool:
     """Return True if token looks like a PFAM accession (with optional version)."""
@@ -28,7 +31,9 @@ def is_pfam_id(token: str) -> bool:
     body = token[2:]
     if "." in body:
         acc, version = body.split(".", 1)
-        return len(acc) == 5 and acc.isdigit() and version.isdigit() and len(version) > 0
+        return (
+            len(acc) == 5 and acc.isdigit() and version.isdigit() and len(version) > 0
+        )
     return len(body) == 5 and body.isdigit()
 
 
@@ -90,7 +95,11 @@ def _stream_download_to_path(url: str, destination: Path) -> None:
         tmp_path = Path(tmp.name)
         with urlopen(url) as response:
             content_length = response.info().get("Content-Length")
-            total_size = int(content_length) if content_length and content_length.isdigit() else None
+            total_size = (
+                int(content_length)
+                if content_length and content_length.isdigit()
+                else None
+            )
 
             if total_size is not None and total_size > 0:
                 with click.progressbar(
@@ -107,6 +116,7 @@ def _stream_download_to_path(url: str, destination: Path) -> None:
                         tmp.write(chunk)
                         bar.update(len(chunk))
             else:
+
                 def _copy_stream() -> None:
                     while True:
                         chunk = response.read(1024 * 1024)
@@ -145,7 +155,9 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _write_manifest_atomically(manifest_path: Path, metadata: Dict[str, object]) -> None:
+def _write_manifest_atomically(
+    manifest_path: Path, metadata: Dict[str, object]
+) -> None:
     """Write manifest JSON atomically to avoid corruption on interruption."""
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -340,7 +352,9 @@ def _extract_from_split_cache(
 
     models_dir = _pfam_models_dir(hmm_db_path)
     models_dir.mkdir(parents=True, exist_ok=True)
-    normalized_ordered = list(dict.fromkeys(normalize_pfam_id(token) for token in requested_ids))
+    normalized_ordered = list(
+        dict.fromkeys(normalize_pfam_id(token) for token in requested_ids)
+    )
 
     out_paths_by_id: Dict[str, Path] = {}
     missing: List[str] = []
@@ -372,7 +386,11 @@ def _extract_from_split_cache(
                     continue
 
                 start, end = span_obj
-                if not isinstance(start, int) or not isinstance(end, int) or end <= start:
+                if (
+                    not isinstance(start, int)
+                    or not isinstance(end, int)
+                    or end <= start
+                ):
                     missing.append(pfam_id)
                     continue
 
@@ -385,7 +403,11 @@ def _extract_from_split_cache(
                 out_path.write_bytes(model_blob)
                 out_paths_by_id[pfam_id] = out_path
 
-    out_paths = [out_paths_by_id[pfam_id] for pfam_id in normalized_ordered if pfam_id in out_paths_by_id]
+    out_paths = [
+        out_paths_by_id[pfam_id]
+        for pfam_id in normalized_ordered
+        if pfam_id in out_paths_by_id
+    ]
     return out_paths, missing
 
 
@@ -492,7 +514,9 @@ def refresh_pfam_database() -> Dict[str, object]:
     if isinstance(expected_sha, str):
         current_sha = _sha256(hmm)
         if current_sha != expected_sha:
-            result = prepare_pfam_database(download=True, index=True, force_refresh=True)
+            result = prepare_pfam_database(
+                download=True, index=True, force_refresh=True
+            )
             result["refreshed"] = True
             return result
 

@@ -70,8 +70,7 @@ def _read_seed_queries(seed_marker: Path):
     for seq_id, seq in records:
         if seq_id in seen:
             raise ValueError(
-                f"Duplicate seed sequence ID found: {seq_id}. "
-                "Seed IDs must be unique."
+                f"Duplicate seed sequence ID found: {seq_id}. Seed IDs must be unique."
             )
         seen.add(seq_id)
         text_seq = pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=seq)
@@ -111,12 +110,12 @@ def _run_jackhmmer(
 
     if not results:
         return [], []
-        
+
     # jackhmmer returns an iterator over results per query sequence.
     # We provided exactly one query, so there is exactly one result item.
     # Since checkpoints=True, that item is a list of IterationResult objects.
     iterations_out = results[0]
-    
+
     if not iterations_out:
         return [], []
 
@@ -300,7 +299,7 @@ def _jack(cfg: JackConfig) -> None:
     )
 
     print(
-        f"Predicting proteins with pyrodigal…"
+        "Predicting proteins with pyrodigal…"
         + (" [cache hit]" if cache_artifact.cache_hit else "")
     )
     print(f"  Proteins predicted: {cache_artifact.protein_count}")
@@ -390,9 +389,13 @@ def _jack(cfg: JackConfig) -> None:
         shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
 
     print(f"Done. Output FASTA: {out_contigs}")
-    files_msg = "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
+    files_msg = (
+        "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
+    )
     if cfg.keep_proteins:
-        proteins_msg = "proteins.faa (cached)" if cache_artifact.cache_hit else "proteins.faa"
+        proteins_msg = (
+            "proteins.faa (cached)" if cache_artifact.cache_hit else "proteins.faa"
+        )
         files_msg += f", {proteins_msg}"
     if cfg.save_hmm and final_hmm_path.exists():
         files_msg += ", last_iteration.hmm"

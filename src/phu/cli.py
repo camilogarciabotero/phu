@@ -19,6 +19,7 @@ from .avger_annotation import (
     annotate_proteins_complete_databases,
     write_best_hits_tsv,
 )
+from .avger_classification import load_classification_rules
 from .jack import JackConfig, _jack
 from .kofam_db import (
     get_kofam_database_status,
@@ -464,6 +465,11 @@ def avger(
     use_vscore: bool = typer.Option(
         True, "--use-vscore/--no-use-vscore", help="Add V-score annotations for KOs"
     ),
+    classification_rules: Optional[Path] = typer.Option(
+        None,
+        "--classification-rules",
+        help="Versioned JSON rules for curated classifications",
+    ),
 ):
     """Predict proteins and annotate them against complete Pfam and KOfam databases."""
     output_folder.mkdir(parents=True, exist_ok=True)
@@ -489,8 +495,13 @@ def avger(
             ),
         )
         vscore_map = get_vscore_map() if use_vscore else None
+        rules = (
+            load_classification_rules(classification_rules)
+            if classification_rules is not None
+            else None
+        )
         best_path = output_folder / "best_hits.tsv"
-        row_count = write_best_hits_tsv(results, best_path, vscore_map)
+        row_count = write_best_hits_tsv(results, best_path, vscore_map, rules)
     except (FileNotFoundError, ValueError, OSError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)

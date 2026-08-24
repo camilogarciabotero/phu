@@ -98,4 +98,6 @@ def test_best_hit_writer_adds_vscore_columns_and_sorts_rows(tmp_path: Path):
     lines = output.read_text().splitlines()
     assert lines[0].startswith("protein_id\tcontig_id")
     assert lines[1].startswith("ctgA|gene1\tctgA\tpfam")
-    assert lines[2].endswith("10.000000\tintegrase\t4.200000\tKEGG")
+    assert lines[2].endswith(
+        "10.000000\tintegrase\t4.200000\tKEGG\tunclassified_avg_candidate\t\t"
+    )

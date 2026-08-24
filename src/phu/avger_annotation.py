@@ -11,6 +11,7 @@ import pyhmmer
 from .kofam_db import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
 from .pfam_db import ensure_pfam_database, normalize_pfam_id
 from .vscore_db import VScoreRecord
+from .avger_classification import ClassificationRules, classify_protein_annotations
 
 
 @dataclass(frozen=True)
@@ -37,10 +38,23 @@ class AnnotationHit:
 class AnnotationConfig:
     threads: int = 1
     max_evalue: float = 1e-5
+    protein_batch_size: int = 10_000
     keep_all_hits: bool = False
     all_hits_path: Optional[Path] = None
     pfam_require_ga: bool = True
     pfam_missing_ga_policy: str = "skip_model"  # skip_model | include_without_ga
+
+    def __post_init__(self) -> None:
+        if self.threads < 1:
+            raise ValueError("threads must be >= 1")
+        if self.max_evalue < 0:
+            raise ValueError("max_evalue must be >= 0")
+        if self.protein_batch_size < 1:
+            raise ValueError("protein_batch_size must be >= 1")
+        if self.pfam_missing_ga_policy not in {"skip_model", "include_without_ga"}:
+            raise ValueError(
+                "pfam_missing_ga_policy must be 'skip_model' or 'include_without_ga'"
+            )
 
 
 @dataclass
@@ -56,12 +70,16 @@ def write_best_hits_tsv(
     results: AnnotationResults,
     output_path: Path,
     vscore_by_accession: Optional[dict[str, VScoreRecord]] = None,
+    classification_rules: Optional[ClassificationRules] = None,
 ) -> int:
     """Write one deterministic best annotation row per protein and database."""
     rows = list(results.best_pfam_by_protein.values()) + list(
         results.best_kofam_by_protein.values()
     )
     rows.sort(key=lambda row: (row.protein_id, row.database, row.model_accession))
+    rows_by_protein: dict[str, list[AnnotationHit]] = {}
+    for row in rows:
+        rows_by_protein.setdefault(row.protein_id, []).append(row)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")
@@ -86,10 +104,16 @@ def write_best_hits_tsv(
                 "v_score_function",
                 "v_score_log10_hit_number",
                 "v_score_database_origin",
+                "classification",
+                "classification_rule_id",
+                "classification_rule_version",
             ]
         )
         for row in rows:
             vscore = (vscore_by_accession or {}).get(row.model_id)
+            classification, rule_id, rule_version = classify_protein_annotations(
+                rows_by_protein[row.protein_id], classification_rules, vscore_by_accession
+            )
             writer.writerow(
                 [
                     row.protein_id,
@@ -111,6 +135,9 @@ def write_best_hits_tsv(
                     "" if vscore is None else vscore.protein_function,
                     "" if vscore is None else f"{vscore.log10_hit_number:.6f}",
                     "" if vscore is None else vscore.database_origin,
+                    classification,
+                    "" if rule_id is None else rule_id,
+                    "" if rule_version is None else rule_version,
                 ]
             )
     return len(rows)
@@ -240,121 +267,134 @@ def _search_and_collect(
     best_by_protein: dict[str, AnnotationHit] = {}
     passing = 0
     models = 0
+    seen_models: set[str] = set()
     skipped_missing_ga = 0
     kofam_meta_by_model = kofam_meta_by_model or {}
 
-    with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
-        with pyhmmer.easel.SequenceFile(proteins_path, digital=True) as seq_file:
-            proteins = seq_file.read_block()
+    with pyhmmer.easel.SequenceFile(proteins_path, digital=True) as seq_file:
+        while True:
+            proteins = seq_file.read_block(sequences=cfg.protein_batch_size)
+            if not proteins:
+                break
 
-        for top_hits in pyhmmer.hmmsearch(hmm_file, proteins, cpus=cfg.threads):
-            models += 1
-            hmm = top_hits.query
+            # HMMFile is consumed by hmmsearch, so reopen it for each bounded
+            # protein batch rather than retaining all proteins in memory.
+            with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
+                hit_batches = pyhmmer.hmmsearch(hmm_file, proteins, cpus=cfg.threads)
+                for top_hits in hit_batches:
+                    hmm = top_hits.query
+                    raw_model = getattr(hmm, "accession", None) or getattr(hmm, "name", "")
+                    if isinstance(raw_model, bytes):
+                        raw_model = raw_model.decode()
+                    model_key = f"{database}:{raw_model}"
+                    if model_key not in seen_models:
+                        seen_models.add(model_key)
+                        models += 1
 
-            if database == "pfam":
-                model_accession = _normalize_pfam_accession(hmm)
-                if model_accession is None:
-                    continue
-                model_id = model_accession
-
-                ga_pair = _pfam_model_ga(hmm)
-                if cfg.pfam_require_ga and ga_pair is None:
-                    if cfg.pfam_missing_ga_policy == "skip_model":
-                        skipped_missing_ga += 1
-                        continue
-                seq_ga = ga_pair[0] if ga_pair is not None else None
-                dom_ga = ga_pair[1] if ga_pair is not None else None
-            else:
-                model_id = _kofam_model_id(hmm)
-                if model_id is None:
-                    continue
-                model_accession = model_id
-                ko_meta = kofam_meta_by_model.get(model_id)
-                if ko_meta is None:
-                    continue
-
-            for hit in top_hits:
-                evalue = float(hit.evalue)
-                if evalue > cfg.max_evalue:
-                    continue
-
-                protein_id = hit.name.decode() if isinstance(hit.name, bytes) else str(hit.name)
-                contig_id = parse_contig_id_from_protein_id(protein_id)
-
-                full_score = float(hit.score)
-                domain_score, hmm_from, hmm_to, target_from, target_to = _domain_metrics(hit)
-
-                if database == "pfam":
-                    threshold_source = "pfam_ga"
-                    threshold_value = seq_ga
-                    if cfg.pfam_require_ga and seq_ga is not None and full_score < seq_ga:
-                        continue
-                    if cfg.pfam_require_ga and dom_ga is not None and domain_score is not None:
-                        if domain_score < dom_ga:
+                    if database == "pfam":
+                        model_accession = _normalize_pfam_accession(hmm)
+                        if model_accession is None:
                             continue
-                    score_type = "full"
-                    effective_score = full_score
-                else:
-                    ko_meta = kofam_meta_by_model[model_id]
-                    score_type = ko_meta.score_type
-                    threshold_source = "kofam_ko_list"
-                    threshold_value = ko_meta.threshold
-                    if score_type == "domain":
-                        if domain_score is None:
-                            continue
-                        effective_score = domain_score
+                        model_id = model_accession
+
+                        ga_pair = _pfam_model_ga(hmm)
+                        if cfg.pfam_require_ga and ga_pair is None:
+                            if cfg.pfam_missing_ga_policy == "skip_model":
+                                skipped_missing_ga += 1
+                                continue
+                        seq_ga = ga_pair[0] if ga_pair is not None else None
+                        dom_ga = ga_pair[1] if ga_pair is not None else None
                     else:
-                        effective_score = full_score
-                    if threshold_value is None:
-                        continue
-                    if effective_score < float(threshold_value):
-                        continue
+                        model_id = _kofam_model_id(hmm)
+                        if model_id is None:
+                            continue
+                        model_accession = model_id
+                        ko_meta = kofam_meta_by_model.get(model_id)
+                        if ko_meta is None:
+                            continue
 
-                record = AnnotationHit(
-                    protein_id=protein_id,
-                    contig_id=contig_id,
-                    database=database,
-                    model_id=model_id,
-                    model_accession=model_accession,
-                    score_type=score_type,
-                    effective_score=effective_score,
-                    full_score=full_score,
-                    domain_score=domain_score,
-                    evalue=evalue,
-                    hmm_from=hmm_from,
-                    hmm_to=hmm_to,
-                    target_from=target_from,
-                    target_to=target_to,
-                    threshold_source=threshold_source,
-                    threshold_value=threshold_value,
-                )
+                    for hit in top_hits:
+                        evalue = float(hit.evalue)
+                        if evalue > cfg.max_evalue:
+                            continue
 
-                passing += 1
-                if all_hits_writer is not None:
-                    all_hits_writer.writerow(
-                        [
-                            record.protein_id,
-                            record.contig_id,
-                            record.database,
-                            record.model_id,
-                            record.model_accession,
-                            record.score_type,
-                            f"{record.effective_score:.6f}",
-                            f"{record.full_score:.6f}",
-                            "" if record.domain_score is None else f"{record.domain_score:.6f}",
-                            f"{record.evalue:.6g}",
-                            "" if record.hmm_from is None else str(record.hmm_from),
-                            "" if record.hmm_to is None else str(record.hmm_to),
-                            "" if record.target_from is None else str(record.target_from),
-                            "" if record.target_to is None else str(record.target_to),
-                            record.threshold_source,
-                            "" if record.threshold_value is None else f"{record.threshold_value:.6f}",
-                        ]
-                    )
+                        protein_id = hit.name.decode() if isinstance(hit.name, bytes) else str(hit.name)
+                        contig_id = parse_contig_id_from_protein_id(protein_id)
 
-                current = best_by_protein.get(record.protein_id)
-                if _better_hit(record, current):
-                    best_by_protein[record.protein_id] = record
+                        full_score = float(hit.score)
+                        domain_score, hmm_from, hmm_to, target_from, target_to = _domain_metrics(hit)
+
+                        if database == "pfam":
+                            threshold_source = "pfam_ga"
+                            threshold_value = seq_ga
+                            if cfg.pfam_require_ga and seq_ga is not None and full_score < seq_ga:
+                                continue
+                            if cfg.pfam_require_ga and dom_ga is not None and domain_score is not None:
+                                if domain_score < dom_ga:
+                                    continue
+                            score_type = "full"
+                            effective_score = full_score
+                        else:
+                            ko_meta = kofam_meta_by_model[model_id]
+                            score_type = ko_meta.score_type
+                            threshold_source = "kofam_ko_list"
+                            threshold_value = ko_meta.threshold
+                            if score_type == "domain":
+                                if domain_score is None:
+                                    continue
+                                effective_score = domain_score
+                            else:
+                                effective_score = full_score
+                            if threshold_value is None:
+                                continue
+                            if effective_score < float(threshold_value):
+                                continue
+
+                        record = AnnotationHit(
+                            protein_id=protein_id,
+                            contig_id=contig_id,
+                            database=database,
+                            model_id=model_id,
+                            model_accession=model_accession,
+                            score_type=score_type,
+                            effective_score=effective_score,
+                            full_score=full_score,
+                            domain_score=domain_score,
+                            evalue=evalue,
+                            hmm_from=hmm_from,
+                            hmm_to=hmm_to,
+                            target_from=target_from,
+                            target_to=target_to,
+                            threshold_source=threshold_source,
+                            threshold_value=threshold_value,
+                        )
+
+                        passing += 1
+                        if all_hits_writer is not None:
+                            all_hits_writer.writerow(
+                                [
+                                    record.protein_id,
+                                    record.contig_id,
+                                    record.database,
+                                    record.model_id,
+                                    record.model_accession,
+                                    record.score_type,
+                                    f"{record.effective_score:.6f}",
+                                    f"{record.full_score:.6f}",
+                                    "" if record.domain_score is None else f"{record.domain_score:.6f}",
+                                    f"{record.evalue:.6g}",
+                                    "" if record.hmm_from is None else str(record.hmm_from),
+                                    "" if record.hmm_to is None else str(record.hmm_to),
+                                    "" if record.target_from is None else str(record.target_from),
+                                    "" if record.target_to is None else str(record.target_to),
+                                    record.threshold_source,
+                                    "" if record.threshold_value is None else f"{record.threshold_value:.6f}",
+                                ]
+                            )
+
+                        current = best_by_protein.get(record.protein_id)
+                        if _better_hit(record, current):
+                            best_by_protein[record.protein_id] = record
 
     return best_by_protein, passing, models, skipped_missing_ga
 

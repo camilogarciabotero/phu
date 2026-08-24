@@ -28,3 +28,24 @@ phu avger -i contigs.fa -o phu-avger
 ```
 
 Use `--no-use-vscore` to run without V-score lookup.
+
+## Curated classifications
+
+Pass a versioned JSON rule file with `--classification-rules`. Rules are tested
+in declared order; the first matching rule supplies the classification. Records
+that do not match remain `unclassified_avg_candidate` and retain the rule-set
+version in the output.
+
+```json
+{
+    "version": "2026-08-24",
+    "rules": [
+        {
+            "rule_id": "example-ko",
+            "classification": "example_class",
+            "required_kofam": ["K00001"],
+            "min_v_score": 8
+        }
+    ]
+}
+```

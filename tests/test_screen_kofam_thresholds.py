@@ -94,7 +94,7 @@ def test_extract_target_proteins_adds_ko_definition_to_headers(
         def __init__(self, returncode: int):
             self.returncode = returncode
 
-    def _fake_seqkit_run(cmd, stdout, text=True):
+    def _fake_seqkit_run(cmd, stdout, text=True, check=False):
         ids_file = Path(cmd[3])
         wanted = set(ids_file.read_text().split())
 

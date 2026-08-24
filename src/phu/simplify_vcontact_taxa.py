@@ -1,11 +1,14 @@
 from __future__ import annotations
 import re
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 from enum import Enum
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class OutputFormat(str, Enum):
@@ -490,8 +493,9 @@ def _simplify_taxa(cfg: TaxaConfig) -> TaxaPlan:
         df = pd.read_csv(
             plan.input_file, sep=plan.separator, dtype=str, na_values=["", "NA", "NaN"]
         )
-    except Exception as e:
-        raise RuntimeError(f"Error reading {plan.input_file}: {e}")
+    except (FileNotFoundError, OSError, ValueError, pd.errors.ParserError) as exc:
+        logger.debug("Could not read taxonomy data from %s: %s", plan.input_file, exc)
+        raise RuntimeError(f"Error reading {plan.input_file}: {exc}") from exc
 
     # Clean column names
     df.columns = _clean_cols(list(df.columns))

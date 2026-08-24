@@ -1,5 +1,6 @@
 from __future__ import annotations
 import gzip
+import logging
 import os
 import re
 import shutil
@@ -38,6 +39,8 @@ from .pfam_db import (
     is_pfam_id,
     normalize_pfam_id,
 )
+
+logger = logging.getLogger(__name__)
 
 app = typer.Typer(
     help="Screen contigs for a protein family using pyHMMER on predicted CDS."
@@ -283,8 +286,9 @@ def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
     try:
         yield from _read_fasta_python(fp)
         return
-    except Exception:
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
         # Fallback to easel parser when Python parsing fails unexpectedly.
+        logger.debug("Python FASTA parsing failed for %s; trying easel: %s", fp, exc)
         yield from _read_fasta_easel(fp)
 
 
@@ -652,7 +656,7 @@ def _seqkit_extract(
     tmp.write_text("\n".join(ids) + "\n")
     cmd = [seqkit_bin, "grep", "-f", str(tmp), str(input_fa)]
     with output_fa.open("w") as out:
-        p = subprocess.run(cmd, stdout=out, text=True)
+        p = subprocess.run(cmd, stdout=out, text=True, check=False)
     if p.returncode != 0:
         raise RuntimeError(f"seqkit grep failed with code {p.returncode}")
     tmp.unlink()  # cleanup
@@ -711,7 +715,7 @@ def _extract_target_proteins(
         cmd = [seqkit_bin, "grep", "-f", str(tmp_ids_file), str(proteins_fa)]
 
         with output_path.open("w") as out:
-            result = subprocess.run(cmd, stdout=out, text=True)
+            result = subprocess.run(cmd, stdout=out, text=True, check=False)
 
         if result.returncode != 0:
             print(f"Warning: seqkit failed to extract proteins for {model_id}")
@@ -811,8 +815,8 @@ def _build_target_hmms(
             with hmm_output_path.open("wb") as f:
                 hmm.write(f)
 
-        except Exception as e:
-            print(f"      Warning: Failed to build HMM for {model_name}: {e}")
+        except (OSError, RuntimeError, ValueError) as exc:
+            print(f"      Warning: Failed to build HMM for {model_name}: {exc}")
             import traceback
 
             traceback.print_exc()

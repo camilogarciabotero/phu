@@ -215,7 +215,7 @@ def get_or_predict_proteins(
                 )
             except (json.JSONDecodeError, KeyError):
                 # Corrupted manifest; treat as miss and rebuild
-                pass
+                cache_manifest.unlink(missing_ok=True)
 
         # Cache miss or incomplete: rebuild
         # Clean up any stale partial from previous interrupted run

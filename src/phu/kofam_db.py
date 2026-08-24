@@ -8,12 +8,13 @@ import lzma
 import os
 import shutil
 import tempfile
+from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -213,7 +214,7 @@ def _download_parallel_chunked(
     with tempfile.NamedTemporaryFile(delete=False, dir=destination.parent) as tmp:
         tmp_path = Path(tmp.name)
 
-    ranges: List[Tuple[int, int]] = []
+    ranges: list[tuple[int, int]] = []
     for i in range(num_chunks):
         start = i * chunk_size
         end = file_size - 1 if i == num_chunks - 1 else start + chunk_size - 1
@@ -293,7 +294,7 @@ def _sha256(path: Path) -> str:
 
 
 def _write_manifest_atomically(
-    manifest_path: Path, metadata: Dict[str, object]
+    manifest_path: Path, metadata: dict[str, object]
 ) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -304,7 +305,7 @@ def _write_manifest_atomically(
     tmp_path.replace(manifest_path)
 
 
-def _read_json(path: Path) -> Dict[str, object]:
+def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text())
 
 
@@ -324,9 +325,9 @@ def _parse_float(token: str) -> Optional[float]:
     return float(token)
 
 
-def _parse_ko_list(ko_list_path: Path) -> Dict[str, KOFamMetadata]:
+def _parse_ko_list(ko_list_path: Path) -> dict[str, KOFamMetadata]:
     """Parse ko_list into KO metadata map."""
-    metadata: Dict[str, KOFamMetadata] = {}
+    metadata: dict[str, KOFamMetadata] = {}
 
     with ko_list_path.open("r", encoding="utf-8", errors="replace") as handle:
         for raw_line in handle:
@@ -358,7 +359,7 @@ def _parse_ko_list(ko_list_path: Path) -> Dict[str, KOFamMetadata]:
     return metadata
 
 
-def _build_kofam_metadata_index(ko_list_path: Path) -> Dict[str, KOFamMetadata]:
+def _build_kofam_metadata_index(ko_list_path: Path) -> dict[str, KOFamMetadata]:
     metadata_map = _parse_ko_list(ko_list_path)
     serializable = {
         ko_id: {
@@ -375,7 +376,7 @@ def _build_kofam_metadata_index(ko_list_path: Path) -> Dict[str, KOFamMetadata]:
     return metadata_map
 
 
-def _load_kofam_metadata() -> Dict[str, KOFamMetadata]:
+def _load_kofam_metadata() -> dict[str, KOFamMetadata]:
     index_path = _kofam_metadata_index_path()
     ko_list_path = _kofam_ko_list_path()
 
@@ -391,7 +392,7 @@ def _load_kofam_metadata() -> Dict[str, KOFamMetadata]:
     if not isinstance(metadata_obj, dict):
         return _build_kofam_metadata_index(ko_list_path)
 
-    parsed: Dict[str, KOFamMetadata] = {}
+    parsed: dict[str, KOFamMetadata] = {}
     for ko_id, payload in metadata_obj.items():
         if not isinstance(payload, dict):
             continue
@@ -462,7 +463,7 @@ def _build_offsets_index(hmm_db_path: Path) -> None:
         raise FileNotFoundError(f"KOFam HMM database not found: {hmm_db_path}")
 
     source_stat = hmm_db_path.stat()
-    offsets: Dict[str, List[int]] = {}
+    offsets: dict[str, list[int]] = {}
 
     def _scan_offsets(update_progress: Optional[Callable[[int], None]] = None) -> None:
         block_start = 0
@@ -522,7 +523,7 @@ def _build_offsets_index(hmm_db_path: Path) -> None:
     else:
         run_click_task("Indexing KOFam HMMs", _scan_offsets)
 
-    metadata: Dict[str, object] = {
+    metadata: dict[str, object] = {
         "schema_version": KOFAM_OFFSETS_SCHEMA_VERSION,
         "name": KOFAM_NAME,
         "built_at": datetime.now(timezone.utc).isoformat(),
@@ -536,7 +537,7 @@ def _build_offsets_index(hmm_db_path: Path) -> None:
     _write_manifest_atomically(_kofam_offsets_index_path(), metadata)
 
 
-def ensure_kofam_database(force_refresh: bool = False) -> Dict[str, str]:
+def ensure_kofam_database(force_refresh: bool = False) -> dict[str, str]:
     """Ensure local KOFam database exists and return metadata."""
     root = _kofam_root()
     root.mkdir(parents=True, exist_ok=True)
@@ -598,7 +599,7 @@ def ensure_kofam_database(force_refresh: bool = False) -> Dict[str, str]:
     return {k: str(v) for k, v in data.items()}
 
 
-def prepare_kofam_database(force_refresh: bool = False) -> Dict[str, object]:
+def prepare_kofam_database(force_refresh: bool = False) -> dict[str, object]:
     result = ensure_kofam_database(force_refresh=force_refresh)
     hmm = _kofam_hmm_path()
     if not _is_offsets_index_valid(hmm):
@@ -609,7 +610,7 @@ def prepare_kofam_database(force_refresh: bool = False) -> Dict[str, object]:
     return result
 
 
-def refresh_kofam_database() -> Dict[str, object]:
+def refresh_kofam_database() -> dict[str, object]:
     ko_list = _kofam_ko_list_path()
     hmm = _kofam_hmm_path()
     if not ko_list.exists() or not hmm.exists():
@@ -633,7 +634,7 @@ def remove_kofam_database() -> bool:
     return True
 
 
-def get_kofam_database_status() -> Dict[str, object]:
+def get_kofam_database_status() -> dict[str, object]:
     root = _kofam_root()
     manifest = _kofam_manifest_path()
     ko_list = _kofam_ko_list_path()
@@ -677,7 +678,7 @@ def get_kofam_database_status() -> Dict[str, object]:
 def extract_kofam_models(
     requested_ids: Iterable[str],
     output_dir: Path,
-) -> Tuple[List[Path], List[str]]:
+) -> tuple[list[Path], list[str]]:
     """Extract requested KO models into output_dir."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -696,8 +697,8 @@ def extract_kofam_models(
         dict.fromkeys(normalize_kofam_id(token) for token in requested_ids)
     )
 
-    out_paths_by_id: Dict[str, Path] = {}
-    missing: List[str] = []
+    out_paths_by_id: dict[str, Path] = {}
+    missing: list[str] = []
 
     needs_index_read = False
     for ko_id in normalized_ids:
@@ -709,7 +710,7 @@ def extract_kofam_models(
         out_path.write_bytes(model_path.read_bytes())
         out_paths_by_id[ko_id] = out_path
 
-    offsets_map: Dict[str, object] = {}
+    offsets_map: dict[str, object] = {}
     if needs_index_read:
         index_data = _read_json(_kofam_offsets_index_path())
         offsets_obj = index_data.get("offsets")
@@ -758,10 +759,10 @@ def get_kofam_metadata(ko_id: str) -> Optional[KOFamMetadata]:
     return metadata.get(ko_id)
 
 
-def get_kofam_metadata_map(ko_ids: Iterable[str]) -> Dict[str, KOFamMetadata]:
+def get_kofam_metadata_map(ko_ids: Iterable[str]) -> dict[str, KOFamMetadata]:
     """Get metadata map for KO identifiers (missing entries are omitted)."""
     metadata = _load_kofam_metadata()
-    selected: Dict[str, KOFamMetadata] = {}
+    selected: dict[str, KOFamMetadata] = {}
     for token in ko_ids:
         ko_id = normalize_kofam_id(token)
         if ko_id in metadata:

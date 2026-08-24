@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import os
+import shlex
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Dict, List, Union
-import shlex
+from typing import Optional, Union
 
-from ._exec import run, _executable
+from ._exec import _executable, run
 
 
 class Mode(str, Enum):
@@ -17,7 +18,7 @@ class Mode(str, Enum):
 
 def parse_vclust_params(
     params_str: str,
-) -> Dict[str, Dict[str, Union[str, int, float, bool]]]:
+) -> dict[str, dict[str, Union[str, int, float, bool]]]:
     """
     Parse vclust parameters from command-line style string.
 
@@ -115,7 +116,7 @@ class ClusterConfig:
     metric: str = "ani"  # 'tani' for species
     algorithm: Optional[str] = None  # set by mode
     # Advanced vclust parameters for customization
-    vclust_params: Optional[Dict[str, Dict[str, Union[str, int, float, bool]]]] = field(
+    vclust_params: Optional[dict[str, dict[str, Union[str, int, float, bool]]]] = field(
         default_factory=dict
     )
     """
@@ -191,7 +192,7 @@ class ClusterPlan:
     qcov_cutoff: Optional[float]
     threads: int
     mode: Mode
-    vclust_params: Dict[str, Dict[str, Union[str, int, float, bool]]]
+    vclust_params: dict[str, dict[str, Union[str, int, float, bool]]]
 
 
 def _threads(n: int) -> int:
@@ -208,7 +209,7 @@ def _binaries() -> tuple[str, str]:
 
 
 def _add_custom_params(
-    cmd: List[str], params: Dict[str, Union[str, int, float, bool]]
+    cmd: list[str], params: dict[str, Union[str, int, float, bool]]
 ) -> None:
     """Add custom parameters to a command list."""
     for param, value in params.items():

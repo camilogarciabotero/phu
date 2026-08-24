@@ -1,8 +1,9 @@
 import re
 
 from typer.testing import CliRunner
-from phu.cli import app
+
 import phu.cli as cli_module
+from phu.cli import app
 
 runner = CliRunner()
 

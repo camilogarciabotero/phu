@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
+
 import typer
 
 from phu import __version__
+
 from ._exec import CmdNotFound
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .gene_prediction_core import clean_prediction_cache
@@ -40,7 +43,7 @@ app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
 SUPPORTED_DBS = ("pfam", "kofam")
 
 
-def _normalize_db_names(databases: List[str], all_dbs: bool) -> List[str]:
+def _normalize_db_names(databases: list[str], all_dbs: bool) -> list[str]:
     if all_dbs and databases:
         raise ValueError("Use either specific database names or --all, not both")
 
@@ -81,7 +84,7 @@ def dbs_list() -> None:
 
 @dbs_app.command("status")
 def dbs_status(
-    databases: Optional[List[str]] = typer.Argument(
+    databases: Optional[list[str]] = typer.Argument(
         None,
         help="Database names (default: all)",
     ),
@@ -111,7 +114,7 @@ def dbs_status(
 
 @dbs_app.command("prepare")
 def dbs_prepare(
-    databases: Optional[List[str]] = typer.Argument(
+    databases: Optional[list[str]] = typer.Argument(
         None,
         help="Database names (default: all)",
     ),
@@ -153,7 +156,7 @@ def dbs_prepare(
 
 @dbs_app.command("refresh")
 def dbs_refresh(
-    databases: Optional[List[str]] = typer.Argument(
+    databases: Optional[list[str]] = typer.Argument(
         None,
         help="Database names (default: all)",
     ),
@@ -188,7 +191,7 @@ def dbs_refresh(
 
 @dbs_app.command("remove")
 def dbs_remove(
-    databases: Optional[List[str]] = typer.Argument(
+    databases: Optional[list[str]] = typer.Argument(
         None,
         help="Database names (default: all)",
     ),
@@ -404,7 +407,7 @@ def screen(
         readable=True,
         help="Input contigs FASTA",
     ),
-    hmms: List[Path] = typer.Argument(
+    hmms: list[Path] = typer.Argument(
         ...,
         help="HMM files, PFAM accessions (PF00001), and/or KO IDs (K00001); supports wildcards like *.hmm",
     ),

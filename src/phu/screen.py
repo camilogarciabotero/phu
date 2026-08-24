@@ -1,25 +1,26 @@
 from __future__ import annotations
+
 import gzip
 import logging
 import os
 import re
 import shutil
 import subprocess
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
-from multiprocessing.pool import ThreadPool
 from collections import defaultdict
+from collections.abc import Iterable
+from dataclasses import dataclass
+from multiprocessing.pool import ThreadPool
+from pathlib import Path
+from typing import Optional
 
+import pyhmmer
+import pyhmmer.easel
+import pyhmmer.plan7
 import typer
 from pyrodigal_gv import ViralGeneFinder  # New import for viral gene prediction
 
-import pyhmmer
-import pyhmmer.plan7
-import pyhmmer.easel
-
-from ._exec import _executable
 from ._click import run_click_task
+from ._exec import _executable
 from .gene_prediction_core import (
     PredictionInputs,
     get_or_predict_proteins,
@@ -55,18 +56,18 @@ def _cmd_exists(exe: str) -> bool:
 
 
 def _resolve_hmm_inputs(
-    hmm_inputs: List[Path],
+    hmm_inputs: list[Path],
     outdir: Path,
-) -> Tuple[List[Path], Dict[str, KOFamMetadata]]:
+) -> tuple[list[Path], dict[str, KOFamMetadata]]:
     """
     Resolve positional inputs into concrete HMM file paths.
 
     Input tokens may be local HMM file paths, PFAM accessions, and KO identifiers.
     PFAM and KO IDs are resolved from their local databases, downloading on demand.
     """
-    local_hmms: List[Path] = []
-    pfam_ids: List[str] = []
-    ko_ids: List[str] = []
+    local_hmms: list[Path] = []
+    pfam_ids: list[str] = []
+    ko_ids: list[str] = []
 
     for token_path in hmm_inputs:
         token = str(token_path)
@@ -88,7 +89,7 @@ def _resolve_hmm_inputs(
     dedup_pfam_ids = list(dict.fromkeys(pfam_ids))
     dedup_ko_ids = list(dict.fromkeys(ko_ids))
 
-    resolved: List[Path] = list(local_hmms)
+    resolved: list[Path] = list(local_hmms)
 
     if dedup_pfam_ids:
         pfam_meta = run_click_task("Preparing PFAM database", ensure_pfam_database)
@@ -116,7 +117,7 @@ def _resolve_hmm_inputs(
         )
         resolved.extend(pfam_hmms)
 
-    ko_metadata: Dict[str, KOFamMetadata] = {}
+    ko_metadata: dict[str, KOFamMetadata] = {}
     if dedup_ko_ids:
         run_click_task("Preparing KOFam database", ensure_kofam_database)
 
@@ -150,7 +151,7 @@ class ScreenConfig:
     """Configuration for screening contigs for protein families."""
 
     input_contigs: Path
-    hmms: List[Path]  # Changed from hmm: Path to support multiple HMMs
+    hmms: list[Path]  # Changed from hmm: Path to support multiple HMMs
     outdir: Path = Path("phu-screen")
     mode: str = "meta"  # pyrodigal mode: meta|single
     threads: int = 1
@@ -241,7 +242,7 @@ class ScreenPlan:
     hmmer_bin: str
     seqkit_bin: str
     input_contigs: Path
-    hmms: List[Path]  # Changed from hmm: Path
+    hmms: list[Path]  # Changed from hmm: Path
     outdir: Path
     mode: str
     threads: int
@@ -260,7 +261,7 @@ class ScreenPlan:
     save_target_hmms: bool  # New
     hmm_mode: str  # New
     proteins_fa: Path
-    domtbl_paths: Dict[str, Path]  # Changed from domtbl: Path
+    domtbl_paths: dict[str, Path]  # Changed from domtbl: Path
     kept_ids: Path
     out_contigs: Path
 
@@ -274,7 +275,7 @@ def _binaries() -> str:
     return seqkit
 
 
-def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
+def _read_fasta(fp: Path) -> Iterable[tuple[str, str]]:
     """
     Read FASTA sequences with two strategies:
     1) Python parser (stdlib; robust for compressed/edge-case inputs)
@@ -292,7 +293,7 @@ def _read_fasta(fp: Path) -> Iterable[Tuple[str, str]]:
         yield from _read_fasta_easel(fp)
 
 
-def _read_fasta_easel(fp: Path) -> Iterable[Tuple[str, str]]:
+def _read_fasta_easel(fp: Path) -> Iterable[tuple[str, str]]:
     """Read FASTA records using pyhmmer.easel.SequenceFile."""
     with pyhmmer.easel.SequenceFile(str(fp)) as seq_file:
         for seq in seq_file:
@@ -305,12 +306,12 @@ def _read_fasta_easel(fp: Path) -> Iterable[Tuple[str, str]]:
             yield seq_id, seq_seq
 
 
-def _read_fasta_python(fp: Path) -> Iterable[Tuple[str, str]]:
+def _read_fasta_python(fp: Path) -> Iterable[tuple[str, str]]:
     """Read FASTA records using Python text IO (supports .gz)."""
     opener = gzip.open if fp.suffix == ".gz" else open
     with opener(fp, "rt") as handle:
         seq_id: Optional[str] = None
-        seq_chunks: List[str] = []
+        seq_chunks: list[str] = []
 
         for raw_line in handle:
             line = raw_line.strip()
@@ -414,9 +415,9 @@ def _predict_proteins_pyrodigal(
 
 
 def _hmmsearch(
-    hmm_paths: List[Path],
+    hmm_paths: list[Path],
     proteins_fa: Path,
-    domtbl_paths: Dict[str, Path],
+    domtbl_paths: dict[str, Path],
     threads: int = 1,
     hmm_mode: str = "pure",
     keep_domtbl: bool = True,
@@ -537,7 +538,7 @@ def _effective_hit_score(hit: Hit, score_type: str) -> float:
     return hit.bitscore
 
 
-def _hit_sort_key(hit: Hit, score_type: str) -> Tuple[float, float]:
+def _hit_sort_key(hit: Hit, score_type: str) -> tuple[float, float]:
     return (-_effective_hit_score(hit, score_type), hit.evalue)
 
 
@@ -549,16 +550,16 @@ def _choose_best_contigs(
     combine_mode: str = "any",
     min_hmm_hits: int = 1,
     total_hmm_models: int = 1,
-    kofam_metadata_by_model: Optional[Dict[str, KOFamMetadata]] = None,
+    kofam_metadata_by_model: Optional[dict[str, KOFamMetadata]] = None,
     use_kofam_thresholds: bool = True,
-) -> Tuple[List[Hit], List[str]]:
+) -> tuple[list[Hit], list[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
     For KO models, ko_list thresholds are used by their score_type (full/domain).
 
     Returns (kept_hits, list_of_contig_ids).
     """
-    per_contig: Dict[str, List[Hit]] = defaultdict(list)
+    per_contig: dict[str, list[Hit]] = defaultdict(list)
     kofam_metadata_by_model = kofam_metadata_by_model or {}
 
     for h in hits:
@@ -587,8 +588,8 @@ def _choose_best_contigs(
             continue
         per_contig[h.contig].append(h)
 
-    kept: List[Hit] = []
-    kept_contigs: List[str] = []
+    kept: list[Hit] = []
+    kept_contigs: list[str] = []
 
     for contig, contig_hits in per_contig.items():
         if combine_mode == "any":
@@ -644,7 +645,7 @@ def _choose_best_contigs(
 
 def _seqkit_extract(
     input_fa: Path,
-    ids: List[str],
+    ids: list[str],
     output_fa: Path,
     seqkit_bin: str = "seqkit",
 ) -> None:
@@ -663,13 +664,13 @@ def _seqkit_extract(
 
 
 def _extract_target_proteins(
-    kept_hits: List[Hit],
-    kept_contig_ids: List[str],
+    kept_hits: list[Hit],
+    kept_contig_ids: list[str],
     proteins_fa: Path,
     outdir: Path,
     hmm_mode: str,
     seqkit_bin: str = "seqkit",
-    kofam_metadata_by_model: Optional[Dict[str, KOFamMetadata]] = None,
+    kofam_metadata_by_model: Optional[dict[str, KOFamMetadata]] = None,
 ) -> None:
     """
     Extract matched proteins per HMM model from the final kept contigs only.
@@ -680,7 +681,7 @@ def _extract_target_proteins(
     kofam_metadata_by_model = kofam_metadata_by_model or {}
 
     # Group protein IDs by model - only from kept hits AND kept contigs
-    proteins_per_model: Dict[str, List[str]] = defaultdict(list)
+    proteins_per_model: dict[str, list[str]] = defaultdict(list)
 
     for hit in kept_hits:
         if hit.contig in kept_contig_set:

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from phu.screen import _predict_proteins_pyrodigal
 from phu.gene_prediction_core import (
     PredictionInputs,
     compute_cache_key,
@@ -13,6 +12,7 @@ from phu.gene_prediction_core import (
     get_or_predict_proteins,
     write_prediction_metadata,
 )
+from phu.screen import _predict_proteins_pyrodigal
 
 
 class TestPredictionInputs:

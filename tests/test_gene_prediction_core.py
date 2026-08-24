@@ -6,10 +6,13 @@ from pathlib import Path
 import pytest
 
 from phu.gene_prediction_core import (
+    PredictedGene,
     PredictionInputs,
     compute_cache_key,
     get_cache_dir,
     get_or_predict_proteins,
+    predict_genes_pyrodigal,
+    write_predicted_proteins_fasta,
     write_prediction_metadata,
 )
 from phu.screen import _predict_proteins_pyrodigal
@@ -344,10 +347,20 @@ def test_predict_proteins_single_mode_trains_and_respects_translation_table(
 
     recorded = {}
 
-    class FakeGene:
+    class _FakeGene:
+        def __init__(self, aa: str, nt: str, begin: int, end: int, strand: int):
+            self._aa = aa
+            self._nt = nt
+            self.begin = begin
+            self.end = end
+            self.strand = strand
+
         def translate(self, translation_table=None, **kwargs):
             recorded["translation_table"] = translation_table
-            return "MKGEGE"
+            return self._aa
+
+        def sequence(self):
+            return self._nt
 
     class FakeFinder:
         def __init__(self, *args, **kwargs):
@@ -358,9 +371,11 @@ def test_predict_proteins_single_mode_trains_and_respects_translation_table(
 
         def find_genes(self, sequence):
             assert len(sequence) == len(seq)
-            return [FakeGene()]
+            return [
+                _FakeGene("MKGEGE", "ATGAAAGGTGAAGGTGAATGA", 1, 21, 1),
+            ]
 
-    monkeypatch.setattr("phu.screen.ViralGeneFinder", FakeFinder)
+    monkeypatch.setattr("phu.gene_prediction_core.ViralGeneFinder", FakeFinder)
 
     proteins = tmp_path / "proteins.faa"
     count = _predict_proteins_pyrodigal(
@@ -376,3 +391,120 @@ def test_predict_proteins_single_mode_trains_and_respects_translation_table(
     assert count == 1
     assert recorded["trained_table"] == 4
     assert recorded["translation_table"] == 4
+
+
+def test_predict_genes_returns_typed_records_and_preserves_contig_pipes(
+    tmp_path, monkeypatch
+):
+    contigs = tmp_path / "contigs.fa"
+    contigs.write_text(
+        ">contig|alpha|v1\nATGAAATAG\n>plain_contig\nATGCCCTAG\n"
+    )
+
+    class _FakeGene:
+        def __init__(self, aa: str, nt: str, begin: int, end: int, strand: int):
+            self._aa = aa
+            self._nt = nt
+            self.begin = begin
+            self.end = end
+            self.strand = strand
+
+        def translate(self, translation_table=None, **kwargs):
+            return self._aa
+
+        def sequence(self):
+            return self._nt
+
+    class _FakeFinder:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def find_genes(self, sequence):
+            if "AAA" in sequence:
+                return [
+                    _FakeGene("MKK", "ATGAAAAAATAG", 10, 21, 1),
+                    _FakeGene("MNN", "ATGAATAATTAG", 25, 36, -1),
+                ]
+            return [_FakeGene("MPP", "ATGCCCCCCTAG", 5, 16, 1)]
+
+    monkeypatch.setattr("phu.gene_prediction_core.ViralGeneFinder", _FakeFinder)
+
+    genes = predict_genes_pyrodigal(
+        PredictionInputs(input_contigs=contigs, min_gene_len=9, min_protein_len_aa=3)
+    )
+
+    assert all(isinstance(g, PredictedGene) for g in genes)
+    assert [g.gene_id for g in genes] == [
+        "contig|alpha|v1|gene1",
+        "contig|alpha|v1|gene2",
+        "plain_contig|gene1",
+    ]
+    assert genes[1].strand == -1
+    assert genes[1].start == 25
+    assert genes[1].end == 36
+    assert genes[1].nucleotide_sequence == "ATGAATAATTAG"
+
+
+def test_predict_genes_respects_min_protein_length(tmp_path, monkeypatch):
+    contigs = tmp_path / "contigs.fa"
+    contigs.write_text(">contig1\nATGAAATAG\n")
+
+    class _FakeGene:
+        begin = 1
+        end = 9
+        strand = 1
+
+        def translate(self, translation_table=None, **kwargs):
+            return "MK"
+
+        def sequence(self):
+            return "ATGAAATAG"
+
+    class _FakeFinder:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def find_genes(self, sequence):
+            return [_FakeGene()]
+
+    monkeypatch.setattr("phu.gene_prediction_core.ViralGeneFinder", _FakeFinder)
+
+    genes = predict_genes_pyrodigal(
+        PredictionInputs(
+            input_contigs=contigs,
+            min_gene_len=9,
+            min_protein_len_aa=3,
+        )
+    )
+    assert genes == []
+
+
+def test_write_predicted_proteins_fasta_writes_expected_records(tmp_path):
+    genes = [
+        PredictedGene(
+            contig_id="c1",
+            gene_id="c1|gene1",
+            start=1,
+            end=9,
+            strand=1,
+            ordinal=1,
+            nucleotide_sequence="ATGAAATAG",
+            amino_acid_sequence="MK*",
+        ),
+        PredictedGene(
+            contig_id="c2",
+            gene_id="c2|gene1",
+            start=2,
+            end=10,
+            strand=-1,
+            ordinal=1,
+            nucleotide_sequence="ATGCCCTAG",
+            amino_acid_sequence="MP*",
+        ),
+    ]
+
+    out = tmp_path / "proteins.faa"
+    count = write_predicted_proteins_fasta(genes, out)
+
+    assert count == 2
+    assert out.read_text() == ">c1|gene1\nMK*\n>c2|gene1\nMP*\n"

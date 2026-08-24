@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import logging
 import lzma
 import os
 import shutil
@@ -13,12 +14,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import click
 import typer
 
 from ._click import run_click_task
+
+logger = logging.getLogger(__name__)
 
 KOFAM_BASE_URL = "https://zenodo.org/records/19503464/files/"
 KOFAM_KO_LIST_GZ_URL = KOFAM_BASE_URL + "ko_list.gz"
@@ -94,8 +98,8 @@ def _get_file_size(url: str) -> Optional[int]:
             content_length = response.info().get("Content-Length")
             if content_length and content_length.isdigit():
                 return int(content_length)
-    except Exception:
-        pass
+    except (HTTPError, URLError, OSError, ValueError) as exc:
+        logger.debug("Could not determine remote file size for %s: %s", url, exc)
     return None
 
 
@@ -180,7 +184,7 @@ def _range_download_supported(url: str) -> bool:
             status = getattr(response, "status", response.getcode())
             content_range = response.headers.get("Content-Range", "")
             return status == 206 and content_range.startswith("bytes 0-0/")
-    except Exception:
+    except (HTTPError, URLError, OSError, ValueError):
         return False
 
 

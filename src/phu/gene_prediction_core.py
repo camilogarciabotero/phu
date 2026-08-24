@@ -22,9 +22,12 @@ import json
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+
+from pyrodigal_gv import ViralGeneFinder
 
 
 @dataclass
@@ -48,6 +51,20 @@ class PredictionInputs:
             raise ValueError("min_gene_len must be >= 1")
         if self.min_protein_len_aa < 1:
             raise ValueError("min_protein_len_aa must be >= 1")
+
+
+@dataclass(frozen=True)
+class PredictedGene:
+    """Typed representation of one predicted coding sequence."""
+
+    contig_id: str
+    gene_id: str
+    start: int
+    end: int
+    strand: int
+    ordinal: int
+    nucleotide_sequence: str
+    amino_acid_sequence: str
 
 
 @dataclass
@@ -131,6 +148,110 @@ def _release_lock(lock_fh: Optional) -> None:
     lock_fh.close()
 
 
+def _read_fasta_python(fp: Path) -> Iterable[tuple[str, str]]:
+    """Read FASTA records using Python text IO (supports .gz)."""
+    import gzip
+
+    opener = gzip.open if fp.suffix == ".gz" else open
+    with opener(fp, "rt") as handle:
+        seq_id: Optional[str] = None
+        seq_chunks: list[str] = []
+
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            if line.startswith(">"):
+                if seq_id is not None:
+                    yield seq_id, "".join(seq_chunks)
+                # FASTA header id is first token after '>'
+                seq_id = line[1:].split(None, 1)[0]
+                seq_chunks = []
+                continue
+
+            if seq_id is None:
+                raise ValueError(
+                    f"Invalid FASTA format in {fp}: sequence before header"
+                )
+
+            seq_chunks.append(line)
+
+        if seq_id is not None:
+            yield seq_id, "".join(seq_chunks)
+
+
+def predict_genes_pyrodigal(
+    inputs: PredictionInputs,
+    *,
+    threads: int = 1,
+) -> list[PredictedGene]:
+    """Predict genes for all contigs and return typed gene records."""
+
+    def _predict_for_contig(contig_id: str, seq: str) -> list[PredictedGene]:
+        max_overlap = max(0, inputs.min_gene_len - 1)
+        finder = ViralGeneFinder(
+            meta=(inputs.mode == "meta"),
+            min_gene=inputs.min_gene_len,
+            max_overlap=max_overlap,
+        )
+        if inputs.mode == "single":
+            train_seq = seq
+            if len(seq) < 100000:
+                # pyrodigal-gv single-mode requires long training context.
+                train_seq = seq + ("A" * (100000 - len(seq)))
+            finder.train(train_seq, translation_table=inputs.translation_table)
+
+        predicted: list[PredictedGene] = []
+        for ordinal, gene in enumerate(finder.find_genes(seq), start=1):
+            aa = gene.translate(translation_table=inputs.translation_table)
+            if not aa or len(aa) < inputs.min_protein_len_aa:
+                continue
+
+            gene_id = f"{contig_id}|gene{ordinal}"
+            predicted.append(
+                PredictedGene(
+                    contig_id=contig_id,
+                    gene_id=gene_id,
+                    start=int(gene.begin),
+                    end=int(gene.end),
+                    strand=int(gene.strand),
+                    ordinal=ordinal,
+                    nucleotide_sequence=str(gene.sequence()),
+                    amino_acid_sequence=str(aa),
+                )
+            )
+
+        return predicted
+
+    contigs = list(_read_fasta_python(inputs.input_contigs))
+    if not contigs:
+        return []
+
+    if threads > 1:
+        from multiprocessing.pool import ThreadPool
+
+        with ThreadPool(processes=threads) as pool:
+            nested = pool.starmap(_predict_for_contig, contigs)
+    else:
+        nested = [_predict_for_contig(contig_id, seq) for contig_id, seq in contigs]
+
+    out: list[PredictedGene] = []
+    for genes in nested:
+        out.extend(genes)
+    return out
+
+
+def write_predicted_proteins_fasta(genes: Iterable[PredictedGene], output_path: Path) -> int:
+    """Write predicted proteins to FASTA and return record count."""
+    count = 0
+    with output_path.open("w") as out:
+        for gene in genes:
+            out.write(f">{gene.gene_id}\n{gene.amino_acid_sequence}\n")
+            count += 1
+    return count
+
+
 def get_or_predict_proteins(
     inputs: PredictionInputs,
     use_cache: bool = True,
@@ -155,9 +276,6 @@ def get_or_predict_proteins(
     Returns:
         CacheArtifact with proteins_path, protein_count, cache_hit status, and cache metadata
     """
-    # Import here to avoid circular dependency
-    from .screen import _predict_proteins_pyrodigal
-
     inputs.__post_init__()  # Validate
 
     if not use_cache:
@@ -165,15 +283,8 @@ def get_or_predict_proteins(
         temp_dir = Path(tempfile.mkdtemp(prefix="phu_pred_"))
         temp_prot = temp_dir / "proteins.faa"
 
-        n_prot = _predict_proteins_pyrodigal(
-            inputs.input_contigs,
-            temp_prot,
-            mode=inputs.mode,
-            min_len=inputs.min_gene_len,
-            min_protein_len_aa=inputs.min_protein_len_aa,
-            translation_table=inputs.translation_table,
-            threads=threads,
-        )
+        genes = predict_genes_pyrodigal(inputs, threads=threads)
+        n_prot = write_predicted_proteins_fasta(genes, temp_prot)
 
         return CacheArtifact(
             proteins_path=temp_prot,
@@ -225,15 +336,8 @@ def get_or_predict_proteins(
         partial_dir.mkdir(parents=True, exist_ok=True)
         temp_prot = partial_dir / "proteins.faa"
 
-        n_prot = _predict_proteins_pyrodigal(
-            inputs.input_contigs,
-            temp_prot,
-            mode=inputs.mode,
-            min_len=inputs.min_gene_len,
-            min_protein_len_aa=inputs.min_protein_len_aa,
-            translation_table=inputs.translation_table,
-            threads=threads,
-        )
+        genes = predict_genes_pyrodigal(inputs, threads=threads)
+        n_prot = write_predicted_proteins_fasta(genes, temp_prot)
 
         # Atomically promote partial to cache
         cache_subdir.mkdir(parents=True, exist_ok=True)

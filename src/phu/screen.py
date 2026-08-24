@@ -17,13 +17,14 @@ import pyhmmer
 import pyhmmer.easel
 import pyhmmer.plan7
 import typer
-from pyrodigal_gv import ViralGeneFinder  # New import for viral gene prediction
 
 from ._click import run_click_task
 from ._exec import _executable
 from .gene_prediction_core import (
     PredictionInputs,
     get_or_predict_proteins,
+    predict_genes_pyrodigal,
+    write_predicted_proteins_fasta,
     write_prediction_metadata,
 )
 from .kofam_db import (
@@ -359,59 +360,16 @@ def _predict_proteins_pyrodigal(
     translation_table: int = 11,
     threads: int = 1,
 ) -> int:
-    """
-    Use pyrodigal to predict CDS and write protein FASTA.
-    Headers encode contig and CDS index as: contig|gene<idx>
-    Returns number of proteins written.
-
-    For single-mode prediction, pyrodigal-gv requires a training pass before gene
-    calls. We also pass the requested translation_table into the actual protein
-    translation step so it affects the output sequence.
-    """
-    contigs = list(_read_fasta(contigs_fa))
-    if not contigs:
-        return 0
-
-    def _predict_for_contig(contig_id: str, seq: str):
-        max_overlap = max(0, min_len - 1)
-        finder = ViralGeneFinder(
-            meta=(mode == "meta"), min_gene=min_len, max_overlap=max_overlap
-        )
-        if mode == "single":
-            train_seq = seq
-            if len(seq) < 100000:
-                # pyrodigal-gv requires a long training sequence for single-mode.
-                # Pad in-memory to the minimum requirement before training.
-                train_seq = seq + ("A" * (100000 - len(seq)))
-            finder.train(train_seq, translation_table=translation_table)
-        genes = finder.find_genes(seq)
-        return contig_id, list(genes)
-
-    if threads > 1:
-        with ThreadPool(processes=threads) as pool:
-            genes_results = pool.starmap(
-                _predict_for_contig,
-                [(contig_id, seq) for contig_id, seq in contigs],
-            )
-    else:
-        genes_results = [
-            _predict_for_contig(contig_id, seq) for contig_id, seq in contigs
-        ]
-
-    n_prot = 0
-    with output_prot_fa.open("w") as out:
-        for (contig_id, _), (_, genes) in zip(contigs, genes_results):
-            for i, gene in enumerate(genes, start=1):
-                aa = gene.translate(translation_table=translation_table)
-                if not aa:
-                    continue
-                if len(aa) < min_protein_len_aa:
-                    continue
-                prot_id = f"{contig_id}|gene{i}"
-                out.write(f">{prot_id}\n{aa}\n")
-                n_prot += 1
-
-    return n_prot
+    """Backward-compatible wrapper around shared prediction core."""
+    inputs = PredictionInputs(
+        input_contigs=contigs_fa,
+        mode=mode,
+        min_gene_len=min_len,
+        min_protein_len_aa=min_protein_len_aa,
+        translation_table=translation_table,
+    )
+    genes = predict_genes_pyrodigal(inputs, threads=threads)
+    return write_predicted_proteins_fasta(genes, output_prot_fa)
 
 
 def _hmmsearch(

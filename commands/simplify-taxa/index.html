@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1266,8 +1266,8 @@
 <div class="highlight"><pre><span></span><code><span class="w"> </span>Simplify<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>prediction<span class="w"> </span>columns<span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>lineage<span class="w"> </span>codes.<span class="w">   </span>
 
 <span class="w"> </span>Transforms<span class="w"> </span>verbose<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>strings<span class="w"> </span>like<span class="w">                           </span>
-<span class="w"> </span><span class="s1">&#39;novel_genus_1_of_novel_family_2_of_Caudoviricetes&#39;</span><span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>codes<span class="w"> </span>like<span class="w"> </span>
-<span class="w"> </span><span class="s1">&#39;Caudoviricetes:NF2:NG1&#39;</span>.<span class="w">                                                   </span>
+<span class="w"> </span><span class="s1">'novel_genus_1_of_novel_family_2_of_Caudoviricetes'</span><span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>codes<span class="w"> </span>like<span class="w"> </span>
+<span class="w"> </span><span class="s1">'Caudoviricetes:NF2:NG1'</span>.<span class="w">                                                   </span>
 
 <span class="w"> </span>Example:<span class="w">                                                                    </span>
 <span class="w">     </span>phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>final_assignments.csv<span class="w"> </span>-o<span class="w"> </span>simplified.csv<span class="w">           </span>
@@ -1281,7 +1281,7 @@
 │<span class="w">                              </span>simplified<span class="w"> </span>rank<span class="w">                              </span>│
 │<span class="w">    </span>--lineage-col<span class="w">         </span>TEXT<span class="w">  </span>Name<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>lineage<span class="w"> </span>column<span class="w">                 </span>│
 │<span class="w">                              </span><span class="o">[</span>default:<span class="w"> </span>compact_lineage<span class="o">]</span><span class="w">                   </span>│
-│<span class="w">    </span>--sep<span class="w">                 </span>TEXT<span class="w">  </span>Override<span class="w"> </span>delimiter:<span class="w"> </span><span class="s1">&#39;,&#39;</span><span class="w"> </span>or<span class="w"> </span><span class="s1">&#39;\t&#39;</span>.<span class="w">           </span>│
+│<span class="w">    </span>--sep<span class="w">                 </span>TEXT<span class="w">  </span>Override<span class="w"> </span>delimiter:<span class="w"> </span><span class="s1">','</span><span class="w"> </span>or<span class="w"> </span><span class="s1">'\t'</span>.<span class="w">           </span>│
 │<span class="w">                              </span>Auto-detected<span class="w"> </span>from<span class="w"> </span>extension<span class="w"> </span><span class="k">if</span><span class="w"> </span>not<span class="w"> </span><span class="nb">set</span><span class="w">      </span>│
 │<span class="w">    </span>--help<span class="w">            </span>-h<span class="w">        </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                </span>│
 ╰───────────────────────────────────────────────────────────────────────────╯
@@ -1295,7 +1295,7 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
 phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>final_assignments.tsv<span class="w"> </span>-o<span class="w"> </span>simplified_taxonomy.tsv
 
 <span class="c1"># Override input delimiter detection</span>
-phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>data.txt<span class="w"> </span>-o<span class="w"> </span>output.csv<span class="w"> </span>--sep<span class="w"> </span><span class="s2">&quot;\t&quot;</span>
+phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>data.txt<span class="w"> </span>-o<span class="w"> </span>output.csv<span class="w"> </span>--sep<span class="w"> </span><span class="s2">"\t"</span>
 </code></pre></div>
 <h3 id="advanced-usage">Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Add compact lineage column with deepest available classification</span>
@@ -1303,7 +1303,7 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
 
 <span class="c1"># Customize lineage column name</span>
 phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>final_assignments.csv<span class="w"> </span>-o<span class="w"> </span>simplified.csv<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--add-lineage<span class="w"> </span>--lineage-col<span class="w"> </span><span class="s2">&quot;best_taxonomy&quot;</span>
+<span class="w">  </span>--add-lineage<span class="w"> </span>--lineage-col<span class="w"> </span><span class="s2">"best_taxonomy"</span>
 </code></pre></div>
 <h2 id="lineage-column-feature">Lineage Column Feature<a class="headerlink" href="#lineage-column-feature" title="Permanent link">&para;</a></h2>
 <p>The <code>--add-lineage</code> option creates an additional column containing the deepest (most specific) available taxonomic classification for each sequence.</p>
@@ -1369,9 +1369,9 @@ Caudoviricetes:NF1:NG2<span class="o">||</span>Caudoviricetes:NF3:NG4
 <h2 id="quality-assessment">Quality Assessment<a class="headerlink" href="#quality-assessment" title="Permanent link">&para;</a></h2>
 <p>After processing, the command provides a summary showing remaining <code>novel_</code> strings for quality control:</p>
 <div class="highlight"><pre><span></span><code>QA Summary:
-  genus_prediction: 45 remaining &#39;novel_&#39; strings
-  family_prediction: 12 remaining &#39;novel_&#39; strings
-  order_prediction: 3 remaining &#39;novel_&#39; strings
+  genus_prediction: 45 remaining 'novel_' strings
+  family_prediction: 12 remaining 'novel_' strings
+  order_prediction: 3 remaining 'novel_' strings
 </code></pre></div>
 <h2 id="workflow-integration">Workflow Integration<a class="headerlink" href="#workflow-integration" title="Permanent link">&para;</a></h2>
 <h3 id="typical-bioinformatics-pipeline">Typical Bioinformatics Pipeline<a class="headerlink" href="#typical-bioinformatics-pipeline" title="Permanent link">&para;</a></h3>
@@ -1508,7 +1508,7 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

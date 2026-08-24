@@ -338,8 +338,9 @@ def test_pyproject_declares_click_runtime_dependency():
 
 def test_predict_proteins_single_mode_trains_and_respects_translation_table(tmp_path, monkeypatch):
     """Single mode must train before finding genes and must pass the requested table to translation."""
+    seq = "ATGAAAGGTGAAGGTGAATGA"
     contigs = tmp_path / "contigs.fa"
-    contigs.write_text(">c1\nATGAAAGGTGAAGGTGAATGA\n")
+    contigs.write_text(f">c1\n{seq}\n")
 
     recorded = {}
 
@@ -356,6 +357,7 @@ def test_predict_proteins_single_mode_trains_and_respects_translation_table(tmp_
             recorded["trained_table"] = kwargs.get("translation_table")
 
         def find_genes(self, sequence):
+            assert len(sequence) == len(seq)
             return [FakeGene()]
 
     monkeypatch.setattr("phu.screen.ViralGeneFinder", FakeFinder)

@@ -22,6 +22,13 @@ from .avger_annotation import (
 )
 from .avger_classification import load_default_classification_rules
 from .avger_scoring import evaluate_database_candidates
+from .avg_reference_db import (
+    ensure_avg_database,
+    get_avg_database_status,
+    refresh_avg_database,
+    remove_avg_database,
+)
+from .avg import AvgConfig, run_avg
 from .jack import JackConfig, _jack
 from .kofam_db import (
     get_kofam_database_status,
@@ -59,7 +66,7 @@ dbs_app = typer.Typer(
 )
 app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
 
-SUPPORTED_DBS = ("pfam", "kofam", "vscore")
+SUPPORTED_DBS = ("pfam", "kofam", "vscore", "avg")
 
 
 def _normalize_db_names(databases: list[str], all_dbs: bool) -> list[str]:
@@ -87,6 +94,8 @@ def _db_status_payload(db_name: str) -> dict:
         return get_kofam_database_status()
     if db_name == "vscore":
         return get_vscore_database_status()
+    if db_name == "avg":
+        return get_avg_database_status()
     raise ValueError(f"Unsupported database: {db_name}")
 
 
@@ -174,6 +183,10 @@ def dbs_prepare(
                 result = ensure_vscore_database(force_refresh=force_refresh)
                 typer.echo(f"Prepared {db_name}: {result.get('csv_path')}")
                 typer.echo(f"Records ready: {result.get('record_count')}")
+            elif db_name == "avg":
+                result = ensure_avg_database(force_refresh=force_refresh)
+                typer.echo(f"Prepared {db_name}: {result.get('root')}")
+                typer.echo(f"Release: {result.get('release')}")
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -213,6 +226,10 @@ def dbs_refresh(
                 result = refresh_vscore_database()
                 typer.echo(f"Refreshed {db_name}: {result.get('csv_path')}")
                 typer.echo(f"Records ready: {result.get('record_count')}")
+            elif db_name == "avg":
+                result = refresh_avg_database()
+                typer.echo(f"Refreshed {db_name}: {result.get('root')}")
+                typer.echo(f"Release: {result.get('release')}")
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -263,6 +280,12 @@ def dbs_remove(
                 typer.echo(f"{db_name} database not present")
         elif db_name == "vscore":
             removed = remove_vscore_database()
+            if removed:
+                typer.echo(f"Removed {db_name} database")
+            else:
+                typer.echo(f"{db_name} database not present")
+        elif db_name == "avg":
+            removed = remove_avg_database()
             if removed:
                 typer.echo(f"Removed {db_name} database")
             else:
@@ -432,8 +455,7 @@ def simplify_taxa(
         raise typer.Exit(1)
 
 
-@app.command("avger", rich_help_panel="Workflow")
-def avger(
+def _legacy_avger(
     input_contigs: Path = typer.Option(
         ...,
         "--input-contigs",
@@ -531,6 +553,61 @@ def avger(
 
     typer.echo(f"Cache hit: {cache_hit}")
     typer.echo(f"Results: {best_path}")
+
+
+@app.command("avger", rich_help_panel="Workflow")
+def avger(
+    input_contigs: Path = typer.Option(
+        ...,
+        "--input-contigs",
+        "-i",
+        exists=True,
+        readable=True,
+        help="Trusted viral contigs FASTA",
+    ),
+    output_folder: Path = typer.Option(
+        Path("phu-avger"), "--output-folder", "-o", help="Output directory"
+    ),
+    threads: int = typer.Option(1, "--threads", "-t", min=1),
+    mode: str = typer.Option("meta", "--mode", "-m", help="pyrodigal mode: meta|single"),
+    min_gene_len: int = typer.Option(90, "--min-gene-len", min=1),
+    min_protein_len_aa: int = typer.Option(30, "--min-protein-len-aa", min=1),
+    translation_table: int = typer.Option(11, "--ttable", "-T", min=1),
+    min_amg_weight: float = typer.Option(0.6, "--min-amg-weight", min=0.0, max=1.0),
+    filter_mode: str = typer.Option("standard", "--filter-mode"),
+    keep_hits: bool = typer.Option(False, "--keep-hits/--no-keep-hits"),
+    scaffold_avl_cutoff: float = typer.Option(3.0, "--scaffold-avl-cutoff", min=0.0),
+    gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0),
+    gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0),
+    scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0),
+) -> None:
+    """Predict and curate putative auxiliary viral genes."""
+    try:
+        result = run_avg(
+            AvgConfig(
+                input_contigs=input_contigs,
+                output_folder=output_folder,
+                threads=threads,
+                mode=mode,
+                min_gene_len=min_gene_len,
+                min_protein_len_aa=min_protein_len_aa,
+                translation_table=translation_table,
+                min_amg_weight=min_amg_weight,
+                filter_mode=filter_mode,
+                keep_hits=keep_hits,
+                scaffold_avl_cutoff=scaffold_avl_cutoff,
+                gene_vl_cutoff=gene_vl_cutoff,
+                gene_v_cutoff=gene_v_cutoff,
+                scoring_evalue=scoring_evalue,
+            )
+        )
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"Cache hit: {result.prediction.cache_hit}")
+    for output in result.outputs:
+        typer.echo(f"Results: {output}")
 
 
 @app.command("screen", rich_help_panel="Workflow")

@@ -36,6 +36,7 @@ class AnnotationHit:
     gene_end: Optional[int] = None
     model_name: Optional[str] = None
     model_description: Optional[str] = None
+    track: str = "strict"
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,8 @@ class AnnotationConfig:
     all_hits_path: Optional[Path] = None
     pfam_require_ga: bool = True
     pfam_missing_ga_policy: str = "skip_model"  # skip_model | include_without_ga
+    kofam_require_thresholds: bool = True
+    track: str = "strict"
 
     def __post_init__(self) -> None:
         if self.threads < 1:
@@ -59,6 +62,8 @@ class AnnotationConfig:
             raise ValueError(
                 "pfam_missing_ga_policy must be 'skip_model' or 'include_without_ga'"
             )
+        if self.track not in {"relaxed", "strict"}:
+            raise ValueError("track must be 'relaxed' or 'strict'")
 
 
 @dataclass
@@ -373,7 +378,7 @@ def _search_and_collect(
                         if model_id is None:
                             continue
                         model_accession = model_id
-                        model_name = None
+                        model_name = model_id
                         ko_meta = kofam_meta_by_model.get(model_id)
                         if ko_meta is None:
                             continue
@@ -411,10 +416,11 @@ def _search_and_collect(
                                 effective_score = domain_score
                             else:
                                 effective_score = full_score
-                            if threshold_value is None:
-                                continue
-                            if effective_score < float(threshold_value):
-                                continue
+                            if cfg.kofam_require_thresholds:
+                                if threshold_value is None:
+                                    continue
+                                if effective_score < float(threshold_value):
+                                    continue
 
                         record = AnnotationHit(
                             protein_id=protein_id,
@@ -435,6 +441,7 @@ def _search_and_collect(
                             threshold_value=threshold_value,
                             model_name=model_name,
                             model_description=model_description,
+                            track=cfg.track,
                         )
 
                         passing += 1

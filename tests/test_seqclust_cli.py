@@ -20,6 +20,7 @@ def test_root_help_runs():
     assert "Database Management" in output
     assert "cluster" in output
     assert "screen" in output
+    assert "avger" in output
     assert "jack" in output
     assert "dbs" in output
     assert "simplify-taxa" in output
@@ -39,6 +40,33 @@ def test_clean_cache_removes_prediction_cache(tmp_path, monkeypatch):
     assert not cache_dir.exists()
 
 
+def test_avg_help_shows_core_options():
+    result = runner.invoke(app, ["avger", "--help"], terminal_width=400)
+    output = re.sub(
+        r"\x1b\[[0-?]*[ -/]*[@-~]", "", result.stdout + result.stderr
+    )
+    assert result.exit_code == 0
+    assert "Usage: root avger" in output
+    assert "Predict and curate putative auxiliary viral genes" in output
+
+
+def test_avg_fails_before_prediction_when_databases_are_missing(tmp_path, monkeypatch):
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c1\nATG\n")
+    monkeypatch.setattr(cli_module, "run_avg", lambda config: (_ for _ in ()).throw(
+        FileNotFoundError(
+            "Required databases are not ready: pfam, avg. "
+            "Run: phu dbs prepare pfam kofam avg"
+        )
+    ))
+
+    result = runner.invoke(app, ["avger", "-i", str(contigs)])
+
+    assert result.exit_code == 1
+    assert "Required databases are not ready: pfam, avg" in result.stderr
+    assert "phu dbs prepare pfam kofam avg" in result.stderr
+
+
 def test_dbs_help_runs():
     result = runner.invoke(app, ["dbs", "--help"])
     output = plain_output(result)
@@ -48,6 +76,44 @@ def test_dbs_help_runs():
     assert "prepare" in output
     assert "refresh" in output
     assert "remove" in output
+
+
+def test_dbs_list_includes_avg(monkeypatch):
+    monkeypatch.setattr(
+        cli_module,
+        "get_avg_database_status",
+        lambda: {"downloaded": True, "indexed": True},
+    )
+
+    result = runner.invoke(app, ["dbs", "list"])
+
+    assert result.exit_code == 0
+    assert "avg\tready" in result.stdout
+
+
+def test_dbs_prepare_calls_avg_prepare(monkeypatch):
+    called = {}
+
+    def fake_prepare(*, force_refresh):
+        called["force_refresh"] = force_refresh
+        return {"root": "/tmp/avg", "release": "v1.1.1"}
+
+    monkeypatch.setattr(cli_module, "ensure_avg_database", fake_prepare)
+
+    result = runner.invoke(app, ["dbs", "prepare", "avg"])
+
+    assert result.exit_code == 0
+    assert called["force_refresh"] is False
+    assert "Prepared avg" in result.stdout
+
+
+def test_dbs_remove_calls_avg_remove(monkeypatch):
+    monkeypatch.setattr(cli_module, "remove_avg_database", lambda: True)
+
+    result = runner.invoke(app, ["dbs", "remove", "avg", "--yes"])
+
+    assert result.exit_code == 0
+    assert "Removed avg database" in result.stdout
 
 
 def test_dbs_prepare_calls_pfam_prepare(monkeypatch, tmp_path):

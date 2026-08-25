@@ -137,11 +137,11 @@ def test_best_hit_writer_adds_vscore_columns_and_sorts_rows(tmp_path: Path):
     lines = output.read_text().splitlines()
     assert lines[0].startswith("protein_id\tcontig_id")
     assert lines[1].startswith("ctgA|gene1\tctgA\tpfam")
-    assert "10.000000\t2.000000\tintegrase\t4.200000\tKEGG" in lines[2]
+    assert "10.000000\t2.000000\t4.200000\tKEGG" in lines[2]
     assert "unclassified_avg_candidate" in lines[2]
 
 
-def test_best_hit_writer_inherits_kofam_vscore_function_for_same_protein_pfam_rows(tmp_path: Path):
+def test_best_hit_writer_omits_vscore_function(tmp_path: Path):
     pfam_hit = AnnotationHit(
         protein_id="ctgX|gene7",
         contig_id="ctgX",
@@ -203,4 +203,5 @@ def test_best_hit_writer_inherits_kofam_vscore_function_for_same_protein_pfam_ro
 
     content = output.read_text().splitlines()
     pfam_line = next(line for line in content if line.startswith("ctgX|gene7\tctgX\tpfam"))
-    assert "phage terminase large subunit" in pfam_line
+    assert "v_score_function" not in content[0]
+    assert "phage terminase large subunit" not in pfam_line

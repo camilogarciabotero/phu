@@ -32,6 +32,8 @@ class AnnotationHit:
     target_to: Optional[int]
     threshold_source: str
     threshold_value: Optional[float]
+    gene_start: Optional[int] = None
+    gene_end: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -71,6 +73,7 @@ def write_best_hits_tsv(
     output_path: Path,
     vscore_by_accession: Optional[dict[str, VScoreRecord]] = None,
     classification_rules: Optional[ClassificationRules] = None,
+    candidate_evaluations=None,
 ) -> int:
     """Write one deterministic best annotation row per protein and database."""
     rows = list(results.best_pfam_by_protein.values()) + list(
@@ -80,6 +83,14 @@ def write_best_hits_tsv(
     rows_by_protein: dict[str, list[AnnotationHit]] = {}
     for row in rows:
         rows_by_protein.setdefault(row.protein_id, []).append(row)
+    evaluations_by_key = {
+        (item.protein_id, item.database): item for item in (candidate_evaluations or [])
+    }
+    avg_candidate_by_protein: dict[str, bool] = {}
+    for item in candidate_evaluations or []:
+        avg_candidate_by_protein[item.protein_id] = (
+            avg_candidate_by_protein.get(item.protein_id, False) or item.candidate
+        )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")
@@ -101,9 +112,20 @@ def write_best_hits_tsv(
                 "threshold_source",
                 "threshold_value",
                 "v_score",
+                "vl_score",
                 "v_score_function",
                 "v_score_log10_hit_number",
                 "v_score_database_origin",
+                "contig_avl_score",
+                "database_candidate",
+                "avg_candidate",
+                "evidence_state",
+                "upstream_support",
+                "downstream_support",
+                "nearest_upstream_distance",
+                "nearest_downstream_distance",
+                "flank_supported",
+                "flank_reason_codes",
                 "classification",
                 "classification_rule_id",
                 "classification_rule_version",
@@ -114,6 +136,7 @@ def write_best_hits_tsv(
             classification, rule_id, rule_version = classify_protein_annotations(
                 rows_by_protein[row.protein_id], classification_rules, vscore_by_accession
             )
+            evaluation = evaluations_by_key.get((row.protein_id, row.database))
             writer.writerow(
                 [
                     row.protein_id,
@@ -132,9 +155,20 @@ def write_best_hits_tsv(
                     row.threshold_source,
                     "" if row.threshold_value is None else f"{row.threshold_value:.6f}",
                     "" if vscore is None else f"{vscore.v_score:.6f}",
+                    "" if vscore is None else f"{vscore.vl_score:.6f}",
                     "" if vscore is None else vscore.protein_function,
                     "" if vscore is None else f"{vscore.log10_hit_number:.6f}",
                     "" if vscore is None else vscore.database_origin,
+                    "" if evaluation is None or evaluation.contig_avl_score is None else f"{evaluation.contig_avl_score:.6f}",
+                    "" if evaluation is None else ("true" if evaluation.candidate else "false"),
+                    "true" if avg_candidate_by_protein.get(row.protein_id, False) else "false",
+                    "" if evaluation is None else evaluation.evidence_state,
+                    "" if evaluation is None else ("true" if evaluation.flank.upstream_supported else "false"),
+                    "" if evaluation is None else ("true" if evaluation.flank.downstream_supported else "false"),
+                    "" if evaluation is None else evaluation.flank.nearest_upstream_distance,
+                    "" if evaluation is None else evaluation.flank.nearest_downstream_distance,
+                    "" if evaluation is None else ("true" if evaluation.flank.flank_supported else "false"),
+                    "" if evaluation is None else ";".join(evaluation.flank.reason_codes),
                     classification,
                     "" if rule_id is None else rule_id,
                     "" if rule_version is None else rule_version,

@@ -20,6 +20,9 @@ dependencies = [
 [project.scripts]
 phu = "phu.cli:main"
 
+[tool.setuptools.package-data]
+phu = ["data/*.json"]
+
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"

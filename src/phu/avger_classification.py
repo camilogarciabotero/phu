@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -28,13 +29,17 @@ class ClassificationRules:
     rules: tuple[ClassificationRule, ...]
 
 
-def load_classification_rules(path: Path) -> ClassificationRules:
-    """Load a versioned JSON rule set with strict structural validation."""
+def load_default_classification_rules() -> ClassificationRules:
+    """Load the bundled, versioned rule set used by the avger workflow."""
+    resource = files("phu").joinpath("data", "avger_classification_rules.json")
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(resource.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise ValueError(f"Could not read classification rules: {path}") from exc
+        raise ValueError("Bundled avger classification rules are unavailable") from exc
+    return _parse_classification_rules(payload)
 
+
+def _parse_classification_rules(payload: object) -> ClassificationRules:
     if not isinstance(payload, dict) or not isinstance(payload.get("version"), str):
         raise ValueError("Classification rules require a string 'version'")
     raw_rules = payload.get("rules")
@@ -77,8 +82,17 @@ def load_classification_rules(path: Path) -> ClassificationRules:
             )
         )
         seen_ids.add(rule_id)
-
     return ClassificationRules(version=payload["version"], rules=tuple(rules))
+
+
+def load_classification_rules(path: Path) -> ClassificationRules:
+    """Load a versioned JSON rule set with strict structural validation."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Could not read classification rules: {path}") from exc
+
+    return _parse_classification_rules(payload)
 
 
 def classify_protein_annotations(

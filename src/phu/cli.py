@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Optional
 
@@ -19,7 +20,9 @@ from .avger_annotation import (
     annotate_proteins_complete_databases,
     write_best_hits_tsv,
 )
-from .avger_classification import load_classification_rules
+from .avger_cache import AvgerInputs, get_or_run_avger
+from .avger_classification import load_default_classification_rules
+from .avger_scoring import evaluate_database_candidates
 from .jack import JackConfig, _jack
 from .kofam_db import (
     get_kofam_database_status,
@@ -40,7 +43,7 @@ from .pfam_db import (
     refresh_pfam_database,
     remove_pfam_database,
 )
-from .screen import ScreenConfig, _screen
+from .screen import ScreenConfig, _read_fasta, _screen
 from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
 
 app = typer.Typer(
@@ -465,53 +468,83 @@ def avger(
     use_vscore: bool = typer.Option(
         True, "--use-vscore/--no-use-vscore", help="Add V-score annotations for KOs"
     ),
-    classification_rules: Optional[Path] = typer.Option(
-        None,
-        "--classification-rules",
-        help="Versioned JSON rules for curated classifications",
+    require_flank_support: bool = typer.Option(
+        False,
+        "--require-flank-support/--no-require-flank-support",
+        help="Require database-consistent 10-kb V-score flank support",
     ),
 ):
     """Predict proteins and annotate them against complete Pfam and KOfam databases."""
-    output_folder.mkdir(parents=True, exist_ok=True)
-    prediction_inputs = PredictionInputs(
+    avger_inputs = AvgerInputs(
         input_contigs=input_contigs,
         mode=mode,
+        threads=threads,
+        max_evalue=max_evalue,
         min_gene_len=min_gene_len,
         min_protein_len_aa=min_protein_len_aa,
         translation_table=translation_table,
+        keep_all_hits=keep_all_hits,
+        use_vscore=use_vscore,
+        require_flank_support=require_flank_support,
     )
-    try:
-        proteins = get_or_predict_proteins(
-            prediction_inputs, use_cache=True, threads=threads
+
+    def _run_avger(inputs: AvgerInputs, folder: Path) -> Path:
+        prediction_inputs = PredictionInputs(
+            input_contigs=inputs.input_contigs,
+            mode=inputs.mode,
+            min_gene_len=inputs.min_gene_len,
+            min_protein_len_aa=inputs.min_protein_len_aa,
+            translation_table=inputs.translation_table,
         )
-        all_hits_path = output_folder / "all_hits.tsv.gz" if keep_all_hits else None
+        proteins = get_or_predict_proteins(
+            prediction_inputs, use_cache=True, threads=inputs.threads
+        )
+        all_hits_path = folder / "all_hits.tsv.gz" if inputs.keep_all_hits else None
         results = annotate_proteins_complete_databases(
             proteins.proteins_path,
             AnnotationConfig(
-                threads=threads,
-                max_evalue=max_evalue,
-                keep_all_hits=keep_all_hits,
+                threads=inputs.threads,
+                max_evalue=inputs.max_evalue,
+                keep_all_hits=inputs.keep_all_hits,
                 all_hits_path=all_hits_path,
             ),
         )
-        vscore_map = get_vscore_map() if use_vscore else None
-        rules = (
-            load_classification_rules(classification_rules)
-            if classification_rules is not None
-            else None
+        vscore_map = get_vscore_map() if inputs.use_vscore else None
+        rules = load_default_classification_rules()
+        best_hits = list(results.best_pfam_by_protein.values()) + list(
+            results.best_kofam_by_protein.values()
         )
-        best_path = output_folder / "best_hits.tsv"
-        row_count = write_best_hits_tsv(results, best_path, vscore_map, rules)
+        genes_by_id = {gene.gene_id: gene for gene in (proteins.genes or [])}
+        best_hits = [
+            replace(
+                hit,
+                gene_start=genes_by_id[hit.protein_id].start,
+                gene_end=genes_by_id[hit.protein_id].end,
+            )
+            if hit.protein_id in genes_by_id
+            else hit
+            for hit in best_hits
+        ]
+        candidate_evaluations = evaluate_database_candidates(
+            best_hits,
+            vscore_map or {},
+            {contig_id: len(sequence) for contig_id, sequence in _read_fasta(inputs.input_contigs)},
+            require_flank_support=inputs.require_flank_support,
+        )
+        best_path = folder / "best_hits.tsv"
+        row_count = write_best_hits_tsv(
+            results, best_path, vscore_map, rules, candidate_evaluations
+        )
+        return best_path
+
+    try:
+        best_path, cache_hit = get_or_run_avger(avger_inputs, output_folder, _run_avger)
     except (FileNotFoundError, ValueError, OSError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
 
-    typer.echo(f"Predicted proteins: {proteins.protein_count}")
-    typer.echo(f"Passing annotations: {results.passing_hit_count}")
-    typer.echo(f"Best-hit rows: {row_count}")
+    typer.echo(f"Cache hit: {cache_hit}")
     typer.echo(f"Results: {best_path}")
-    if all_hits_path is not None:
-        typer.echo(f"All hits: {all_hits_path}")
 
 
 @app.command("screen", rich_help_panel="Workflow")

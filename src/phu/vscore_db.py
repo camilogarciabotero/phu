@@ -13,7 +13,7 @@ from urllib.request import urlopen
 
 V_SCORE_URL = (
     "https://raw.githubusercontent.com/AnantharamanLab/V-Score-Search/"
-    "refs/heads/main/Database/VScoreData.csv"
+    "refs/heads/main/Software/VScoreDataNormalized.csv"
 )
 V_SCORE_NAME = "vscore"
 V_SCORE_REQUIRED_COLUMNS = {
@@ -23,6 +23,10 @@ V_SCORE_REQUIRED_COLUMNS = {
     "Log10[Hit Number]",
     "Database Origin",
 }
+V_SCORE_OPTIONAL_SCORE_COLUMNS = {
+    "Normalized VL-score",
+    "Normalized V-score",
+}
 
 
 @dataclass(frozen=True)
@@ -30,6 +34,7 @@ class VScoreRecord:
     accession: str
     protein_function: str
     v_score: float
+    vl_score: float
     log10_hit_number: float
     database_origin: str
 
@@ -71,6 +76,18 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _resolve_vl_score_column(fieldnames: list[str] | None) -> str:
+    if not fieldnames:
+        raise ValueError("Incompatible V-score CSV: no header row found")
+    for candidate in ("Normalized VL-score", "Normalized V-score"):
+        if candidate in fieldnames:
+            return candidate
+    raise ValueError(
+        "Incompatible V-score CSV: missing required VL-score column "
+        "(expected 'Normalized VL-score' or legacy 'Normalized V-score')"
+    )
+
+
 def parse_vscore_csv(path: Path) -> dict[str, VScoreRecord]:
     """Parse and validate a V-score CSV, keyed by normalized accession."""
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -83,6 +100,8 @@ def parse_vscore_csv(path: Path) -> dict[str, VScoreRecord]:
                 + ", ".join(sorted(missing))
             )
 
+        vl_score_column = _resolve_vl_score_column(reader.fieldnames)
+
         records: dict[str, VScoreRecord] = {}
         for row_number, row in enumerate(reader, start=2):
             accession = (row["Accession"] or "").strip().upper()
@@ -93,6 +112,7 @@ def parse_vscore_csv(path: Path) -> dict[str, VScoreRecord]:
                     accession=accession,
                     protein_function=(row["Protein Function"] or "").strip(),
                     v_score=float(row["V-Score"]),
+                    vl_score=float(row[vl_score_column]),
                     log10_hit_number=float(row["Log10[Hit Number]"]),
                     database_origin=(row["Database Origin"] or "").strip(),
                 )
@@ -109,6 +129,12 @@ def ensure_vscore_database(force_refresh: bool = False) -> dict[str, str]:
     csv_path = _vscore_csv_path()
     if force_refresh or not csv_path.exists():
         _download(V_SCORE_URL, csv_path)
+    else:
+        try:
+            parse_vscore_csv(csv_path)
+        except ValueError:
+            _download(V_SCORE_URL, csv_path)
+            parse_vscore_csv(csv_path)
     records = parse_vscore_csv(csv_path)
     manifest = {
         "name": V_SCORE_NAME,
@@ -123,13 +149,17 @@ def ensure_vscore_database(force_refresh: bool = False) -> dict[str, str]:
 
 
 def get_vscore_map() -> dict[str, VScoreRecord]:
-    """Load the local V-score table, requiring explicit preparation first."""
+    """Load the local V-score table, refreshing stale/invalid files automatically."""
     csv_path = _vscore_csv_path()
     if not csv_path.exists():
         raise FileNotFoundError(
             f"V-score database not found: {csv_path}. Run `phu dbs prepare vscore` first."
         )
-    return parse_vscore_csv(csv_path)
+    try:
+        return parse_vscore_csv(csv_path)
+    except ValueError:
+        ensure_vscore_database(force_refresh=True)
+        return parse_vscore_csv(csv_path)
 
 
 def get_vscore_database_status() -> dict[str, object]:

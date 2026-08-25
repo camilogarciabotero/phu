@@ -40,10 +40,11 @@ For `kofam`, preparation includes:
 2. Building KO metadata index from `ko_list` (`threshold`, `score_type`, etc.).
 3. Building the byte-offset index for sparse KO model extraction.
 
-For `vscore`, preparation downloads and validates the V-Score CSV from the
-AnantharamanLab repository and stores it locally with a manifest and checksum.
-The parser requires the columns `Accession`, `Protein Function`, `V-Score`,
-`Log10[Hit Number]`, and `Database Origin`.
+For `vscore`, preparation downloads and validates the normalized V-Score CSV
+from the AnantharamanLab repository and stores it locally with a manifest and
+checksum. The parser requires the columns `Accession`, `Protein Function`,
+`V-Score`, `Normalized VL-score`, `Log10[Hit Number]`, and `Database Origin`.
+The normalized VL-score column is required by the Phase 4 AVL calculation.
 
 KOfam metadata drives threshold behavior in `phu screen`; see [screen thresholds and decision logic](screen-thresholds.md).
 

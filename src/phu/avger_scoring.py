@@ -9,6 +9,21 @@ from .vscore_db import VScoreRecord
 FLANK_DISTANCE_BP = 10_000
 
 
+def _resolve_gene_vscore(
+    hit: AnnotationHit,
+    hits: Iterable[AnnotationHit],
+    vscore_by_accession: dict[str, VScoreRecord],
+) -> Optional[VScoreRecord]:
+    if hit.model_id in vscore_by_accession:
+        return vscore_by_accession[hit.model_id]
+
+    protein_hits = [candidate for candidate in hits if candidate.protein_id == hit.protein_id]
+    for candidate in protein_hits:
+        if candidate.database == "kofam" and candidate.model_id in vscore_by_accession:
+            return vscore_by_accession[candidate.model_id]
+    return None
+
+
 @dataclass(frozen=True)
 class DatabaseAVL:
     database: str
@@ -48,9 +63,10 @@ def calculate_database_avl(
     vscore_by_accession: dict[str, VScoreRecord],
 ) -> dict[tuple[str, str], DatabaseAVL]:
     """Calculate AVL per contig/database using only scored significant best hits."""
+    hit_list = list(hits)
     grouped: dict[tuple[str, str], list[float]] = {}
-    for hit in hits:
-        score = vscore_by_accession.get(hit.model_id)
+    for hit in hit_list:
+        score = _resolve_gene_vscore(hit, hit_list, vscore_by_accession)
         if score is not None:
             grouped.setdefault((hit.contig_id, hit.database), []).append(score.vl_score)
 
@@ -79,7 +95,7 @@ def _flank_evidence(
     for hit in database_hits:
         if hit.protein_id == candidate.protein_id:
             continue
-        score = vscore_by_accession.get(hit.model_id)
+        score = _resolve_gene_vscore(hit, database_hits, vscore_by_accession)
         if score is None or score.v_score != 10:
             continue
         if hit.target_to is None or hit.target_from is None:
@@ -150,7 +166,7 @@ def evaluate_database_candidates(
 
     for database in ("pfam", "kofam"):
         for hit in sorted(hits_by_database[database], key=lambda item: item.protein_id):
-            score = vscore_by_accession.get(hit.model_id)
+            score = _resolve_gene_vscore(hit, list(hits), vscore_by_accession)
             database_avl = avl.get((hit.contig_id, database))
             flank = _flank_evidence(
                 hit,

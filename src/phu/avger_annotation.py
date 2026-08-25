@@ -68,6 +68,24 @@ class AnnotationResults:
     skipped_pfam_models_missing_ga: int
 
 
+def _resolve_vscore_for_row(
+    row: AnnotationHit,
+    results: AnnotationResults,
+    vscore_by_accession: Optional[dict[str, VScoreRecord]],
+) -> Optional[VScoreRecord]:
+    if not vscore_by_accession:
+        return None
+
+    if row.model_id in vscore_by_accession:
+        return vscore_by_accession[row.model_id]
+
+    ko_hit = results.best_kofam_by_protein.get(row.protein_id)
+    if ko_hit is not None and ko_hit.model_id in vscore_by_accession:
+        return vscore_by_accession[ko_hit.model_id]
+
+    return None
+
+
 def write_best_hits_tsv(
     results: AnnotationResults,
     output_path: Path,
@@ -132,7 +150,7 @@ def write_best_hits_tsv(
             ]
         )
         for row in rows:
-            vscore = (vscore_by_accession or {}).get(row.model_id)
+            vscore = _resolve_vscore_for_row(row, results, vscore_by_accession)
             classification, rule_id, rule_version = classify_protein_annotations(
                 rows_by_protein[row.protein_id], classification_rules, vscore_by_accession
             )

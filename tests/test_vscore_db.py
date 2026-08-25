@@ -139,3 +139,68 @@ def test_best_hit_writer_adds_vscore_columns_and_sorts_rows(tmp_path: Path):
     assert lines[1].startswith("ctgA|gene1\tctgA\tpfam")
     assert "10.000000\t2.000000\tintegrase\t4.200000\tKEGG" in lines[2]
     assert "unclassified_avg_candidate" in lines[2]
+
+
+def test_best_hit_writer_inherits_kofam_vscore_function_for_same_protein_pfam_rows(tmp_path: Path):
+    pfam_hit = AnnotationHit(
+        protein_id="ctgX|gene7",
+        contig_id="ctgX",
+        database="pfam",
+        model_id="PF00001",
+        model_accession="PF00001",
+        score_type="full",
+        effective_score=40,
+        full_score=40,
+        domain_score=35,
+        evalue=1e-10,
+        hmm_from=1,
+        hmm_to=20,
+        target_from=2,
+        target_to=21,
+        threshold_source="pfam_ga",
+        threshold_value=30,
+    )
+    kofam_hit = AnnotationHit(
+        protein_id="ctgX|gene7",
+        contig_id="ctgX",
+        database="kofam",
+        model_id="K06909",
+        model_accession="K06909",
+        score_type="full",
+        effective_score=80,
+        full_score=80,
+        domain_score=None,
+        evalue=1e-20,
+        hmm_from=None,
+        hmm_to=None,
+        target_from=None,
+        target_to=None,
+        threshold_source="kofam_ko_list",
+        threshold_value=50,
+    )
+    result = AnnotationResults(
+        best_pfam_by_protein={pfam_hit.protein_id: pfam_hit},
+        best_kofam_by_protein={kofam_hit.protein_id: kofam_hit},
+        passing_hit_count=2,
+        scanned_model_count=2,
+        skipped_pfam_models_missing_ga=0,
+    )
+    output = tmp_path / "best.tsv"
+
+    write_best_hits_tsv(
+        result,
+        output,
+        {
+            "K06909": type("Score", (), {
+                "v_score": 10.0,
+                "vl_score": 2.0,
+                "protein_function": "phage terminase large subunit",
+                "log10_hit_number": 4.2,
+                "database_origin": "KEGG",
+            })(),
+        },
+    )
+
+    content = output.read_text().splitlines()
+    pfam_line = next(line for line in content if line.startswith("ctgX|gene7\tctgX\tpfam"))
+    assert "phage terminase large subunit" in pfam_line

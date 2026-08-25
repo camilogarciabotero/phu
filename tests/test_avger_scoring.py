@@ -48,3 +48,23 @@ def test_flanks_are_database_consistent_and_not_required_by_default():
     assert result.flank.downstream_supported is False
     assert result.evidence_state == "avg_candidate"
     assert evaluate_database_candidates(hits, scores, {"ctg": 30_000}, True)[0].evidence_state == "avg_candidate"
+
+
+def test_pfam_candidate_uses_same_protein_kofam_vscore_when_pfam_score_missing():
+    hits = [
+        hit("gene1", "pfam", "PF1", 20_000, 20_100),
+        hit("gene1", "kofam", "K1", 20_000, 20_100),
+        hit("gene2", "pfam", "PF2", 1, 100),
+    ]
+    scores = {
+        "K1": VScoreRecord("K1", "phage terminase large subunit", 9.999, 2.5, 4.2, "KEGG"),
+        "PF2": VScoreRecord("PF2", "another protein", 10.0, 4.5, 4.2, "Pfam"),
+    }
+
+    result = evaluate_database_candidates(hits, scores, {"ctg": 30_000})
+    pfam_result = next(item for item in result if item.database == "pfam" and item.protein_id == "gene1")
+
+    assert pfam_result.gene_v_score == 9.999
+    assert pfam_result.gene_vl_score == 2.5
+    assert pfam_result.candidate is True
+    assert pfam_result.evidence_state == "avg_candidate"

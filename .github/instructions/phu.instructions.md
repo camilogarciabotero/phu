@@ -1,15 +1,121 @@
 ---
 description: "Use when working on phu command implementations, shared prediction/cache logic, CLI interfaces, tests, docs, or dependency metadata. Preserve phu architecture, Typer UX conventions, and cache behavior."
-applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml"
+applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.github/instructions/*.md"
 ---
 
 # phu Development Instructions
+
+## Current AVG Development State
+
+- The repository is developing a new provisional `phu avg` workflow alongside
+	the existing `phu avger` command. Keep `avg` isolated enough to be renamed
+	later without changing the scientific core.
+- `phu avger` already predicts proteins with `pyrodigal-gv`, reuses the shared
+	prediction cache, searches complete local Pfam and KOfam databases, applies
+	strict functional thresholds, joins V-score data, evaluates database-specific
+	candidate rules, and writes `best_hits.tsv`.
+- The shared prediction cache in `gene_prediction_core.py` is the only execution
+	cache for AVGER work. It stores prediction artifacts and gene metadata, not
+	annotation or `best_hits.tsv` results. Do not reintroduce an AVGER result
+	cache or a second prediction cache.
+- Pfam output preserves the HMM `model_name` and `model_description`.
+	`v_score_function` is intentionally omitted from `best_hits.tsv`; retain the
+	V-score numeric fields and database origin.
+- Existing `screen`, `jack`, database lifecycle commands, and prediction-cache
+	behavior are compatibility surfaces. Preserve them while adding AVG.
+
+## AVG Roadmap
+
+Implement in small, reviewable phases; do not rewrite the existing AVGER path.
+
+1. Add an `avg_reference_db.py` backend for pinned, runtime-downloaded AVG
+	 reference data. Normalize Pfam and KEGG/KOfam records using composite
+	 `(database, accession)` keys, atomic files, hashes, manifests, and the
+	 existing `phu dbs` lifecycle.
+2. Add focused pure decision functions and typed records for relaxed scoring,
+	 strict functional hits, same-database scaffold averages, candidate rules,
+	 positive evidence, weights, filters, and final classification.
+3. Add bounded complete-database annotation for the separate relaxed and strict
+	 tracks, reusing `PredictionInputs`, `get_or_predict_proteins()`, and existing
+	 Pfam/KOfam lifecycle helpers.
+4. Add the provisional `phu avg` orchestration and deterministic outputs:
+	 `genes.tsv`, `avg_candidates.tsv`, `avg_predictions.tsv`, `evidence.tsv`,
+	 and `run.json`.
+5. Add CLI tests, reference-fixture tests, scientific boundary tests, docs,
+	 README links, provenance notes, and full-suite validation.
+
+The first release deliberately excludes 10-kb flank verification, CheckV or
+viral-identification gates, CheckAMG runtime dependencies, ML models, workflow
+engines, AVG-array filtering, and unrelated annotation databases.
+
+## Scientific Naming and Attribution
+
+- Do not use researcher names, paper author names, or external tool names such
+	as `Zhou` or `CheckAMG` in Python module names, public APIs, dataclass names,
+	CLI option names, or internal variable names. Prefer neutral names such as
+	`relaxed`, `strict`, `positive`, `filter`, `scaffold_avl`, and `avg`.
+- This naming rule does not remove attribution. Document the scientific origin
+	of thresholds, scoring ideas, reference tables, and curation semantics in
+	`README.md`, `docs/commands/avg.md`, and run/reference manifests as
+	appropriate. Cite the relevant papers and upstream release there.
+- Code comments and docstrings should describe behavior and provenance without
+	turning external names into implementation coupling.
 
 ## Project Intent
 
 - `phu` is a modular CLI toolkit for viral genomics workflows.
 - Keep command behavior explicit, reproducible, and ergonomic for batch bioinformatics usage.
 - Prefer extending existing modules over introducing parallel implementations.
+- Treat command output formats, exit codes, environment variables, and database
+	lifecycle behavior as public interfaces.
+- Keep scientific computation separate from filesystem, CLI, and subprocess
+	code whenever practical so threshold and boundary behavior can be tested
+	without external databases or executables.
+
+## General Development Workflow
+
+- Start from the owning module, nearby tests, and the smallest reproducible
+	behavior. Avoid broad refactors while implementing a focused feature.
+- Before editing, identify the behavior that should change and one focused test
+	that could disconfirm the proposed change.
+- After each substantive edit, run the narrowest relevant test or type/lint
+	check before expanding the change. Finish with the full test suite when the
+	change crosses module boundaries.
+- Inspect `git diff` and `git diff --check` before handing off work. Do not
+	commit, reset, or discard unrelated user changes.
+- Keep generated outputs, local databases, caches, credentials, and temporary
+	artifacts out of version control unless they are deliberate small fixtures.
+
+## Data, Reproducibility, and Provenance
+
+- Never hardcode machine-specific paths, credentials, or writable locations.
+	Use existing `PHU_*` and XDG configuration conventions and document new
+	environment variables.
+- Treat downloaded reference data as versioned scientific inputs. Record the
+	upstream version, retrieval URL, checksum, normalization rules, and relevant
+	threshold provenance in manifests or documentation.
+- Use atomic replacement for downloaded/indexed files and validate checksums or
+	complete manifests before making data available to a command.
+- Make output ordering deterministic. Do not rely on filesystem, hash-map, or
+	parallel completion order when writing user-facing tables or manifests.
+- Preserve raw identifiers and distinguish database origin from accession when
+	joining records; never silently merge equal-looking identifiers from different
+	databases.
+
+## API and Compatibility Rules
+
+- Preserve existing public function signatures, CLI flags, output columns, and
+	environment-variable semantics unless the task explicitly requires a breaking
+	change.
+- When a breaking change is necessary, update tests, command documentation,
+	README usage examples, and changelog or migration notes together.
+- Prefer additive output columns and explicit status values over silently
+	changing the meaning of existing fields.
+- Keep failure modes actionable: identify the missing input, database, command,
+	configuration, or permission and return a non-zero exit status.
+- Do not catch broad exceptions around scientific or filesystem operations
+	unless the error is converted into a useful domain-specific message and the
+	original cause remains available for debugging.
 
 ## Repository Architecture
 
@@ -21,6 +127,10 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml"
 - External command discovery/execution helpers in `_exec.py`.
 - Shared protein-prediction cache lifecycle in `gene_prediction_core.py`.
 - Use `from __future__ import annotations` in Python source files.
+- Keep imports, parsing, and configuration side effects out of module import
+	time when a command can defer them until execution.
+- Use pathlib and structured parsers for paths, TSV/CSV, JSON, and YAML rather
+	than ad hoc string manipulation.
 
 ## CLI Conventions (Typer)
 
@@ -65,6 +175,14 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml"
 - `monkeypatch` for environment-dependent behavior.
 - `pytest.raises(..., match=...)` for validation branches.
 - Keep assertions concrete: exit codes, key help flags, output files, and error messages.
+- Test scientific predicates at exact boundaries, including missing, conflicting,
+	and below-threshold evidence where those states are part of the contract.
+- Use small checked-in fixtures for parser and reference-data tests; do not make
+	tests depend on network access, cluster schedulers, or locally installed large
+	databases.
+- Test cache hits and misses separately from annotation or scoring results.
+- For CLI workflows, test both a successful run and the most useful failure
+	path for each new validation rule.
 
 ## Documentation and Sync Requirements
 
@@ -82,6 +200,10 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml"
 - Keep tooling dependencies under `[dependency-groups]` (for example `dev`, `lint`).
 - Preserve Python compatibility (`requires-python = ">=3.10"`) unless a deliberate project-wide bump is requested.
 - Keep CLI entry point under `[project.scripts]` as `phu = "phu.cli:main"` unless the command surface is intentionally redesigned.
+- Prefer the standard library and existing project dependencies. Add a runtime
+	dependency only when it removes substantial complexity and its packaging,
+	license, and offline-test implications are understood.
+- Keep optional or development-only tools out of the runtime import path.
 
 ## Change Scope Discipline
 

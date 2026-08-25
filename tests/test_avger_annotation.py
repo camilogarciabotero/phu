@@ -42,10 +42,11 @@ class FakeCutoffs:
 
 
 class FakeHMM:
-    def __init__(self, name: str, accession: str, cutoffs: FakeCutoffs | None = None):
+    def __init__(self, name: str, accession: str, cutoffs: FakeCutoffs | None = None, description: str | None = None):
         self.name = name.encode()
         self.accession = accession.encode()
         self.cutoffs = cutoffs
+        self.description = None if description is None else description.encode()
 
 
 class FakeTopHits:
@@ -170,6 +171,36 @@ def test_pfam_include_without_ga_policy(monkeypatch):
     rec = best["ctgA|gene1"]
     assert rec.model_accession == "PF00002"
     assert rec.threshold_value is None
+
+
+def test_pfam_hit_keeps_hmm_name_and_description(monkeypatch):
+    _patch_hmmfile(monkeypatch)
+    _patch_sequencefile(monkeypatch)
+    _patch_hmmsearch(
+        monkeypatch,
+        [
+            FakeTopHits(
+                query=FakeHMM(
+                    "Peptidase_S21",
+                    "PF00003.1",
+                    cutoffs=FakeCutoffs(True, ga1=20.0, ga2=10.0),
+                    description="Peptidase family",
+                ),
+                hits=[FakeHit("ctgA|gene1", score=55.0, evalue=1e-12, domains=[FakeDomain(30.0)])],
+            )
+        ],
+    )
+
+    best, _, _, _ = ann._search_and_collect(
+        database="pfam",
+        hmm_path=Path("pfam.hmm"),
+        proteins_path=Path("proteins.faa"),
+        cfg=ann.AnnotationConfig(max_evalue=1e-5),
+    )
+
+    rec = best["ctgA|gene1"]
+    assert rec.model_name == "Peptidase_S21"
+    assert rec.model_description == "Peptidase family"
 
 
 def test_pfam_best_hit_is_highest_effective_score_then_evalue_then_accession(monkeypatch):

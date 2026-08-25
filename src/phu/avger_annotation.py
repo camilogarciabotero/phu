@@ -34,6 +34,8 @@ class AnnotationHit:
     threshold_value: Optional[float]
     gene_start: Optional[int] = None
     gene_end: Optional[int] = None
+    model_name: Optional[str] = None
+    model_description: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -67,7 +69,6 @@ class AnnotationResults:
     scanned_model_count: int
     skipped_pfam_models_missing_ga: int
 
-
 def _resolve_vscore_for_row(
     row: AnnotationHit,
     results: AnnotationResults,
@@ -84,7 +85,6 @@ def _resolve_vscore_for_row(
         return vscore_by_accession[ko_hit.model_id]
 
     return None
-
 
 def write_best_hits_tsv(
     results: AnnotationResults,
@@ -118,6 +118,8 @@ def write_best_hits_tsv(
                 "contig_id",
                 "database",
                 "model_id",
+                "model_name",
+                "model_description",
                 "score_type",
                 "effective_score",
                 "full_score",
@@ -161,6 +163,8 @@ def write_best_hits_tsv(
                     row.contig_id,
                     row.database,
                     row.model_id,
+                    row.model_name or "",
+                    row.model_description or "",
                     row.score_type,
                     f"{row.effective_score:.6f}",
                     f"{row.full_score:.6f}",
@@ -267,6 +271,14 @@ def _kofam_model_id(hmm) -> Optional[str]:
     return None
 
 
+def _hmm_text(value) -> Optional[str]:
+    if isinstance(value, bytes):
+        value = value.decode(errors="replace")
+    if not value:
+        return None
+    return str(value).strip() or None
+
+
 def _pfam_model_ga(hmm) -> Optional[tuple[float, float]]:
     cutoffs = getattr(hmm, "cutoffs", None)
     if cutoffs is None:
@@ -348,6 +360,8 @@ def _search_and_collect(
                         if model_accession is None:
                             continue
                         model_id = model_accession
+                        model_name = _hmm_text(getattr(hmm, "name", None))
+                        model_description = _hmm_text(getattr(hmm, "description", None))
 
                         ga_pair = _pfam_model_ga(hmm)
                         if cfg.pfam_require_ga and ga_pair is None:
@@ -361,9 +375,11 @@ def _search_and_collect(
                         if model_id is None:
                             continue
                         model_accession = model_id
+                        model_name = None
                         ko_meta = kofam_meta_by_model.get(model_id)
                         if ko_meta is None:
                             continue
+                        model_description = ko_meta.definition
 
                     for hit in top_hits:
                         evalue = float(hit.evalue)
@@ -419,6 +435,8 @@ def _search_and_collect(
                             target_to=target_to,
                             threshold_source=threshold_source,
                             threshold_value=threshold_value,
+                            model_name=model_name,
+                            model_description=model_description,
                         )
 
                         passing += 1

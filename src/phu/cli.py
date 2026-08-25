@@ -20,7 +20,6 @@ from .avger_annotation import (
     annotate_proteins_complete_databases,
     write_best_hits_tsv,
 )
-from .avger_cache import AvgerInputs, get_or_run_avger
 from .avger_classification import load_default_classification_rules
 from .avger_scoring import evaluate_database_candidates
 from .jack import JackConfig, _jack
@@ -475,41 +474,28 @@ def avger(
     ),
 ):
     """Predict proteins and annotate them against complete Pfam and KOfam databases."""
-    avger_inputs = AvgerInputs(
-        input_contigs=input_contigs,
-        mode=mode,
-        threads=threads,
-        max_evalue=max_evalue,
-        min_gene_len=min_gene_len,
-        min_protein_len_aa=min_protein_len_aa,
-        translation_table=translation_table,
-        keep_all_hits=keep_all_hits,
-        use_vscore=use_vscore,
-        require_flank_support=require_flank_support,
-    )
-
-    def _run_avger(inputs: AvgerInputs, folder: Path) -> Path:
+    def _run_avger(folder: Path) -> tuple[Path, bool]:
         prediction_inputs = PredictionInputs(
-            input_contigs=inputs.input_contigs,
-            mode=inputs.mode,
-            min_gene_len=inputs.min_gene_len,
-            min_protein_len_aa=inputs.min_protein_len_aa,
-            translation_table=inputs.translation_table,
+            input_contigs=input_contigs,
+            mode=mode,
+            min_gene_len=min_gene_len,
+            min_protein_len_aa=min_protein_len_aa,
+            translation_table=translation_table,
         )
         proteins = get_or_predict_proteins(
-            prediction_inputs, use_cache=True, threads=inputs.threads
+            prediction_inputs, use_cache=True, threads=threads
         )
-        all_hits_path = folder / "all_hits.tsv.gz" if inputs.keep_all_hits else None
+        all_hits_path = folder / "all_hits.tsv.gz" if keep_all_hits else None
         results = annotate_proteins_complete_databases(
             proteins.proteins_path,
             AnnotationConfig(
-                threads=inputs.threads,
-                max_evalue=inputs.max_evalue,
-                keep_all_hits=inputs.keep_all_hits,
+                threads=threads,
+                max_evalue=max_evalue,
+                keep_all_hits=keep_all_hits,
                 all_hits_path=all_hits_path,
             ),
         )
-        vscore_map = get_vscore_map() if inputs.use_vscore else None
+        vscore_map = get_vscore_map() if use_vscore else None
         rules = load_default_classification_rules()
         best_hits = list(results.best_pfam_by_protein.values()) + list(
             results.best_kofam_by_protein.values()
@@ -528,17 +514,17 @@ def avger(
         candidate_evaluations = evaluate_database_candidates(
             best_hits,
             vscore_map or {},
-            {contig_id: len(sequence) for contig_id, sequence in _read_fasta(inputs.input_contigs)},
-            require_flank_support=inputs.require_flank_support,
+            {contig_id: len(sequence) for contig_id, sequence in _read_fasta(input_contigs)},
+            require_flank_support=require_flank_support,
         )
         best_path = folder / "best_hits.tsv"
-        row_count = write_best_hits_tsv(
+        write_best_hits_tsv(
             results, best_path, vscore_map, rules, candidate_evaluations
         )
-        return best_path
+        return best_path, proteins.cache_hit
 
     try:
-        best_path, cache_hit = get_or_run_avger(avger_inputs, output_folder, _run_avger)
+        best_path, cache_hit = _run_avger(output_folder)
     except (FileNotFoundError, ValueError, OSError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)

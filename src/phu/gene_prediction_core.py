@@ -77,6 +77,7 @@ class CacheArtifact:
     cache_key: str
     cache_dir: Optional[Path] = None
     temp_dir: Optional[Path] = None
+    genes: Optional[list[PredictedGene]] = None
 
 
 def compute_cache_key(inputs: PredictionInputs) -> str:
@@ -293,6 +294,7 @@ def get_or_predict_proteins(
             cache_key="",
             cache_dir=None,
             temp_dir=temp_dir,
+            genes=genes,
         )
 
     # Cache-aware path
@@ -302,6 +304,7 @@ def get_or_predict_proteins(
     cache_subdir = cache_root / cache_key
     cache_proteins = cache_subdir / "proteins.faa"
     cache_manifest = cache_subdir / "manifest.json"
+    cache_genes = cache_subdir / "genes.json"
     partial_dir = cache_root / f"{cache_key}.partial"
     lock_file = cache_subdir / ".lock"
 
@@ -323,6 +326,9 @@ def get_or_predict_proteins(
                     cache_hit=True,
                     cache_key=cache_key,
                     cache_dir=cache_subdir,
+                    genes=[PredictedGene(**item) for item in json.loads(cache_genes.read_text())]
+                    if cache_genes.exists()
+                    else None,
                 )
             except (json.JSONDecodeError, KeyError):
                 # Corrupted manifest; treat as miss and rebuild
@@ -342,6 +348,7 @@ def get_or_predict_proteins(
         # Atomically promote partial to cache
         cache_subdir.mkdir(parents=True, exist_ok=True)
         temp_prot.replace(cache_proteins)
+        cache_genes.write_text(json.dumps([gene.__dict__ for gene in genes], indent=2))
 
         # Clean up partial directory after successful promotion
         shutil.rmtree(partial_dir, ignore_errors=True)
@@ -367,6 +374,7 @@ def get_or_predict_proteins(
             cache_hit=False,
             cache_key=cache_key,
             cache_dir=cache_subdir,
+            genes=genes,
         )
 
     finally:

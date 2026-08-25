@@ -4,6 +4,13 @@ This page documents how `phu screen` decides whether a hit, protein, or contig p
 
 It is meant as an implementation-aligned reference for PFAM and KOfam behavior.
 
+These are computational acceptance thresholds for profile annotation, not
+biological proof of a viral sequence or an auxiliary viral gene. The published
+AV/AVᴸ thresholds classify viral genomes or fragments and are a separate
+upstream step. AVG interpretation requires additional viral sequence context
+and curated scientific rules; see the
+[avger scientific interpretation](avger.md#scientific-interpretation).
+
 ## Scope
 
 These rules apply to the screening workflow in `phu screen` after protein prediction and HMM search.

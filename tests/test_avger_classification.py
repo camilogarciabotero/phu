@@ -6,6 +6,7 @@ from phu.avger_annotation import AnnotationHit
 from phu.avger_classification import (
     UNCLASSIFIED_AVG_CANDIDATE,
     classify_protein_annotations,
+    load_default_classification_rules,
     load_classification_rules,
 )
 from phu.vscore_db import VScoreRecord
@@ -30,6 +31,12 @@ def _hit(database: str, model_id: str) -> AnnotationHit:
         threshold_source="test",
         threshold_value=1.0,
     )
+
+
+def test_default_rules_are_bundled_and_conservative():
+    rules = load_default_classification_rules()
+    assert rules.version == "builtin-2026-08-24"
+    assert rules.rules == ()
 
 
 def test_rules_are_versioned_and_applied_in_declared_order(tmp_path: Path):
@@ -67,11 +74,11 @@ def test_vscore_threshold_can_gate_a_rule(tmp_path: Path):
     )
     rules = load_classification_rules(path)
     scores = {
-        "K00001": VScoreRecord("K00001", "function", 9.0, 4.0, "KEGG")
+        "K00001": VScoreRecord("K00001", "function", 9.0, 2.0, 4.0, "KEGG")
     }
 
     assert classify_protein_annotations([_hit("kofam", "K00001")], rules, scores)[0] == "high-v"
-    scores["K00001"] = VScoreRecord("K00001", "function", 7.0, 4.0, "KEGG")
+    scores["K00001"] = VScoreRecord("K00001", "function", 7.0, 2.0, 4.0, "KEGG")
     assert classify_protein_annotations([_hit("kofam", "K00001")], rules, scores)[0] == UNCLASSIFIED_AVG_CANDIDATE
 
 

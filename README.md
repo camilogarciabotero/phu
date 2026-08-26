@@ -61,6 +61,11 @@ V-Score-Search annotations, and writes one best passing hit per protein and
 database. It reports candidate evidence; it does not establish that a gene is
 an AVG by itself.
 
+`phu avger` applies the V/VL/AVL score framework of Zhou et al. and uses
+versioned CheckAMG reference tables for AMG, APG, and AReG classification and
+curation; see the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/)
+for attribution and interpretation limits.
+
 The `avg` development work is currently implemented internally and is not a
 public `phu` subcommand. Use `phu avger` for the supported annotation and
 evidence workflow described in the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/).

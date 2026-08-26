@@ -304,12 +304,53 @@ and provenance.
 When no named class survives the weight and filter steps, the result is
 `unclassified_candidate`; it must not be interpreted as a confirmed AVG.
 
+## Scientific basis and attribution
+
+`phu avger` applies the V-score, VL-score, and scaffold AVL-score framework
+introduced by Zhou et al. to identify candidate auxiliary viral genes. These
+scores describe protein-family and viral-context evidence; the database-specific
+candidate predicates are adapted from that framework and remain candidate rules,
+not experimental validation.
+
+Functional classification and post-candidate curation use versioned reference
+tables developed by CheckAMG and the Anantharaman Lab, including AMG, APG, and
+AReG positive lists, precomputed `AMG_weight` values, and class-specific
+filters. `AMG_weight` is reference-level metadata, not a probability calculated
+from the query sequence. `phu` normalizes and indexes selected upstream records
+for local use; it does not create or reproduce the complete CheckAMG workflow.
+
+Interpretation and reporting follow the cautionary principles outlined by Martin
+et al. Results are therefore reported as putative, annotation-supported or
+reference-supported predictions. A classified result means exactly one putative
+class remains after configured reference-based curation; it does not mean
+experimentally validated. Sequence detection, annotation, viral context,
+expression, biochemical activity, host effects, and viral fitness are distinct
+claims. Functional annotation or a filter match does not establish biological
+activity, altered metabolic flux, or physiological effect, and absence from a
+positive list does not disprove auxiliary function. Stronger evidence could
+include viral genomic context, phylogeny, infection-time expression, biochemical
+characterization, or infection experiments.
+
+Together, Zhou et al. provide candidate detection, CheckAMG provides curated
+functional evidence, and Martin et al. provide interpretive caution. `phu`
+provides the lightweight, traceable integration and reporting layer.
+
+### How to cite this analysis
+
+Please cite Zhou K. et al., *V- and VL-scores unveil viral signatures and origins
+of protein families*, *Nature Communications* (2026), DOI
+[10.1038/s41467-026-72028-0](https://doi.org/10.1038/s41467-026-72028-0), the
+exact V-Score-Search data release recorded in `.phu/run.json`, CheckAMG v1.1.1
+and the [Anantharaman Lab repository](https://github.com/AnantharamanLab/CheckAMG),
+Martin et al. (2025), and `phu` itself. Cite Pfam, KOfamKOALA, PyHMMER, and
+pyrodigal-gv as applicable. The CheckAMG release currently supplies software
+and data attribution rather than an official peer-reviewed paper citation.
+
 ## References
 
-1. Zhou et al. (2024). *V-Score-Search: a framework for identifying viral
-    sequences and auxiliary viral genes*. Preprint. DOI:
-    [10.1101/2024.10.24.619987](https://doi.org/10.1101/2024.10.24.619987).
-    [Project documentation](https://github.com/AnantharamanLab/V-Score-Search).
+1. Zhou K. et al. *V- and VL-scores unveil viral signatures and origins of
+    protein families*. *Nature Communications* (2026). DOI:
+    [10.1038/s41467-026-72028-0](https://doi.org/10.1038/s41467-026-72028-0).
 2. Nayfach et al. (2021). CheckV assesses the quality and completeness of
     metagenome-assembled viral genomes. *Nature Biotechnology*, 39, 578-585.
     DOI: [10.1038/s41587-020-00774-7](https://doi.org/10.1038/s41587-020-00774-7).

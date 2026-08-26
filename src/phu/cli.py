@@ -9,7 +9,7 @@ import typer
 from phu import __version__
 
 from ._exec import CmdNotFound
-from ._click import ProgressReporter
+from ._click import ProgressReporter, run_click_task
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .gene_prediction_core import (
     PredictionInputs,
@@ -344,6 +344,8 @@ def cluster(
         "-p",
         help='Custom vclust parameters: "--min-kmers 20 --outfmt lite --ani 0.97"',
     ),
+    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
+    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
 ):
     """
     Sequence clustering wrapper around external 'vclust' with three modes.
@@ -387,7 +389,7 @@ def cluster(
     )
 
     try:
-        _cluster(cfg)
+        run_click_task("Clustering contigs", _cluster, cfg, quiet=quiet, verbose=verbose)
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -427,6 +429,8 @@ def simplify_taxa(
         "-s",
         help="Override delimiter: ',' or '\\t'. Auto-detected from extension if not set",
     ),
+    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
+    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
 ):
     """
     Simplify vContact taxonomy prediction columns into compact lineage codes.
@@ -447,7 +451,7 @@ def simplify_taxa(
     )
 
     try:
-        _simplify_taxa(cfg)
+        run_click_task("Simplifying taxonomy", _simplify_taxa, cfg, quiet=quiet, verbose=verbose)
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -857,6 +861,8 @@ def jack(
         "--save-hmm/--no-save-hmm",
         help="Save the last jackhmmer iteration HMM as last_iteration.hmm",
     ),
+    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
+    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
 ):
     """
     Iteratively screen contigs from one or more seed protein markers with pyhmmer.jackhmmer.
@@ -891,7 +897,9 @@ def jack(
     )
 
     try:
-        _jack(cfg)
+        run_click_task(
+            "Iterative marker screening", _jack, cfg, quiet=quiet, verbose=verbose
+        )
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)

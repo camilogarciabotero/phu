@@ -109,10 +109,15 @@ class ProgressReporter:
 
 
 def run_click_task(
-    label: str, func: Callable[..., Any], *args: Any, **kwargs: Any
+    label: str,
+    func: Callable[..., Any],
+    *args: Any,
+    quiet: bool = False,
+    verbose: bool = False,
+    **kwargs: Any,
 ) -> Any:
     """Run a blocking task with a Rich progress indicator."""
-    reporter = ProgressReporter()
+    reporter = ProgressReporter(quiet=quiet, verbose=verbose)
     reporter.start_phase(label)
     task_id = reporter.start_task(label)
     try:

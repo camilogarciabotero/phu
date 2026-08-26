@@ -1,8 +1,13 @@
 # avger
 
-`phu avger` predicts proteins and annotates them against the complete Pfam and
-KOfam databases. It writes one deterministic best-hit row per protein and
-database to `best_hits.tsv`.
+`phu avger` predicts proteins from trusted viral contigs and annotates them
+against the complete Pfam and KOfam databases, then applies the provisional AVG
+candidate and curation workflow. It writes deterministic TSV tables for all
+genes, candidates, predictions, and supporting evidence.
+
+This is the supported annotation/evidence workflow. The repository also
+contains the implementation modules used internally by this command; they are
+not exposed as separate subcommands.
 
 ## Synopsis
 
@@ -10,11 +15,133 @@ database to `best_hits.tsv`.
 phu avger -i contigs.fa -o phu-avger
 ```
 
-The command reuses the shared prediction cache. KOfam hits use the thresholds
-and score types from `ko_list`; Pfam hits use model GA cutoffs. V-score fields
-are added for KOfam accessions when the local V-score table is prepared.
+### Options
+
+The command-line menu is available directly with `phu avger --help`:
+
+```text
+Usage: phu avger [OPTIONS]
+
+Predict and curate putative auxiliary viral genes.
+
+ Options:
+     --input-contigs  -i   PATH       Trusted viral contigs FASTA [required]
+     --output-folder  -o   PATH       Output directory [default: phu-avger]
+     --threads        -t   INTEGER    [default: 1] [x>=1]
+     --mode           -m   TEXT       pyrodigal mode: meta|single [default: meta]
+     --min-gene-len        INTEGER    [default: 90] [x>=1]
+     --min-protein-len-aa  INTEGER    [default: 30] [x>=1]
+     --ttable         -T   INTEGER    [default: 11] [x>=1]
+    --min-amg-weight      FLOAT      [default: 0.6] [0.0<=x<=1.0]
+    --filter-mode         TEXT       [default: standard]
+    --keep-hits           / --no-keep-hits
+                                                [default: no-keep-hits]
+    --scaffold-avl-cutoff FLOAT      [default: 3.0] [x>=0.0]
+    --gene-vl-cutoff     FLOAT       [default: 3.0] [x>=0.0]
+    --gene-v-cutoff      FLOAT       [default: 10.0] [x>=0.0]
+    --scoring-evalue     FLOAT       [default: 1e-05] [x>=0.0]
+     --help           -h              Show this message and exit.
+```
+
+The exact spacing and formatting may vary slightly with the Typer/Rich version
+installed locally.
+
+The command requires prepared Pfam, KOfam, and AVG reference databases. It
+reuses the shared prediction cache. KOfam hits use the thresholds and score
+types from `ko_list`; Pfam hits use model GA cutoffs. Candidate scoring uses
+the AVG reference database's V-score and VL-score tables.
 
 ## Scientific interpretation
+
+### What AVG means
+
+AVG means **auxiliary viral gene**: a viral gene that is auxiliary to core viral
+functions. The broader AVG category includes genes that may increase viral
+fitness by maintaining or manipulating host functions during infection. In
+this project, the proposed classes are:
+
+- **AMG (auxiliary metabolic gene):** associated with maintaining or
+    manipulating host metabolism during infection.
+- **APG (auxiliary pathogenicity gene):** associated with a pathogenicity or
+    virulence-related function.
+- **AReG (auxiliary regulatory gene):** associated with regulating host gene
+    expression or other cellular regulatory processes.
+
+These classes are written as `putative_amg`, `putative_apg`, and
+`putative_areg` in the output tables. They are proposed functional classes,
+not confirmed biological categories. Candidate effects may be small or large
+and condition-dependent, and a class assignment requires evidence beyond
+function prediction.
+
+This terminology follows Martin et al. (2025). The `avger` workflow uses
+viral-context evidence, profile annotations, V/VL scores, AVL, and curated
+reference records to prioritize AVG candidates. An AVG is not synonymous with
+an AMG: AMGs are one functional subset, while the broader AVG framework also
+includes non-metabolic effects on bacterial-host fitness. These computational
+signals do not by themselves demonstrate a fitness effect in a bacterial host.
+
+This interpretation is consistent with the broader view that virus-host
+relationships involve both host-range effects and molecular interactions
+between viral and host proteins. Iuchi et al. provide a review of those
+bioinformatics approaches, including their limitations and dataset biases;
+they do not define this project's AVG classes or score cutoffs. Therefore,
+`avger` results are computational evidence for prioritization and require
+biological validation.
+
+### Literature context and provenance
+
+The workflow combines established tools and databases with a project-specific
+decision layer:
+
+- **Gene prediction:** Prodigal and its Python interface, Pyrodigal, provide
+    the coding-sequence prediction step. The selected `--mode`, `--ttable`, and
+    length filters affect which proteins enter downstream annotation.
+- **Profile annotation:** HMMER, accessed through PyHMMER, supplies profile-HMM
+    searches. Pfam model cutoffs and KOfam's KO-specific thresholds are used as
+    annotation criteria; a passing profile match is not, by itself, evidence of
+    an AVG.
+- **Viral-family evidence:** V-Score-Search motivates the use of family-level
+    V and VL scores and genome/scaffold averages. Its AV/AVL thresholds are
+    designed for viral-sequence identification and must not be repurposed as
+    universal protein-level AVG probabilities.
+- **Input quality:** CheckV-style completeness and quality assessment belong
+    to the upstream viral-sequence assessment. `avger` expects trusted viral
+    contigs and does not replace that assessment.
+- **AVG decision layer:** the database-specific AVL calculation, strict
+    candidate predicate, AMG weights, class filters, and final statuses are the
+    provisional rules implemented by this project. They should be reported with
+    their parameters and reference-database manifest, rather than presented as
+    conclusions established by the cited tool papers.
+
+### AMG weight
+
+The `amg_weight` is a confidence or support value supplied by the positive AMG
+reference table; it is not a V-score, VL-score, or probability that a gene is
+an AVG. For each candidate, `avger` considers the matching positive AMG records
+and uses their maximum available weight. By default, an AMG record must have a
+weight of at least `0.6`, configured with `--min-amg-weight`, to support the
+`putative_amg` class. APG and AReG evidence is not filtered by this AMG weight.
+
+If AMG evidence is present but all of its weights are below the threshold, the
+candidate receives the `below_amg_weight` status unless another supported class
+survives. The weight threshold is a project/reference-database curation rule,
+not a universal biological cutoff.
+
+### Class filters
+
+The `--filter-mode` option controls class-specific negative evidence from the
+reference database:
+
+| Mode | Behavior |
+| --- | --- |
+| `standard` | Enforces only `filter_essential`; other matches are warnings. |
+| `strict` | Enforces all configured filter categories. |
+| `none` | Records filter evidence but does not remove a class. |
+
+This separation follows the broader virus-host interaction literature: sequence
+or protein-level computational signals can prioritize hypotheses, but they do
+not demonstrate a host benefit or a physical virus-host interaction without
+experimental or ecological validation (Iuchi et al., 2023).
 
 `avger` separates three kinds of evidence:
 
@@ -39,21 +166,21 @@ criteria. `avger` does not silently apply them to individual proteins; the
 input contigs should therefore already have a documented viral-sequence
 assessment.
 
-Thus, a row in `best_hits.tsv` is an **AVG candidate record**, not a confirmed
-AVG call, when it has passing annotation evidence but no matching curated rule.
-Such rows are labeled `unclassified_avg_candidate`. A named classification
-requires an internal AVG rule that combines the relevant KOfam/Pfam evidence,
-V-score support where appropriate, and the already-established viral context.
+Thus, a row in `avg_candidates.tsv` is an **AVG candidate record**, not a
+confirmed AVG call, when it passes the candidate thresholds. A named
+classification requires an internal AVG rule that combines the relevant
+KOfam/Pfam evidence, V-score support where appropriate, and the already-
+established viral context.
 Passing a viral AV/AVᴸ cutoff does not by itself make a gene an AVG.
 
 ### Evidence levels
 
 | Output situation | Scientific meaning |
 | --- | --- |
-| No output row for a protein | No Pfam/KOfam annotation passed the configured filters |
-| Passing Pfam/KOfam row with V-score | Profile evidence plus family-level virus-association evidence |
-| `unclassified_avg_candidate` | Candidate evidence exists, but no curated named class matched |
-| Named classification with rule ID and version | A reviewed internal rule matched; inspect its provenance before biological use |
+| Row in `genes.tsv` | Predicted gene, including strict annotation fields and any scoring evidence |
+| Row in `avg_candidates.tsv` | Candidate passed the AVL/V/VL predicate |
+| Row in `avg_predictions.tsv` | Candidate received a final curated AVG class |
+| Non-`classified` status | Candidate evidence exists, but no final named class was assigned or multiple classes conflicted |
 
 V-scores should not be treated as universal protein-level probability cutoffs.
 Their interpretation depends on the database family and the V-Score-Search
@@ -77,8 +204,8 @@ Therefore, the Table 1 values must not be used as per-protein AVG thresholds.
 
 ## AVG candidate criteria
 
-For each contig and database independently, `avger` uses only the best
-significant hit for each protein and calculates:
+For each contig and database independently, `avger` uses the relaxed-track
+best significant hits and calculates:
 
 $$
 AVL_{db} = \frac{\sum VL\text{-scores of proteins with significant best hits in } db}
@@ -96,47 +223,126 @@ A database-specific candidate requires all three strict inequalities:
 - same-database contig AVL-score `> 3`.
 
 `pfam_candidate` and `kofam_candidate` are evaluated independently. The
-combined `avg_candidate` is true when either database-specific candidate is
-true. Boundary values are therefore excluded: Vᴸ-score `3`, V-score `10`, or
-AVL-score `3` fails the corresponding condition.
+combined `zhou_avg_candidate` is true when either database-specific candidate
+is true. The cutoffs are configurable with `--scaffold-avl-cutoff`,
+`--gene-vl-cutoff`, and `--gene-v-cutoff`; their defaults are `3`, `3`, and
+`10`. Boundary values are excluded.
+
+```mermaid
+flowchart TD
+    A[Trusted viral contigs] --> B[Predict proteins]
+    B --> C[Annotate against Pfam and KOfam]
+    C --> D[Relaxed and strict annotation tracks]
+    D --> E[Average relaxed VL-scores per contig and database]
+    E --> F{AVL > cutoff and gene VL < cutoff and gene V < cutoff?}
+    F -->|No| G[Not a Zhou candidate]
+    F -->|Yes| H[zhou_avg_candidate]
+    H --> I[Match positive AVG reference evidence]
+    I --> J[Apply AMG weight threshold]
+    J --> K[Apply standard, strict, or no class filters]
+    K --> L{Final named class?}
+    L -->|No| M[Candidate without final classification]
+    L -->|Yes| N[avg_predictions.tsv]
+    G --> O[genes.tsv]
+    M --> O
+    O --> P[evidence.tsv]
+    O --> Q[Metadata: .phu/run.json]
+```
+
+The Pfam and KOfam branches represented by this flow are independent; their
+AVL values are never mixed. AVL is therefore an active candidate-selection
+criterion, not merely a reported summary value.
 
 ## Flank evidence
 
-For every database-specific candidate, `avger` reports whether another gene
-with the same database V-score exactly `10` occurs upstream and downstream
-within `10,000 bp`. It reports both nearest distances, edge-incomplete status,
-and reason codes. Pfam candidates use Pfam flank evidence; KOfam candidates use
-KOfam flank evidence.
-
-Flank support is calculated by default but is not required because the input is
-assumed to be a trusted vOTU. Use
-`--require-flank-support` when both flank directions must be present for the
-candidate to pass. The evidence states are:
-
-- `not_assessable`: required score or coordinate evidence is unavailable;
-- `not_candidate`: the strict AVL/V/Vᴸ criteria failed;
-- `avg_candidate`: criteria passed, but flank support is absent or required and incomplete;
-- `context_supported_avg_candidate`: criteria and both flank directions passed.
+The current registered `avger` command does not apply flank-support criteria.
+Its context evidence comes from the reference tables, AMG weighting, and class
+filters described below.
 
 ## Outputs
 
-- `best_hits.tsv`: best passing Pfam/KOfam hit per protein, with score, E-value,
-  coordinates, thresholds, and optional V-score fields.
-- `all_hits.tsv.gz`: all passing hits when `--keep-all-hits` is supplied.
+- `genes.tsv`: one row per predicted gene, including annotation, V/VL scoring,
+    AVL, candidate, curation, and classification fields.
+- `avg_candidates.tsv`: the subset of `genes.tsv` passing the database-specific
+    AVL/V/VL candidate predicate.
+- `avg_predictions.tsv`: candidates assigned a final named AVG class.
+- `evidence.tsv`: audit records from relaxed/strict hits and reference matches.
+- `.phu/run.json`: automatically generated provenance metadata containing
+    parameters, database manifests, cache information, schema version, output
+    counts, and timestamps. It is not needed to read the TSV results, but should
+    be retained when runs need to be reproduced, compared, or audited.
+- `relaxed_hits.tsv.gz` and `strict_hits.tsv.gz`: all annotation hits when
+    `--keep-hits` is supplied.
 
-Prepare the V-score table before running the default V-score-enriched workflow:
+Rows from Pfam and KOfam remain database-specific. Empty scoring fields mean
+that no matching AVG reference record was available; they can prevent a gene
+from becoming a candidate.
+
+Prepare the required databases before running the workflow:
 
 ```bash
-phu dbs prepare vscore
+phu dbs prepare pfam kofam avg
 phu avger -i contigs.fa -o phu-avger
 ```
 
-Use `--no-use-vscore` to run without V-score lookup.
+The AVG reference database supplies the V-score/VL-score tables, positive
+evidence, and class filters used by the run.
+
+The prediction cache is shared with `screen` and `jack`. Its key includes the
+input contigs and prediction settings (`--mode`, `--ttable`, and the relevant
+length filters), but not annotation settings. A successful run prints whether
+the prediction cache was hit and the paths to the generated output files.
 
 ## Classifications
 
-Classifications use the bundled, versioned rule set maintained with the package.
-Rules are tested in declared order; the first matching rule supplies the
-classification. Records that do not match remain
-`unclassified_avg_candidate`, and the rule-set version is retained in the
-output for provenance.
+Classifications use the versioned rules in the prepared AVG reference database.
+The final status is `classified`, `not_candidate`, `filtered`,
+`below_amg_weight`, `class_conflict`, or `unclassified_candidate`. The selected
+class is written to `avg_class`; the evidence and manifest preserve the inputs
+and provenance.
+
+When no named class survives the weight and filter steps, the result is
+`unclassified_candidate`; it must not be interpreted as a confirmed AVG.
+
+## References
+
+1. Zhou et al. (2024). *V-Score-Search: a framework for identifying viral
+    sequences and auxiliary viral genes*. Preprint. DOI:
+    [10.1101/2024.10.24.619987](https://doi.org/10.1101/2024.10.24.619987).
+    [Project documentation](https://github.com/AnantharamanLab/V-Score-Search).
+2. Nayfach et al. (2021). CheckV assesses the quality and completeness of
+    metagenome-assembled viral genomes. *Nature Biotechnology*, 39, 578-585.
+    DOI: [10.1038/s41587-020-00774-7](https://doi.org/10.1038/s41587-020-00774-7).
+3. Hyatt et al. (2010). Prodigal: prokaryotic gene recognition and translation
+    initiation site identification. *BMC Bioinformatics*, 11, 119. DOI:
+    [10.1186/1471-2105-11-119](https://doi.org/10.1186/1471-2105-11-119).
+4. Larralde (2022). Pyrodigal: Python bindings and interface to Prodigal, an
+    efficient method for gene prediction in prokaryotes. *Journal of Open Source
+    Software*, 7(72), 4296. DOI:
+    [10.21105/joss.04296](https://doi.org/10.21105/joss.04296).
+5. Mistry et al. (2021). Pfam: The protein families database in 2021. *Nucleic
+    Acids Research*. DOI: [10.1093/nar/gkaa913](https://doi.org/10.1093/nar/gkaa913).
+6. Aramaki et al. (2019). KofamKOALA: KEGG ortholog assignment based on profile
+    HMM and adaptive score threshold. *Bioinformatics*. DOI:
+    [10.1093/bioinformatics/btz859](https://doi.org/10.1093/bioinformatics/btz859).
+7. Eddy (2011). Accelerated Profile HMM Searches. *PLoS Computational Biology*,
+    7(10), e1002195. DOI:
+    [10.1371/journal.pcbi.1002195](https://doi.org/10.1371/journal.pcbi.1002195).
+8. Larralde and Zeller (2023). PyHMMER: a Python library binding to HMMER for
+    efficient sequence analysis. *Bioinformatics*, 39(5). DOI:
+    [10.1093/bioinformatics/btad214](https://doi.org/10.1093/bioinformatics/btad214).
+9. Iuchi H, Kawasaki J, Kubo K, Fukunaga T, Hokao K, Yokoyama G, Ichinose A,
+    Suga K, Hamada M. (2023). Bioinformatics approaches for unveiling virus-host
+    interactions. *Computational and Structural Biotechnology Journal*, 21,
+    1774-1784. DOI:
+    [10.1016/j.csbj.2023.02.044](https://doi.org/10.1016/j.csbj.2023.02.044).
+
+10. Martin C, Emerson JB, Roux S, Anantharaman K. (2025). A call for caution in
+    the biological interpretation of viral auxiliary metabolic genes. *Nature
+    Microbiology*, 10, 2122-2129. DOI:
+    [10.1038/s41564-025-02095-4](https://doi.org/10.1038/s41564-025-02095-4).
+    This paper provides the terminology for the broader AVG category and
+    emphasizes that function prediction alone is insufficient evidence.
+11. [CheckAMG repository](https://github.com/AnantharamanLab/CheckAMG): reference
+    data and curation resources used for auxiliary metabolic and auxiliary viral
+    gene analysis.

@@ -512,7 +512,7 @@ def _simplify_taxa(cfg: TaxaConfig) -> TaxaPlan:
     # Apply simplification
     for col, lvl in level_map.items():
         print(f"Simplifying {col} ({lvl} level)...")
-        df[col] = _simplify_series(df[col], lvl)
+        df[col] = simplify_series(df[col], lvl)
 
     # Optional lineage column from deepest available rank
     if plan.add_lineage:
@@ -569,24 +569,6 @@ def _detect_level_map(df: pd.DataFrame) -> dict[str, str]:
     """Detect *_prediction columns and map them to taxonomic levels."""
     want = {f"{lvl}_prediction": lvl for lvl in PRED_LEVELS}
     return {col: lvl for col, lvl in want.items() if col in df.columns}
-
-
-def _simplify_series(series: pd.Series, level: str) -> pd.Series:
-    """Apply simplification to a pandas Series for a given taxonomic level."""
-    return series.astype("string").map(lambda v: _simplify_single_taxon(v, level))
-
-
-def _simplify_single_taxon(x: Optional[str], level: str) -> Optional[str]:
-    """Simplify a single taxon string, handling multiple candidates separated by ||."""
-    if x is None or (isinstance(x, float) and pd.isna(x)):
-        return None
-    # Split by || (multiple candidates)
-    parts = str(x).split("||")
-    out_parts = []
-    for p in parts:
-        p = p.strip()
-        out_parts.append(_apply_first_match(p, level))
-    return "||".join("" if v is None else v for v in out_parts)
 
 
 def _write_df(df: pd.DataFrame, path: Path, output_format: OutputFormat) -> None:

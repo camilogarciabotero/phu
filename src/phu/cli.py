@@ -9,6 +9,7 @@ import typer
 from phu import __version__
 
 from ._exec import CmdNotFound
+from ._click import ProgressReporter
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .gene_prediction_core import (
     PredictionInputs,
@@ -580,11 +581,12 @@ def avger(
     gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0),
     gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0),
     scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0),
+    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
+    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
 ) -> None:
     """Predict and curate putative auxiliary viral genes."""
     try:
-        result = run_avg(
-            AvgConfig(
+        config = AvgConfig(
                 input_contigs=input_contigs,
                 output_folder=output_folder,
                 threads=threads,
@@ -600,7 +602,10 @@ def avger(
                 gene_v_cutoff=gene_v_cutoff,
                 scoring_evalue=scoring_evalue,
             )
-        )
+        if quiet or verbose:
+            result = run_avg(config, reporter=ProgressReporter(quiet=quiet, verbose=verbose))
+        else:
+            result = run_avg(config)
     except (FileNotFoundError, ValueError, OSError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)

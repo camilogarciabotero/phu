@@ -27,6 +27,7 @@ from .avg_decisions import (
 from .gene_prediction_core import CacheArtifact, PredictionInputs, get_or_predict_proteins
 from .kofam_db import get_kofam_database_status
 from .pfam_db import get_pfam_database_status
+from ._click import ProgressReporter
 
 
 @dataclass(frozen=True)
@@ -113,37 +114,53 @@ def require_databases() -> None:
         )
 
 
-def run_avg(config: AvgConfig) -> AvgRunResult:
+def run_avg(
+    config: AvgConfig, reporter: ProgressReporter | None = None
+) -> AvgRunResult:
     """Run prediction and both annotation tracks for a validated config."""
+    reporter = reporter or ProgressReporter()
+    reporter.start_phase("AVG curation")
+    database_task = reporter.start_task("Checking AVG databases")
     run_started_at = datetime.now(timezone.utc).isoformat()
-    require_databases()
-    prediction = get_or_predict_proteins(
-        PredictionInputs(
-            input_contigs=config.input_contigs,
-            mode=config.mode,
-            min_gene_len=config.min_gene_len,
-            min_protein_len_aa=config.min_protein_len_aa,
-            translation_table=config.translation_table,
-        ),
-        use_cache=True,
-        threads=config.threads,
-    )
-    annotations = annotate_avg_tracks(
-        prediction.proteins_path,
-        threads=config.threads,
-        scoring_evalue=config.scoring_evalue,
-        keep_all_hits=config.keep_hits,
-        relaxed_all_hits_path=(config.output_folder / "relaxed_hits.tsv.gz")
-        if config.keep_hits
-        else None,
-        strict_all_hits_path=(config.output_folder / "strict_hits.tsv.gz")
-        if config.keep_hits
-        else None,
-    )
-    outputs = write_avg_outputs(
-        config, prediction, annotations, run_started_at=run_started_at
-    )
-    return AvgRunResult(prediction=prediction, annotations=annotations, outputs=outputs)
+    try:
+        require_databases()
+        reporter.succeed_task(database_task)
+        prediction_task = reporter.start_task("Predicting proteins")
+        prediction = get_or_predict_proteins(
+            PredictionInputs(
+                input_contigs=config.input_contigs,
+                mode=config.mode,
+                min_gene_len=config.min_gene_len,
+                min_protein_len_aa=config.min_protein_len_aa,
+                translation_table=config.translation_table,
+            ),
+            use_cache=True,
+            threads=config.threads,
+        )
+        reporter.succeed_task(prediction_task)
+        annotation_task = reporter.start_task("Annotating proteins")
+        annotations = annotate_avg_tracks(
+            prediction.proteins_path,
+            threads=config.threads,
+            scoring_evalue=config.scoring_evalue,
+            keep_all_hits=config.keep_hits,
+            relaxed_all_hits_path=(config.output_folder / "relaxed_hits.tsv.gz")
+            if config.keep_hits
+            else None,
+            strict_all_hits_path=(config.output_folder / "strict_hits.tsv.gz")
+            if config.keep_hits
+            else None,
+        )
+        reporter.succeed_task(annotation_task)
+        output_task = reporter.start_task("Writing AVG results")
+        outputs = write_avg_outputs(config, prediction, annotations, run_started_at=run_started_at)
+        reporter.succeed_task(output_task)
+        return AvgRunResult(prediction=prediction, annotations=annotations, outputs=outputs)
+    except BaseException as exc:
+        reporter.fail_running_tasks(str(exc))
+        raise
+    finally:
+        reporter.finish()
 
 
 def _reference_rows(path: Path) -> list[dict[str, str]]:

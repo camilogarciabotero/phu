@@ -42,6 +42,7 @@ phu <command> [options]
 - [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Screen contigs for specific protein families using HMMER on predicted coding sequences.
 - [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine seeds hits.
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
+- [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral gene candidates.
 - [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
 
 ## Database Management
@@ -51,6 +52,18 @@ A special command group, `dbs`, is available to manage local databases used by `
 - [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam` and `kofam`.
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
+
+### AVG workflows
+
+`phu avger` is the annotation and evidence workflow. It predicts proteins from
+trusted viral contigs, searches complete Pfam and KOfam databases, adds optional
+V-Score-Search annotations, and writes one best passing hit per protein and
+database. It reports candidate evidence; it does not establish that a gene is
+an AVG by itself.
+
+The `avg` development work is currently implemented internally and is not a
+public `phu` subcommand. Use `phu avger` for the supported annotation and
+evidence workflow described in the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/).
 
 ## Cache Handling
 
@@ -115,3 +128,10 @@ This program uses several key tools and libraries, make sure to acknowledge them
 
 - [KOFamKOALA](https://www.genome.jp/tools/kofamkoala/): KEGG ortholog assignment based on profile HMM and adaptive score threshold.
 > Aramaki T., Blanc-Mathieu R., Endo H., Ohkubo K., Kanehisa M., Goto S., Ogata H. KofamKOALA: KEGG ortholog assignment based on profile HMM and adaptive score threshold. Bioinformatics. 2019 Nov 19. pii: btz859. doi: 10.1093/bioinformatics/btz859.
+
+- [V-Score-Search](https://github.com/AnantharamanLab/V-Score-Search): A framework for identifying viral sequences and auxiliary viral genes.
+> Zhou et al. (2024). V-Score-Search. Preprint. DOI: 10.1101/2024.10.24.619987
+
+- [CheckAMG](https://github.com/AnantharamanLab/CheckAMG): Reference data and curation resources for auxiliary metabolic and auxiliary viral gene analysis.
+
+- [Martin et al. (2025)](https://doi.org/10.1038/s41564-025-02095-4): A call for caution in the biological interpretation of viral auxiliary metabolic genes. *Nature Microbiology*, 10, 2122-2129.

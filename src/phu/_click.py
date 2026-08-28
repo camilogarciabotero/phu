@@ -51,11 +51,13 @@ class ProgressReporter:
         else:
             self.console.print(label)
 
-    def start_task(self, label: str, *, total: int | None = None) -> TaskID:
+def start_task(self, label: str, *, total: int | None = None) -> TaskID:
         with self._lock:
             self._next_id += 1
             task_id = TaskID(self._next_id)
             self._tasks[task_id] = _Task(label, total=total)
+            if self.verbose and not self.console.is_terminal and not self.quiet:
+                self.console.print(f"Starting: {label}")
             if self._live:
                 self._live.update(self._render())
             return task_id

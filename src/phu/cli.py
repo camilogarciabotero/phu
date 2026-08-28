@@ -776,6 +776,9 @@ def screen(
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
+    except ValueError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
     except CmdNotFound as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         typer.echo("Install the required executable(s) and ensure they are on PATH.")

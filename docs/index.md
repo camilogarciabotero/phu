@@ -31,22 +31,37 @@ mamba activate phu
 ### Basic Usage
 
 ```bash
-phu -h
-
- Usage: phu [OPTIONS] COMMAND [ARGS]...                                                       
-                                                                                              
- Phage utilities CLI                                                                          
-                                                                                              
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────╮
-│ --help  -h        Show this message and exit.                                              │
-╰────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ─────────────────────────────────────────────────────────────────────────────────╮
-│ screen          Screen contigs for a protein family using HMMER on predicted CDS.          │
-│ jack            Iteratively screen contigs from one or more seed proteins with jackhmmer.  │
-│ cluster         Sequence clustering wrapper around external 'vclust' with three modes.     │
-│ simplify-taxa   Simplify vContact taxonomy prediction columns into compact lineage codes.  │
-╰────────────────────────────────────────────────────────────────────────────────────────────╯
+phu --version
+phu --help
 ```
+
+```bash
+ Usage: phu [OPTIONS] COMMAND [ARGS]...                                                         
+                                                                                                
+ Phage utilities CLI                                                                            
+                                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────╮
+│ --version             -v        Show version and exit.                                       │
+│ --clean-cache                   Remove cached protein predictions and exit.                  │
+│ --install-completion            Install completion for the current shell.                    │
+│ --show-completion               Show completion for the current shell, to copy it or         │
+│                                 customize the installation.                                  │
+│ --help                -h        Show this message and exit.                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Workflow ───────────────────────────────────────────────────────────────────────────────────╮
+│ cluster        Sequence clustering wrapper around external 'vclust' with three modes.        │
+│ simplify-taxa  Simplify vContact taxonomy prediction columns into compact lineage codes.     │
+│ avger          Predict and curate putative auxiliary viral genes.                            │
+│ screen         Screen contigs for protein families using HMMER on predicted CDS.             │
+│ jack           Iteratively screen contigs from one or more seed protein markers with         │
+│                pyhmmer.jackhmmer.                                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Database Management ────────────────────────────────────────────────────────────────────────╮
+│ dbs            Manage local phu databases                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+
+```
+
 
 ## Available Commands
 

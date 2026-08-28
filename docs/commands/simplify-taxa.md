@@ -1,6 +1,6 @@
 # simplify-taxa
 
-Convert vContact taxonomy prediction strings into compact lineage codes for downstream analysis.
+Convert selected vContact taxonomy prediction strings into compact lineage codes for downstream analysis. This command is experimental for nested novel-lineage grammar until golden fixtures establish the intended contract.
 
 ## Overview
 
@@ -131,10 +131,18 @@ The `--add-lineage` option creates an additional column containing the deepest (
 | seq3 | - | - | - |
 
 
-## Special Cases Handled
+## Special Cases Under Validation
+
+The examples below describe currently implemented patterns, not a guarantee of
+complete vContact3 edge-case coverage. Nested candidates, malformed values,
+missing values, and rank precedence require golden fixtures from real vContact3
+outputs before these transformations should be treated as a stable contract.
+Unknown or unmatched strings are currently preserved by the parser.
 
 ### Edge Cases for "0" Chains
-The tool correctly handles vContact2's special "0" designation patterns:
+The parser currently contains special handling for some vContact2-style "0"
+designation patterns. Verify results against a golden fixture before using
+them in a production taxonomy workflow:
 
 ```bash
 # Input
@@ -145,7 +153,9 @@ Duplodnaviria:NK5:NP0:NC0
 ```
 
 ### Multiple Candidates
-When vContact2 provides multiple taxonomic candidates (separated by `||`), each is processed independently:
+When vContact2 provides multiple taxonomic candidates (separated by `||`), the
+current parser attempts to process each candidate independently. This behavior
+is pending golden-fixture coverage:
 
 ```bash
 # Input
@@ -165,6 +175,16 @@ QA Summary:
   family_prediction: 12 remaining 'novel_' strings
   order_prediction: 3 remaining 'novel_' strings
 ```
+
+## Output contract
+
+The output preserves the input columns and order after normalizing column names
+to lower-case snake case. It uses comma-separated output unless the output
+filename ends in `.tsv`, in which case it uses tab-separated output. With
+`--add-lineage`, one additional `compact_lineage` column, or the name supplied
+by `--lineage-col`, is appended. Empty input tables retain their header. No
+versioned schema identifier is currently written, so this contract is
+development-only.
 
 ## Workflow Integration
 

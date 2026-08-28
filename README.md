@@ -47,9 +47,9 @@ phu <command> [options]
 
 ## Database Management
 
-A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Built-in backends currently include `pfam`, `kofam`, `vscore`, and `avg`.
+A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Built-in backends currently include `pfam`, `kofam`, `dbcan`, `vscore`, and `avg`.
 
-- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam`, `kofam`, `vscore`, and `avg`.
+- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam`, `kofam`, `dbcan`, `vscore`, and `avg`.
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 

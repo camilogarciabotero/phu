@@ -29,6 +29,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
-          # Optional safety nets:
-          # publish_branch: gh-pages   # (default)
-          # force_orphan: true         # create branch if first deploy

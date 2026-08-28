@@ -4,7 +4,7 @@
 
 The `phu screen` command helps you find DNA contigs that contain specific protein families. It predicts proteins from your contigs, searches those proteins against Hidden Markov Model (HMM) profiles using **pyHMMER** (a fast Python implementation), and then selects contigs based on the matches and your combination/filtering rules. Think of it as a molecular search engine for pulling out contigs that contain the proteins you care about.
 
-This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways. The tool now includes advanced features like building custom HMMs from your target proteins and specialized viral gene prediction.
+This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways. Target-protein extraction and custom HMM generation are experimental features and are not a validated replacement for a biologically aligned profile-HMM workflow.
 
 For implementation-level details on pass/fail decisions, see [screen thresholds and decision logic](screen-thresholds.md).
 
@@ -76,7 +76,7 @@ When you provide multiple HMM files, you need to decide how strict you want to b
 
 **Any mode** (the default) keeps contigs that match at least one model. Important detail: when a single contig matches multiple models, "any" preserves the best hit per model (rather than selecting only one overall best hit). As a result a contig that matches model A and model B will yield one protein for A and one protein for B (subject to `--top-per-contig`). This is useful when you want a representative protein per matched model from each contig.
 
-**All mode** only keeps contigs that match every single HMM you provided. This is very strict and useful when you need complete sets of proteins. For instance, if you're looking for complete viral genomes that must have all four proteins (capsid, portal, primase, and terminase), you would use "all" mode.
+**All mode** applies the current multi-model selection rule. It is intended for requiring evidence across a set of models, but currently has a known limitation when the batch produces no global hits. Do not interpret `all` as proof that every biologically expected marker is present; inspect per-model output and record the exact models queried.
 
 **Threshold mode** lets you specify a minimum number of models that must match. This gives you flexibility between "any" and "all". You might require at least 3 out of 5 models to match, for example.
 
@@ -86,7 +86,7 @@ The tool offers powerful features for analyzing and reusing your screening resul
 
 **Target Protein Extraction** (`--save-target-proteins`) saves the actual protein sequences that matched each HMM model, organized in separate files per model. These proteins come only from contigs that passed your final filtering criteria.
 
-**Custom HMM Building** (`--save-target-hmms`) automatically builds new HMM profiles from your target proteins. This works independently of protein saving - if you only want HMMs, the tool will extract proteins temporarily, build the HMMs, then clean up. For single sequences, it builds individual HMMs; for multiple sequences, it creates simple alignments by padding to equal length before building consensus models.
+**Custom HMM Building** (`--save-target-hmms`) builds HMM files from matched target proteins, but currently requires `--save-target-proteins` as well. For multiple sequences, the implementation right-pads sequences to equal length; this is not a biological multiple-sequence alignment, so generated models are experimental and must not be treated as validated profile HMMs.
 
 **Viral Mode Support** - When using viral gene prediction (if pyrodigal-gv is available), the tool is optimized for shorter, more compact viral genes and can handle overlapping gene structures common in viral genomes.
 
@@ -138,11 +138,11 @@ Usage: phu screen [OPTIONS] HMMS...
  - mixed: HMM files contain multiple models (pressed/concatenated HMMs)                     
                                                                                             
  Examples:                                                                                  
-   phu screen -i contigs.fa --combine-mode any *.hmm
+  phu screen -i contigs.fa --combine-mode any "*.hmm"
    phu screen -i contigs.fa --combine-mode all file1.hmm file2.hmm file3.hmm
    phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
-   phu screen -i contigs.fa --save-target-proteins *.hmm
-   phu screen -i contigs.fa --save-target-hmms *.hmm
+  phu screen -i contigs.fa --save-target-proteins "*.hmm"
+  phu screen -i contigs.fa --save-target-hmms --save-target-proteins "*.hmm"
                                                                                             
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────╮
 │ *    hmms      HMMS...  HMM files (supports wildcards like *.hmm) [required]             │

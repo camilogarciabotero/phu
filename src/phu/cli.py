@@ -778,7 +778,7 @@ def screen(
         raise typer.Exit(1)
     except CmdNotFound as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
-        typer.echo("Required executables on PATH: 'seqkit'")
+        typer.echo("Install the required executable(s) and ensure they are on PATH.")
         raise typer.Exit(1)
 
 

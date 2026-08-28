@@ -490,6 +490,36 @@ def _hmmsearch(
                 )
 
 
+def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
+    """Return the complete, ordered model inventory before searching."""
+    model_ids: list[str] = []
+    seen: set[str] = set()
+
+    for hmm_path in hmm_paths:
+        with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
+            models = list(hmm_file)
+
+        if hmm_mode == "pure" and len(models) != 1:
+            raise ValueError(
+                f"Pure HMM mode requires exactly one model per file: {hmm_path} "
+                f"contains {len(models)}"
+            )
+
+        for model in models:
+            model_name = model.name
+            if isinstance(model_name, bytes):
+                model_name = model_name.decode()
+            model_id = hmm_path.stem if hmm_mode == "pure" else str(model_name)
+            if model_id in seen:
+                raise ValueError(f"Duplicate HMM model ID: {model_id}")
+            seen.add(model_id)
+            model_ids.append(model_id)
+
+    if not model_ids:
+        raise ValueError("No HMM models found in the supplied files")
+    return model_ids
+
+
 def _effective_hit_score(hit: Hit, score_type: str) -> float:
     if score_type == "domain" and hit.domain_bitscore is not None:
         return hit.domain_bitscore
@@ -508,6 +538,7 @@ def _choose_best_contigs(
     combine_mode: str = "any",
     min_hmm_hits: int = 1,
     total_hmm_models: int = 1,
+    queried_model_ids: Optional[Iterable[str]] = None,
     kofam_metadata_by_model: Optional[dict[str, KOFamMetadata]] = None,
     use_kofam_thresholds: bool = True,
 ) -> tuple[list[Hit], list[str]]:
@@ -519,6 +550,9 @@ def _choose_best_contigs(
     """
     per_contig: dict[str, list[Hit]] = defaultdict(list)
     kofam_metadata_by_model = kofam_metadata_by_model or {}
+    queried_models = set(queried_model_ids or ())
+    if queried_models:
+        total_hmm_models = len(queried_models)
 
     for h in hits:
         score_type = "full"
@@ -568,7 +602,11 @@ def _choose_best_contigs(
 
         elif combine_mode == "all":
             model_names = set(hit.model for hit in contig_hits)
-            if len(model_names) == total_hmm_models:
+            if queried_models:
+                has_all_models = queried_models.issubset(model_names)
+            else:
+                has_all_models = len(model_names) == total_hmm_models
+            if has_all_models:
                 hits_per_model = defaultdict(list)
                 for hit in contig_hits:
                     hits_per_model[hit.model].append(hit)
@@ -703,13 +741,14 @@ def _build_target_hmms(
     target_proteins_dir: Path,
     outdir: Path,
     threads: int = 1,
+    aligner_bin: str = "mafft",
 ) -> None:
     """
     Build HMM models from target protein sequences using pyHMMER.
     Creates one HMM file per model from the corresponding protein FASTA files.
 
     For single sequences, builds HMM directly using builder.build().
-    For multiple sequences, aligns them by padding to the same length before MSA creation.
+    For multiple sequences, uses the configured external aligner before MSA creation.
     """
     target_hmms_dir = outdir / "target_hmms"
     target_hmms_dir.mkdir(parents=True, exist_ok=True)
@@ -747,29 +786,48 @@ def _build_target_hmms(
                 hmm.name = model_name.encode()
                 print(f"      Built HMM from 1 sequence: {model_name}")
             else:
-                # For multiple sequences, align by padding to same length
-                max_len = max(len(seq.sequence) for seq in sequences)
+                aligned_path = protein_file.with_suffix(".aligned.faa")
+                try:
+                    with aligned_path.open("w") as aligned_output:
+                        result = subprocess.run(
+                            [
+                                aligner_bin,
+                                "--auto",
+                                "--thread",
+                                str(max(1, threads)),
+                                str(protein_file),
+                            ],
+                            stdout=aligned_output,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            check=False,
+                        )
+                    if result.returncode != 0:
+                        raise RuntimeError(
+                            f"{aligner_bin} failed with code {result.returncode}: "
+                            f"{result.stderr.strip()}"
+                        )
 
-                # Pad sequences to same length with gaps
-                aligned_sequences = [
-                    pyhmmer.easel.TextSequence(
-                        name=seq.name,
-                        sequence=seq.sequence + "-" * (max_len - len(seq.sequence)),
+                    aligned_sequences = [
+                        pyhmmer.easel.TextSequence(
+                            name=seq_id.encode(), sequence=seq_str
+                        )
+                        for seq_id, seq_str in _read_fasta(aligned_path)
+                    ]
+                    text_msa = pyhmmer.easel.TextMSA(
+                        name=model_name.encode(), sequences=aligned_sequences
                     )
-                    for seq in sequences
-                ]
-                text_msa = pyhmmer.easel.TextMSA(
-                    name=model_name.encode(),
-                    sequences=aligned_sequences,
-                )
-                digital_msa = text_msa.digitize(alphabet)
-                hmm, _, _ = builder.build_msa(digital_msa, background)
-                print(
-                    f"      Built HMM from {len(sequences)} aligned sequences: {model_name}"
-                )
+                    digital_msa = text_msa.digitize(alphabet)
+                    hmm, _, _ = builder.build_msa(digital_msa, background)
+                    print(
+                        f"      Built HMM from {len(aligned_sequences)} aligned sequences: {model_name}"
+                    )
+                finally:
+                    aligned_path.unlink(missing_ok=True)
 
             if not hmm.name:
                 hmm.name = model_name.encode()
+            hmm.command_line = None
 
             with hmm_output_path.open("wb") as f:
                 hmm.write(f)
@@ -812,8 +870,11 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         if not hmm.exists():
             raise FileNotFoundError(f"HMM file not found: {hmm}")
 
-    # Discover binaries (only seqkit needed)
+    queried_model_ids = _query_model_ids(cfg.hmms, cfg.hmm_mode)
+
+    # Discover binaries required by the selected output paths.
     seqkit_bin = _binaries()
+    aligner_bin = _executable(["mafft"]) if cfg.save_target_hmms else ""
     plan = cfg.plan()
     plan.hmmer_bin = ""  # Not used with pyHMMER
     plan.seqkit_bin = seqkit_bin
@@ -874,15 +935,11 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         ),
     )
 
-    unique_model_ids = set(hit.model for hit in all_hits)
-    if plan.hmm_mode == "pure":
-        total_models = len(plan.hmms)  # Each file is one model
-        print(f"  Pure HMM mode: {total_models} models from {len(plan.hmms)} files")
-    else:
-        total_models = len(unique_model_ids)  # Count actual models found
-        print(
-            f"  Mixed HMM mode: {total_models} unique models found from {len(plan.hmms)} files"
-        )
+    total_models = len(queried_model_ids)
+    print(
+        f"  {plan.hmm_mode.capitalize()} HMM mode: {total_models} models "
+        f"from {len(plan.hmms)} files"
+    )
 
     print(f"    Found {len(all_hits)} hits")
 
@@ -897,6 +954,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
         combine_mode=plan.combine_mode,
         min_hmm_hits=plan.min_hmm_hits,
         total_hmm_models=total_models,
+        queried_model_ids=queried_model_ids,
         kofam_metadata_by_model=kofam_metadata_by_model,
         use_kofam_thresholds=plan.use_kofam_thresholds,
     )
@@ -924,6 +982,7 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
                 target_proteins_dir,
                 plan.outdir,
                 threads=plan.threads,
+                aligner_bin=aligner_bin,
             )
 
     print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")

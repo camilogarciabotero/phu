@@ -30,7 +30,7 @@ build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.1"
+    "pytest>=8.4.1",
 ]
 lint = [
     "ruff>=0.12.11",

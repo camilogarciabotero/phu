@@ -104,7 +104,9 @@ Available operations:
 - `phu dbs refresh [DB ...]`
 - `phu dbs remove [DB ...] --yes`
 
-`pfam` and `kofam` are available and can be prepared ahead of screening runs.
+`pfam`, `kofam`, `vscore`, and `avg` are available in this development build.
+Database preparation may download large files; inspect status and available
+metadata before preparing a backend.
 
 **Example:**
 ```bash
@@ -149,12 +151,10 @@ We welcome contributions! Whether it's bug reports, feature requests, or code co
 
 ## Citation
 
-If you use phu in your research, please cite:
-
-```
-García-Botero, C. (2025). phu: Phage Utilities - A modular toolkit for viral genomics workflows. 
-GitHub repository: https://github.com/camilogarciabotero/phu
-```
+Citation metadata for this development revision is maintained in
+[`CITATION.cff`](https://github.com/camilogarciabotero/phu/blob/avg/CITATION.cff).
+See [Citation](citation.md) for the distinction between development citations,
+the Zenodo concept DOI, and immutable release DOIs.
 
 ## References
 

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 import phu.screen as screen
 from phu.kofam_db import KOFamMetadata
 
@@ -82,6 +84,101 @@ def test_choose_best_contigs_uses_kofam_domain_thresholds():
 
     assert len(kept_hits) == 1
     assert contigs == ["c2"]
+
+
+def test_all_requires_queried_models_with_zero_hits():
+    hit = screen.Hit(
+        contig="c1",
+        prot_id="c1|gene1",
+        model="model-a",
+        bitscore=100.0,
+        evalue=1e-20,
+    )
+
+    kept_hits, contigs = screen._choose_best_contigs(
+        [hit],
+        min_bitscore=None,
+        max_evalue=1e-5,
+        combine_mode="all",
+        queried_model_ids=["model-a", "model-b"],
+    )
+
+    assert kept_hits == []
+    assert contigs == []
+
+
+def test_threshold_counts_distinct_queried_models():
+    hits = [
+        screen.Hit(
+            contig="c1",
+            prot_id="c1|gene1",
+            model="model-a",
+            bitscore=100.0,
+            evalue=1e-20,
+        ),
+        screen.Hit(
+            contig="c1",
+            prot_id="c1|gene2",
+            model="model-a",
+            bitscore=90.0,
+            evalue=1e-20,
+        ),
+    ]
+
+    kept_hits, contigs = screen._choose_best_contigs(
+        hits,
+        min_bitscore=None,
+        max_evalue=1e-5,
+        combine_mode="threshold",
+        min_hmm_hits=2,
+        queried_model_ids=["model-a", "model-b"],
+    )
+
+    assert kept_hits == []
+    assert contigs == []
+
+
+@pytest.mark.parametrize("model_count", [0, 2])
+def test_query_model_ids_rejects_non_single_pure_files(
+    tmp_path: Path, monkeypatch, model_count: int
+):
+    hmm_path = tmp_path / "models.hmm"
+
+    class FakeModel:
+        def __init__(self, name: str):
+            self.name = name.encode()
+
+    class FakeHMMFile:
+        def __init__(self, _path):
+            self.models = [FakeModel(f"model-{i}") for i in range(model_count)]
+
+        def __enter__(self):
+            return iter(self.models)
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr(screen.pyhmmer.plan7, "HMMFile", FakeHMMFile)
+
+    with pytest.raises(ValueError, match="exactly one model"):
+        screen._query_model_ids([hmm_path], "pure")
+
+
+def test_generated_hmm_does_not_store_command_line(tmp_path: Path):
+    alphabet = screen.pyhmmer.easel.Alphabet.amino()
+    builder = screen.pyhmmer.plan7.Builder(alphabet)
+    background = screen.pyhmmer.plan7.Background(alphabet)
+    sequence = screen.pyhmmer.easel.TextSequence(name=b"protein", sequence="MPEPTIDE")
+    hmm, _, _ = builder.build(sequence.digitize(alphabet), background)
+
+    hmm.command_line = None
+    output = tmp_path / "model.hmm"
+    with output.open("wb") as handle:
+        hmm.write(handle)
+
+    with screen.pyhmmer.plan7.HMMFile(output) as handle:
+        written_hmm = next(iter(handle))
+    assert written_hmm.command_line is None
 
 
 def test_extract_target_proteins_adds_ko_definition_to_headers(

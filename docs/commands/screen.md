@@ -86,7 +86,7 @@ The tool offers powerful features for analyzing and reusing your screening resul
 
 **Target Protein Extraction** (`--save-target-proteins`) saves the actual protein sequences that matched each HMM model, organized in separate files per model. These proteins come only from contigs that passed your final filtering criteria.
 
-**Custom HMM Building** (`--save-target-hmms`) builds HMM files from matched target proteins, but currently requires `--save-target-proteins` as well. For multiple sequences, the implementation right-pads sequences to equal length; this is not a biological multiple-sequence alignment, so generated models are experimental and must not be treated as validated profile HMMs.
+**Custom HMM Building** (`--save-target-hmms`) builds HMM files from matched target proteins and requires `--save-target-proteins`. For model sets containing multiple proteins, PHU runs the external `mafft` aligner before building the HMM. MAFFT is not installed by `uv` or bundled with PHU; install it in the environment or module used to run PHU, for example with `conda install -c bioconda mafft` or `pixi add mafft`. PHU fails clearly when MAFFT is unavailable. Single-protein outputs use a single-sequence HMM and are not a family alignment.
 
 **Viral Mode Support** - When using viral gene prediction (if pyrodigal-gv is available), the tool is optimized for shorter, more compact viral genes and can handle overlapping gene structures common in viral genomes.
 
@@ -115,9 +115,9 @@ The screening decision uses pyHMMER hit objects, not a second parsing pass over 
 
 See the full rule set and examples in [screen thresholds and decision logic](screen-thresholds.md).
 
-**New Target Data Outputs:**
+**Target Data Outputs:**
 - `target_proteins/{model}_proteins.mfa` - Proteins matching each model (if `--save-target-proteins`)
-- `target_hmms/{model}.hmm` - Custom HMMs built from target proteins (if `--save-target-hmms`)
+- `target_hmms/{model}.hmm` - HMMs built from target proteins after MAFFT alignment (if `--save-target-hmms`)
 
 These outputs respect your HMM mode settings and combination logic, ensuring consistency between your screening criteria and extracted data.
 
@@ -237,7 +237,7 @@ Use `--no-cut-ga` if you want to disable GA filtering and rely only on explicit 
 
 Use `--save-target-proteins` if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).
 
-Use `--save-target-hmms` to build custom HMM profiles from your target proteins. This works independently of `--save-target-proteins` - the tool can extract proteins temporarily just for HMM building if needed.
+Use `--save-target-hmms` together with `--save-target-proteins` to build custom HMMs. For multiple target proteins, PHU requires `mafft` on `PATH` and uses it to create a real multiple-sequence alignment. Install MAFFT separately in the runtime environment, for example `conda install -c bioconda mafft` or `pixi add mafft`. PHU does not vendor or install MAFFT through `uv`.
 
 ## Examples
 
@@ -281,9 +281,9 @@ Be more strict about matches:
 phu screen --input-contigs contigs.fa --max-evalue 1e-10 protein_family.hmm
 ```
 
-Build custom HMMs from viral proteins (works with or without saving proteins):
+Build custom HMMs from viral proteins after installing MAFFT:
 ```bash
-phu screen --input-contigs viral_assembly.fasta --save-target-hmms --combine-mode all capsid.hmm polymerase.hmm
+phu screen --input-contigs viral_assembly.fasta --save-target-proteins --save-target-hmms --combine-mode all capsid.hmm polymerase.hmm
 ```
 
 Complete viral screening workflow with custom HMM generation:
@@ -291,22 +291,18 @@ Complete viral screening workflow with custom HMM generation:
 phu screen --input-contigs metagenome.fa --save-target-proteins --save-target-hmms --combine-mode threshold --min-hmm-hits 3 viral_marker1.hmm viral_marker2.hmm viral_marker3.hmm viral_marker4.hmm
 ```
 
-Screen with complex contig names (automatically handled):
+Screen with a shell-safe input path:
 ```bash
-phu screen --input-contigs scaffolds_with_complex|names|assembly.fa protein_family.hmm
+phu screen --input-contigs 'scaffolds_with_complex|names|assembly.fa' protein_family.hmm
 ```
 
 ## What to expect
 
-Gene prediction usually takes 1-2 minutes per million base pairs of input. The pyHMMER searches are significantly faster than traditional HMMER due to in-memory processing and native Python threading. Performance scales well with the `--threads` option.
+Runtime depends on input size, model count, available resources, and external tools. PHU does not promise a fixed runtime or scaling factor; benchmark representative data on your environment.
 
 The output size depends on how many contigs match your criteria. In "any" mode, you might get quite a few contigs. In "all" mode, you'll typically get fewer but higher-confidence results.
 
-**New performance benefits:**
-- **Faster execution**: pyHMMER eliminates subprocess overhead and file I/O
-- **Better memory usage**: In-memory processing of all data
-- **No binary dependencies**: Pure Python implementation
-- **Robust handling**: Automatically deals with complex contig naming schemes
+The search engine is pyHMMER, while sequence extraction uses the external `seqkit` executable. Target-HMM generation additionally requires the external `mafft` executable for multi-sequence alignments.
 
 If you don't get any results, try relaxing your E-value threshold or check that your HMM files are in the correct format. If you get too many results, try using "all" mode instead of "any" mode, or make your E-value threshold more strict.
 
@@ -314,10 +310,10 @@ If you don't get any results, try relaxing your E-value threshold or check that 
 
 You need to have **pyrodigal**, **pyHMMER**, and **seqkit** installed and available. **pyrodigal-gv** is optional but recommended for viral genome analysis. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format.
 
-**Key improvements:**
-- **No HMMER binary required**: pyHMMER provides a pure Python implementation
-- **Automatic viral support**: Uses pyrodigal-gv when available for viral gene prediction
-- **Robust contig handling**: Automatically handles complex contig naming with multiple separators
-- **Flexible HMM building**: Create custom profiles with or without saving intermediate proteins
+**Workflow notes:**
+- **No HMMER binary required**: pyHMMER performs the HMM search
+- **External extraction**: `seqkit` must be available on `PATH`
+- **Optional HMM generation**: `mafft` must be available on `PATH` for multi-sequence target sets
+- **Explicit identifiers**: quote shell paths containing special characters
 
 The command expects DNA sequences as input, not protein sequences. If you already have predicted proteins, you should use pyHMMER directly rather than this command.

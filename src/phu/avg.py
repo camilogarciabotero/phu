@@ -285,6 +285,9 @@ def write_avg_outputs(
         audit_rows.append({**record.__dict__, "evidence_type": "relaxed_best"})
     for record in strict_evidence:
         audit_rows.append({**record.__dict__, "evidence_type": "strict_hit"})
+
+    scaffold_averages = calculate_scaffold_averages(scoring_evidence)
+
     for gene in prediction.genes or []:
         gene_decisions = decisions_by_protein.get(gene.gene_id, [])
         database_decisions = {

@@ -8,13 +8,14 @@ import typer
 
 from phu import __version__
 
-from ._exec import CmdNotFound
 from ._click import ProgressReporter, run_click_task
-from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
-from .gene_prediction_core import (
-    PredictionInputs,
-    clean_prediction_cache,
-    get_or_predict_proteins,
+from ._exec import CmdNotFound
+from .avg import AvgConfig, run_avg
+from .avg_reference_db import (
+    ensure_avg_database,
+    get_avg_database_status,
+    refresh_avg_database,
+    remove_avg_database,
 )
 from .avger_annotation import (
     AnnotationConfig,
@@ -23,26 +24,24 @@ from .avger_annotation import (
 )
 from .avger_classification import load_default_classification_rules
 from .avger_scoring import evaluate_database_candidates
-from .avg_reference_db import (
-    ensure_avg_database,
-    get_avg_database_status,
-    refresh_avg_database,
-    remove_avg_database,
+from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
+from .dbcan_db import (
+    get_dbcan_database_status,
+    prepare_dbcan_database,
+    refresh_dbcan_database,
+    remove_dbcan_database,
 )
-from .avg import AvgConfig, run_avg
+from .gene_prediction_core import (
+    PredictionInputs,
+    clean_prediction_cache,
+    get_or_predict_proteins,
+)
 from .jack import JackConfig, _jack
 from .kofam_db import (
     get_kofam_database_status,
     prepare_kofam_database,
     refresh_kofam_database,
     remove_kofam_database,
-)
-from .vscore_db import (
-    ensure_vscore_database,
-    get_vscore_database_status,
-    get_vscore_map,
-    refresh_vscore_database,
-    remove_vscore_database,
 )
 from .pfam_db import (
     get_pfam_database_status,
@@ -52,6 +51,13 @@ from .pfam_db import (
 )
 from .screen import ScreenConfig, _read_fasta, _screen
 from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
+from .vscore_db import (
+    ensure_vscore_database,
+    get_vscore_database_status,
+    get_vscore_map,
+    refresh_vscore_database,
+    remove_vscore_database,
+)
 
 app = typer.Typer(
     help="Phage utilities CLI",
@@ -67,7 +73,7 @@ dbs_app = typer.Typer(
 )
 app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
 
-SUPPORTED_DBS = ("pfam", "kofam", "vscore", "avg")
+SUPPORTED_DBS = ("pfam", "kofam", "dbcan", "vscore", "avg")
 
 
 def _normalize_db_names(databases: list[str], all_dbs: bool) -> list[str]:
@@ -93,6 +99,8 @@ def _db_status_payload(db_name: str) -> dict:
         return get_pfam_database_status()
     if db_name == "kofam":
         return get_kofam_database_status()
+    if db_name == "dbcan":
+        return get_dbcan_database_status()
     if db_name == "vscore":
         return get_vscore_database_status()
     if db_name == "avg":
@@ -180,6 +188,12 @@ def dbs_prepare(
                 typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
                 typer.echo(f"Index ready: {result.get('offsets_path')}")
                 typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
+            elif db_name == "dbcan":
+                result = prepare_dbcan_database(force_refresh=force_refresh)
+                files = result.get("files", {})
+                typer.echo(f"Prepared {db_name}: {files.get('hmm', {}).get('path')}")
+                typer.echo(f"Index ready: {files.get('family_offsets', {}).get('path')}")
+                typer.echo(f"PUL rules ready: {files.get('pul_rules', {}).get('path')}")
             elif db_name == "vscore":
                 result = ensure_vscore_database(force_refresh=force_refresh)
                 typer.echo(f"Prepared {db_name}: {result.get('csv_path')}")
@@ -223,6 +237,12 @@ def dbs_refresh(
                 typer.echo(f"Refreshed {db_name}: {result.get('hmm_path')}")
                 typer.echo(f"Index ready: {result.get('offsets_path')}")
                 typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
+            elif db_name == "dbcan":
+                result = refresh_dbcan_database()
+                files = result.get("files", {})
+                typer.echo(f"Refreshed {db_name}: {files.get('hmm', {}).get('path')}")
+                typer.echo(f"Index ready: {files.get('family_offsets', {}).get('path')}")
+                typer.echo(f"PUL rules ready: {files.get('pul_rules', {}).get('path')}")
             elif db_name == "vscore":
                 result = refresh_vscore_database()
                 typer.echo(f"Refreshed {db_name}: {result.get('csv_path')}")
@@ -275,6 +295,12 @@ def dbs_remove(
                 typer.echo(f"{db_name} database not present")
         elif db_name == "kofam":
             removed = remove_kofam_database()
+            if removed:
+                typer.echo(f"Removed {db_name} database")
+            else:
+                typer.echo(f"{db_name} database not present")
+        elif db_name == "dbcan":
+            removed = remove_dbcan_database()
             if removed:
                 typer.echo(f"Removed {db_name} database")
             else:
@@ -630,8 +656,22 @@ def screen(
         help="Input contigs FASTA",
     ),
     hmms: list[Path] = typer.Argument(
-        ...,
-        help="HMM files, PFAM accessions (PF00001), and/or KO IDs (K00001); supports wildcards like *.hmm",
+        None,
+        help="HMM files, PFAM/KOfam IDs, dbCAN families (GH128), or one PUL ID (PUL0621)",
+        metavar="[QUERY]...",
+        rich_help_panel="Query selection",
+    ),
+    all_puls: bool = typer.Option(
+        False,
+        "--all-puls",
+        help="Screen all resolvable PUL CAZyme signatures",
+        rich_help_panel="PUL screening",
+    ),
+    all_cazymes: bool = typer.Option(
+        False,
+        "--all-cazymes",
+        help="Screen all canonical dbCAN CAZyme profiles",
+        rich_help_panel="CAZyme screening",
     ),
     output_folder: Path = typer.Option(
         Path("phu-screen"), "--output-folder", "-o", help="Output directory"
@@ -643,26 +683,37 @@ def screen(
         1, "--threads", "-t", min=1, help="Threads for both pyrodigal and pyhmmer"
     ),
     min_bitscore: Optional[float] = typer.Option(
-        None, "--min-bitscore", "-b", help="Minimum bitscore to keep a domain hit"
+        None,
+        "--min-bitscore",
+        "-b",
+        help="Minimum bitscore to keep a domain hit",
+        rich_help_panel="Search thresholds",
     ),
     max_evalue: Optional[float] = typer.Option(
         1e-5,
         "--max-evalue",
         "-e",
         help="Maximum independent E-value to keep a domain hit",
+        rich_help_panel="Search thresholds",
     ),
     cut_ga: bool = typer.Option(
         True,
         "--cut-ga/--no-cut-ga",
         help="Use model GA gathering cutoffs during HMM search (PFAM-style thresholding)",
+        rich_help_panel="Search thresholds",
     ),
     use_kofam_thresholds: bool = typer.Option(
         True,
         "--use-kofam-thresholds/--no-use-kofam-thresholds",
         help="Use per-KO thresholds from ko_list according to score_type (full/domain)",
+        rich_help_panel="Search thresholds",
     ),
     top_per_contig: int = typer.Option(
-        1, "--top-per-contig", "-n", help="Keep top-N hits per contig (by bitscore)"
+        1,
+        "--top-per-contig",
+        "-n",
+        help="Keep top-N hits per contig (by bitscore)",
+        rich_help_panel="Matching behavior",
     ),
     min_protein_len_aa: int = typer.Option(
         30,
@@ -678,48 +729,77 @@ def screen(
         False,
         "--keep-proteins/--no-keep-proteins",
         help="Keep the protein FASTA used for searching",
+        rich_help_panel="Output",
     ),
     keep_domtbl: bool = typer.Option(
-        True, "--keep-domtbl/--no-keep-domtbl", help="Keep raw domtblout from hmmsearch"
+        True,
+        "--keep-domtbl/--no-keep-domtbl",
+        help="Keep raw domtblout from hmmsearch",
+        rich_help_panel="Output",
     ),
     combine_mode: str = typer.Option(
         "any",
         "--combine-mode",
         "-c",
-        help="How to combine hits from multiple HMMs: any|all|threshold",
+        help=(
+            "Direct family matching: any, all, or threshold. "
+            "--all-puls uses OR across PULs and AND within each PUL."
+        ),
+        rich_help_panel="Matching behavior",
     ),
     min_hmm_hits: int = typer.Option(
         1,
         "--min-hmm-hits",
         "-k",
         help="Minimum number of HMMs that must hit a contig (for threshold mode)",
+        rich_help_panel="Matching behavior",
     ),
     save_target_proteins: bool = typer.Option(
         False,
         "--save-target-proteins/--no-save-target-proteins",
         help="Save matched proteins per HMM model in target_proteins/ subfolder",
+        rich_help_panel="Output",
     ),
     save_target_hmms: bool = typer.Option(
         False,
         "--save-target-hmms/--no-save-target-hmms",
         help="Save HMMs built from target proteins in target_hmms/ subfolder",
+        rich_help_panel="Output",
     ),
     hmm_mode: str = typer.Option(
         "pure",
         "--hmm-mode",
         "-M",
         help="HMM file type: 'pure' (one model per file) or 'mixed' (pressed/concatenated HMMs)",
+        rich_help_panel="Search options",
     ),
 ):
     """
-    Screen contigs for protein families using HMMER on predicted CDS.
+    Screen contigs using protein-family or PUL CAZyme signatures.
 
-    Supports multiple HMM files with different combination modes:
+    Query modes:
+    [bold]Family:[/bold] phu screen -i contigs.fa GH128 CBM89
+    [bold]Individual PUL:[/bold] phu screen -i contigs.fa PUL0621
+    [bold]All resolvable PULs:[/bold] phu screen -i contigs.fa --all-puls
+    [bold]All canonical CAZymes:[/bold] phu screen -i contigs.fa --all-cazymes
+
+    [bold]--all-puls[/bold] searches each unique required CAZyme family once, evaluates
+    every PUL independently, and keeps contigs matching at least one complete
+    PUL signature. This is CAZyme-signature screening, not biological PUL
+    identification or substrate prediction.
+
+    [bold]--all-cazymes[/bold] searches every indexed AA, CBM, CE, GH, GT, and PL
+    profile once and keeps contigs with at least one qualifying family hit.
+    Ancillary profiles are excluded; see cazyme_matches.tsv for retained hits.
+
+    Direct family queries support multiple HMM files with different modes:
     - any: Keep contigs matching any HMM (default, most permissive)
     - all: Keep contigs matching all HMMs (most restrictive)
     - threshold: Keep contigs matching at least --min-hmm-hits HMMs
 
-    KO IDs (K00001-style) are resolved from local KOFam DB. By default,
+    KO IDs (K00001-style) are resolved from local KOFam DB. dbCAN families
+    (GH128-style) and one PUL ID (PUL0621-style) are resolved from local dbCAN.
+    By default,
     KO-specific thresholds from ko_list are applied using each KO score_type.
 
     HMM modes:
@@ -737,14 +817,42 @@ def screen(
     # Remove duplicates while preserving order
     seen = set()
     unique_hmms = []
-    for p in hmms:
+    for p in hmms or []:
         if p not in seen:
             unique_hmms.append(p)
             seen.add(p)
 
     hmm_paths = unique_hmms
 
-    if not hmm_paths:
+    if all_cazymes and all_puls:
+        typer.secho(
+            "--all-cazymes cannot be combined with --all-puls",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+    if all_cazymes and hmm_paths:
+        typer.secho(
+            "--all-cazymes cannot be combined with positional screen queries",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+    if all_cazymes and combine_mode != "any":
+        typer.secho(
+            "--combine-mode is not applicable with --all-cazymes",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+    if all_puls and hmm_paths:
+        typer.secho(
+            "--all-puls cannot be combined with positional screen queries",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+    if not all_puls and not all_cazymes and not hmm_paths:
         typer.secho("No HMM files specified", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
 
@@ -752,6 +860,8 @@ def screen(
     cfg = ScreenConfig(
         input_contigs=input_contigs,
         hmms=hmm_paths,
+        all_puls=all_puls,
+        all_cazymes=all_cazymes,
         outdir=output_folder,
         mode=mode,
         threads=threads,

@@ -43,5 +43,4 @@ source as immutable. Do not treat a local readiness result as evidence that the
 upstream scientific release is permanently identified.
 
 The current development build does not yet guarantee a complete provenance
-record for every backend. This is a release-blocking limitation documented in
-[Known Limitations](known-limitations.md).
+record for every backend.

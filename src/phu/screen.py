@@ -794,7 +794,7 @@ def _build_target_hmms(
                                 aligner_bin,
                                 "--auto",
                                 "--thread",
-                                str(max(1, threads)),
+                                str(1 if threads and threads > 1 else max(1, threads)),
                                 str(protein_file),
                             ],
                             stdout=aligned_output,

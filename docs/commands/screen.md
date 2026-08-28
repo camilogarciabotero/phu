@@ -14,7 +14,9 @@ For implementation-level details on pass/fail decisions, see [screen thresholds 
 phu screen --input-contigs [INPUT_CONTIGS] [HMMS...]
 ```
 
-`[HMMS...]` accepts either local HMM file paths or PFAM accessions (e.g. `PF00001`, `PF00589.17`).
+`[HMMS...]` accepts local HMM paths, PFAM/KOfam identifiers, dbCAN families
+(for example `GH128` or `CBM89`), and one dbCAN PUL identifier such as
+`PUL0621`.
 
 **Example:**
 ```bash
@@ -24,6 +26,107 @@ phu screen --input-contigs your_contigs.fasta your_protein_family.hmm
 This simple command will find all contigs in `your_contigs.fasta` that contain proteins matching `your_protein_family.hmm` and save them to a new file called `screened_contigs.fasta` in a folder named `phu-screen`.
 
 If an argument looks like a PFAM accession (`PF` + 5 digits, optionally with a version), `phu` resolves it from a local Pfam-A database automatically.
+
+dbCAN family inputs are case-insensitive and are validated against the local
+dbCAN HMM index. A PUL input expands to its ordered CAZyme-family signature
+from `cazymes_predicted_dbcan`; by default every resolved family must match on
+the same contig. Use `--combine-mode threshold` explicitly for partial
+signatures. Only one PUL can be queried per run, and PUL queries cannot be
+mixed with other database or local-HMM inputs.
+
+This is PUL CAZyme-signature screening. Family co-occurrence alone does not
+identify a biological PUL or predict its substrate. Each run writes
+`query_manifest.json` with the original query, expansion, matching rule, and
+database hashes.
+
+To screen against every resolvable PUL signature:
+
+```bash
+phu screen -i contigs.fa --all-puls
+```
+
+Each unique required CAZyme profile is searched once. PUL signatures are
+evaluated independently: all required families must occur on the same contig,
+and a contig is retained when it matches at least one resolvable PUL.
+Unresolved rules are reported and skipped. The output `pul_matches.tsv.gz`
+contains one row per matched contig-PUL pair. This remains CAZyme-signature
+co-occurrence screening, not proof of a biological PUL or substrate activity.
+
+To screen against all canonical CAZyme profiles in the installed dbCAN index:
+
+```bash
+phu screen -i contigs.fa --all-cazymes
+```
+
+This searches every AA, CBM, CE, GH, GT, and PL profile once. Ancillary
+profiles such as SLH, cohesin, and dockerin are excluded, while subfamily
+identities such as `GH5_2` are preserved. A contig is retained after at least
+one threshold-passing family hit. The `cazyme_matches.tsv.gz` output records the
+retained contig, family, protein, bitscore, E-value, and HMM coverage.
+
+The default all-CAZyme outputs are compact and organized by evidence level:
+
+```text
+phu-screen/
+├── screened_contigs.fasta
+├── kept_contigs.txt
+├── cazyme_matches.tsv.gz
+├── cazyme_summary.tsv
+├── cazyme_class_summary.tsv
+├── evidence/
+│   └── cazyme_hits.tsv.gz
+└── .phu/
+  └── run.json
+```
+
+`evidence/cazyme_hits.tsv.gz` contains one row per qualifying HMM/domain hit.
+`cazyme_matches.tsv.gz` consolidates hits into one row per contig-family,
+including unique protein counts, hit counts, protein IDs, and one deterministic
+best supporting hit. The family summary reports detected-family occurrence
+counts; the class summary reports unique contig and protein counts for the six
+canonical classes. These are occurrence counts, not normalized abundance.
+The outputs describe targeted HMM-based CAZyme-family evidence, not substrate
+prediction or full multi-method `run_dbcan` consensus annotation.
+
+For both `--all-cazymes` and `--all-puls`, per-family HMM files and domtblout
+files are temporary search artifacts outside the output directory. They are
+removed automatically after success or failure. The durable all-CAZyme result
+contains compressed evidence, contig-family matches, family summaries, class
+summaries, and `.phu/run.json`. The durable all-PUL result contains compressed
+CAZyme evidence, PUL matches, per-family support, PUL summaries, substrate
+association summaries, and `.phu/run.json`.
+
+For all-PUL runs, CAZyme evidence is retained even when no complete PUL rule
+matches. In that case the PUL tables are header-only and retained-contig
+outputs are empty. Reference substrates describe the database PUL annotation;
+they are not predictions for the query contigs.
+
+The durable all-PUL output tree is:
+
+```text
+phu-screen/
+├── screened_contigs.fasta
+├── kept_contigs.txt
+├── pul_matches.tsv.gz
+├── pul_family_support.tsv.gz
+├── pul_summary.tsv
+├── substrate_summary.tsv
+├── evidence/
+│   └── cazyme_hits.tsv.gz
+└── .phu/
+  └── run.json
+```
+
+`pul_matches.tsv.gz` contains one row per complete contig-PUL match.
+`pul_family_support.tsv.gz` records the supporting family evidence, while the
+PUL and substrate summaries aggregate matched reference records. Coordinates
+and reference substrates describe supporting database evidence; they are not
+validated PUL boundaries or substrate predictions for query contigs.
+
+The number of searched profiles depends on the installed dbCAN snapshot. This
+is targeted HMM-based CAZyme-family screening, not full `run_dbcan` consensus
+annotation using multiple independent methods, and it does not establish
+biological activity or PUL identity.
 
 ## How it works
 

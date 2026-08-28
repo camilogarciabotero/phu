@@ -62,8 +62,8 @@ this project, the proposed classes are:
 
 - **AMG (auxiliary metabolic gene):** associated with maintaining or
     manipulating host metabolism during infection.
-- **APG (auxiliary pathogenicity gene):** associated with a pathogenicity or
-    virulence-related function.
+- **APG (auxiliary physiology gene):** associated with a host physiology-related
+    function.
 - **AReG (auxiliary regulatory gene):** associated with regulating host gene
     expression or other cellular regulatory processes.
 

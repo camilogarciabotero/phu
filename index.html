@@ -654,6 +654,34 @@
   
   
     <li class="md-nav__item">
+      <a href="commands/avger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    avger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="commands/simplify-taxa/" class="md-nav__link">
         
   
@@ -1028,21 +1056,32 @@
 mamba<span class="w"> </span>activate<span class="w"> </span>phu
 </code></pre></div>
 <h3 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>-h
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>--version
+phu<span class="w"> </span>--help
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...<span class="w">                                                         </span>
 
-<span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...<span class="w">                                                       </span>
+<span class="w"> </span>Phage<span class="w"> </span>utilities<span class="w"> </span>CLI<span class="w">                                                                            </span>
 
-<span class="w"> </span>Phage<span class="w"> </span>utilities<span class="w"> </span>CLI<span class="w">                                                                          </span>
-
-╭─<span class="w"> </span>Options<span class="w"> </span>──────────────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>--help<span class="w">  </span>-h<span class="w">        </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                              </span>│
-╰────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─<span class="w"> </span>Commands<span class="w"> </span>─────────────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>screen<span class="w">          </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>a<span class="w"> </span>protein<span class="w"> </span>family<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">          </span>│
-│<span class="w"> </span>jack<span class="w">            </span>Iteratively<span class="w"> </span>screen<span class="w"> </span>contigs<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>seed<span class="w"> </span>proteins<span class="w"> </span>with<span class="w"> </span>jackhmmer.<span class="w">  </span>│
-│<span class="w"> </span>cluster<span class="w">         </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">'vclust'</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">     </span>│
-│<span class="w"> </span>simplify-taxa<span class="w">   </span>Simplify<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>prediction<span class="w"> </span>columns<span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>lineage<span class="w"> </span>codes.<span class="w">  </span>│
-╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─<span class="w"> </span>Options<span class="w"> </span>────────────────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>--version<span class="w">             </span>-v<span class="w">        </span>Show<span class="w"> </span>version<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                       </span>│
+│<span class="w"> </span>--clean-cache<span class="w">                   </span>Remove<span class="w"> </span>cached<span class="w"> </span>protein<span class="w"> </span>predictions<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                  </span>│
+│<span class="w"> </span>--install-completion<span class="w">            </span>Install<span class="w"> </span>completion<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>current<span class="w"> </span>shell.<span class="w">                    </span>│
+│<span class="w"> </span>--show-completion<span class="w">               </span>Show<span class="w"> </span>completion<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>current<span class="w"> </span>shell,<span class="w"> </span>to<span class="w"> </span>copy<span class="w"> </span>it<span class="w"> </span>or<span class="w">         </span>│
+│<span class="w">                                 </span>customize<span class="w"> </span>the<span class="w"> </span>installation.<span class="w">                                  </span>│
+│<span class="w"> </span>--help<span class="w">                </span>-h<span class="w">        </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                  </span>│
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─<span class="w"> </span>Workflow<span class="w"> </span>───────────────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>cluster<span class="w">        </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">'vclust'</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">        </span>│
+│<span class="w"> </span>simplify-taxa<span class="w">  </span>Simplify<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>prediction<span class="w"> </span>columns<span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>lineage<span class="w"> </span>codes.<span class="w">     </span>│
+│<span class="w"> </span>avger<span class="w">          </span>Predict<span class="w"> </span>and<span class="w"> </span>curate<span class="w"> </span>putative<span class="w"> </span>auxiliary<span class="w"> </span>viral<span class="w"> </span>genes.<span class="w">                            </span>│
+│<span class="w"> </span>screen<span class="w">         </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>protein<span class="w"> </span>families<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">             </span>│
+│<span class="w"> </span>jack<span class="w">           </span>Iteratively<span class="w"> </span>screen<span class="w"> </span>contigs<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>seed<span class="w"> </span>protein<span class="w"> </span>markers<span class="w"> </span>with<span class="w">         </span>│
+│<span class="w">                </span>pyhmmer.jackhmmer.<span class="w">                                                            </span>│
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─<span class="w"> </span>Database<span class="w"> </span>Management<span class="w"> </span>────────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>dbs<span class="w">            </span>Manage<span class="w"> </span><span class="nb">local</span><span class="w"> </span>phu<span class="w"> </span>databases<span class="w">                                                    </span>│
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="available-commands">Available Commands<a class="headerlink" href="#available-commands" title="Permanent link">&para;</a></h2>
 <h3 id="screen-protein-family-screening"><code>screen</code> - Protein Family Screening<a class="headerlink" href="#screen-protein-family-screening" title="Permanent link">&para;</a></h3>
@@ -1080,7 +1119,9 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 <li><code>phu dbs refresh [DB ...]</code></li>
 <li><code>phu dbs remove [DB ...] --yes</code></li>
 </ul>
-<p><code>pfam</code> and <code>kofam</code> are available and can be prepared ahead of screening runs.</p>
+<p><code>pfam</code>, <code>kofam</code>, <code>vscore</code>, and <code>avg</code> are available in this development build.
+Database preparation may download large files; inspect status and available
+metadata before preparing a backend.</p>
 <p><strong>Example:</strong>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>pfam<span class="w"> </span>kofam
 </code></pre></div></p>
@@ -1106,12 +1147,14 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 <p>To clear previous predictions manually, run <code>phu --clean-cache</code>.</p>
 <p>See the full cache guide in <a href="https://camilogarciabotero.github.io/phu/cache">Cache Handling</a>.</p>
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
-<p>We welcome contributions! Whether it's bug reports, feature requests, or code contributions, please check out our <a href="https://github.com/camilogarciabotero/phu">GitHub repository</a>.</p>
+<p>See the repository's <a href="https://github.com/camilogarciabotero/phu/blob/avg/CONTRIBUTING.md">contribution guide</a>,
+and <a href="https://github.com/camilogarciabotero/phu/blob/avg/CHANGELOG.md">changelog</a>
+before opening a change.</p>
 <h2 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">&para;</a></h2>
-<p>If you use phu in your research, please cite:</p>
-<div class="highlight"><pre><span></span><code>García-Botero, C. (2025). phu: Phage Utilities - A modular toolkit for viral genomics workflows. 
-GitHub repository: https://github.com/camilogarciabotero/phu
-</code></pre></div>
+<p>Citation metadata for this development revision is maintained in
+<a href="https://github.com/camilogarciabotero/phu/blob/avg/CITATION.cff"><code>CITATION.cff</code></a>.
+See <a href="citation/">Citation</a> for the distinction between development citations,
+the Zenodo concept DOI, and immutable release DOIs.</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <p>This program uses several key tools and libraries, make sure to acknowledge them when using <code>phu</code>:</p>
 <ul>

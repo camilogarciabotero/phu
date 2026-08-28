@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../dbs/">
+        <link rel="prev" href="../avger/">
       
       
         <link rel="next" href="../screen/">
@@ -414,6 +414,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../avger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    avger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -677,15 +705,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#special-cases-handled" class="md-nav__link">
+  <a href="#special-cases-under-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Special Cases Handled
+        Special Cases Under Validation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Special Cases Handled">
+    <nav class="md-nav" aria-label="Special Cases Under Validation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -720,6 +748,17 @@
     <span class="md-ellipsis">
       
         Quality Assessment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output contract
       
     </span>
   </a>
@@ -1103,15 +1142,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#special-cases-handled" class="md-nav__link">
+  <a href="#special-cases-under-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Special Cases Handled
+        Special Cases Under Validation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Special Cases Handled">
+    <nav class="md-nav" aria-label="Special Cases Under Validation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1146,6 +1185,17 @@
     <span class="md-ellipsis">
       
         Quality Assessment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output contract
       
     </span>
   </a>
@@ -1223,7 +1273,7 @@
 
 
 <h1 id="simplify-taxa">simplify-taxa<a class="headerlink" href="#simplify-taxa" title="Permanent link">&para;</a></h1>
-<p>Convert vContact taxonomy prediction strings into compact lineage codes for downstream analysis.</p>
+<p>Convert selected vContact taxonomy prediction strings into compact lineage codes for downstream analysis. This command is experimental for nested novel-lineage grammar until golden fixtures establish the intended contract.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><code>phu simplify-taxa</code> transforms verbose vContact3 <code>*_prediction</code> columns into compact, standardized lineage codes (e.g. <code>Caudoviricetes:NF2:NG1</code>) to make taxonomy easier to filter, visualize, and analyze.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
@@ -1349,9 +1399,16 @@ phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w
 </tr>
 </tbody>
 </table>
-<h2 id="special-cases-handled">Special Cases Handled<a class="headerlink" href="#special-cases-handled" title="Permanent link">&para;</a></h2>
+<h2 id="special-cases-under-validation">Special Cases Under Validation<a class="headerlink" href="#special-cases-under-validation" title="Permanent link">&para;</a></h2>
+<p>The examples below describe currently implemented patterns, not a guarantee of
+complete vContact3 edge-case coverage. Nested candidates, malformed values,
+missing values, and rank precedence require golden fixtures from real vContact3
+outputs before these transformations should be treated as a stable contract.
+Unknown or unmatched strings are currently preserved by the parser.</p>
 <h3 id="edge-cases-for-0-chains">Edge Cases for "0" Chains<a class="headerlink" href="#edge-cases-for-0-chains" title="Permanent link">&para;</a></h3>
-<p>The tool correctly handles vContact2's special "0" designation patterns:</p>
+<p>The parser currently contains special handling for some vContact2-style "0"
+designation patterns. Verify results against a golden fixture before using
+them in a production taxonomy workflow:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Input</span>
 novel_class_0_of_novel_phylum_0_of_novel_kingdom_5_of_Duplodnaviria
 
@@ -1359,7 +1416,9 @@ novel_class_0_of_novel_phylum_0_of_novel_kingdom_5_of_Duplodnaviria
 Duplodnaviria:NK5:NP0:NC0
 </code></pre></div>
 <h3 id="multiple-candidates">Multiple Candidates<a class="headerlink" href="#multiple-candidates" title="Permanent link">&para;</a></h3>
-<p>When vContact2 provides multiple taxonomic candidates (separated by <code>||</code>), each is processed independently:</p>
+<p>When vContact2 provides multiple taxonomic candidates (separated by <code>||</code>), the
+current parser attempts to process each candidate independently. This behavior
+is pending golden-fixture coverage:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Input</span>
 Caudoviricetes:NF1:NG2<span class="o">||</span>Caudoviricetes:NF3:NG4
 
@@ -1373,6 +1432,14 @@ Caudoviricetes:NF1:NG2<span class="o">||</span>Caudoviricetes:NF3:NG4
   family_prediction: 12 remaining 'novel_' strings
   order_prediction: 3 remaining 'novel_' strings
 </code></pre></div>
+<h2 id="output-contract">Output contract<a class="headerlink" href="#output-contract" title="Permanent link">&para;</a></h2>
+<p>The output preserves the input columns and order after normalizing column names
+to lower-case snake case. It uses comma-separated output unless the output
+filename ends in <code>.tsv</code>, in which case it uses tab-separated output. With
+<code>--add-lineage</code>, one additional <code>compact_lineage</code> column, or the name supplied
+by <code>--lineage-col</code>, is appended. Empty input tables retain their header. No
+versioned schema identifier is currently written, so this contract is
+development-only.</p>
 <h2 id="workflow-integration">Workflow Integration<a class="headerlink" href="#workflow-integration" title="Permanent link">&para;</a></h2>
 <h3 id="typical-bioinformatics-pipeline">Typical Bioinformatics Pipeline<a class="headerlink" href="#typical-bioinformatics-pipeline" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># 1. Run vContact3 (external)</span>

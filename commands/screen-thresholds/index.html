@@ -415,6 +415,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../avger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    avger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../simplify-taxa/" class="md-nav__link">
         
   
@@ -843,6 +871,12 @@
 <h1 id="screen-thresholds-and-decision-logic">screen thresholds and decision logic<a class="headerlink" href="#screen-thresholds-and-decision-logic" title="Permanent link">&para;</a></h1>
 <p>This page documents how <code>phu screen</code> decides whether a hit, protein, or contig passes filtering.</p>
 <p>It is meant as an implementation-aligned reference for PFAM and KOfam behavior.</p>
+<p>These are computational acceptance thresholds for profile annotation, not
+biological proof of a viral sequence or an auxiliary viral gene. The published
+AV/AVᴸ thresholds classify viral genomes or fragments and are a separate
+upstream step. AVG interpretation requires additional viral sequence context
+and curated scientific rules; see the
+<a href="../avger/#scientific-interpretation">avger scientific interpretation</a>.</p>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>These rules apply to the screening workflow in <code>phu screen</code> after protein prediction and HMM search.</p>
 <h2 id="core-passfail-flow">Core pass/fail flow<a class="headerlink" href="#core-passfail-flow" title="Permanent link">&para;</a></h2>

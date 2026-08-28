@@ -417,6 +417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../avger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    avger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../simplify-taxa/" class="md-nav__link">
         
   
@@ -911,7 +939,7 @@
 <h1 id="screen">screen<a class="headerlink" href="#screen" title="Permanent link">&para;</a></h1>
 <h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
 <p>The <code>phu screen</code> command helps you find DNA contigs that contain specific protein families. It predicts proteins from your contigs, searches those proteins against Hidden Markov Model (HMM) profiles using <strong>pyHMMER</strong> (a fast Python implementation), and then selects contigs based on the matches and your combination/filtering rules. Think of it as a molecular search engine for pulling out contigs that contain the proteins you care about.</p>
-<p>This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways. The tool now includes advanced features like building custom HMMs from your target proteins and specialized viral gene prediction.</p>
+<p>This is especially useful when you have metagenomic assemblies and want to pull out contigs that belong to viruses, or when you're looking for contigs that contain specific metabolic pathways. Target-protein extraction and custom HMM generation are experimental features and are not a validated replacement for a biologically aligned profile-HMM workflow.</p>
 <p>For implementation-level details on pass/fail decisions, see <a href="../screen-thresholds/">screen thresholds and decision logic</a>.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>HMMS...<span class="o">]</span>
@@ -956,12 +984,12 @@
 <h2 id="using-multiple-hmms">Using Multiple HMMs<a class="headerlink" href="#using-multiple-hmms" title="Permanent link">&para;</a></h2>
 <p>When you provide multiple HMM files, you need to decide how strict you want to be about matches. There are three ways to combine results:</p>
 <p><strong>Any mode</strong> (the default) keeps contigs that match at least one model. Important detail: when a single contig matches multiple models, "any" preserves the best hit per model (rather than selecting only one overall best hit). As a result a contig that matches model A and model B will yield one protein for A and one protein for B (subject to <code>--top-per-contig</code>). This is useful when you want a representative protein per matched model from each contig.</p>
-<p><strong>All mode</strong> only keeps contigs that match every single HMM you provided. This is very strict and useful when you need complete sets of proteins. For instance, if you're looking for complete viral genomes that must have all four proteins (capsid, portal, primase, and terminase), you would use "all" mode.</p>
+<p><strong>All mode</strong> applies the current multi-model selection rule. It is intended for requiring evidence across a set of models, but currently has a known limitation when the batch produces no global hits. Do not interpret <code>all</code> as proof that every biologically expected marker is present; inspect per-model output and record the exact models queried.</p>
 <p><strong>Threshold mode</strong> lets you specify a minimum number of models that must match. This gives you flexibility between "any" and "all". You might require at least 3 out of 5 models to match, for example.</p>
 <h2 id="target-data-extraction-and-hmm-building">Target Data Extraction and HMM Building<a class="headerlink" href="#target-data-extraction-and-hmm-building" title="Permanent link">&para;</a></h2>
 <p>The tool offers powerful features for analyzing and reusing your screening results:</p>
 <p><strong>Target Protein Extraction</strong> (<code>--save-target-proteins</code>) saves the actual protein sequences that matched each HMM model, organized in separate files per model. These proteins come only from contigs that passed your final filtering criteria.</p>
-<p><strong>Custom HMM Building</strong> (<code>--save-target-hmms</code>) automatically builds new HMM profiles from your target proteins. This works independently of protein saving - if you only want HMMs, the tool will extract proteins temporarily, build the HMMs, then clean up. For single sequences, it builds individual HMMs; for multiple sequences, it creates simple alignments by padding to equal length before building consensus models.</p>
+<p><strong>Custom HMM Building</strong> (<code>--save-target-hmms</code>) builds HMM files from matched target proteins, but currently requires <code>--save-target-proteins</code> as well. For multiple sequences, the implementation right-pads sequences to equal length; this is not a biological multiple-sequence alignment, so generated models are experimental and must not be treated as validated profile HMMs.</p>
 <p><strong>Viral Mode Support</strong> - When using viral gene prediction (if pyrodigal-gv is available), the tool is optimized for shorter, more compact viral genes and can handle overlapping gene structures common in viral genomes.</p>
 <h2 id="understanding-your-results">Understanding Your Results<a class="headerlink" href="#understanding-your-results" title="Permanent link">&para;</a></h2>
 <p>The main output is <code>screened_contigs.fasta</code>, which contains all the contigs that passed your filtering criteria. You'll also get <code>kept_contigs.txt</code> with just the names of these contigs.</p>
@@ -1001,11 +1029,11 @@
 <span class="w"> </span>-<span class="w"> </span>mixed:<span class="w"> </span>HMM<span class="w"> </span>files<span class="w"> </span>contain<span class="w"> </span>multiple<span class="w"> </span>models<span class="w"> </span><span class="o">(</span>pressed/concatenated<span class="w"> </span>HMMs<span class="o">)</span><span class="w">                     </span>
 
 <span class="w"> </span>Examples:<span class="w">                                                                                  </span>
-<span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>any<span class="w"> </span>*.hmm
+<span class="w">  </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>any<span class="w"> </span><span class="s2">"*.hmm"</span>
 <span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>file1.hmm<span class="w"> </span>file2.hmm<span class="w"> </span>file3.hmm
 <span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>threshold<span class="w"> </span>--min-hmm-hits<span class="w"> </span><span class="m">5</span><span class="w"> </span>pfam_database.hmm
-<span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-proteins<span class="w"> </span>*.hmm
-<span class="w">   </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-hmms<span class="w"> </span>*.hmm
+<span class="w">  </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-proteins<span class="w"> </span><span class="s2">"*.hmm"</span>
+<span class="w">  </span>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--save-target-hmms<span class="w"> </span>--save-target-proteins<span class="w"> </span><span class="s2">"*.hmm"</span>
 
 ╭─<span class="w"> </span>Arguments<span class="w"> </span>──────────────────────────────────────────────────────────────────────────────╮
 │<span class="w"> </span>*<span class="w">    </span>hmms<span class="w">      </span>HMMS...<span class="w">  </span>HMM<span class="w"> </span>files<span class="w"> </span><span class="o">(</span>supports<span class="w"> </span>wildcards<span class="w"> </span>like<span class="w"> </span>*.hmm<span class="o">)</span><span class="w"> </span><span class="o">[</span>required<span class="o">]</span><span class="w">             </span>│

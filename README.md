@@ -82,13 +82,10 @@ See the full cache guide in [Cache Handling](https://camilogarciabotero.github.i
 
 ## Contributing
 
-We welcome contributions to phu! Please follow these steps:
+We welcome contributions to phu. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+testing and documentation requirements.
 
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Make your changes and commit them.
-4. Submit a pull request describing your changes.
-
+tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Developers
 

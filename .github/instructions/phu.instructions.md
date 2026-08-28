@@ -154,3 +154,29 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.g
 - Prefer minimal, focused patches that do not alter unrelated command behavior.
 - Keep naming and module organization consistent with the existing codebase.
 - If a change introduces new command semantics, include migration notes in docs and tests in the same change set.
+
+## Documentation Validation run
+
+```text
+.venv/bin/pytest -q
+.venv/bin/mkdocs build --strict --config-file mkdocs.yaml --site-dir /tmp/phu-site
+git diff --check
+```
+
+# Release Checklist
+
+- [ ] Confirm the release scope and scientific limitations.
+- [ ] Run tests, formatting checks, and a strict MkDocs build.
+- [ ] Build and install the wheel and sdist in clean environments.
+- [ ] Verify package, CLI, docs, changelog, and `CITATION.cff` versions agree.
+- [ ] Capture external-tool versions and pinned database releases/checksums.
+- [ ] Verify documented output headers and runnable examples.
+- [ ] Inspect the sdist for README assets, license, changelog, and citation
+      metadata.
+- [ ] Update release notes with CLI, default, schema, cache, database, and
+      scientific-method changes.
+- [ ] Tag the immutable release and record its release DOI.
+- [ ] Build stable documentation from the release tag and development
+      documentation from the development branch.
+- [ ] Confirm the published package, documentation, citation metadata, and
+      repository release point to the same version.

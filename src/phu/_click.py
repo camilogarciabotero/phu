@@ -34,12 +34,23 @@ class ProgressReporter:
 
     def _render(self) -> Progress:
         progress = Progress(
-            SpinnerColumn(), TextColumn("{task.description}"), TimeElapsedColumn(),
+            SpinnerColumn(),
+            TextColumn("{task.description}"),
+            TimeElapsedColumn(),
             console=self.console,
         )
         for task in self._tasks.values():
-            symbol = {"success": "✓", "failed": "✗", "skipped": "○", "cancelled": "!"}.get(task.status, "⠋")
-            progress.add_task(f"{symbol} {task.label}" + (f"  {task.detail}" if task.detail else ""), total=task.total, completed=task.completed)
+            symbol = {
+                "success": "✓",
+                "failed": "✗",
+                "skipped": "○",
+                "cancelled": "!",
+            }.get(task.status, "⠋")
+            progress.add_task(
+                f"{symbol} {task.label}" + (f"  {task.detail}" if task.detail else ""),
+                total=task.total,
+                completed=task.completed,
+            )
         return progress
 
     def start_phase(self, label: str) -> None:
@@ -51,7 +62,7 @@ class ProgressReporter:
         else:
             self.console.print(label)
 
-def start_task(self, label: str, *, total: int | None = None) -> TaskID:
+    def start_task(self, label: str, *, total: int | None = None) -> TaskID:
         with self._lock:
             self._next_id += 1
             task_id = TaskID(self._next_id)

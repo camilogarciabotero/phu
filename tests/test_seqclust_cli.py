@@ -245,6 +245,23 @@ def test_screen_cut_ga_enabled_by_default(tmp_path, monkeypatch):
     assert captured["cut_ga"] is True
 
 
+def test_screen_value_error_exits_cleanly(tmp_path, monkeypatch):
+    contigs = tmp_path / "contigs.fa"
+    contigs.write_text(">c1\nATGATGATG\n")
+    hmm = tmp_path / "model.hmm"
+    hmm.write_text("HMMER3/f\n")
+
+    def fake_screen(cfg):
+        raise ValueError("No HMM models found in the supplied files")
+
+    monkeypatch.setattr(cli_module, "_screen", fake_screen)
+
+    result = runner.invoke(app, ["screen", "-i", str(contigs), str(hmm)])
+
+    assert result.exit_code == 1
+    assert "No HMM models found in the supplied files" in result.stderr
+
+
 def test_jack_short_options_present_in_help():
     result = runner.invoke(app, ["jack", "--help"], terminal_width=200)
     output = plain_output(result)

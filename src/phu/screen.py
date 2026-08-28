@@ -493,7 +493,7 @@ def _hmmsearch(
 def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
     """Return the complete, ordered model inventory before searching."""
     model_ids: list[str] = []
-    seen: set[str] = set()
+    sources: dict[str, Path] = {}
 
     for hmm_path in hmm_paths:
         with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
@@ -510,9 +510,12 @@ def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
             if isinstance(model_name, bytes):
                 model_name = model_name.decode()
             model_id = hmm_path.stem if hmm_mode == "pure" else str(model_name)
-            if model_id in seen:
-                raise ValueError(f"Duplicate HMM model ID: {model_id}")
-            seen.add(model_id)
+            prev = sources.get(model_id)
+            if prev is not None:
+                raise ValueError(
+                    f"Duplicate HMM model ID: {model_id} (seen in {prev} and {hmm_path})"
+                )
+            sources[model_id] = hmm_path
             model_ids.append(model_id)
 
     if not model_ids:

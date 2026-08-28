@@ -4,7 +4,7 @@
 
 The `phu dbs` command group manages local databases used by `phu`. It provides a scalable contract so each database can define its own preparation logic while sharing a common user interface.
 
-Current built-in backends are `pfam`, `kofam`, and `vscore`.
+Current built-in backends are `pfam`, `kofam`, `vscore`, and `avg`.
 
 ## Synopsis
 

@@ -147,7 +147,9 @@ See the full cache guide in [Cache Handling](https://camilogarciabotero.github.i
 
 ## Contributing
 
-We welcome contributions! Whether it's bug reports, feature requests, or code contributions, please check out our [GitHub repository](https://github.com/camilogarciabotero/phu).
+See the repository's [contribution guide](https://github.com/camilogarciabotero/phu/blob/avg/CONTRIBUTING.md),
+and [changelog](https://github.com/camilogarciabotero/phu/blob/avg/CHANGELOG.md)
+before opening a change.
 
 ## Citation
 

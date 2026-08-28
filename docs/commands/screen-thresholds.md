@@ -15,6 +15,24 @@ and curated scientific rules; see the
 
 These rules apply to the screening workflow in `phu screen` after protein prediction and HMM search.
 
+## dbCAN behavior
+
+For resolved dbCAN models, a hit passes the dbCAN-specific filter only when
+the independent E-value is strictly less than `1e-15` and the aligned HMM
+coverage is strictly greater than `0.35`. These filters are applied per
+dbCAN model and do not change PFAM GA or KOfam threshold behavior. Models
+without usable HMM alignment coverage do not pass the dbCAN filter.
+
+With `--all-puls`, these threshold-passing family hits are evaluated as an
+OR across PUL signatures and an AND within each signature. Every unique family
+required by the resolvable PUL rules is searched once; unresolved rules are
+skipped and listed in `query_manifest.json`.
+
+With `--all-cazymes`, every canonical indexed profile is searched once and
+the normal dbCAN thresholds are applied per hit. Any one qualifying canonical
+family retains its contig; ancillary profiles do not. Use `cazyme_matches.tsv`
+and the query manifest to audit the selected inventory and retained hits.
+
 ## Core pass/fail flow
 
 For each hit emitted by pyHMMER:

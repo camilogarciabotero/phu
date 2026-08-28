@@ -20,6 +20,9 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.g
 
 - Start from the owning module, nearby tests, and the smallest reproducible
 	behavior. Avoid broad refactors while implementing a focused feature.
+- For phased feature work, state the active phase, acceptance criteria, and
+	focused validation before proceeding. Do not call a phase complete until
+	its criteria and checks pass.
 - Before editing, identify the behavior that should change and one focused test
 	that could disconfirm the proposed change.
 - After each substantive edit, run the narrowest relevant test or type/lint
@@ -51,10 +54,17 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.g
 - Preserve existing public function signatures, CLI flags, output columns, and
 	environment-variable semantics unless the task explicitly requires a breaking
 	change.
+- Extend existing public commands and module entrypoints by default. Do not
+	introduce a parallel entrypoint or rename a workflow without an explicit
+	redesign request and migration plan.
 - When a breaking change is necessary, update tests, command documentation,
 	README usage examples, and changelog or migration notes together.
 - Prefer additive output columns and explicit status values over silently
 	changing the meaning of existing fields.
+- Decide explicitly whether each artifact is a documented user-facing output
+	or an internal implementation/provenance artifact. Keep internal manifests,
+	cache metadata, and temporary files out of the normal output contract unless
+	the task requests otherwise.
 - Keep failure modes actionable: identify the missing input, database, command,
 	configuration, or permission and return a non-zero exit status.
 - Do not catch broad exceptions around scientific or filesystem operations
@@ -92,12 +102,18 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.g
 - Enforce validation in `__post_init__` with specific `ValueError` messages.
 - Keep config objects as the handoff boundary between CLI parsing and execution functions.
 - Preserve deterministic behavior for enum-like options (for example, combine modes and command modes).
+- Keep workflow-specific scientific criteria distinct from generic viral
+	classification criteria. Define score meanings, numerical thresholds,
+	evidence requirements, and provenance before implementing or documenting them.
 
 ## Prediction Cache and Reuse Semantics
 
 - `screen` and `jack` both rely on shared prediction caching in `gene_prediction_core.py`; keep them aligned.
 - Cache keys must remain deterministic and depend only on prediction inputs (contigs identity + prediction parameters), not search-only parameters.
 - Preserve support for `PHU_CACHE_DIR`, `XDG_CACHE_HOME`, and `PHU_CACHE` behavior.
+- Validate cached artifact schemas and required metadata before reuse. Treat
+	incompatible or stale entries as cache misses and report the invalidation
+	reason clearly instead of allowing downstream parsing failures.
 - Keep atomic write patterns (`.partial`, temp manifest + replace) and lock handling for crash/process safety.
 - If cache behavior changes, update:
 - CLI/help text.

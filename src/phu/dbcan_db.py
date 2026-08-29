@@ -96,8 +96,12 @@ def _atomic_write(path: Path, content: bytes) -> None:
 
 
 def _download(url: str, destination: Path) -> None:
-    with urlopen(url) as response:
-        _atomic_write(destination, response.read())
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(delete=False, dir=destination.parent) as tmp:
+        temporary_path = Path(tmp.name)
+        with urlopen(url) as response:
+            shutil.copyfileobj(response, tmp, length=1024 * 1024)
+    temporary_path.replace(destination)
 
 
 def _hmm_path() -> Path:

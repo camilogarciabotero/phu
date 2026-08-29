@@ -664,13 +664,13 @@ def screen(
     all_puls: bool = typer.Option(
         False,
         "--all-puls",
-        help="Screen all resolvable PUL CAZyme signatures",
+        help="All PULs",
         rich_help_panel="PUL screening",
     ),
     all_cazymes: bool = typer.Option(
         False,
         "--all-cazymes",
-        help="Screen all canonical dbCAN CAZyme profiles",
+        help="All canonical CAZymes",
         rich_help_panel="CAZyme screening",
     ),
     output_folder: Path = typer.Option(

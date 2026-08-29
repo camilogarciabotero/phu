@@ -598,6 +598,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dbcan-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbCAN behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#core-passfail-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -750,6 +761,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dbcan-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbCAN behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#core-passfail-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -879,6 +901,20 @@ and curated scientific rules; see the
 <a href="../avger/#scientific-interpretation">avger scientific interpretation</a>.</p>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>These rules apply to the screening workflow in <code>phu screen</code> after protein prediction and HMM search.</p>
+<h2 id="dbcan-behavior">dbCAN behavior<a class="headerlink" href="#dbcan-behavior" title="Permanent link">&para;</a></h2>
+<p>For resolved dbCAN models, a hit passes the dbCAN-specific filter only when
+the independent E-value is strictly less than <code>1e-15</code> and the aligned HMM
+coverage is strictly greater than <code>0.35</code>. These filters are applied per
+dbCAN model and do not change PFAM GA or KOfam threshold behavior. Models
+without usable HMM alignment coverage do not pass the dbCAN filter.</p>
+<p>With <code>--all-puls</code>, these threshold-passing family hits are evaluated as an
+OR across PUL signatures and an AND within each signature. Every unique family
+required by the resolvable PUL rules is searched once; unresolved rules are
+skipped and listed in <code>.phu/run.json</code>.</p>
+<p>With <code>--all-cazymes</code>, every canonical indexed profile is searched once and
+the normal dbCAN thresholds are applied per hit. Any one qualifying canonical
+family retains its contig; ancillary profiles do not. Use <code>cazyme_matches.tsv</code>
+and the query manifest to audit the selected inventory and retained hits.</p>
 <h2 id="core-passfail-flow">Core pass/fail flow<a class="headerlink" href="#core-passfail-flow" title="Permanent link">&para;</a></h2>
 <p>For each hit emitted by pyHMMER:</p>
 <ol>

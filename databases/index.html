@@ -633,7 +633,7 @@
 <h1 id="databases-and-provenance">Databases and Provenance<a class="headerlink" href="#databases-and-provenance" title="Permanent link">&para;</a></h1>
 <p>PHU database downloads are scientific inputs. Record the backend, local
 manifest, release identifier, and checksum with every analysis. The development
-registry currently exposes <code>pfam</code>, <code>kofam</code>, <code>vscore</code>, and <code>avg</code>.</p>
+registry currently exposes <code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, <code>vscore</code>, and <code>avg</code>.</p>
 <h2 id="backend-matrix">Backend matrix<a class="headerlink" href="#backend-matrix" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -662,6 +662,14 @@ registry currently exposes <code>pfam</code>, <code>kofam</code>, <code>vscore</
 <td><code>ko_list.gz</code>, <code>ko_list</code>, <code>kofam.hmm.xz</code>, <code>kofam.hmm</code>, <code>ko_metadata.json</code>, <code>offsets.json</code>, optional <code>models/</code>, <code>manifest.json</code></td>
 <td>HMM, KO metadata, and byte-offset index available</td>
 <td>The Zenodo record is pinned in code, but per-file checksums, license, size, and citation metadata are not yet exposed as a stable PHU contract.</td>
+</tr>
+<tr>
+<td><code>dbcan</code></td>
+<td>Resolve CAZyme families and PUL signatures</td>
+<td><a href="https://pro.unl.edu/dbCAN2/download_file.php?file=Databases/V15/dbCAN-HMMdb-V15.txt">dbCAN HMM V15</a> and <a href="https://pro.unl.edu/dbCAN2/download_file.php?file=run_dbCAN_database_total/db_current/dbCAN-PUL.xlsx">current PUL workbook</a></td>
+<td>Raw HMM/workbook, <code>family_offsets.json</code>, <code>pul_rules.json</code>, optional <code>models/</code>, <code>manifest.json</code></td>
+<td>HMM family and PUL indexes available</td>
+<td>Manifest records source URLs, retrieval time, hashes, schema version, and counts.</td>
 </tr>
 <tr>
 <td><code>vscore</code></td>

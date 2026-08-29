@@ -763,7 +763,7 @@
 <h1 id="dbs">dbs<a class="headerlink" href="#dbs" title="Permanent link">&para;</a></h1>
 <h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
 <p>The <code>phu dbs</code> command group manages local databases used by <code>phu</code>. It provides a scalable contract so each database can define its own preparation logic while sharing a common user interface.</p>
-<p>Current built-in backends are <code>pfam</code>, <code>kofam</code>, <code>vscore</code>, and <code>avg</code>.</p>
+<p>Current built-in backends are <code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, <code>vscore</code>, and <code>avg</code>.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>DATABASES...<span class="o">]</span>
 </code></pre></div>
@@ -794,6 +794,10 @@
 <li>Building KO metadata index from <code>ko_list</code> (<code>threshold</code>, <code>score_type</code>, etc.).</li>
 <li>Building the byte-offset index for sparse KO model extraction.</li>
 </ol>
+<p>For <code>dbcan</code>, preparation downloads the dbCAN HMM source and PUL workbook,
+then builds family-offset and PUL-rule indexes plus a sparse model cache.
+The workbook column <code>cazymes_predicted_dbcan</code> is the source of PUL rules;
+the dated substrate-only text file is not used to construct rules.</p>
 <p>For <code>vscore</code>, preparation downloads and validates the normalized V-Score CSV
 from the AnantharamanLab repository and stores it locally with a manifest and
 checksum. The parser requires the columns <code>Accession</code>, <code>Protein Function</code>,

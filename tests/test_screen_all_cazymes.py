@@ -2,6 +2,7 @@ import csv
 import gzip
 from pathlib import Path
 
+import typer
 from typer.testing import CliRunner
 
 from phu import screen
@@ -109,10 +110,11 @@ def test_write_cazyme_outputs_keeps_subfamilies_distinct_and_empty_headers(tmp_p
 def test_all_cazymes_cli_contract(tmp_path: Path, monkeypatch):
     contigs = tmp_path / "contigs.fa"
     contigs.write_text(">c1\nATG\n")
-    help_result = runner.invoke(app, ["screen", "--help"])
-    assert help_result.exit_code == 0
-    assert "--all-cazymes" in help_result.stdout
-    assert "All canonical CAZymes" in help_result.stdout
+    screen_command = typer.main.get_command(app).commands["screen"]
+    cazyme_option = next(
+        parameter for parameter in screen_command.params if "--all-cazymes" in parameter.opts
+    )
+    assert cazyme_option.help == "All canonical CAZymes"
     captured = {}
 
     monkeypatch.setattr(

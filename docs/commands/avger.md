@@ -24,23 +24,34 @@ Usage: phu avger [OPTIONS]
 
 Predict and curate putative auxiliary viral genes.
 
- Options:
-     --input-contigs  -i   PATH       Trusted viral contigs FASTA [required]
-     --output-folder  -o   PATH       Output directory [default: phu-avger]
-     --threads        -t   INTEGER    [default: 1] [x>=1]
-     --mode           -m   TEXT       pyrodigal mode: meta|single [default: meta]
-     --min-gene-len        INTEGER    [default: 90] [x>=1]
-     --min-protein-len-aa  INTEGER    [default: 30] [x>=1]
-     --ttable         -T   INTEGER    [default: 11] [x>=1]
-    --min-amg-weight      FLOAT      [default: 0.6] [0.0<=x<=1.0]
-    --filter-mode         TEXT       [default: standard]
-    --keep-hits           / --no-keep-hits
-                                                [default: no-keep-hits]
-    --scaffold-avl-cutoff FLOAT      [default: 3.0] [x>=0.0]
-    --gene-vl-cutoff     FLOAT       [default: 3.0] [x>=0.0]
-    --gene-v-cutoff      FLOAT       [default: 10.0] [x>=0.0]
-    --scoring-evalue     FLOAT       [default: 1e-05] [x>=0.0]
-     --help           -h              Show this message and exit.
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --input-contigs        -i                    <path>                   Trusted viral contigs   │
+│                                                                          FASTA                   │
+│                                                                          [required]              │
+│    --output-folder        -o                    <path>                   Output directory        │
+│                                                                          [default: phu-avger]    │
+│    --threads              -t                    <int range> [x>=1]       [default: 1]            │
+│    --mode                 -m                    <str>                    pyrodigal mode:         │
+│                                                                          meta|single             │
+│                                                                          [default: meta]         │
+│    --min-gene-len                               <int range> [x>=1]       [default: 90]           │
+│    --min-protein-len-aa                         <int range> [x>=1]       [default: 30]           │
+│    --ttable               -T                    <int range> [x>=1]       [default: 11]           │
+│    --min-amg-weight                             <float range>            [default: 0.6]          │
+│                                                 [0.0<=x<=1.0]                                    │
+│    --filter-mode                                <str>                    [default: standard]     │
+│    --keep-hits                --no-keep-hits                             [default: no-keep-hits] │
+│    --scaffold-avl-cutoff                        <float range> [x>=0.0]   [default: 3.0]          │
+│    --gene-vl-cutoff                             <float range> [x>=0.0]   [default: 3.0]          │
+│    --gene-v-cutoff                              <float range> [x>=0.0]   [default: 10.0]         │
+│    --scoring-evalue                             <float range> [x>=0.0]   [default: 1e-05]        │
+│    --quiet                                                               Suppress routine        │
+│                                                                          progress output.        │
+│    --verbose                                                            Show additional         │
+│                                                                          progress details.       │
+│    --help                 -h                                             Show this message and   │
+│                                                                          exit.                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 The exact spacing and formatting may vary slightly with the Typer/Rich version

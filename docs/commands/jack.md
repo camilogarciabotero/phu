@@ -59,35 +59,85 @@ Protein prediction is cached and reused when the input contigs and prediction pa
 
 See [cache.md](../cache.md) for the shared cache rules used by both `screen` and `jack`.
 
-## Command options
+## Command Options
 
 ```bash
-Usage: phu jack [OPTIONS] SEED_MARKER
+Usage: phu jack [OPTIONS] {seed_marker}
 
 Iteratively screen contigs from one or more seed protein markers with pyhmmer.jackhmmer.
 
-Arguments:
-  SEED_MARKER                  Seed marker protein FASTA (supports one or more sequences)
+Combine modes for multi-seed screening:
+- any: keep contigs hit by at least one seed (default)
+- all: keep contigs hit by all seeds
+- threshold: keep contigs hit by at least --min-seed-hits seeds
 
-Options:
-  -i, --input-contigs PATH     Input contigs FASTA [required]
-  -o, --output-folder PATH     Output directory [default: phu-jack]
-  -m, --mode TEXT              pyrodigal mode: meta|single [default: meta]
-  -t, --threads INTEGER        Threads for pyrodigal and pyhmmer [default: 1]
-  -I, --iterations INTEGER     Maximum jackhmmer iterations [default: 5]
-      --inc-evalue FLOAT       Inclusion E-value threshold [default: 0.001]
-  -e, --max-evalue FLOAT       Max independent E-value for final hits [default: 1e-05]
-  -n, --top-per-contig INTEGER Keep top-N hits per contig [default: 1]
-  -c, --combine-mode TEXT      Combine seed hits per contig: any|all|threshold [default: any]
-  -k, --min-seed-hits INTEGER  Minimum number of seeds required for threshold mode [default: 1]
-  -g, --min-gene-len INTEGER   Minimum gene length for pyrodigal [default: 90]
-      --min-protein-len-aa INTEGER  Minimum translated protein length to keep [default: 30]
-  -T, --ttable INTEGER         NCBI translation table [default: 11]
-      --keep-proteins / --no-keep-proteins
-                               Keep intermediate proteins FASTA
-      --save-hmm / --no-save-hmm
-                               Save final jackhmmer HMM output(s)
-  -h, --help                   Show help and exit
+Examples:
+    phu jack -i contigs.fa marker_seed.faa
+    phu jack -i contigs.fa --combine-mode all marker_seeds.faa
+    phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    seed_marker      <path>  Seed marker protein FASTA (supports one or more sequences)         │
+│                               [required]                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --input-contigs       -i                        <path>              Input contigs FASTA       │
+│                                                                        [required]                │
+│    --output-folder       -o                        <path>              Output directory          │
+│                                                                        [default: phu-jack]       │
+│    --mode                -m                        <str>               pyrodigal mode:           │
+│                                                                        meta|single               │
+│                                                                        [default: meta]           │
+│    --threads             -t                        <int range> [x>=1]  Threads for both          │
+│                                                                        pyrodigal and pyhmmer     │
+│                                                                        [default: 1]              │
+│    --iterations          -I                        <int range> [x>=1]  Maximum jackhmmer         │
+│                                                                        iterations                │
+│                                                                        [default: 5]              │
+│    --inc-evalue                                    <float>             Inclusion E-value         │
+│                                                                        threshold for iterative   │
+│                                                                        jackhmmer                 │
+│                                                                        [default: 0.001]          │
+│    --max-evalue          -e                        <float>             Maximum independent       │
+│                                                                        E-value to keep a final   │
+│                                                                        hit                       │
+│                                                                        [default: 1e-05]          │
+│    --top-per-contig      -n                        <int range> [x>=1]  Keep top-N hits per       │
+│                                                                        contig (by bitscore)      │
+│                                                                        [default: 1]              │
+│    --combine-mode        -c                        <str>               How to combine hits from  │
+│                                                                        multiple seed proteins:   │
+│                                                                        any|all|threshold         │
+│                                                                        [default: any]            │
+│    --min-seed-hits       -k                        <int range> [x>=1]  Minimum number of seeds   │
+│                                                                        that must hit a contig    │
+│                                                                        (for threshold mode)      │
+│                                                                        [default: 1]              │
+│    --min-gene-len        -g                        <int>               Minimum gene length for   │
+│                                                                        pyrodigal (nt)            │
+│                                                                        [default: 90]             │
+│    --min-protein-len-aa                            <int range> [x>=1]  Minimum translated        │
+│                                                                        protein length to keep    │
+│                                                                        (aa)                      │
+│                                                                        [default: 30]             │
+│    --ttable              -T                        <int>               NCBI translation table    │
+│                                                                        for coding sequences      │
+│                                                                        [default: 11]             │
+│    --keep-proteins           --no-keep-proteins                        Keep the protein FASTA    │
+│                                                                        used for searching        │
+│                                                                        [default:                 │
+│                                                                        no-keep-proteins]         │
+│    --save-hmm                --no-save-hmm                             Save the last jackhmmer   │
+│                                                                        iteration HMM as          │
+│                                                                        last_iteration.hmm        │
+│                                                                        [default: no-save-hmm]    │
+│    --quiet                                                             Suppress routine progress │
+│                                                                        output.                   │
+│    --verbose                                                           Show additional progress  │
+│                                                                        details.                  │
+│    --help                -h                                            Show this message and     │
+│                                                                        exit.                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Notes

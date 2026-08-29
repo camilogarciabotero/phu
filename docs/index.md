@@ -76,7 +76,7 @@ Screen DNA contigs for specific protein families using HMMER on predicted coding
 
 [Learn more about protein screening →](commands/screen.md)
 
-For pass/fail and threshold rules (PFAM and KOfam), see [Screen Thresholds and Decision Logic](commands/screen-thresholds.md).
+For pass/fail and threshold rules (PFAM and KOfam), see [Screen Thresholds and Decision Logic](screen-thresholds.md).
 
 ### `jack` - Seed-Based Iterative Screening
 
@@ -119,7 +119,7 @@ Available operations:
 - `phu dbs refresh [DB ...]`
 - `phu dbs remove [DB ...] --yes`
 
-`pfam`, `kofam`, `vscore`, and `avg` are available in this development build.
+`pfam`, `kofam`, `dbcan`, `vscore`, and `avg` are available in this development build.
 Database preparation may download large files; inspect status and available
 metadata before preparing a backend.
 

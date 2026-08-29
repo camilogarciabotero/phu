@@ -9,7 +9,7 @@ biological proof of a viral sequence or an auxiliary viral gene. The published
 AV/AVᴸ thresholds classify viral genomes or fragments and are a separate
 upstream step. AVG interpretation requires additional viral sequence context
 and curated scientific rules; see the
-[avger scientific interpretation](avger.md#scientific-interpretation).
+[avger scientific interpretation](commands/avger.md#scientific-interpretation).
 
 ## Scope
 

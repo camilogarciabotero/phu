@@ -51,7 +51,7 @@ checksum. The parser requires the columns `Accession`, `Protein Function`,
 `V-Score`, `Normalized VL-score`, `Log10[Hit Number]`, and `Database Origin`.
 The normalized VL-score column is required by the Phase 4 AVL calculation.
 
-KOfam metadata drives threshold behavior in `phu screen`; see [screen thresholds and decision logic](screen-thresholds.md).
+KOfam metadata drives threshold behavior in `phu screen`; see [screen thresholds and decision logic](../screen-thresholds.md).
 
 KOfam support follows the KofamKOALA method for KO assignment and thresholding:
 

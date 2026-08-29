@@ -66,9 +66,6 @@ plugins:
 
 nav:
   - Home: index.md
-  - Cache Handling: cache.md
-  - Databases and Provenance: databases.md
-  - Troubleshooting: troubleshooting.md
   - Commands:
       - commands/cluster.md
       - commands/dbs.md
@@ -76,6 +73,9 @@ nav:
       - commands/simplify-taxa.md
       - commands/screen.md
       - commands/jack.md
+  - Databases and Provenance: databases.md
   - Thresholds:
       - screen-thresholds.md
+  - Cache Handling: cache.md
+  - Troubleshooting: troubleshooting.md
   - Citation: citation.md

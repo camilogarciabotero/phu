@@ -550,6 +550,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="databases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Databases and Provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -559,10 +613,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -580,8 +634,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -759,6 +813,60 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thresholds
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Thresholds
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
               
                 
   
@@ -766,7 +874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="commands/screen-thresholds/" class="md-nav__link">
+      <a href="screen-thresholds/" class="md-nav__link">
         
   
   
@@ -790,6 +898,33 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="citation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Citation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1090,7 +1225,7 @@ phu<span class="w"> </span>--help
 <div class="highlight"><pre><span></span><code><span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>viral_capsid.hmm<span class="w"> </span>portal.hmm
 </code></pre></div></p>
 <p><a href="commands/screen/">Learn more about protein screening →</a></p>
-<p>For pass/fail and threshold rules (PFAM and KOfam), see <a href="commands/screen-thresholds/">Screen Thresholds and Decision Logic</a>.</p>
+<p>For pass/fail and threshold rules (PFAM and KOfam), see <a href="screen-thresholds/">Screen Thresholds and Decision Logic</a>.</p>
 <h3 id="jack-seed-based-iterative-screening"><code>jack</code> - Seed-Based Iterative Screening<a class="headerlink" href="#jack-seed-based-iterative-screening" title="Permanent link">&para;</a></h3>
 <p>Iteratively screen DNA contigs from one or more seed marker proteins using <code>pyhmmer.hmmer.jackhmmer</code>.
 When multiple seeds are provided, you can combine evidence with <code>--combine-mode any|all|threshold</code>.</p>
@@ -1119,7 +1254,7 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 <li><code>phu dbs refresh [DB ...]</code></li>
 <li><code>phu dbs remove [DB ...] --yes</code></li>
 </ul>
-<p><code>pfam</code>, <code>kofam</code>, <code>vscore</code>, and <code>avg</code> are available in this development build.
+<p><code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, <code>vscore</code>, and <code>avg</code> are available in this development build.
 Database preparation may download large files; inspect status and available
 metadata before preparing a backend.</p>
 <p><strong>Example:</strong>

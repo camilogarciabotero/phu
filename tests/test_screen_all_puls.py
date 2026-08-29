@@ -2,6 +2,7 @@ import csv
 import gzip
 from pathlib import Path
 
+import typer
 from typer.testing import CliRunner
 
 from phu import screen
@@ -117,9 +118,11 @@ def test_resolve_all_puls_deduplicates_family_union(monkeypatch, tmp_path: Path)
 def test_all_puls_help_and_query_validation(tmp_path: Path):
     contigs = tmp_path / "contigs.fa"
     contigs.write_text(">c1\nATG\n")
-    help_result = runner.invoke(app, ["screen", "--help"])
-    assert help_result.exit_code == 0
-    assert "--all-puls" in help_result.stdout
+    screen_command = typer.main.get_command(app).commands["screen"]
+    pul_option = next(
+        parameter for parameter in screen_command.params if "--all-puls" in parameter.opts
+    )
+    assert pul_option.help == "All PULs"
 
     no_query = runner.invoke(app, ["screen", "-i", str(contigs)])
     assert no_query.exit_code == 1

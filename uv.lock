@@ -466,7 +466,7 @@ wheels = [
 
 [[package]]
 name = "phu"
-version = "0.9.0.dev0"
+version = "0.9.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

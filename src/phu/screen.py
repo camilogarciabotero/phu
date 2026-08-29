@@ -21,6 +21,7 @@ import pyhmmer.easel
 import pyhmmer.plan7
 import typer
 
+from . import __version__
 from ._click import run_click_task
 from ._exec import _executable
 from .dbcan_db import (
@@ -1589,7 +1590,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 json.dumps(
                     {
                         "schema_version": 1,
-                        "phu_version": "0.9.0.dev0",
+                        "phu_version": __version__,
                         "command": "screen",
                         "mode": "all-puls",
                         "input": str(plan.input_contigs),
@@ -1620,7 +1621,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 json.dumps(
                     {
                         "schema_version": 1,
-                        "phu_version": "0.9.0.dev0",
+                        "phu_version": __version__,
                         "command": "screen",
                         "mode": "all-cazymes",
                         "input": str(plan.input_contigs),
@@ -1694,6 +1695,9 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     )
     pul_matches: list[PULMatch] = []
     qualifying_cazyme_hits: list[Hit] = []
+    dbcan_model_ids = tuple(
+        model for model in query.normalized_models if is_dbcan_id(model)
+    )
     if query.all_puls:
         qualifying_cazyme_hits = _filter_qualifying_hits(
             all_hits,
@@ -1701,7 +1705,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             plan.max_evalue,
             kofam_metadata_by_model,
             plan.use_kofam_thresholds,
-            query.normalized_models,
+            dbcan_model_ids,
         )
         filtered_hits, _ = _choose_best_contigs(
             all_hits,
@@ -1714,7 +1718,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             queried_model_ids=queried_model_ids,
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
-            dbcan_model_ids=query.normalized_models,
+            dbcan_model_ids=dbcan_model_ids,
         )
         pul_matches, contig_ids = evaluate_pul_signatures(filtered_hits, pul_rules)
         kept_contig_set = set(contig_ids)
@@ -1726,7 +1730,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             plan.max_evalue,
             kofam_metadata_by_model,
             plan.use_kofam_thresholds,
-            query.normalized_models,
+            dbcan_model_ids,
         )
         kept_hits, contig_ids = _choose_best_contigs(
             all_hits,
@@ -1739,7 +1743,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             queried_model_ids=queried_model_ids,
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
-            dbcan_model_ids=query.normalized_models,
+            dbcan_model_ids=dbcan_model_ids,
         )
     else:
         kept_hits, contig_ids = _choose_best_contigs(
@@ -1753,7 +1757,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             queried_model_ids=queried_model_ids,
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
-            dbcan_model_ids=query.normalized_models,
+            dbcan_model_ids=dbcan_model_ids,
         )
 
     if query.all_puls:
@@ -1874,7 +1878,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     if query.all_cazymes:
         run_manifest = {
             "schema_version": 1,
-            "phu_version": "0.9.0.dev0",
+            "phu_version": __version__,
             "command": "screen",
             "mode": "all-cazymes",
             "input": str(plan.input_contigs),
@@ -1914,7 +1918,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     elif query.all_puls:
         run_manifest = {
             "schema_version": 1,
-            "phu_version": "0.9.0.dev0",
+            "phu_version": __version__,
             "command": "screen",
             "mode": "all-puls",
             "input": str(plan.input_contigs),

@@ -26,7 +26,7 @@ without usable HMM alignment coverage do not pass the dbCAN filter.
 With `--all-puls`, these threshold-passing family hits are evaluated as an
 OR across PUL signatures and an AND within each signature. Every unique family
 required by the resolvable PUL rules is searched once; unresolved rules are
-skipped and listed in `query_manifest.json`.
+skipped and listed in `.phu/run.json`.
 
 With `--all-cazymes`, every canonical indexed profile is searched once and
 the normal dbCAN thresholds are applied per hit. Any one qualifying canonical

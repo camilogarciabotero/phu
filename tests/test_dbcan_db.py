@@ -1,9 +1,11 @@
+import io
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from typer.testing import CliRunner
 
 import phu.cli as cli_module
+from phu import dbcan_db
 from phu.cli import app
 from phu.dbcan_db import (
     build_family_offsets,
@@ -13,6 +15,21 @@ from phu.dbcan_db import (
 )
 
 runner = CliRunner()
+
+
+def test_download_streams_to_atomic_destination(monkeypatch, tmp_path: Path):
+    class StreamingResponse(io.BytesIO):
+        def read(self, size=-1):
+            assert size != -1
+            return super().read(size)
+
+    payload = b"dbCAN" * 1024
+    monkeypatch.setattr(dbcan_db, "urlopen", lambda _: StreamingResponse(payload))
+    destination = tmp_path / "database" / "dbcan.txt"
+
+    dbcan_db._download("https://example.test/dbcan.txt", destination)
+
+    assert destination.read_bytes() == payload
 
 
 def _write_workbook(path: Path, rows: list[list[str]]) -> None:

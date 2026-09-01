@@ -277,8 +277,8 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
     custom_align_params = plan.vclust_params.get("align", {})
     if "out-ani" not in custom_align_params:
         align_cmd.extend(["--out-ani", str(cfg.ani_cutoff)])
-    if "out-qcov" not in custom_align_params and cfg.qcov_cutoff is not None:
-        align_cmd.extend(["--out-qcov", str(cfg.qcov_cutoff)])
+    if "out-qcov" not in custom_align_params and plan.qcov_cutoff is not None:
+        align_cmd.extend(["--out-qcov", str(plan.qcov_cutoff)])
 
     # Add custom align parameters
     if custom_align_params:

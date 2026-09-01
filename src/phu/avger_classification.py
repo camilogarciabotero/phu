@@ -41,16 +41,16 @@ def load_default_classification_rules() -> ClassificationRules:
 
 def _parse_classification_rules(payload: object) -> ClassificationRules:
     if not isinstance(payload, dict) or not isinstance(payload.get("version"), str):
-        raise ValueError("Classification rules require a string 'version'")
+        raise TypeError("Classification rules require a string 'version'")
     raw_rules = payload.get("rules")
     if not isinstance(raw_rules, list):
-        raise ValueError("Classification rules require a list 'rules'")
+        raise TypeError("Classification rules require a list 'rules'")
 
     rules: list[ClassificationRule] = []
     seen_ids: set[str] = set()
     for index, raw_rule in enumerate(raw_rules, start=1):
         if not isinstance(raw_rule, dict):
-            raise ValueError(f"Classification rule {index} must be an object")
+            raise TypeError(f"Classification rule {index} must be an object")
         rule_id = raw_rule.get("rule_id")
         classification = raw_rule.get("classification")
         if not isinstance(rule_id, str) or not rule_id:
@@ -63,13 +63,13 @@ def _parse_classification_rules(payload: object) -> ClassificationRules:
         def identifiers(key: str) -> frozenset[str]:
             value = raw_rule.get(key, [])
             if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
-                raise ValueError(f"Classification rule {rule_id} field '{key}' must be a list of strings")
+                raise TypeError(f"Classification rule {rule_id} field '{key}' must be a list of strings")
             return frozenset(item.strip().upper() for item in value if item.strip())
 
         min_v_score = raw_rule.get("min_v_score")
         if min_v_score is not None:
             if not isinstance(min_v_score, (int, float)) or isinstance(min_v_score, bool):
-                raise ValueError(f"Classification rule {rule_id} min_v_score must be numeric")
+                raise TypeError(f"Classification rule {rule_id} min_v_score must be numeric")
             min_v_score = float(min_v_score)
 
         rules.append(

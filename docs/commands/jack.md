@@ -122,7 +122,7 @@ Examples:
 │                                                                        [default: 30]             │
 │    --ttable              -T                        <int>               NCBI translation table    │
 │                                                                        for coding sequences      │
-│                                                                        [default: 11]             │
+│                                                                        [default: none]           │
 │    --keep-proteins           --no-keep-proteins                        Keep the protein FASTA    │
 │                                                                        used for searching        │
 │                                                                        [default:                 │

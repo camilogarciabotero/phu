@@ -1,8 +1,7 @@
 # Citation
 
 `CITATION.cff` is the source of truth for PHU citation metadata. This
-`avg`-branch documentation describes the unreleased `0.9.0.dev0` development
-revision; it is not a release citation.
+This documentation describes the `0.9.1` release.
 
 For a published study, cite the immutable PHU release used for the analysis
 and record its version in the run manifest. Use the Zenodo concept DOI for

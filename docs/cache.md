@@ -20,9 +20,9 @@ The cache is invalidated and rebuilt when any of these prediction inputs change:
 - `--mode`
 - `--min-gene-len` in `phu jack`
 - `--min-protein-len-aa`
-- `--ttable`
+- an explicit `--ttable`
 
-For `phu screen`, changing `--min-protein-len-aa`, `--mode`, or `--ttable` forces a rebuild. For `phu jack`, changing either `--min-gene-len` or `--min-protein-len-aa` forces a rebuild because both values feed the shared protein-prediction cache key.
+For `phu screen`, changing `--min-protein-len-aa`, `--mode`, or an explicit `--ttable` forces a rebuild. For `phu jack`, changing either `--min-gene-len` or `--min-protein-len-aa` forces a rebuild because both values feed the shared protein-prediction cache key. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv.
 
 ## How to control it
 

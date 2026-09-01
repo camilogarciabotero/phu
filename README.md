@@ -47,9 +47,9 @@ phu <command> [options]
 
 ## Database Management
 
-A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Built-in backends currently include `pfam`, `kofam`, `dbcan`, `vscore`, and `avg`.
+A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Built-in backends currently include `pfam`, `kofam`, `dbcan`, and `avg`.
 
-- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam`, `kofam`, `dbcan`, `vscore`, and `avg`.
+- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam`, `kofam`, `dbcan`, and `avg`.
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 
@@ -57,7 +57,7 @@ For screening pass/fail and threshold rules, see [`screen thresholds and decisio
 
 `phu avger` is the annotation and evidence workflow. It predicts proteins from
 trusted viral contigs, searches complete Pfam and KOfam databases, adds optional
-V-Score-Search annotations, and writes one best passing hit per protein and
+CheckAMG V/VL-score annotations, and writes one best passing hit per protein and
 database. It reports candidate evidence; it does not establish that a gene is
 an AVG by itself.
 
@@ -66,15 +66,14 @@ versioned CheckAMG reference tables for AMG, APG, and AReG classification and
 curation; see the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/)
 for attribution and interpretation limits.
 
-The `avg` development work is currently implemented internally and is not a
-public `phu` subcommand. Use `phu avger` for the supported annotation and
-evidence workflow described in the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/).
+Use `phu avger` for the supported annotation and evidence workflow described in
+the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/).
 
 ## Cache Handling
 
 `phu` caches predicted proteins for both `screen` and `jack` so repeated runs can reuse the same translated proteins when the prediction inputs have not changed. Search settings such as HMM files, seed markers, combine mode, and output folder do not affect the cache.
 
-The cache is rebuilt when you change the contig input, `--mode`, `--ttable`, or the protein-length filter. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` participate in the cache key.
+The cache is rebuilt when you change the contig input, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` participate in the cache key.
 
 To remove previously cached predictions, run `phu --clean-cache`.
 

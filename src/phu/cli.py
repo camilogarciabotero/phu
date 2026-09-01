@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 from typing import Optional
 
@@ -17,13 +16,6 @@ from .avg_reference_db import (
     refresh_avg_database,
     remove_avg_database,
 )
-from .avger_annotation import (
-    AnnotationConfig,
-    annotate_proteins_complete_databases,
-    write_best_hits_tsv,
-)
-from .avger_classification import load_default_classification_rules
-from .avger_scoring import evaluate_database_candidates
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .dbcan_db import (
     get_dbcan_database_status,
@@ -32,9 +24,7 @@ from .dbcan_db import (
     remove_dbcan_database,
 )
 from .gene_prediction_core import (
-    PredictionInputs,
     clean_prediction_cache,
-    get_or_predict_proteins,
 )
 from .jack import JackConfig, _jack
 from .kofam_db import (
@@ -49,15 +39,9 @@ from .pfam_db import (
     refresh_pfam_database,
     remove_pfam_database,
 )
-from .screen import ScreenConfig, _read_fasta, _screen
+from .screen import ScreenConfig, _screen
 from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
-from .vscore_db import (
-    ensure_vscore_database,
-    get_vscore_database_status,
-    get_vscore_map,
-    refresh_vscore_database,
-    remove_vscore_database,
-)
+from .vscore_db import remove_vscore_database
 
 app = typer.Typer(
     help="Phage utilities CLI",
@@ -73,10 +57,12 @@ dbs_app = typer.Typer(
 )
 app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
 
-SUPPORTED_DBS = ("pfam", "kofam", "dbcan", "vscore", "avg")
+SUPPORTED_DBS = ("pfam", "kofam", "dbcan", "avg")
 
 
-def _normalize_db_names(databases: list[str], all_dbs: bool) -> list[str]:
+def _normalize_db_names(
+    databases: list[str], all_dbs: bool, *, allow_legacy_vscore: bool = False
+) -> list[str]:
     if all_dbs and databases:
         raise ValueError("Use either specific database names or --all, not both")
 
@@ -86,7 +72,8 @@ def _normalize_db_names(databases: list[str], all_dbs: bool) -> list[str]:
         else [name.lower() for name in databases]
     )
 
-    unknown = [name for name in selected if name not in SUPPORTED_DBS]
+    allowed = (*SUPPORTED_DBS, "vscore") if allow_legacy_vscore else SUPPORTED_DBS
+    unknown = [name for name in selected if name not in allowed]
     if unknown:
         raise ValueError(f"Unsupported database(s): {', '.join(sorted(set(unknown)))}")
 
@@ -101,8 +88,6 @@ def _db_status_payload(db_name: str) -> dict:
         return get_kofam_database_status()
     if db_name == "dbcan":
         return get_dbcan_database_status()
-    if db_name == "vscore":
-        return get_vscore_database_status()
     if db_name == "avg":
         return get_avg_database_status()
     raise ValueError(f"Unsupported database: {db_name}")
@@ -170,7 +155,9 @@ def dbs_prepare(
 ) -> None:
     """Prepare databases for use by phu commands."""
     try:
-        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
+        selected = _normalize_db_names(
+            databases or [], all_dbs=all_dbs, allow_legacy_vscore=True
+        )
     except ValueError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -192,12 +179,10 @@ def dbs_prepare(
                 result = prepare_dbcan_database(force_refresh=force_refresh)
                 files = result.get("files", {})
                 typer.echo(f"Prepared {db_name}: {files.get('hmm', {}).get('path')}")
-                typer.echo(f"Index ready: {files.get('family_offsets', {}).get('path')}")
+                typer.echo(
+                    f"Index ready: {files.get('family_offsets', {}).get('path')}"
+                )
                 typer.echo(f"PUL rules ready: {files.get('pul_rules', {}).get('path')}")
-            elif db_name == "vscore":
-                result = ensure_vscore_database(force_refresh=force_refresh)
-                typer.echo(f"Prepared {db_name}: {result.get('csv_path')}")
-                typer.echo(f"Records ready: {result.get('record_count')}")
             elif db_name == "avg":
                 result = ensure_avg_database(force_refresh=force_refresh)
                 typer.echo(f"Prepared {db_name}: {result.get('root')}")
@@ -241,12 +226,10 @@ def dbs_refresh(
                 result = refresh_dbcan_database()
                 files = result.get("files", {})
                 typer.echo(f"Refreshed {db_name}: {files.get('hmm', {}).get('path')}")
-                typer.echo(f"Index ready: {files.get('family_offsets', {}).get('path')}")
+                typer.echo(
+                    f"Index ready: {files.get('family_offsets', {}).get('path')}"
+                )
                 typer.echo(f"PUL rules ready: {files.get('pul_rules', {}).get('path')}")
-            elif db_name == "vscore":
-                result = refresh_vscore_database()
-                typer.echo(f"Refreshed {db_name}: {result.get('csv_path')}")
-                typer.echo(f"Records ready: {result.get('record_count')}")
             elif db_name == "avg":
                 result = refresh_avg_database()
                 typer.echo(f"Refreshed {db_name}: {result.get('root')}")
@@ -307,10 +290,9 @@ def dbs_remove(
                 typer.echo(f"{db_name} database not present")
         elif db_name == "vscore":
             removed = remove_vscore_database()
-            if removed:
-                typer.echo(f"Removed {db_name} database")
-            else:
-                typer.echo(f"{db_name} database not present")
+            typer.echo(
+                "Removed vscore database" if removed else "vscore database not present"
+            )
         elif db_name == "avg":
             removed = remove_avg_database()
             if removed:
@@ -370,8 +352,12 @@ def cluster(
         "-p",
         help='Custom vclust parameters: "--min-kmers 20 --outfmt lite --ani 0.97"',
     ),
-    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
-    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
+    quiet: bool = typer.Option(
+        False, "--quiet", help="Suppress routine progress output."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", help="Show additional progress details."
+    ),
 ):
     """
     Sequence clustering wrapper around external 'vclust' with three modes.
@@ -415,7 +401,9 @@ def cluster(
     )
 
     try:
-        run_click_task("Clustering contigs", _cluster, cfg, quiet=quiet, verbose=verbose)
+        run_click_task(
+            "Clustering contigs", _cluster, cfg, quiet=quiet, verbose=verbose
+        )
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -455,8 +443,12 @@ def simplify_taxa(
         "-s",
         help="Override delimiter: ',' or '\\t'. Auto-detected from extension if not set",
     ),
-    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
-    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
+    quiet: bool = typer.Option(
+        False, "--quiet", help="Suppress routine progress output."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", help="Show additional progress details."
+    ),
 ):
     """
     Simplify vContact taxonomy prediction columns into compact lineage codes.
@@ -477,113 +469,15 @@ def simplify_taxa(
     )
 
     try:
-        run_click_task("Simplifying taxonomy", _simplify_taxa, cfg, quiet=quiet, verbose=verbose)
+        run_click_task(
+            "Simplifying taxonomy", _simplify_taxa, cfg, quiet=quiet, verbose=verbose
+        )
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     except RuntimeError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
-
-
-def _legacy_avger(
-    input_contigs: Path = typer.Option(
-        ...,
-        "--input-contigs",
-        "-i",
-        exists=True,
-        readable=True,
-        help="Input contigs FASTA",
-    ),
-    output_folder: Path = typer.Option(
-        Path("phu-avger"), "--output-folder", "-o", help="Output directory"
-    ),
-    mode: str = typer.Option("meta", "--mode", "-m", help="pyrodigal mode: meta|single"),
-    threads: int = typer.Option(
-        1, "--threads", "-t", min=1, help="Threads for prediction and HMMER"
-    ),
-    max_evalue: float = typer.Option(
-        1e-5, "--max-evalue", "-e", min=0.0, help="Maximum hit E-value"
-    ),
-    min_gene_len: int = typer.Option(
-        90, "--min-gene-len", min=1, help="Minimum predicted CDS length (nt)"
-    ),
-    min_protein_len_aa: int = typer.Option(
-        30, "--min-protein-len-aa", min=1, help="Minimum predicted protein length (aa)"
-    ),
-    translation_table: int = typer.Option(
-        11, "--ttable", "-T", help="NCBI translation table for coding sequences"
-    ),
-    keep_all_hits: bool = typer.Option(
-        False, "--keep-all-hits/--no-keep-all-hits", help="Write all passing HMM hits"
-    ),
-    use_vscore: bool = typer.Option(
-        True, "--use-vscore/--no-use-vscore", help="Add V-score annotations for KOs"
-    ),
-    require_flank_support: bool = typer.Option(
-        False,
-        "--require-flank-support/--no-require-flank-support",
-        help="Require database-consistent 10-kb V-score flank support",
-    ),
-):
-    """Predict proteins and annotate them against complete Pfam and KOfam databases."""
-    def _run_avger(folder: Path) -> tuple[Path, bool]:
-        prediction_inputs = PredictionInputs(
-            input_contigs=input_contigs,
-            mode=mode,
-            min_gene_len=min_gene_len,
-            min_protein_len_aa=min_protein_len_aa,
-            translation_table=translation_table,
-        )
-        proteins = get_or_predict_proteins(
-            prediction_inputs, use_cache=True, threads=threads
-        )
-        all_hits_path = folder / "all_hits.tsv.gz" if keep_all_hits else None
-        results = annotate_proteins_complete_databases(
-            proteins.proteins_path,
-            AnnotationConfig(
-                threads=threads,
-                max_evalue=max_evalue,
-                keep_all_hits=keep_all_hits,
-                all_hits_path=all_hits_path,
-            ),
-        )
-        vscore_map = get_vscore_map() if use_vscore else None
-        rules = load_default_classification_rules()
-        best_hits = list(results.best_pfam_by_protein.values()) + list(
-            results.best_kofam_by_protein.values()
-        )
-        genes_by_id = {gene.gene_id: gene for gene in (proteins.genes or [])}
-        best_hits = [
-            replace(
-                hit,
-                gene_start=genes_by_id[hit.protein_id].start,
-                gene_end=genes_by_id[hit.protein_id].end,
-            )
-            if hit.protein_id in genes_by_id
-            else hit
-            for hit in best_hits
-        ]
-        candidate_evaluations = evaluate_database_candidates(
-            best_hits,
-            vscore_map or {},
-            {contig_id: len(sequence) for contig_id, sequence in _read_fasta(input_contigs)},
-            require_flank_support=require_flank_support,
-        )
-        best_path = folder / "best_hits.tsv"
-        write_best_hits_tsv(
-            results, best_path, vscore_map, rules, candidate_evaluations
-        )
-        return best_path, proteins.cache_hit
-
-    try:
-        best_path, cache_hit = _run_avger(output_folder)
-    except (FileNotFoundError, ValueError, OSError) as exc:
-        typer.secho(str(exc), fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    typer.echo(f"Cache hit: {cache_hit}")
-    typer.echo(f"Results: {best_path}")
 
 
 @app.command("avger", rich_help_panel="Workflow")
@@ -600,10 +494,18 @@ def avger(
         Path("phu-avger"), "--output-folder", "-o", help="Output directory"
     ),
     threads: int = typer.Option(1, "--threads", "-t", min=1),
-    mode: str = typer.Option("meta", "--mode", "-m", help="pyrodigal mode: meta|single"),
+    mode: str = typer.Option(
+        "meta", "--mode", "-m", help="pyrodigal mode: meta|single"
+    ),
     min_gene_len: int = typer.Option(90, "--min-gene-len", min=1),
     min_protein_len_aa: int = typer.Option(30, "--min-protein-len-aa", min=1),
-    translation_table: int = typer.Option(11, "--ttable", "-T", min=1),
+    translation_table: Optional[int] = typer.Option(
+        None,
+        "--ttable",
+        "-T",
+        min=1,
+        help="NCBI translation table; default uses each contig's predicted table",
+    ),
     min_amg_weight: float = typer.Option(0.6, "--min-amg-weight", min=0.0, max=1.0),
     filter_mode: str = typer.Option("standard", "--filter-mode"),
     keep_hits: bool = typer.Option(False, "--keep-hits/--no-keep-hits"),
@@ -611,29 +513,35 @@ def avger(
     gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0),
     gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0),
     scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0),
-    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
-    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
+    quiet: bool = typer.Option(
+        False, "--quiet", help="Suppress routine progress output."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", help="Show additional progress details."
+    ),
 ) -> None:
     """Predict and curate putative auxiliary viral genes."""
     try:
         config = AvgConfig(
-                input_contigs=input_contigs,
-                output_folder=output_folder,
-                threads=threads,
-                mode=mode,
-                min_gene_len=min_gene_len,
-                min_protein_len_aa=min_protein_len_aa,
-                translation_table=translation_table,
-                min_amg_weight=min_amg_weight,
-                filter_mode=filter_mode,
-                keep_hits=keep_hits,
-                scaffold_avl_cutoff=scaffold_avl_cutoff,
-                gene_vl_cutoff=gene_vl_cutoff,
-                gene_v_cutoff=gene_v_cutoff,
-                scoring_evalue=scoring_evalue,
-            )
+            input_contigs=input_contigs,
+            output_folder=output_folder,
+            threads=threads,
+            mode=mode,
+            min_gene_len=min_gene_len,
+            min_protein_len_aa=min_protein_len_aa,
+            translation_table=translation_table,
+            min_amg_weight=min_amg_weight,
+            filter_mode=filter_mode,
+            keep_hits=keep_hits,
+            scaffold_avl_cutoff=scaffold_avl_cutoff,
+            gene_vl_cutoff=gene_vl_cutoff,
+            gene_v_cutoff=gene_v_cutoff,
+            scoring_evalue=scoring_evalue,
+        )
         if quiet or verbose:
-            result = run_avg(config, reporter=ProgressReporter(quiet=quiet, verbose=verbose))
+            result = run_avg(
+                config, reporter=ProgressReporter(quiet=quiet, verbose=verbose)
+            )
         else:
             result = run_avg(config)
     except (FileNotFoundError, ValueError, OSError) as exc:
@@ -722,8 +630,12 @@ def screen(
         min=1,
         help="Minimum translated protein length to keep (aa)",
     ),
-    translation_table: int = typer.Option(
-        11, "--ttable", "-T", help="NCBI translation table for coding sequences"
+    translation_table: Optional[int] = typer.Option(
+        None,
+        "--ttable",
+        "-T",
+        min=1,
+        help="NCBI translation table; default uses each contig's predicted table",
     ),
     keep_proteins: bool = typer.Option(
         False,
@@ -961,8 +873,12 @@ def jack(
         min=1,
         help="Minimum translated protein length to keep (aa)",
     ),
-    translation_table: int = typer.Option(
-        11, "--ttable", "-T", help="NCBI translation table for coding sequences"
+    translation_table: Optional[int] = typer.Option(
+        None,
+        "--ttable",
+        "-T",
+        min=1,
+        help="NCBI translation table; default uses each contig's predicted table",
     ),
     keep_proteins: bool = typer.Option(
         False,
@@ -974,8 +890,12 @@ def jack(
         "--save-hmm/--no-save-hmm",
         help="Save the last jackhmmer iteration HMM as last_iteration.hmm",
     ),
-    quiet: bool = typer.Option(False, "--quiet", help="Suppress routine progress output."),
-    verbose: bool = typer.Option(False, "--verbose", help="Show additional progress details."),
+    quiet: bool = typer.Option(
+        False, "--quiet", help="Suppress routine progress output."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", help="Show additional progress details."
+    ),
 ):
     """
     Iteratively screen contigs from one or more seed protein markers with pyhmmer.jackhmmer.

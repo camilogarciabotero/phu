@@ -24,7 +24,11 @@ from .avg_decisions import (
     evaluate_candidates,
     resolve_final_class,
 )
-from .gene_prediction_core import CacheArtifact, PredictionInputs, get_or_predict_proteins
+from .gene_prediction_core import (
+    CacheArtifact,
+    PredictionInputs,
+    get_or_predict_proteins,
+)
 from .kofam_db import get_kofam_database_status
 from .pfam_db import get_pfam_database_status
 from ._click import ProgressReporter
@@ -40,7 +44,7 @@ class AvgConfig:
     mode: str = "meta"
     min_gene_len: int = 90
     min_protein_len_aa: int = 30
-    translation_table: int = 11
+    translation_table: int | None = None
     min_amg_weight: float = 0.6
     filter_mode: str = "standard"
     keep_hits: bool = False
@@ -62,7 +66,7 @@ class AvgConfig:
             raise ValueError("min_gene_len must be >= 1")
         if self.min_protein_len_aa < 1:
             raise ValueError("min_protein_len_aa must be >= 1")
-        if self.translation_table < 1:
+        if self.translation_table is not None and self.translation_table < 1:
             raise ValueError("translation_table must be >= 1")
         if not 0.0 <= self.min_amg_weight <= 1.0:
             raise ValueError("min_amg_weight must be between 0 and 1")
@@ -153,9 +157,13 @@ def run_avg(
         )
         reporter.succeed_task(annotation_task)
         output_task = reporter.start_task("Writing AVG results")
-        outputs = write_avg_outputs(config, prediction, annotations, run_started_at=run_started_at)
+        outputs = write_avg_outputs(
+            config, prediction, annotations, run_started_at=run_started_at
+        )
         reporter.succeed_task(output_task)
-        return AvgRunResult(prediction=prediction, annotations=annotations, outputs=outputs)
+        return AvgRunResult(
+            prediction=prediction, annotations=annotations, outputs=outputs
+        )
     except BaseException as exc:
         reporter.fail_running_tasks(str(exc))
         raise
@@ -218,7 +226,11 @@ def write_avg_outputs(
     scoring_evidence: list[AvgEvidence] = []
     for hit in relaxed_hits:
         score = scores.get((hit.database, hit.model_id))
-        if score is not None and _float(score.get("v_score")) is not None and _float(score.get("vl_score")) is not None:
+        if (
+            score is not None
+            and _float(score.get("v_score")) is not None
+            and _float(score.get("vl_score")) is not None
+        ):
             scoring_evidence.append(
                 AvgEvidence(
                     protein_id=hit.protein_id,
@@ -287,6 +299,15 @@ def write_avg_outputs(
         audit_rows.append({**record.__dict__, "evidence_type": "strict_hit"})
 
     scaffold_averages = calculate_scaffold_averages(scoring_evidence)
+    strict_by_protein: dict[str, dict[str, object]] = {}
+    for hit in strict_hits:
+        strict_by_protein.setdefault(hit.protein_id, {})[hit.database] = hit
+    strict_evidence_by_protein: dict[str, list[object]] = {}
+    for record in strict_evidence:
+        strict_evidence_by_protein.setdefault(record.protein_id, []).append(record)
+    scoring_by_protein: dict[str, dict[str, object]] = {}
+    for record in scoring_evidence:
+        scoring_by_protein.setdefault(record.protein_id, {})[record.database] = record
 
     for gene in prediction.genes or []:
         gene_decisions = decisions_by_protein.get(gene.gene_id, [])
@@ -296,81 +317,108 @@ def write_avg_outputs(
         pfam_decision = database_decisions.get("pfam")
         kofam_decision = database_decisions.get("kofam")
         is_candidate = any(decision.candidate for decision in gene_decisions)
-        gene_strict_evidence = [
-            record for record in strict_evidence if record.protein_id == gene.gene_id
-        ]
-        matched_positive = collect_positive_evidence(gene_strict_evidence, positive_evidence) if is_candidate else ()
+        gene_strict_evidence = strict_evidence_by_protein.get(gene.gene_id, [])
+        matched_positive = (
+            collect_positive_evidence(gene_strict_evidence, positive_evidence)
+            if is_candidate
+            else ()
+        )
         strict_keys = {
             (record.database, record.accession) for record in gene_strict_evidence
         }
         gene_filter_evidence = [
-            item for item in filter_evidence
+            item
+            for item in filter_evidence
             if (item.database, item.accession) in strict_keys
         ]
         for item in matched_positive:
-            audit_rows.append({**item.__dict__, "evidence_type": "positive_reference", "protein_id": gene.gene_id})
+            audit_rows.append(
+                {
+                    **item.__dict__,
+                    "evidence_type": "positive_reference",
+                    "protein_id": gene.gene_id,
+                }
+            )
         for item in gene_filter_evidence:
-            audit_rows.append({**item.__dict__, "evidence_type": "filter_reference", "protein_id": gene.gene_id})
-        weighted = apply_amg_weight(matched_positive, minimum_weight=config.min_amg_weight)
-        filtered = apply_class_filters(weighted.supported_classes, gene_filter_evidence, filter_mode=config.filter_mode)
+            audit_rows.append(
+                {
+                    **item.__dict__,
+                    "evidence_type": "filter_reference",
+                    "protein_id": gene.gene_id,
+                }
+            )
+        weighted = apply_amg_weight(
+            matched_positive, minimum_weight=config.min_amg_weight
+        )
+        filtered = apply_class_filters(
+            weighted.supported_classes,
+            gene_filter_evidence,
+            filter_mode=config.filter_mode,
+        )
         final = resolve_final_class(
             zhou_candidate=is_candidate,
             weighted_classes=weighted.supported_classes,
             filter_decision=filtered,
             below_weight=weighted.below_weight,
         )
-        strict_by_database = {
-            "pfam": next(
-                (hit for hit in strict_hits if hit.protein_id == gene.gene_id and hit.database == "pfam"),
-                None,
-            ),
-            "kofam": next(
-                (hit for hit in strict_hits if hit.protein_id == gene.gene_id and hit.database == "kofam"),
-                None,
-            ),
-        }
-        scoring_by_database = {
-            "pfam": next(
-                (record for record in scoring_evidence if record.protein_id == gene.gene_id and record.database == "pfam"),
-                None,
-            ),
-            "kofam": next(
-                (record for record in scoring_evidence if record.protein_id == gene.gene_id and record.database == "kofam"),
-                None,
-            ),
-        }
+        strict_by_database = strict_by_protein.get(gene.gene_id, {})
+        scoring_by_database = scoring_by_protein.get(gene.gene_id, {})
         row = {
             "contig": gene.contig_id,
             "protein_id": gene.gene_id,
             "gene_number": gene.ordinal,
-            "pfam_id": "" if strict_by_database["pfam"] is None else strict_by_database["pfam"].model_id,
-            "pfam_name": "" if strict_by_database["pfam"] is None else strict_by_database["pfam"].model_name or "",
-            "pfam_description": "" if strict_by_database["pfam"] is None else strict_by_database["pfam"].model_description or "",
-            "pfam_bitscore": "" if strict_by_database["pfam"] is None else strict_by_database["pfam"].full_score,
-            "pfam_evalue": "" if strict_by_database["pfam"] is None else strict_by_database["pfam"].evalue,
-            "pfam_threshold_method": "" if strict_by_database["pfam"] is None else strict_by_database["pfam"].threshold_source,
-            "kofam_id": "" if strict_by_database["kofam"] is None else strict_by_database["kofam"].model_id,
-            "kofam_name": "" if strict_by_database["kofam"] is None else strict_by_database["kofam"].model_name or "",
-            "kofam_description": "" if strict_by_database["kofam"] is None else strict_by_database["kofam"].model_description or "",
-            "kofam_bitscore": "" if strict_by_database["kofam"] is None else strict_by_database["kofam"].full_score,
-            "kofam_evalue": "" if strict_by_database["kofam"] is None else strict_by_database["kofam"].evalue,
-            "kofam_threshold": "" if strict_by_database["kofam"] is None else strict_by_database["kofam"].threshold_value,
-            "kofam_score_type": "" if strict_by_database["kofam"] is None else strict_by_database["kofam"].score_type,
-            "pfam_scoring_id": "" if scoring_by_database["pfam"] is None else scoring_by_database["pfam"].accession,
-            "pfam_v_score": "" if scoring_by_database["pfam"] is None else scoring_by_database["pfam"].v_score,
-            "pfam_vl_score": "" if scoring_by_database["pfam"] is None else scoring_by_database["pfam"].vl_score,
-            "kofam_scoring_id": "" if scoring_by_database["kofam"] is None else scoring_by_database["kofam"].accession,
-            "kofam_v_score": "" if scoring_by_database["kofam"] is None else scoring_by_database["kofam"].v_score,
-            "kofam_vl_score": "" if scoring_by_database["kofam"] is None else scoring_by_database["kofam"].vl_score,
-            "pfam_scaffold_avl": "" if pfam_decision is None else pfam_decision.scaffold_avl,
-            "pfam_scored_gene_count": "" if pfam_decision is None else next((average.denominator for key, average in calculate_scaffold_averages(scoring_evidence).items() if key == (gene.contig_id, "pfam")), ""),
-            "kofam_scaffold_avl": "" if kofam_decision is None else kofam_decision.scaffold_avl,
-            "kofam_scored_gene_count": "" if kofam_decision is None else next((average.denominator for key, average in calculate_scaffold_averages(scoring_evidence).items() if key == (gene.contig_id, "kofam")), ""),
-            "zhou_pfam_candidate": "" if pfam_decision is None else str(pfam_decision.candidate).lower(),
-            "zhou_kofam_candidate": "" if kofam_decision is None else str(kofam_decision.candidate).lower(),
+            "pfam_id": ""
+            if (hit := strict_by_database.get("pfam")) is None
+            else hit.model_id,
+            "pfam_name": "" if hit is None else hit.model_name or "",
+            "pfam_description": "" if hit is None else hit.model_description or "",
+            "pfam_bitscore": "" if hit is None else hit.full_score,
+            "pfam_evalue": "" if hit is None else hit.evalue,
+            "pfam_threshold_method": "" if hit is None else hit.threshold_source,
+            "kofam_id": ""
+            if (hit := strict_by_database.get("kofam")) is None
+            else hit.model_id,
+            "kofam_name": "" if hit is None else hit.model_name or "",
+            "kofam_description": "" if hit is None else hit.model_description or "",
+            "kofam_bitscore": "" if hit is None else hit.full_score,
+            "kofam_evalue": "" if hit is None else hit.evalue,
+            "kofam_threshold": "" if hit is None else hit.threshold_value,
+            "kofam_score_type": "" if hit is None else hit.score_type,
+            "pfam_scoring_id": ""
+            if (record := scoring_by_database.get("pfam")) is None
+            else record.accession,
+            "pfam_v_score": "" if record is None else record.v_score,
+            "pfam_vl_score": "" if record is None else record.vl_score,
+            "kofam_scoring_id": ""
+            if (record := scoring_by_database.get("kofam")) is None
+            else record.accession,
+            "kofam_v_score": "" if record is None else record.v_score,
+            "kofam_vl_score": "" if record is None else record.vl_score,
+            "pfam_scaffold_avl": ""
+            if pfam_decision is None
+            else pfam_decision.scaffold_avl,
+            "pfam_scored_gene_count": ""
+            if pfam_decision is None
+            or (average := scaffold_averages.get((gene.contig_id, "pfam"))) is None
+            else average.denominator,
+            "kofam_scaffold_avl": ""
+            if kofam_decision is None
+            else kofam_decision.scaffold_avl,
+            "kofam_scored_gene_count": ""
+            if kofam_decision is None
+            or (average := scaffold_averages.get((gene.contig_id, "kofam"))) is None
+            else average.denominator,
+            "zhou_pfam_candidate": ""
+            if pfam_decision is None
+            else str(pfam_decision.candidate).lower(),
+            "zhou_kofam_candidate": ""
+            if kofam_decision is None
+            else str(kofam_decision.candidate).lower(),
             "zhou_avg_candidate": str(is_candidate).lower(),
             "proposed_classes": ";".join(sorted(weighted.supported_classes)),
-            "amg_weight": "" if weighted.maximum_amg_weight is None else weighted.maximum_amg_weight,
+            "amg_weight": ""
+            if weighted.maximum_amg_weight is None
+            else weighted.maximum_amg_weight,
             "classification_status": final.status,
             "avg_class": final.avg_class,
         }
@@ -380,7 +428,18 @@ def write_avg_outputs(
         if final.status == "classified" and final.avg_class:
             predictions.append(row)
 
-    fields = list(rows[0]) if rows else ["contig", "protein_id", "gene_number", "zhou_avg_candidate", "classification_status", "avg_class"]
+    fields = (
+        list(rows[0])
+        if rows
+        else [
+            "contig",
+            "protein_id",
+            "gene_number",
+            "zhou_avg_candidate",
+            "classification_status",
+            "avg_class",
+        ]
+    )
     paths = []
     output_counts = {}
     for filename, selected, selected_fields in (
@@ -404,9 +463,20 @@ def write_avg_outputs(
 
     evidence_path = config.output_folder / "evidence.tsv"
     evidence_fields = [
-        "protein_id", "contig_id", "database", "accession", "track",
-        "evidence_type", "model_name", "model_description", "v_score", "vl_score", "proposed_class", "category",
-        "amg_weight", "amg_level",
+        "protein_id",
+        "contig_id",
+        "database",
+        "accession",
+        "track",
+        "evidence_type",
+        "model_name",
+        "model_description",
+        "v_score",
+        "vl_score",
+        "proposed_class",
+        "category",
+        "amg_weight",
+        "amg_level",
     ]
     buffer = StringIO()
     writer = csv.DictWriter(

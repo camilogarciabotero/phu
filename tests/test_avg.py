@@ -15,7 +15,7 @@ def test_avg_config_defaults_and_validation(tmp_path: Path):
 
     assert config.output_folder == Path("phu-avger")
     assert config.mode == "meta"
-    assert config.translation_table == 11
+    assert config.translation_table is None
     assert config.min_amg_weight == 0.6
     assert config.filter_mode == "standard"
     assert config.scoring_evalue == 1e-5

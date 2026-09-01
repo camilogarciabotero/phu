@@ -4,7 +4,7 @@
 
 The `phu dbs` command group manages local databases used by `phu`. It provides a scalable contract so each database can define its own preparation logic while sharing a common user interface.
 
-Current built-in backends are `pfam`, `kofam`, `dbcan`, `vscore`, and `avg`.
+Current built-in backends are `pfam`, `kofam`, `dbcan`, and `avg`.
 
 ## Synopsis
 
@@ -45,7 +45,6 @@ then builds family-offset and PUL-rule indexes plus a sparse model cache.
 The workbook column `cazymes_predicted_dbcan` is the source of PUL rules;
 the dated substrate-only text file is not used to construct rules.
 
-For `vscore`, preparation downloads and validates the normalized V-Score CSV
 from the AnantharamanLab repository and stores it locally with a manifest and
 checksum. The parser requires the columns `Accession`, `Protein Function`,
 `V-Score`, `Normalized VL-score`, `Log10[Hit Number]`, and `Database Origin`.
@@ -86,7 +85,6 @@ phu dbs status pfam kofam
 Prepare the V-score table:
 
 ```bash
-phu dbs prepare vscore
 ```
 
 Refresh integrity:

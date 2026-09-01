@@ -466,7 +466,7 @@ wheels = [
 
 [[package]]
 name = "phu"
-version = "0.9.0"
+version = "0.9.1"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -477,6 +477,7 @@ dependencies = [
     { name = "pyrodigal-gv" },
     { name = "rich" },
     { name = "typer" },
+    { name = "vclust" },
 ]
 
 [package.dev-dependencies]
@@ -494,8 +495,9 @@ requires-dist = [
     { name = "pyhmmer", specifier = ">=0.11.1" },
     { name = "pyrodigal", specifier = ">=3.6.3.post1" },
     { name = "pyrodigal-gv", specifier = ">=0.3.2" },
-    { name = "rich", specifier = ">=13.7,<=15" },
+    { name = "rich", specifier = ">=13.7,<16" },
     { name = "typer", specifier = ">=0.17.3" },
+    { name = "vclust", specifier = ">=1.0.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -811,4 +813,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/92/ff/5a28bdfd8c3ebec42564ac7d0e54ca3db65044a9314a97f9564fa7a1e926/tzdata-2026.3.tar.gz", hash = "sha256:4a1518b8993086a7982523e071643f3c0e5f213e75b21318e78bcabfff9d1415", size = 198674, upload-time = "2026-07-10T08:50:37.887Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e5/6d/b53b99a9f2766d095985947a5782f1702cabb129a34f7a802d7197af832f/tzdata-2026.3-py2.py3-none-any.whl", hash = "sha256:dc096730c87af6cab1b171c9d532be840741ff5d459015e7f6947bd7d7e54931", size = 348168, upload-time = "2026-07-10T08:50:36.46Z" },
+]
+
+[[package]]
+name = "vclust"
+version = "1.3.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/27/4e/3f107f851666b5049be44c38c929b2a2223ece0bdd50e1d9053dedc95d2c/vclust-1.3.1-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:ab47ca446b21a28cee57635d0aa28e321db1fea2c13fef5244496a9d0afd6d1d", size = 4078309, upload-time = "2025-05-23T08:34:10.96Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/6b/9cf886373ec2732fee163af07319a7b5adaa192cd63bea689d2afa81dbcc/vclust-1.3.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:b015074b18a39ad08204ce64e7c853c6c61805e7ce04001b33eac8d883f3abda", size = 3861489, upload-time = "2025-05-23T08:34:14.351Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/59/7bc47dd06a8a35b28fa9f39e123ffd92928de56641b29eaeed86ae40f339/vclust-1.3.1-py3-none-manylinux2014_aarch64.whl", hash = "sha256:85d7c401b2b51d1576bc798454ccd1536011330ac48c74d9c2c2466ee92d645c", size = 4859006, upload-time = "2025-05-23T08:34:17.006Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/ee/1bb525fd4d8b144c519770c85f0a8b9b97553323205b5b75d421229a9e73/vclust-1.3.1-py3-none-manylinux2014_x86_64.whl", hash = "sha256:6d428fabf5e5cb7de9c2990736fb3992e7dde74ede1e351bd1cff00ee7d5d918", size = 5628507, upload-time = "2025-05-23T08:34:20.172Z" },
 ]

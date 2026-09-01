@@ -25,6 +25,7 @@ def run(
     argv: Sequence[str],
     cwd: str | Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """
     Run a command in a subprocess.
@@ -35,5 +36,6 @@ def run(
         text=True,
         capture_output=False,  # stream to console
         check=check,
+        timeout=timeout,
     )
     return proc

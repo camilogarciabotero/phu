@@ -119,7 +119,7 @@ Available operations:
 - `phu dbs refresh [DB ...]`
 - `phu dbs remove [DB ...] --yes`
 
-`pfam`, `kofam`, `dbcan`, `vscore`, and `avg` are available in this development build.
+`pfam`, `kofam`, `dbcan`, and `avg` are available in this build.
 Database preparation may download large files; inspect status and available
 metadata before preparing a backend.
 
@@ -154,7 +154,7 @@ phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
 
 `phu` caches predicted proteins for both `screen` and `jack`. That means repeated searches can skip the gene-prediction step when the contigs and prediction inputs are unchanged. Changing HMMs, seed markers, combine mode, or output folders does not invalidate the cache.
 
-The cache is rebuilt when you change the contigs, `--mode`, `--ttable`, or the protein-length filter. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` affect cache reuse.
+The cache is rebuilt when you change the contigs, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` affect cache reuse.
 
 To clear previous predictions manually, run `phu --clean-cache`.
 

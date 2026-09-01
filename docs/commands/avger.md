@@ -36,7 +36,7 @@ Predict and curate putative auxiliary viral genes.
 │                                                                          [default: meta]         │
 │    --min-gene-len                               <int range> [x>=1]       [default: 90]           │
 │    --min-protein-len-aa                         <int range> [x>=1]       [default: 30]           │
-│    --ttable               -T                    <int range> [x>=1]       [default: 11]           │
+│    --ttable               -T                    <int range> [x>=1]       [default: none]         │
 │    --min-amg-weight                             <float range>            [default: 0.6]          │
 │                                                 [0.0<=x<=1.0]                                    │
 │    --filter-mode                                <str>                    [default: standard]     │
@@ -105,8 +105,10 @@ The workflow combines established tools and databases with a project-specific
 decision layer:
 
 - **Gene prediction:** Prodigal and its Python interface, Pyrodigal, provide
-    the coding-sequence prediction step. The selected `--mode`, `--ttable`, and
-    length filters affect which proteins enter downstream annotation.
+    the coding-sequence prediction step. Unless explicitly provided, the
+    translation table is selected by each contig's pyrodigal-gv model. The
+    selected `--mode`, `--ttable`, and length filters affect which proteins enter
+    downstream annotation.
 - **Profile annotation:** HMMER, accessed through PyHMMER, supplies profile-HMM
     searches. Pfam model cutoffs and KOfam's KO-specific thresholds are used as
     annotation criteria; a passing profile match is not, by itself, evidence of
@@ -351,7 +353,7 @@ provides the lightweight, traceable integration and reporting layer.
 Please cite Zhou K. et al., *V- and VL-scores unveil viral signatures and origins
 of protein families*, *Nature Communications* (2026), DOI
 [10.1038/s41467-026-72028-0](https://doi.org/10.1038/s41467-026-72028-0), the
-the CheckAMG v1.1.1 data release recorded in `.phu/run.json`
+ CheckAMG v1.1.1 data release recorded in `.phu/run.json`
 and the [Anantharaman Lab repository](https://github.com/AnantharamanLab/CheckAMG),
 Martin et al. (2025), and `phu` itself. Cite Pfam, KOfamKOALA, PyHMMER, and
 pyrodigal-gv as applicable. The CheckAMG release currently supplies software

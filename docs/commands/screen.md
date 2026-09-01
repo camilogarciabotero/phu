@@ -290,7 +290,7 @@ Usage: phu screen [OPTIONS] [QUERY]...
 │                                                      [default: 30]           │
 │    --ttable              -T      <int>               NCBI translation table  │
 │                                                      for coding sequences    │
-│                                                      [default: 11]           │
+│                                                      [default: none]         │
 │    --help                -h                          Show this message and   │
 │                                                      exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯

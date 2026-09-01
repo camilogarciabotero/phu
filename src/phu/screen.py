@@ -32,6 +32,7 @@ from .dbcan_db import (
     get_dbcan_pul,
     get_dbcan_pul_rules,
     is_dbcan_id,
+    is_canonical_dbcan_id,
     is_dbcan_pul_id,
     normalize_dbcan_id,
     normalize_dbcan_pul_id,
@@ -129,7 +130,9 @@ def _write_tsv(
     path.parent.mkdir(parents=True, exist_ok=True)
     opener = gzip.open if compressed else open
     with opener(path, "wt", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t", lineterminator="\n")
+        writer = csv.DictWriter(
+            handle, fieldnames=fieldnames, delimiter="\t", lineterminator="\n"
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -149,26 +152,41 @@ def write_cazyme_evidence(
         ),
     )
     fields = [
-        "contig_id", "protein_id", "cazyme_family", "cazyme_class", "bitscore",
-        "evalue", "domain_i_evalue", "hmm_coverage", "hmm_from", "hmm_to",
-        "target_from", "target_to",
+        "contig_id",
+        "protein_id",
+        "cazyme_family",
+        "cazyme_class",
+        "bitscore",
+        "evalue",
+        "domain_i_evalue",
+        "hmm_coverage",
+        "hmm_from",
+        "hmm_to",
+        "target_from",
+        "target_to",
     ]
     values = []
     for hit in rows:
-        values.append({
-            "contig_id": hit.contig,
-            "protein_id": hit.prot_id,
-            "cazyme_family": hit.model,
-            "cazyme_class": cazyme_class(hit.model),
-            "bitscore": f"{hit.bitscore:.6f}",
-            "evalue": f"{hit.evalue:.6g}",
-            "domain_i_evalue": "" if hit.domain_i_evalue is None else f"{hit.domain_i_evalue:.6g}",
-            "hmm_coverage": "" if hit.hmm_coverage is None else f"{hit.hmm_coverage:.6f}",
-            "hmm_from": "" if hit.hmm_from is None else hit.hmm_from,
-            "hmm_to": "" if hit.hmm_to is None else hit.hmm_to,
-            "target_from": "" if hit.target_from is None else hit.target_from,
-            "target_to": "" if hit.target_to is None else hit.target_to,
-        })
+        values.append(
+            {
+                "contig_id": hit.contig,
+                "protein_id": hit.prot_id,
+                "cazyme_family": hit.model,
+                "cazyme_class": cazyme_class(hit.model),
+                "bitscore": f"{hit.bitscore:.6f}",
+                "evalue": f"{hit.evalue:.6g}",
+                "domain_i_evalue": ""
+                if hit.domain_i_evalue is None
+                else f"{hit.domain_i_evalue:.6g}",
+                "hmm_coverage": ""
+                if hit.hmm_coverage is None
+                else f"{hit.hmm_coverage:.6f}",
+                "hmm_from": "" if hit.hmm_from is None else hit.hmm_from,
+                "hmm_to": "" if hit.hmm_to is None else hit.hmm_to,
+                "target_from": "" if hit.target_from is None else hit.target_from,
+                "target_to": "" if hit.target_to is None else hit.target_to,
+            }
+        )
     _write_tsv(output_path, fields, values, compressed=True)
 
 
@@ -181,29 +199,57 @@ def write_cazyme_outputs(
     evidence = list(evidence_hits)
     selected = list(selected_hits)
     order = {contig: index for index, contig in enumerate(contig_order)}
-    evidence.sort(key=lambda hit: (order.get(hit.contig, len(order)), hit.model, hit.prot_id, hit.evalue, -hit.bitscore))
+    evidence.sort(
+        key=lambda hit: (
+            order.get(hit.contig, len(order)),
+            hit.model,
+            hit.prot_id,
+            hit.evalue,
+            -hit.bitscore,
+        )
+    )
     evidence_fields = [
-        "contig_id", "protein_id", "cazyme_family", "cazyme_class", "bitscore",
-        "evalue", "domain_i_evalue", "hmm_coverage", "hmm_from", "hmm_to",
-        "target_from", "target_to",
+        "contig_id",
+        "protein_id",
+        "cazyme_family",
+        "cazyme_class",
+        "bitscore",
+        "evalue",
+        "domain_i_evalue",
+        "hmm_coverage",
+        "hmm_from",
+        "hmm_to",
+        "target_from",
+        "target_to",
     ]
     evidence_rows = []
     for hit in evidence:
-        evidence_rows.append({
-            "contig_id": hit.contig,
-            "protein_id": hit.prot_id,
-            "cazyme_family": hit.model,
-            "cazyme_class": cazyme_class(hit.model),
-            "bitscore": f"{hit.bitscore:.6f}",
-            "evalue": f"{hit.evalue:.6g}",
-            "domain_i_evalue": "" if hit.domain_i_evalue is None else f"{hit.domain_i_evalue:.6g}",
-            "hmm_coverage": "" if hit.hmm_coverage is None else f"{hit.hmm_coverage:.6f}",
-            "hmm_from": hit.hmm_from if hit.hmm_from is not None else "",
-            "hmm_to": hit.hmm_to if hit.hmm_to is not None else "",
-            "target_from": hit.target_from if hit.target_from is not None else "",
-            "target_to": hit.target_to if hit.target_to is not None else "",
-        })
-    _write_tsv(output_dir / "evidence" / "cazyme_hits.tsv.gz", evidence_fields, evidence_rows, compressed=True)
+        evidence_rows.append(
+            {
+                "contig_id": hit.contig,
+                "protein_id": hit.prot_id,
+                "cazyme_family": hit.model,
+                "cazyme_class": cazyme_class(hit.model),
+                "bitscore": f"{hit.bitscore:.6f}",
+                "evalue": f"{hit.evalue:.6g}",
+                "domain_i_evalue": ""
+                if hit.domain_i_evalue is None
+                else f"{hit.domain_i_evalue:.6g}",
+                "hmm_coverage": ""
+                if hit.hmm_coverage is None
+                else f"{hit.hmm_coverage:.6f}",
+                "hmm_from": hit.hmm_from if hit.hmm_from is not None else "",
+                "hmm_to": hit.hmm_to if hit.hmm_to is not None else "",
+                "target_from": hit.target_from if hit.target_from is not None else "",
+                "target_to": hit.target_to if hit.target_to is not None else "",
+            }
+        )
+    _write_tsv(
+        output_dir / "evidence" / "cazyme_hits.tsv.gz",
+        evidence_fields,
+        evidence_rows,
+        compressed=True,
+    )
 
     grouped: dict[tuple[str, str], list[Hit]] = defaultdict(list)
     for hit in selected:
@@ -212,26 +258,47 @@ def write_cazyme_outputs(
     for (contig, family), hits in grouped.items():
         hits.sort(key=_best_hit_key)
         best = hits[0]
-        match_rows.append({
-            "contig_id": contig,
-            "cazyme_family": family,
-            "cazyme_class": cazyme_class(family),
-            "protein_count": len({hit.prot_id for hit in hits}),
-            "hit_count": len(hits),
-            "protein_ids": ";".join(sorted({hit.prot_id for hit in hits})),
-            "best_protein_id": best.prot_id,
-            "best_bitscore": f"{best.bitscore:.6f}",
-            "best_evalue": f"{best.evalue:.6g}",
-            "best_domain_i_evalue": "" if best.domain_i_evalue is None else f"{best.domain_i_evalue:.6g}",
-            "best_hmm_coverage": "" if best.hmm_coverage is None else f"{best.hmm_coverage:.6f}",
-        })
+        match_rows.append(
+            {
+                "contig_id": contig,
+                "cazyme_family": family,
+                "cazyme_class": cazyme_class(family),
+                "protein_count": len({hit.prot_id for hit in hits}),
+                "hit_count": len(hits),
+                "protein_ids": ";".join(sorted({hit.prot_id for hit in hits})),
+                "best_protein_id": best.prot_id,
+                "best_bitscore": f"{best.bitscore:.6f}",
+                "best_evalue": f"{best.evalue:.6g}",
+                "best_domain_i_evalue": ""
+                if best.domain_i_evalue is None
+                else f"{best.domain_i_evalue:.6g}",
+                "best_hmm_coverage": ""
+                if best.hmm_coverage is None
+                else f"{best.hmm_coverage:.6f}",
+            }
+        )
     match_fields = [
-        "contig_id", "cazyme_family", "cazyme_class", "protein_count", "hit_count",
-        "protein_ids", "best_protein_id", "best_bitscore", "best_evalue",
-        "best_domain_i_evalue", "best_hmm_coverage",
+        "contig_id",
+        "cazyme_family",
+        "cazyme_class",
+        "protein_count",
+        "hit_count",
+        "protein_ids",
+        "best_protein_id",
+        "best_bitscore",
+        "best_evalue",
+        "best_domain_i_evalue",
+        "best_hmm_coverage",
     ]
-    match_rows.sort(key=lambda row: (order.get(str(row["contig_id"]), len(order)), str(row["cazyme_family"])))
-    _write_tsv(output_dir / "cazyme_matches.tsv.gz", match_fields, match_rows, compressed=True)
+    match_rows.sort(
+        key=lambda row: (
+            order.get(str(row["contig_id"]), len(order)),
+            str(row["cazyme_family"]),
+        )
+    )
+    _write_tsv(
+        output_dir / "cazyme_matches.tsv.gz", match_fields, match_rows, compressed=True
+    )
 
     family_groups: dict[str, list[dict[str, object]]] = defaultdict(list)
     for row in match_rows:
@@ -239,35 +306,78 @@ def write_cazyme_outputs(
     summary_rows = []
     for family in sorted(family_groups):
         rows = family_groups[family]
-        best = min(rows, key=lambda row: (-float(row["best_bitscore"]), float(row["best_evalue"]), str(row["best_protein_id"])))
-        summary_rows.append({
-            "cazyme_family": family,
-            "cazyme_class": cazyme_class(family),
-            "contig_count": len({str(row["contig_id"]) for row in rows}),
-            "protein_count": len({protein for row in rows for protein in str(row["protein_ids"]).split(";")}),
-            "hit_count": sum(int(row["hit_count"]) for row in rows),
-            "best_bitscore": best["best_bitscore"],
-            "best_evalue": best["best_evalue"],
-        })
-    _write_tsv(output_dir / "cazyme_summary.tsv", [
-        "cazyme_family", "cazyme_class", "contig_count", "protein_count", "hit_count", "best_bitscore", "best_evalue"
-    ], summary_rows)
+        best = min(
+            rows,
+            key=lambda row: (
+                -float(row["best_bitscore"]),
+                float(row["best_evalue"]),
+                str(row["best_protein_id"]),
+            ),
+        )
+        summary_rows.append(
+            {
+                "cazyme_family": family,
+                "cazyme_class": cazyme_class(family),
+                "contig_count": len({str(row["contig_id"]) for row in rows}),
+                "protein_count": len(
+                    {
+                        protein
+                        for row in rows
+                        for protein in str(row["protein_ids"]).split(";")
+                    }
+                ),
+                "hit_count": sum(int(row["hit_count"]) for row in rows),
+                "best_bitscore": best["best_bitscore"],
+                "best_evalue": best["best_evalue"],
+            }
+        )
+    _write_tsv(
+        output_dir / "cazyme_summary.tsv",
+        [
+            "cazyme_family",
+            "cazyme_class",
+            "contig_count",
+            "protein_count",
+            "hit_count",
+            "best_bitscore",
+            "best_evalue",
+        ],
+        summary_rows,
+    )
 
     class_rows = []
     for klass in CAZYME_CLASSES:
         rows = [row for row in match_rows if row["cazyme_class"] == klass]
         if not rows:
             continue
-        class_rows.append({
-            "cazyme_class": klass,
-            "matched_family_count": len({str(row["cazyme_family"]) for row in rows}),
-            "contig_count": len({str(row["contig_id"]) for row in rows}),
-            "protein_count": len({protein for row in rows for protein in str(row["protein_ids"]).split(";")}),
-            "hit_count": sum(int(row["hit_count"]) for row in rows),
-        })
-    _write_tsv(output_dir / "cazyme_class_summary.tsv", [
-        "cazyme_class", "matched_family_count", "contig_count", "protein_count", "hit_count"
-    ], class_rows)
+        class_rows.append(
+            {
+                "cazyme_class": klass,
+                "matched_family_count": len(
+                    {str(row["cazyme_family"]) for row in rows}
+                ),
+                "contig_count": len({str(row["contig_id"]) for row in rows}),
+                "protein_count": len(
+                    {
+                        protein
+                        for row in rows
+                        for protein in str(row["protein_ids"]).split(";")
+                    }
+                ),
+                "hit_count": sum(int(row["hit_count"]) for row in rows),
+            }
+        )
+    _write_tsv(
+        output_dir / "cazyme_class_summary.tsv",
+        [
+            "cazyme_class",
+            "matched_family_count",
+            "contig_count",
+            "protein_count",
+            "hit_count",
+        ],
+        class_rows,
+    )
     return {
         "qualifying_hits": len(evidence),
         "matched_proteins": len({hit.prot_id for hit in selected}),
@@ -325,7 +435,9 @@ def write_pul_outputs(
 
     support_rows = []
     match_rows = []
-    for match in sorted(matches, key=lambda item: (order.get(item.contig_id, len(order)), item.pul_id)):
+    for match in sorted(
+        matches, key=lambda item: (order.get(item.contig_id, len(order)), item.pul_id)
+    ):
         supporting = [
             hit
             for family in match.required_families
@@ -336,85 +448,164 @@ def write_pul_outputs(
             if not family_hits:
                 continue
             selected = best(family_hits)
-            support_rows.append({
+            support_rows.append(
+                {
+                    "contig_id": match.contig_id,
+                    "pul_id": match.pul_id,
+                    "cazyme_family": family,
+                    "protein_count": len({hit.prot_id for hit in family_hits}),
+                    "hit_count": len(family_hits),
+                    "protein_ids": ";".join(
+                        sorted({hit.prot_id for hit in family_hits})
+                    ),
+                    "best_protein_id": selected.prot_id,
+                    "best_bitscore": f"{selected.bitscore:.6f}",
+                    "best_evalue": f"{selected.evalue:.6g}",
+                    "best_domain_i_evalue": ""
+                    if selected.domain_i_evalue is None
+                    else f"{selected.domain_i_evalue:.6g}",
+                    "best_hmm_coverage": ""
+                    if selected.hmm_coverage is None
+                    else f"{selected.hmm_coverage:.6f}",
+                    "evidence_start": "",
+                    "evidence_end": "",
+                }
+            )
+        match_rows.append(
+            {
                 "contig_id": match.contig_id,
+                "contig_length_bp": "",
                 "pul_id": match.pul_id,
-                "cazyme_family": family,
-                "protein_count": len({hit.prot_id for hit in family_hits}),
-                "hit_count": len(family_hits),
-                "protein_ids": ";".join(sorted({hit.prot_id for hit in family_hits})),
-                "best_protein_id": selected.prot_id,
-                "best_bitscore": f"{selected.bitscore:.6f}",
-                "best_evalue": f"{selected.evalue:.6g}",
-                "best_domain_i_evalue": "" if selected.domain_i_evalue is None else f"{selected.domain_i_evalue:.6g}",
-                "best_hmm_coverage": "" if selected.hmm_coverage is None else f"{selected.hmm_coverage:.6f}",
+                "reference_substrate": match.substrate,
+                "required_family_count": len(match.required_families),
+                "required_families": ";".join(match.required_families),
+                "matched_family_count": len(match.matched_families),
+                "matched_families": ";".join(match.matched_families),
+                "matched_protein_count": len({hit.prot_id for hit in supporting}),
+                "hmm_hit_count": len(supporting),
+                "matched_protein_ids": ";".join(
+                    sorted({hit.prot_id for hit in supporting})
+                ),
                 "evidence_start": "",
                 "evidence_end": "",
-            })
-        match_rows.append({
-            "contig_id": match.contig_id,
-            "contig_length_bp": "",
-            "pul_id": match.pul_id,
-            "reference_substrate": match.substrate,
-            "required_family_count": len(match.required_families),
-            "required_families": ";".join(match.required_families),
-            "matched_family_count": len(match.matched_families),
-            "matched_families": ";".join(match.matched_families),
-            "matched_protein_count": len({hit.prot_id for hit in supporting}),
-            "hmm_hit_count": len(supporting),
-            "matched_protein_ids": ";".join(sorted({hit.prot_id for hit in supporting})),
-            "evidence_start": "",
-            "evidence_end": "",
-            "evidence_span_bp": "",
-        })
+                "evidence_span_bp": "",
+            }
+        )
 
-    _write_tsv(output_dir / "pul_matches.tsv.gz", [
-        "contig_id", "contig_length_bp", "pul_id", "reference_substrate",
-        "required_family_count", "required_families", "matched_family_count",
-        "matched_families", "matched_protein_count", "hmm_hit_count",
-        "matched_protein_ids", "evidence_start", "evidence_end", "evidence_span_bp",
-    ], match_rows, compressed=True)
-    _write_tsv(output_dir / "pul_family_support.tsv.gz", [
-        "contig_id", "pul_id", "cazyme_family", "protein_count", "hit_count",
-        "protein_ids", "best_protein_id", "best_bitscore", "best_evalue",
-        "best_domain_i_evalue", "best_hmm_coverage", "evidence_start", "evidence_end",
-    ], support_rows, compressed=True)
+    _write_tsv(
+        output_dir / "pul_matches.tsv.gz",
+        [
+            "contig_id",
+            "contig_length_bp",
+            "pul_id",
+            "reference_substrate",
+            "required_family_count",
+            "required_families",
+            "matched_family_count",
+            "matched_families",
+            "matched_protein_count",
+            "hmm_hit_count",
+            "matched_protein_ids",
+            "evidence_start",
+            "evidence_end",
+            "evidence_span_bp",
+        ],
+        match_rows,
+        compressed=True,
+    )
+    _write_tsv(
+        output_dir / "pul_family_support.tsv.gz",
+        [
+            "contig_id",
+            "pul_id",
+            "cazyme_family",
+            "protein_count",
+            "hit_count",
+            "protein_ids",
+            "best_protein_id",
+            "best_bitscore",
+            "best_evalue",
+            "best_domain_i_evalue",
+            "best_hmm_coverage",
+            "evidence_start",
+            "evidence_end",
+        ],
+        support_rows,
+        compressed=True,
+    )
 
     pul_groups: dict[str, list[dict[str, object]]] = defaultdict(list)
     for row in match_rows:
         pul_groups[str(row["pul_id"])].append(row)
     pul_summary = []
     for pul_id, rows in sorted(pul_groups.items()):
-        pul_summary.append({
-            "pul_id": pul_id,
-            "reference_substrate": rows[0]["reference_substrate"],
-            "required_family_count": rows[0]["required_family_count"],
-            "required_families": rows[0]["required_families"],
-            "matched_contig_count": len({row["contig_id"] for row in rows}),
-            "matched_protein_count": len({protein for row in rows for protein in str(row["matched_protein_ids"]).split(";") if protein}),
-            "hmm_hit_count": sum(int(row["hmm_hit_count"]) for row in rows),
-        })
-    _write_tsv(output_dir / "pul_summary.tsv", [
-        "pul_id", "reference_substrate", "required_family_count", "required_families",
-        "matched_contig_count", "matched_protein_count", "hmm_hit_count",
-    ], pul_summary)
+        pul_summary.append(
+            {
+                "pul_id": pul_id,
+                "reference_substrate": rows[0]["reference_substrate"],
+                "required_family_count": rows[0]["required_family_count"],
+                "required_families": rows[0]["required_families"],
+                "matched_contig_count": len({row["contig_id"] for row in rows}),
+                "matched_protein_count": len(
+                    {
+                        protein
+                        for row in rows
+                        for protein in str(row["matched_protein_ids"]).split(";")
+                        if protein
+                    }
+                ),
+                "hmm_hit_count": sum(int(row["hmm_hit_count"]) for row in rows),
+            }
+        )
+    _write_tsv(
+        output_dir / "pul_summary.tsv",
+        [
+            "pul_id",
+            "reference_substrate",
+            "required_family_count",
+            "required_families",
+            "matched_contig_count",
+            "matched_protein_count",
+            "hmm_hit_count",
+        ],
+        pul_summary,
+    )
     substrate_groups: dict[str, list[dict[str, object]]] = defaultdict(list)
     for row in pul_summary:
         substrate_groups[str(row["reference_substrate"])].append(row)
     substrate_summary = []
     for substrate, rows in sorted(substrate_groups.items()):
         pul_ids = {str(row["pul_id"]) for row in rows}
-        contigs = {str(match["contig_id"]) for match in match_rows if str(match["pul_id"]) in pul_ids}
-        proteins = {protein for match in match_rows if str(match["pul_id"]) in pul_ids for protein in str(match["matched_protein_ids"]).split(";") if protein}
-        substrate_summary.append({
-            "reference_substrate": substrate,
-            "supporting_pul_count": len(pul_ids),
-            "matched_contig_count": len(contigs),
-            "matched_protein_count": len(proteins),
-        })
-    _write_tsv(output_dir / "substrate_summary.tsv", [
-        "reference_substrate", "supporting_pul_count", "matched_contig_count", "matched_protein_count",
-    ], substrate_summary)
+        contigs = {
+            str(match["contig_id"])
+            for match in match_rows
+            if str(match["pul_id"]) in pul_ids
+        }
+        proteins = {
+            protein
+            for match in match_rows
+            if str(match["pul_id"]) in pul_ids
+            for protein in str(match["matched_protein_ids"]).split(";")
+            if protein
+        }
+        substrate_summary.append(
+            {
+                "reference_substrate": substrate,
+                "supporting_pul_count": len(pul_ids),
+                "matched_contig_count": len(contigs),
+                "matched_protein_count": len(proteins),
+            }
+        )
+    _write_tsv(
+        output_dir / "substrate_summary.tsv",
+        [
+            "reference_substrate",
+            "supporting_pul_count",
+            "matched_contig_count",
+            "matched_protein_count",
+        ],
+        substrate_summary,
+    )
     return {"complete_pul_match_count": len(matches)}
 
 
@@ -441,7 +632,9 @@ def _resolve_all_puls_inputs(
         if not rule.resolved
     )
     if not resolvable:
-        raise ValueError("No resolvable dbCAN PUL rules remain; refresh the dbCAN database")
+        raise ValueError(
+            "No resolvable dbCAN PUL rules remain; refresh the dbCAN database"
+        )
 
     families = list(
         dict.fromkeys(family for rule in resolvable for family in rule.families)
@@ -478,7 +671,9 @@ def _resolve_all_cazymes_inputs(
     outdir: Path,
 ) -> tuple[list[Path], ScreenQuery]:
     """Resolve every indexed canonical dbCAN family exactly once."""
-    database_manifest = run_click_task("Preparing dbCAN database", ensure_dbcan_database)
+    database_manifest = run_click_task(
+        "Preparing dbCAN database", ensure_dbcan_database
+    )
     canonical, excluded = get_dbcan_model_inventory()
     if not canonical:
         raise ValueError("No canonical dbCAN CAZyme profiles are available")
@@ -514,7 +709,10 @@ def _resolve_hmm_inputs(
     outdir: Path,
     *,
     return_query: bool = False,
-) -> tuple[list[Path], dict[str, KOFamMetadata]] | tuple[list[Path], dict[str, KOFamMetadata], ScreenQuery]:
+) -> (
+    tuple[list[Path], dict[str, KOFamMetadata]]
+    | tuple[list[Path], dict[str, KOFamMetadata], ScreenQuery]
+):
     """
     Resolve positional inputs into concrete HMM file paths.
 
@@ -710,7 +908,7 @@ class ScreenConfig:
     use_kofam_thresholds: bool = True
     top_per_contig: int = 1
     min_protein_len_aa: int = 30
-    translation_table: int = 11
+    translation_table: int | None = None
     keep_proteins: bool = False
     keep_domtbl: bool = True
     combine_mode: str = "any"  # New: how to combine hits from multiple HMMs
@@ -805,7 +1003,7 @@ class ScreenPlan:
     use_kofam_thresholds: bool
     top_per_contig: int
     min_protein_len_aa: int
-    translation_table: int
+    translation_table: int | None
     keep_proteins: bool
     keep_domtbl: bool
     combine_mode: str
@@ -838,12 +1036,14 @@ def _read_fasta(fp: Path) -> Iterable[tuple[str, str]]:
     alternative in environments where easel parsing is preferred.
     """
     try:
-        yield from _read_fasta_python(fp)
-        return
-    except (OSError, UnicodeDecodeError, ValueError) as exc:
-        # Fallback to easel parser when Python parsing fails unexpectedly.
+        records = list(_read_fasta_python(fp))
+    except (EOFError, OSError, UnicodeDecodeError, ValueError) as exc:
+        # Buffer the primary parser so fallback cannot duplicate partial output.
         logger.debug("Python FASTA parsing failed for %s; trying easel: %s", fp, exc)
         yield from _read_fasta_easel(fp)
+    else:
+        yield from records
+        return
 
 
 def _read_fasta_easel(fp: Path) -> Iterable[tuple[str, str]]:
@@ -915,7 +1115,7 @@ def _predict_proteins_pyrodigal(
     mode: str = "meta",
     min_len: int = 90,
     min_protein_len_aa: int = 30,
-    translation_table: int = 11,
+    translation_table: int | None = None,
     threads: int = 1,
 ) -> int:
     """Backward-compatible wrapper around shared prediction core."""
@@ -1042,7 +1242,9 @@ def _hmmsearch(
                         if getattr(domain, "included", True)
                     ]
                     if included_domains:
-                        best_domain = max(included_domains, key=lambda domain: domain.score)
+                        best_domain = max(
+                            included_domains, key=lambda domain: domain.score
+                        )
                         domain_bitscore = best_domain.score
                         domain_i_evalue = getattr(best_domain, "i_evalue", None)
                         model_length = getattr(top_hits.query, "M", None)
@@ -1135,7 +1337,8 @@ def _filter_qualifying_hits(
             ko_threshold = ko_meta.threshold
         effective_score = _effective_hit_score(hit, score_type)
         if hit.model in dbcan_models and (
-            hit.evalue >= 1e-15
+            hit.domain_i_evalue is None
+            or hit.domain_i_evalue >= 1e-15
             or hit.hmm_coverage is None
             or hit.hmm_coverage <= 0.35
         ):
@@ -1147,7 +1350,10 @@ def _filter_qualifying_hits(
                 if effective_min_bitscore is None
                 else max(effective_min_bitscore, ko_threshold)
             )
-        if effective_min_bitscore is not None and effective_score < effective_min_bitscore:
+        if (
+            effective_min_bitscore is not None
+            and effective_score < effective_min_bitscore
+        ):
             continue
         if max_evalue is not None and hit.evalue > max_evalue:
             continue
@@ -1507,10 +1713,10 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     # Resolve positional inputs: local HMM paths, PFAM accessions, and KO IDs.
     if cfg.all_cazymes:
         if cfg.hmms or cfg.all_puls:
-            raise ValueError("--all-cazymes cannot be combined with other screen queries")
-        cfg.hmms, query = _resolve_all_cazymes_inputs(
-            bulk_work_dir or cfg.outdir
-        )
+            raise ValueError(
+                "--all-cazymes cannot be combined with other screen queries"
+            )
+        cfg.hmms, query = _resolve_all_cazymes_inputs(bulk_work_dir or cfg.outdir)
         pul_rules = ()
         kofam_metadata_by_model = {}
     elif cfg.all_puls:
@@ -1539,8 +1745,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     plan = cfg.plan()
     if bulk_work_dir is not None:
         plan.domtbl_paths = {
-            hmm.stem: bulk_work_dir / f"hits_{hmm.stem}.domtblout"
-            for hmm in plan.hmms
+            hmm.stem: bulk_work_dir / f"hits_{hmm.stem}.domtblout" for hmm in plan.hmms
         }
     if query.all_cazymes or query.all_puls:
         plan.keep_domtbl = False
@@ -1583,7 +1788,9 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         plan.kept_ids.write_text("")
         if query.all_puls:
             write_pul_outputs([], [], [], plan.outdir)
-            write_cazyme_evidence([], [], plan.outdir / "evidence" / "cazyme_hits.tsv.gz")
+            write_cazyme_evidence(
+                [], [], plan.outdir / "evidence" / "cazyme_hits.tsv.gz"
+            )
             run_path = plan.outdir / ".phu" / "run.json"
             run_path.parent.mkdir(parents=True, exist_ok=True)
             run_path.write_text(
@@ -1603,10 +1810,14 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "complete_pul_match_count": 0,
                         "retained_contig_count": 0,
                         "generated_files": [
-                            "screened_contigs.fasta", "kept_contigs.txt",
-                            "pul_matches.tsv.gz", "pul_family_support.tsv.gz",
-                            "pul_summary.tsv", "substrate_summary.tsv",
-                            "evidence/cazyme_hits.tsv.gz", ".phu/run.json",
+                            "screened_contigs.fasta",
+                            "kept_contigs.txt",
+                            "pul_matches.tsv.gz",
+                            "pul_family_support.tsv.gz",
+                            "pul_summary.tsv",
+                            "substrate_summary.tsv",
+                            "evidence/cazyme_hits.tsv.gz",
+                            ".phu/run.json",
                         ],
                     },
                     indent=2,
@@ -1637,7 +1848,9 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         },
                         "included_cazyme_classes": list(CAZYME_CLASSES),
                         "counts": {
-                            "input_contigs": sum(1 for _ in _read_fasta(plan.input_contigs)),
+                            "input_contigs": sum(
+                                1 for _ in _read_fasta(plan.input_contigs)
+                            ),
                             "retained_contigs": 0,
                             "qualifying_hits": 0,
                             "matched_proteins": 0,
@@ -1696,7 +1909,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     pul_matches: list[PULMatch] = []
     qualifying_cazyme_hits: list[Hit] = []
     dbcan_model_ids = tuple(
-        model for model in query.normalized_models if is_dbcan_id(model)
+        model for model in query.normalized_models if is_canonical_dbcan_id(model)
     )
     if query.all_puls:
         qualifying_cazyme_hits = _filter_qualifying_hits(
@@ -1732,19 +1945,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             plan.use_kofam_thresholds,
             dbcan_model_ids,
         )
-        kept_hits, contig_ids = _choose_best_contigs(
-            all_hits,
-            min_bitscore=plan.min_bitscore,
-            max_evalue=plan.max_evalue,
-            top_per_contig=plan.top_per_contig,
-            combine_mode="any",
-            min_hmm_hits=plan.min_hmm_hits,
-            total_hmm_models=total_models,
-            queried_model_ids=queried_model_ids,
-            kofam_metadata_by_model=kofam_metadata_by_model,
-            use_kofam_thresholds=plan.use_kofam_thresholds,
-            dbcan_model_ids=dbcan_model_ids,
-        )
+        kept_hits = qualifying_cazyme_hits
+        contig_ids = list(dict.fromkeys(hit.contig for hit in kept_hits))
     else:
         kept_hits, contig_ids = _choose_best_contigs(
             all_hits,
@@ -1843,7 +2045,9 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         "pul_id": query.pul_id,
         "pul_substrate": query.pul_substrate,
         "pul_raw_rule": query.pul_raw_rule,
-        "matching_rule": "threshold" if query.pul_id and cfg.combine_mode == "threshold" else query.matching_rule,
+        "matching_rule": "threshold"
+        if query.pul_id and cfg.combine_mode == "threshold"
+        else query.matching_rule,
         "database_hashes": database_hashes,
     }
     if query.all_cazymes:
@@ -1927,14 +2131,21 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             "searched_family_count": len(query.normalized_models),
             "raw_hmm_hit_count": len(all_hits),
             "qualifying_hmm_hit_count": len(qualifying_cazyme_hits),
-            "contigs_with_cazyme_evidence": len({hit.contig for hit in qualifying_cazyme_hits}),
+            "contigs_with_cazyme_evidence": len(
+                {hit.contig for hit in qualifying_cazyme_hits}
+            ),
             "complete_pul_match_count": len(pul_matches),
             "retained_contig_count": len(contig_ids),
             "skipped_unresolved_puls": list(query.skipped_puls),
             "generated_files": [
-                "screened_contigs.fasta", "kept_contigs.txt", "pul_matches.tsv.gz",
-                "pul_family_support.tsv.gz", "pul_summary.tsv", "substrate_summary.tsv",
-                "evidence/cazyme_hits.tsv.gz", ".phu/run.json",
+                "screened_contigs.fasta",
+                "kept_contigs.txt",
+                "pul_matches.tsv.gz",
+                "pul_family_support.tsv.gz",
+                "pul_summary.tsv",
+                "substrate_summary.tsv",
+                "evidence/cazyme_hits.tsv.gz",
+                ".phu/run.json",
             ],
         }
         manifest_path = plan.outdir / ".phu" / "run.json"

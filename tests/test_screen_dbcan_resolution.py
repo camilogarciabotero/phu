@@ -90,6 +90,7 @@ def test_dbcan_thresholds_use_strict_boundaries(evalue, coverage, kept):
         model="GH128",
         bitscore=1.0,
         evalue=evalue,
+        domain_i_evalue=evalue,
         hmm_coverage=coverage,
     )
 

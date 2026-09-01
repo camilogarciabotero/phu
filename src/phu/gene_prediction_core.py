@@ -18,6 +18,7 @@ try:
 except ModuleNotFoundError:
     fcntl = None
 import hashlib
+from importlib.metadata import version as package_version
 import json
 import os
 import shutil
@@ -38,7 +39,7 @@ class PredictionInputs:
     mode: str = "meta"
     min_gene_len: int = 90
     min_protein_len_aa: int = 30
-    translation_table: int = 11
+    translation_table: int | None = None
 
     def __post_init__(self) -> None:
         """Validate inputs."""
@@ -91,7 +92,9 @@ def compute_cache_key(inputs: PredictionInputs) -> str:
 
     seed = (
         str(inputs.input_contigs)
-        + str(stat.st_mtime_ns)  # Quick invalidation on file change
+        + str(stat.st_mtime_ns)
+        + str(stat.st_size)
+        + package_version("pyrodigal-gv")
         + inputs.mode
         + str(inputs.min_gene_len)
         + str(inputs.min_protein_len_aa)
@@ -134,8 +137,8 @@ def _acquire_lock(lock_file: Path) -> Optional:
         return fh
     except (AttributeError, OSError):
         # fcntl not available (Windows) or locking failed
-        # Fall back to no-op; assume single-threaded or separate processes won't collide
-        return fh
+        fh.close()
+        return None
 
 
 def _release_lock(lock_fh: Optional) -> None:
@@ -201,7 +204,7 @@ def predict_genes_pyrodigal(
             if len(seq) < 100000:
                 # pyrodigal-gv single-mode requires long training context.
                 train_seq = seq + ("A" * (100000 - len(seq)))
-            finder.train(train_seq, translation_table=inputs.translation_table)
+            finder.train(train_seq, translation_table=inputs.translation_table or 11)
 
         predicted: list[PredictedGene] = []
         for ordinal, gene in enumerate(finder.find_genes(seq), start=1):
@@ -243,7 +246,9 @@ def predict_genes_pyrodigal(
     return out
 
 
-def write_predicted_proteins_fasta(genes: Iterable[PredictedGene], output_path: Path) -> int:
+def write_predicted_proteins_fasta(
+    genes: Iterable[PredictedGene], output_path: Path
+) -> int:
     """Write predicted proteins to FASTA and return record count."""
     count = 0
     with output_path.open("w") as out:
@@ -326,7 +331,10 @@ def get_or_predict_proteins(
                     cache_hit=True,
                     cache_key=cache_key,
                     cache_dir=cache_subdir,
-                    genes=[PredictedGene(**item) for item in json.loads(cache_genes.read_text())]
+                    genes=[
+                        PredictedGene(**item)
+                        for item in json.loads(cache_genes.read_text())
+                    ]
                     if cache_genes.exists()
                     else None,
                 )

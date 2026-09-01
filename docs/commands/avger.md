@@ -351,7 +351,7 @@ provides the lightweight, traceable integration and reporting layer.
 Please cite Zhou K. et al., *V- and VL-scores unveil viral signatures and origins
 of protein families*, *Nature Communications* (2026), DOI
 [10.1038/s41467-026-72028-0](https://doi.org/10.1038/s41467-026-72028-0), the
-exact V-Score-Search data release recorded in `.phu/run.json`, CheckAMG v1.1.1
+the CheckAMG v1.1.1 data release recorded in `.phu/run.json`
 and the [Anantharaman Lab repository](https://github.com/AnantharamanLab/CheckAMG),
 Martin et al. (2025), and `phu` itself. Cite Pfam, KOfamKOALA, PyHMMER, and
 pyrodigal-gv as applicable. The CheckAMG release currently supplies software

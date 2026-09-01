@@ -3,7 +3,7 @@
 All notable changes to PHU are recorded here. Development entries describe
 behavior in the unreleased branch and may change before a release.
 
-## Unreleased (0.9.0.dev0)
+## 0.9.0
 
 - Added the experimental `avger` workflow and AVG-related database backends.
 - Added the `dbs` command group for database lifecycle operations.

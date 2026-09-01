@@ -10,11 +10,8 @@ The cache stores the translated protein FASTA generated from the input contigs. 
 
 The cached proteins are reused when all prediction inputs are the same:
 
-- the input contigs file has not changed
-- the prediction mode is unchanged
-- the protein-length filter is unchanged
-- the gene-length filter is unchanged
 - the translation table is unchanged
+`--ttable` when explicitly provided
 
 ## When the cache is rebuilt
 

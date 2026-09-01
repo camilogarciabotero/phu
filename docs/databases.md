@@ -2,7 +2,7 @@
 
 PHU database downloads are scientific inputs. Record the backend, local
 manifest, release identifier, and checksum with every analysis. The development
-registry currently exposes `pfam`, `kofam`, `dbcan`, `vscore`, and `avg`.
+registry currently exposes `pfam`, `kofam`, `dbcan`, and `avg`.
 
 ## Backend matrix
 
@@ -11,7 +11,6 @@ registry currently exposes `pfam`, `kofam`, `dbcan`, `vscore`, and `avg`.
 | `pfam` | Resolve PFAM accessions and search protein-family HMMs | [Pfam current release](https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz) | `Pfam-A.hmm.gz`, `Pfam-A.hmm`, `offsets.json`, optional `models/`, `manifest.json` | HMM and byte-offset index available | The source is a floating `current_release`; pinning, upstream release ID, license, size, and expected checksum are not yet recorded as a stable PHU contract. |
 | `kofam` | Resolve KO models and apply KOfam thresholds | Zenodo record `19503464`: [`ko_list.gz`](https://zenodo.org/records/19503464/files/ko_list.gz), [`kofam.hmm.xz`](https://zenodo.org/records/19503464/files/kofam.hmm.xz) | `ko_list.gz`, `ko_list`, `kofam.hmm.xz`, `kofam.hmm`, `ko_metadata.json`, `offsets.json`, optional `models/`, `manifest.json` | HMM, KO metadata, and byte-offset index available | The Zenodo record is pinned in code, but per-file checksums, license, size, and citation metadata are not yet exposed as a stable PHU contract. |
 | `dbcan` | Resolve CAZyme families and PUL signatures | [dbCAN HMM V15](https://pro.unl.edu/dbCAN2/download_file.php?file=Databases/V15/dbCAN-HMMdb-V15.txt) and [current PUL workbook](https://pro.unl.edu/dbCAN2/download_file.php?file=run_dbCAN_database_total/db_current/dbCAN-PUL.xlsx) | Raw HMM/workbook, `family_offsets.json`, `pul_rules.json`, optional `models/`, `manifest.json` | HMM family and PUL indexes available | Manifest records source URLs, retrieval time, hashes, schema version, and counts. |
-| `vscore` | Provide V-score and normalized VL-score annotations | AnantharamanLab V-Score-Search source configured by the backend | normalized V-score TSV/CSV and `manifest.json` | Validated table and manifest available | Record release URL and checksum from the local manifest. Immutable release, license, size, and update policy require backend metadata work. |
 | `avg` | Provide AVG/APG/AReG reference tables and scores | CheckAMG-derived reference source configured by the backend | normalized score, positive, and filter tables plus `manifest.json` | Reference tables and manifest available | The current code reports release `v1.1.1`; upstream URL, checksum policy, license, size, and immutable source identity require a stable provenance contract. |
 
 ## Lifecycle
@@ -20,7 +19,7 @@ Inspect status before using a backend:
 
 ```bash
 phu dbs list
-phu dbs status pfam kofam vscore avg
+phu dbs status pfam kofam avg
 ```
 
 Prepare an explicitly named backend. Omitting names currently selects all

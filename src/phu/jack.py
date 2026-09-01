@@ -34,7 +34,7 @@ class JackConfig:
     max_evalue: Optional[float] = 1e-5
     top_per_contig: int = 1
     min_gene_len: int = 90
-    translation_table: int = 11
+    translation_table: int | None = None
     min_protein_len_aa: int = 30
     keep_proteins: bool = False
     save_hmm: bool = False
@@ -219,7 +219,7 @@ def _choose_top_hits_per_contig(
                 hits_per_seed[hit.model].append(hit)
             for seed_hits in hits_per_seed.values():
                 seed_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
-                kept_hits.extend(seed_hits[:1])
+                kept_hits.extend(seed_hits[:top_per_contig])
             kept_contigs.append(contig)
             continue
 

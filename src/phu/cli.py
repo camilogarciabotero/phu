@@ -155,9 +155,7 @@ def dbs_prepare(
 ) -> None:
     """Prepare databases for use by phu commands."""
     try:
-        selected = _normalize_db_names(
-            databases or [], all_dbs=all_dbs, allow_legacy_vscore=True
-        )
+        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
     except ValueError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)

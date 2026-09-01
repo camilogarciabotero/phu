@@ -32,3 +32,21 @@ def test_read_fasta_fallback_when_easel_fails(tmp_path, monkeypatch):
 
     records = list(_read_fasta(fasta))
     assert records == [("contig1", "ATGC")]
+
+
+def test_read_fasta_fallback_after_partial_python_stream(tmp_path, monkeypatch):
+    fasta = tmp_path / "contigs.fa"
+    fasta.write_text(">contig1\nATGC\n")
+
+    def _python(_):
+        yield ("contig1", "ATGC")
+        raise ValueError("simulated parser failure")
+
+    def _easel(_):
+        yield ("contig2", "TTAA")
+
+    monkeypatch.setattr(screen, "_read_fasta_python", _python)
+    monkeypatch.setattr(screen, "_read_fasta_easel", _easel)
+
+    records = list(_read_fasta(fasta))
+    assert records == [("contig1", "ATGC"), ("contig2", "TTAA")]

@@ -1036,14 +1036,11 @@ def _read_fasta(fp: Path) -> Iterable[tuple[str, str]]:
     alternative in environments where easel parsing is preferred.
     """
     try:
-        records = list(_read_fasta_python(fp))
+        yield from _read_fasta_python(fp)
+        return
     except (EOFError, OSError, UnicodeDecodeError, ValueError) as exc:
-        # Buffer the primary parser so fallback cannot duplicate partial output.
         logger.debug("Python FASTA parsing failed for %s; trying easel: %s", fp, exc)
         yield from _read_fasta_easel(fp)
-    else:
-        yield from records
-        return
 
 
 def _read_fasta_easel(fp: Path) -> Iterable[tuple[str, str]]:

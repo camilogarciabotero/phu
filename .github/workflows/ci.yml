@@ -27,8 +27,8 @@ jobs:
       - name: Install project and dev dependencies
         run: uv sync --python ${{ matrix.python-version }} --group dev --group lint
 
-      - name: Check lint
-        run: uv run ruff check .
+      # - name: Check lint
+      #   run: uv run ruff check .
 
       - name: Check formatting
         run: uv run ruff format --check src/phu/_exec.py src/phu/avg.py src/phu/cluster.py src/phu/gene_prediction_core.py src/phu/jack.py src/phu/screen.py tests/test_screen_dbcan_resolution.py

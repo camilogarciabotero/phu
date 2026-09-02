@@ -47,7 +47,7 @@ app = typer.Typer(
     help="Phage utilities CLI",
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
-    add_completion=True,
+    add_completion=False,
     no_args_is_help=True,
 )
 dbs_app = typer.Typer(

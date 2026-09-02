@@ -130,9 +130,8 @@ This program uses several key tools and libraries, make sure to acknowledge them
 - [KOFamKOALA](https://www.genome.jp/tools/kofamkoala/): KEGG ortholog assignment based on profile HMM and adaptive score threshold.
 > Aramaki T., Blanc-Mathieu R., Endo H., Ohkubo K., Kanehisa M., Goto S., Ogata H. KofamKOALA: KEGG ortholog assignment based on profile HMM and adaptive score threshold. Bioinformatics. 2019 Nov 19. pii: btz859. doi: 10.1093/bioinformatics/btz859.
 
-- [V-Score-Search](https://github.com/AnantharamanLab/V-Score-Search): A framework for identifying viral sequences and auxiliary viral genes.
-> Zhou et al. (2024). V-Score-Search. Preprint. DOI: 10.1101/2024.10.24.619987
+- [V-Score-Search](https://github.com/AnantharamanLab/V-Score-Search): A framework for identifying viral sequences and auxiliary viral genes and [CheckAMG](https://github.com/AnantharamanLab/CheckAMG): Reference data and curation resources for auxiliary metabolic and auxiliary viral gene analysis.
 
-- [CheckAMG](https://github.com/AnantharamanLab/CheckAMG): Reference data and curation resources for auxiliary metabolic and auxiliary viral gene analysis.
+> [Martin et al. (2025)](https://doi.org/10.1038/s41564-025-02095-4): A call for caution in the biological interpretation of viral auxiliary metabolic genes. *Nature Microbiology*, 10, 2122-2129. doi: 10.1038/s41564-025-02095-4
 
-- [Martin et al. (2025)](https://doi.org/10.1038/s41564-025-02095-4): A call for caution in the biological interpretation of viral auxiliary metabolic genes. *Nature Microbiology*, 10, 2122-2129.
+> [Zhou et al. (2026)](https://doi.org/10.1038/s41467-026-72028-0). V- and VL-scores unveil viral signatures and origins of protein families. Nat Commun 17, 5828 (2026) doi: 10.1038/s41467-026-72028-0

@@ -1202,7 +1202,7 @@ Predict and curate putative auxiliary viral genes.
 │                                                                          [default: meta]         │
 │    --min-gene-len                               &lt;int range&gt; [x&gt;=1]       [default: 90]           │
 │    --min-protein-len-aa                         &lt;int range&gt; [x&gt;=1]       [default: 30]           │
-│    --ttable               -T                    &lt;int range&gt; [x&gt;=1]       [default: 11]           │
+│    --ttable               -T                    &lt;int range&gt; [x&gt;=1]       [default: none]         │
 │    --min-amg-weight                             &lt;float range&gt;            [default: 0.6]          │
 │                                                 [0.0&lt;=x&lt;=1.0]                                    │
 │    --filter-mode                                &lt;str&gt;                    [default: standard]     │
@@ -1262,8 +1262,10 @@ biological validation.</p>
 decision layer:</p>
 <ul>
 <li><strong>Gene prediction:</strong> Prodigal and its Python interface, Pyrodigal, provide
-    the coding-sequence prediction step. The selected <code>--mode</code>, <code>--ttable</code>, and
-    length filters affect which proteins enter downstream annotation.</li>
+    the coding-sequence prediction step. Unless explicitly provided, the
+    translation table is selected by each contig's pyrodigal-gv model. The
+    selected <code>--mode</code>, <code>--ttable</code>, and length filters affect which proteins enter
+    downstream annotation.</li>
 <li><strong>Profile annotation:</strong> HMMER, accessed through PyHMMER, supplies profile-HMM
     searches. Pfam model cutoffs and KOfam's KO-specific thresholds are used as
     annotation criteria; a passing profile match is not, by itself, evidence of
@@ -1505,7 +1507,7 @@ provides the lightweight, traceable integration and reporting layer.</p>
 <p>Please cite Zhou K. et al., <em>V- and VL-scores unveil viral signatures and origins
 of protein families</em>, <em>Nature Communications</em> (2026), DOI
 <a href="https://doi.org/10.1038/s41467-026-72028-0">10.1038/s41467-026-72028-0</a>, the
-exact V-Score-Search data release recorded in <code>.phu/run.json</code>, CheckAMG v1.1.1
+ CheckAMG v1.1.1 data release recorded in <code>.phu/run.json</code>
 and the <a href="https://github.com/AnantharamanLab/CheckAMG">Anantharaman Lab repository</a>,
 Martin et al. (2025), and <code>phu</code> itself. Cite Pfam, KOfamKOALA, PyHMMER, and
 pyrodigal-gv as applicable. The CheckAMG release currently supplies software

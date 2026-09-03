@@ -1254,7 +1254,7 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 <li><code>phu dbs refresh [DB ...]</code></li>
 <li><code>phu dbs remove [DB ...] --yes</code></li>
 </ul>
-<p><code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, <code>vscore</code>, and <code>avg</code> are available in this development build.
+<p><code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, and <code>avg</code> are available in this build.
 Database preparation may download large files; inspect status and available
 metadata before preparing a backend.</p>
 <p><strong>Example:</strong>
@@ -1278,7 +1278,7 @@ metadata before preparing a backend.</p>
 </ul>
 <h2 id="cache-handling">Cache Handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h2>
 <p><code>phu</code> caches predicted proteins for both <code>screen</code> and <code>jack</code>. That means repeated searches can skip the gene-prediction step when the contigs and prediction inputs are unchanged. Changing HMMs, seed markers, combine mode, or output folders does not invalidate the cache.</p>
-<p>The cache is rebuilt when you change the contigs, <code>--mode</code>, <code>--ttable</code>, or the protein-length filter. For <code>phu screen</code>, that is <code>--min-protein-len-aa</code>. For <code>phu jack</code>, both <code>--min-gene-len</code> and <code>--min-protein-len-aa</code> affect cache reuse.</p>
+<p>The cache is rebuilt when you change the contigs, <code>--mode</code>, an explicit <code>--ttable</code>, or the protein-length filter. Without <code>--ttable</code>, meta-mode contigs use the translation table selected by pyrodigal-gv. For <code>phu screen</code>, that is <code>--min-protein-len-aa</code>. For <code>phu jack</code>, both <code>--min-gene-len</code> and <code>--min-protein-len-aa</code> affect cache reuse.</p>
 <p>To clear previous predictions manually, run <code>phu --clean-cache</code>.</p>
 <p>See the full cache guide in <a href="https://camilogarciabotero.github.io/phu/cache">Cache Handling</a>.</p>
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>

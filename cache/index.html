@@ -922,11 +922,8 @@
 <h2 id="when-the-cache-is-reused">When the cache is reused<a class="headerlink" href="#when-the-cache-is-reused" title="Permanent link">&para;</a></h2>
 <p>The cached proteins are reused when all prediction inputs are the same:</p>
 <ul>
-<li>the input contigs file has not changed</li>
-<li>the prediction mode is unchanged</li>
-<li>the protein-length filter is unchanged</li>
-<li>the gene-length filter is unchanged</li>
-<li>the translation table is unchanged</li>
+<li>the translation table is unchanged
+<code>--ttable</code> when explicitly provided</li>
 </ul>
 <h2 id="when-the-cache-is-rebuilt">When the cache is rebuilt<a class="headerlink" href="#when-the-cache-is-rebuilt" title="Permanent link">&para;</a></h2>
 <p>The cache is invalidated and rebuilt when any of these prediction inputs change:</p>
@@ -934,9 +931,9 @@
 <li><code>--mode</code></li>
 <li><code>--min-gene-len</code> in <code>phu jack</code></li>
 <li><code>--min-protein-len-aa</code></li>
-<li><code>--ttable</code></li>
+<li>an explicit <code>--ttable</code></li>
 </ul>
-<p>For <code>phu screen</code>, changing <code>--min-protein-len-aa</code>, <code>--mode</code>, or <code>--ttable</code> forces a rebuild. For <code>phu jack</code>, changing either <code>--min-gene-len</code> or <code>--min-protein-len-aa</code> forces a rebuild because both values feed the shared protein-prediction cache key.</p>
+<p>For <code>phu screen</code>, changing <code>--min-protein-len-aa</code>, <code>--mode</code>, or an explicit <code>--ttable</code> forces a rebuild. For <code>phu jack</code>, changing either <code>--min-gene-len</code> or <code>--min-protein-len-aa</code> forces a rebuild because both values feed the shared protein-prediction cache key. Without <code>--ttable</code>, meta-mode contigs use the translation table selected by pyrodigal-gv.</p>
 <h2 id="how-to-control-it">How to control it<a class="headerlink" href="#how-to-control-it" title="Permanent link">&para;</a></h2>
 <p>Cache behavior is controlled by environment variables:</p>
 <ul>

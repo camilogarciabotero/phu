@@ -852,7 +852,7 @@
 <h1 id="databases-and-provenance">Databases and Provenance<a class="headerlink" href="#databases-and-provenance" title="Permanent link">&para;</a></h1>
 <p>PHU database downloads are scientific inputs. Record the backend, local
 manifest, release identifier, and checksum with every analysis. The development
-registry currently exposes <code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, <code>vscore</code>, and <code>avg</code>.</p>
+registry currently exposes <code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, and <code>avg</code>.</p>
 <h2 id="backend-matrix">Backend matrix<a class="headerlink" href="#backend-matrix" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -891,14 +891,6 @@ registry currently exposes <code>pfam</code>, <code>kofam</code>, <code>dbcan</c
 <td>Manifest records source URLs, retrieval time, hashes, schema version, and counts.</td>
 </tr>
 <tr>
-<td><code>vscore</code></td>
-<td>Provide V-score and normalized VL-score annotations</td>
-<td>AnantharamanLab V-Score-Search source configured by the backend</td>
-<td>normalized V-score TSV/CSV and <code>manifest.json</code></td>
-<td>Validated table and manifest available</td>
-<td>Record release URL and checksum from the local manifest. Immutable release, license, size, and update policy require backend metadata work.</td>
-</tr>
-<tr>
 <td><code>avg</code></td>
 <td>Provide AVG/APG/AReG reference tables and scores</td>
 <td>CheckAMG-derived reference source configured by the backend</td>
@@ -911,7 +903,7 @@ registry currently exposes <code>pfam</code>, <code>kofam</code>, <code>dbcan</c
 <h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
 <p>Inspect status before using a backend:</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>list
-phu<span class="w"> </span>dbs<span class="w"> </span>status<span class="w"> </span>pfam<span class="w"> </span>kofam<span class="w"> </span>vscore<span class="w"> </span>avg
+phu<span class="w"> </span>dbs<span class="w"> </span>status<span class="w"> </span>pfam<span class="w"> </span>kofam<span class="w"> </span>avg
 </code></pre></div>
 <p>Prepare an explicitly named backend. Omitting names currently selects all
 supported backends, which may download substantial data:</p>

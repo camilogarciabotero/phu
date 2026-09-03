@@ -53,22 +53,6 @@ A special command group, `dbs`, is available to manage local databases used by `
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 
-### AVG workflows
-
-`phu avger` is the annotation and evidence workflow. It predicts proteins from
-trusted viral contigs, searches complete Pfam and KOfam databases, adds optional
-CheckAMG V/VL-score annotations, and writes one best passing hit per protein and
-database. It reports candidate evidence; it does not establish that a gene is
-an AVG by itself.
-
-`phu avger` applies the V/VL/AVL score framework of Zhou et al. and uses
-versioned CheckAMG reference tables for AMG, APG, and AReG classification and
-curation; see the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/)
-for attribution and interpretation limits.
-
-Use `phu avger` for the supported annotation and evidence workflow described in
-the [avger command guide](https://camilogarciabotero.github.io/phu/commands/avger/).
-
 ## Cache Handling
 
 `phu` caches predicted proteins for both `screen` and `jack` so repeated runs can reuse the same translated proteins when the prediction inputs have not changed. Search settings such as HMM files, seed markers, combine mode, and output folder do not affect the cache.
@@ -88,18 +72,18 @@ tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Developers
 
-You can also install the development version of `phu` directly from GitHub:
+You can also install the development version of `phu` directly from GitHub with `uv`:
 
 ```bash
 git clone https://github.com/camilogarciabotero/phu.git
 cd phu
-pip install -e .
+uv sync
 ```
 
-`phu` is also available on PyPI:
+`phu` is also available on PyPI and can be installed with `uv`:
 
 ```bash
-pip install phu
+uv tool install phu
 ```
 
 ## References

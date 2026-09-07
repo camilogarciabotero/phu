@@ -347,7 +347,12 @@ def _search_and_collect(
             # HMMFile is consumed by hmmsearch, so reopen it for each bounded
             # protein batch rather than retaining all proteins in memory.
             with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
-                hit_batches = pyhmmer.hmmsearch(hmm_file, proteins, cpus=cfg.threads)
+                hit_batches = pyhmmer.hmmsearch(
+                    hmm_file,
+                    proteins,
+                    cpus=cfg.threads,
+                    parallel="queries",
+                )
                 for top_hits in hit_batches:
                     hmm = top_hits.query
                     raw_model = getattr(hmm, "accession", None) or getattr(hmm, "name", "")

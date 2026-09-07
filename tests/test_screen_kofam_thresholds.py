@@ -276,7 +276,8 @@ def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
 
     calls = []
 
-    def _fake_hmmsearch(hmms, proteins, cpus, bit_cutoffs):
+    def _fake_hmmsearch(hmms, proteins, cpus, parallel, bit_cutoffs):
+        assert parallel == "queries"
         calls.append(bit_cutoffs)
         if bit_cutoffs == "gathering":
             raise _FakeMissingCutoffs("missing gathering cutoffs")

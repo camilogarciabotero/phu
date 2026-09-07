@@ -1157,7 +1157,13 @@ def _hmmsearch(
     bit_cutoffs = "gathering" if cut_ga else None
     try:
         hits_list = list(
-            pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=bit_cutoffs)
+            pyhmmer.hmmsearch(
+                hmms,
+                proteins,
+                cpus=threads,
+                parallel="queries",
+                bit_cutoffs=bit_cutoffs,
+            )
         )
     except Exception as exc:
         missing_cutoffs_exc = getattr(pyhmmer.plan7, "MissingCutoffs", None)
@@ -1171,7 +1177,13 @@ def _hmmsearch(
                 "retrying without --cut-ga."
             )
             hits_list = list(
-                pyhmmer.hmmsearch(hmms, proteins, cpus=threads, bit_cutoffs=None)
+                pyhmmer.hmmsearch(
+                    hmms,
+                    proteins,
+                    cpus=threads,
+                    parallel="queries",
+                    bit_cutoffs=None,
+                )
             )
         else:
             raise

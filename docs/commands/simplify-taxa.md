@@ -65,6 +65,9 @@ using them as a scientific contract.
 
 ## Command options
 
+The live CLI groups options into **Input**, **Output**, and **Runtime** panels.
+Run `phu simplify-taxa --help` for the current terminal menu.
+
 ```text
 Usage: phu simplify-taxa [OPTIONS]
 
@@ -78,18 +81,24 @@ Usage: phu simplify-taxa [OPTIONS]
    phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --input-file   -i      <path>  Input vContact final_assignments.csv       │
-│                                   [required]                                 │
+│ --help  -h        Show this message and exit.                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ *  --input-file  -i      <path>  Input vContact final_assignments.csv        │
+│                                  [required]                                  │
+│    --sep         -s      <str>   Override delimiter: ',' or '\t'.            │
+│                                  Auto-detected from extension if not set     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
 │ *  --output-file  -o      <path>  Output file path (.csv or .tsv) [required] │
 │    --add-lineage  -a              Append compact_lineage column from deepest │
 │                                   simplified rank                            │
 │    --lineage-col  -l      <str>   Name of the lineage column                 │
 │                                   [default: compact_lineage]                 │
-│    --sep          -s      <str>   Override delimiter: ',' or '\t'.           │
-│                                   Auto-detected from extension if not set    │
-│    --quiet                        Suppress routine progress output.          │
-│    --verbose                      Show additional progress details.          │
-│    --help         -h              Show this message and exit.                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --quiet            Suppress routine progress output.                         │
+│ --verbose          Show additional progress details.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

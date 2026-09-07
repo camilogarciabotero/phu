@@ -14,6 +14,36 @@ phu dbs [COMMAND] [OPTIONS] [DATABASES...]
 
 ## Supported commands
 
+The database subcommands use a separate **Selection** panel for `--all` and a
+command-specific action panel for preparation or removal options. Run each
+subcommand with `--help` to see its current grouped menu.
+
+For example, the rendered menus are:
+
+```text
+Usage: phu dbs status [OPTIONS] [databases]...
+
+ Show detailed status for one or more databases.
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│ databases  Database names (default: all)                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Selection ───────────────────────────────────────────────────────────────────╮
+│ --all  Show status for all supported databases                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+```text
+Usage: phu dbs prepare [OPTIONS] [databases]...
+
+╭─ Selection ───────────────────────────────────────────────────────────────────╮
+│ --all  Prepare all supported databases                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Preparation ─────────────────────────────────────────────────────────────────╮
+│ --force-refresh  Force re-download/rebuild when supported                    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
 - `phu dbs list`
 - `phu dbs status [DATABASES...] [--all]`
 - `phu dbs prepare [DATABASES...] [--all] [--force-refresh]`

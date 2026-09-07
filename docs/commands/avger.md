@@ -17,7 +17,31 @@ phu avger -i contigs.fa -o phu-avger
 
 ### Options
 
-The command-line menu is available directly with `phu avger --help`:
+The command-line menu is available directly with `phu avger --help`. Options
+are grouped into **Input**, **Output**, **Runtime**, **Prediction**, and
+**Scoring** panels. The current panel layout is:
+
+```text
+╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ --input-contigs  -i  Trusted viral contigs FASTA                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
+│ --output-folder  -o  Output directory                                       │
+│ --keep-hits          Keep intermediate annotation hits                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --threads  -t  Threads for prediction and annotation                       │
+│ --quiet             Suppress routine progress output.                       │
+│ --verbose           Show additional progress details.                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Prediction ─────────────────────────────────────────────────────────────────╮
+│ --mode  -m, --min-gene-len, --min-protein-len-aa, --ttable                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Scoring ────────────────────────────────────────────────────────────────────╮
+│ --min-amg-weight, --filter-mode, --scaffold-avl-cutoff, --gene-vl-cutoff,   │
+│ --gene-v-cutoff, --scoring-evalue                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
 
 ```text
 Usage: phu avger [OPTIONS]

@@ -44,6 +44,9 @@ clustered-contigs/
 
 ## Command Options
 
+The live CLI groups options into **Clustering**, **Input**, **Output**, and
+**Runtime** panels. Run `phu cluster --help` for the current terminal menu.
+
 ```bash 
  Sequence clustering wrapper around external 'vclust' with three modes.      
                                                                              
@@ -54,25 +57,27 @@ clustered-contigs/
  Example:                                                                    
      phu cluster --mode votu --input-contigs genomes.fna                                               
                                                                              
-╭─ Options ─────────────────────────────────────────────────────────────────╮
-│ *  --mode                   [dereplication|votu|s  dereplication | votu | │
-│                             pecies]                species                │
-│                                                    [required]             │
-│ *  --input-contigs          PATH                   Input FASTA [required] │
-│    --output-folder          PATH                   Output directory       │
-│                                                    [default:              │
-│                                                    clustered-contigs]     │
-│    --threads                INTEGER RANGE [x>=0]   0=all cores; otherwise │
-│                                                    N threads              │
-│                                                    [default: 0]           │
-│    --vclust-params          TEXT                   Custom vclust          │
-│                                                    parameters:            │
-│                                                    "--min-kmers 20        │
-│                                                    --outfmt lite --ani    │
-│                                                    0.97"                  │
-│    --help           -h                             Show this message and  │
-│                                                    exit.                  │
-╰───────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Clustering ─────────────────────────────────────────────────────────────────╮
+│ *  --mode                   <str>  dereplication | votu | species [required] │
+│    --vclust-params  -p      <str>  Custom vclust parameters: "--min-kmers 20 │
+│                                    --outfmt lite --ani 0.97"                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ *  --input-contigs  -i      <path>  Input FASTA [required]                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
+│ --output-folder  -o      <path>  Output directory                            │
+│                                  [default: clustered-contigs]                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --threads  -t      <int range> [x>=0]  0=all cores; otherwise N threads      │
+│                                        [default: 0]                          │
+│ --quiet                                Suppress routine progress output.     │
+│ --verbose                              Show additional progress details.     │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Examples

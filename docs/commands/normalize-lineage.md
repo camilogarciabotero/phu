@@ -46,20 +46,33 @@ separated by `||` are normalized independently.
 
 ## Command options
 
+The live CLI groups options into **Input**, **Output**, **Quality checks**, and
+**Runtime** panels. Run `phu normalize-lineage --help` for the current terminal
+menu.
+
 ```text
 Usage: phu normalize-lineage [OPTIONS]
 
  Normalize vContact lineage predictions without changing column names.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --input-file   -i      <path>  [required]                                 │
-│ *  --output-file  -o      <path>  [required]                                 │
-│    --add-lineage  -a                                                         │
-│    --lineage-col  -l      <str>   [default: compact_lineage]                 │
-│    --sep          -s      <str>                                              │
-│    --strict                                                                  │
-│    --quiet                                                                   │
-│    --help         -h              Show this message and exit.                │
+│ --help  -h        Show this message and exit.                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ *  --input-file  -i      <path>  Input delimited table [required]            │
+│    --sep         -s      <str>   Explicit input/output separator             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
+│ *  --output-file  -o      <path>  Output normalized table [required]         │
+│    --add-lineage  -a              Append the compact lineage column          │
+│    --lineage-col  -l      <str>   Name of the lineage column                 │
+│                                   [default: compact_lineage]                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Quality checks ─────────────────────────────────────────────────────────────╮
+│ --strict          Fail on unparsed or rank-mismatched values                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --quiet          Suppress the QA summary                                     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

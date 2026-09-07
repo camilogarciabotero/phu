@@ -116,12 +116,11 @@ def dbs_status(
         None,
         help="Database names (default: all)",
     ),
-            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Show status for all supported databases",
-            rich_help_panel="Selection",
+        rich_help_panel="Selection",
     ),
 ) -> None:
     """Show detailed status for one or more databases."""
@@ -148,18 +147,17 @@ def dbs_prepare(
         None,
         help="Database names (default: all)",
     ),
-            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Prepare all supported databases",
-            rich_help_panel="Selection",
+        rich_help_panel="Selection",
     ),
     force_refresh: bool = typer.Option(
         False,
         "--force-refresh",
         help="Force re-download/rebuild when supported",
-            rich_help_panel="Preparation",
+        rich_help_panel="Preparation",
     ),
 ) -> None:
     """Prepare databases for use by phu commands."""
@@ -205,12 +203,11 @@ def dbs_refresh(
         None,
         help="Database names (default: all)",
     ),
-            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Refresh all supported databases",
-            rich_help_panel="Selection",
+        rich_help_panel="Selection",
     ),
 ) -> None:
     """Refresh database integrity and repair incomplete state."""
@@ -254,12 +251,11 @@ def dbs_remove(
         None,
         help="Database names (default: all)",
     ),
-            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Remove all supported databases",
-            rich_help_panel="Selection",
+        rich_help_panel="Selection",
     ),
     yes: bool = typer.Option(
         False,

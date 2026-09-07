@@ -29,6 +29,13 @@ You can install `phu` using `mamba` or `conda` from the `bioconda` channel:
 mamba create -n phu bioconda::phu
 ```
 
+To try unreleased changes from the `main` branch without installing them:
+
+```bash
+uvx --from git+https://github.com/camilogarciabotero/phu.git@main phu --help
+```
+
+
 ## Usage
 
 As a command-line tool, `phu` follows a modular structure. You can access different functionalities through subcommands. The general syntax is:

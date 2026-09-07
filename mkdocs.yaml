@@ -71,6 +71,7 @@ nav:
       - commands/dbs.md
       - commands/avger.md
       - commands/simplify-taxa.md
+      - commands/normalize-lineage.md
       - commands/screen.md
       - commands/jack.md
   - Databases and Provenance: databases.md

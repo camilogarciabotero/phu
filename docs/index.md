@@ -141,6 +141,12 @@ phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
 
 [Learn more about taxonomy simplification →](commands/simplify-taxa.md)
 
+### `normalize-lineage` - Normalize vContact Lineage
+
+Normalize vContact lineage predictions while preserving the input table schema.
+
+[Learn more about lineage normalization →](commands/normalize-lineage.md)
+
 ## Use Cases
 
 - **Viral Identification**: Screen metagenomic assemblies for viral contigs using protein markers

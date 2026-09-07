@@ -1,6 +1,10 @@
 # phu - Phage Utilities
 
 <div align="center">
+  <img src="assets/phu-logo-black.svg" alt="phu logo" width="180">
+</div>
+
+<div align="center">
   <strong>A modular toolkit for viral genomics workflows</strong>
 </div>
 

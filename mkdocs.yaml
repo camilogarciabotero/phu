@@ -6,10 +6,9 @@ theme:
     - content.code.copy
   feature:
     navigation.tabs: false
-  # Use custom logo (shown in navbar) and favicon (small browser/tab icon)
-  # logo: imgs/v03-phu-logo-small.svg
-  # Optional dark-mode logo (Material supports this)
-  # logo_dark: imgs/v03-phu-logo-small-fordark.svg
+  # Use the current phu logo in the navbar for both theme palettes.
+  logo: assets/phu-logo-black.svg
+  logo_dark: assets/phu-logo-gray.svg
   palette:
     - scheme: default
       primary: blue-grey

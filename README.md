@@ -43,6 +43,37 @@ For the complete command list and global options, run:
 phu --help
 ```
 
+The top-level help menu is:
+
+```text
+Usage: phu [OPTIONS] COMMAND [ARGS]...
+
+ Phage utilities CLI
+
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --version      -v        Show version and exit.                              │
+│ --clean-cache            Remove cached protein predictions and exit.         │
+│ --help         -h        Show this message and exit.                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Workflow ───────────────────────────────────────────────────────────────────╮
+│ cluster            Sequence clustering wrapper around external 'vclust' with │
+│                    three modes.                                              │
+│ normalize-lineage  Normalize vContact lineage predictions without changing   │
+│                    column names.                                             │
+│ simplify-taxa      Simplify vContact taxonomy prediction columns into        │
+│                    compact lineage codes.                                    │
+│ avger              Predict and curate putative auxiliary viral genes.        │
+│ screen             Screen contigs using protein-family or PUL CAZyme         │
+│                    signatures.                                               │
+│ jack               Iteratively screen contigs from one or more seed protein  │
+│                    markers with                                              │
+│                    pyhmmer.jackhmmer.                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Database Management ────────────────────────────────────────────────────────╮
+│ dbs                Manage local phu databases                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
 ## Commands
 
 - [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Screen contigs for specific protein families using HMMER on predicted coding sequences.

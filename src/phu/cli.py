@@ -116,10 +116,12 @@ def dbs_status(
         None,
         help="Database names (default: all)",
     ),
+            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Show status for all supported databases",
+            rich_help_panel="Selection",
     ),
 ) -> None:
     """Show detailed status for one or more databases."""
@@ -146,15 +148,18 @@ def dbs_prepare(
         None,
         help="Database names (default: all)",
     ),
+            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Prepare all supported databases",
+            rich_help_panel="Selection",
     ),
     force_refresh: bool = typer.Option(
         False,
         "--force-refresh",
         help="Force re-download/rebuild when supported",
+            rich_help_panel="Preparation",
     ),
 ) -> None:
     """Prepare databases for use by phu commands."""
@@ -200,10 +205,12 @@ def dbs_refresh(
         None,
         help="Database names (default: all)",
     ),
+            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Refresh all supported databases",
+            rich_help_panel="Selection",
     ),
 ) -> None:
     """Refresh database integrity and repair incomplete state."""
@@ -247,10 +254,12 @@ def dbs_remove(
         None,
         help="Database names (default: all)",
     ),
+            rich_help_panel="Selection",
     all_dbs: bool = typer.Option(
         False,
         "--all",
         help="Remove all supported databases",
+            rich_help_panel="Selection",
     ),
     yes: bool = typer.Option(
         False,
@@ -338,27 +347,30 @@ def _root(
 
 @app.command("cluster", rich_help_panel="Workflow")
 def cluster(
-    mode: str = typer.Option(..., "--mode", help="dereplication | votu | species"),
+    mode: str = typer.Option(
+        ..., "--mode", help="dereplication | votu | species", rich_help_panel="Clustering"
+    ),
     input_contigs: Path = typer.Option(
-        ..., "--input-contigs", "-i", exists=True, readable=True, help="Input FASTA"
+        ..., "--input-contigs", "-i", exists=True, readable=True, help="Input FASTA", rich_help_panel="Input"
     ),
     output_folder: Path = typer.Option(
-        Path("clustered-contigs"), "--output-folder", "-o", help="Output directory"
+        Path("clustered-contigs"), "--output-folder", "-o", help="Output directory", rich_help_panel="Output"
     ),
     threads: int = typer.Option(
-        0, "--threads", "-t", min=0, help="0=all cores; otherwise N threads"
+        0, "--threads", "-t", min=0, help="0=all cores; otherwise N threads", rich_help_panel="Runtime"
     ),
     vclust_params: Optional[str] = typer.Option(
         None,
         "--vclust-params",
         "-p",
         help='Custom vclust parameters: "--min-kmers 20 --outfmt lite --ani 0.97"',
+        rich_help_panel="Clustering",
     ),
     quiet: bool = typer.Option(
-        False, "--quiet", help="Suppress routine progress output."
+        False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", help="Show additional progress details."
+        False, "--verbose", help="Show additional progress details.", rich_help_panel="Runtime"
     ),
 ):
     """
@@ -420,14 +432,14 @@ def cluster(
 @app.command("normalize-lineage", rich_help_panel="Workflow")
 def normalize_lineage(
     input_file: Path = typer.Option(
-        ..., "--input-file", "-i", exists=True, readable=True
+        ..., "--input-file", "-i", exists=True, readable=True, help="Input delimited table", rich_help_panel="Input"
     ),
-    output_file: Path = typer.Option(..., "--output-file", "-o"),
-    add_lineage: bool = typer.Option(False, "--add-lineage", "-a"),
-    lineage_col: str = typer.Option("compact_lineage", "--lineage-col", "-l"),
-    sep: Optional[str] = typer.Option(None, "--sep", "-s"),
-    strict: bool = typer.Option(False, "--strict"),
-    quiet: bool = typer.Option(False, "--quiet"),
+    output_file: Path = typer.Option(..., "--output-file", "-o", help="Output normalized table", rich_help_panel="Output"),
+    add_lineage: bool = typer.Option(False, "--add-lineage", "-a", help="Append the compact lineage column", rich_help_panel="Output"),
+    lineage_col: str = typer.Option("compact_lineage", "--lineage-col", "-l", help="Name of the lineage column", rich_help_panel="Output"),
+    sep: Optional[str] = typer.Option(None, "--sep", "-s", help="Explicit input/output separator", rich_help_panel="Input"),
+    strict: bool = typer.Option(False, "--strict", help="Fail on unparsed or rank-mismatched values", rich_help_panel="Quality checks"),
+    quiet: bool = typer.Option(False, "--quiet", help="Suppress the QA summary", rich_help_panel="Runtime"),
 ):
     """Normalize vContact lineage predictions without changing column names."""
     config = NormalizeLineageConfig(
@@ -481,30 +493,33 @@ def simplify_taxa(
         exists=True,
         readable=True,
         help="Input vContact final_assignments.csv",
+        rich_help_panel="Input",
     ),
     output_file: Path = typer.Option(
-        ..., "--output-file", "-o", help="Output file path (.csv or .tsv)"
+        ..., "--output-file", "-o", help="Output file path (.csv or .tsv)", rich_help_panel="Output"
     ),
     add_lineage: bool = typer.Option(
         False,
         "--add-lineage",
         "-a",
         help="Append compact_lineage column from deepest simplified rank",
+        rich_help_panel="Output",
     ),
     lineage_col: str = typer.Option(
-        "compact_lineage", "--lineage-col", "-l", help="Name of the lineage column"
+        "compact_lineage", "--lineage-col", "-l", help="Name of the lineage column", rich_help_panel="Output"
     ),
     sep: Optional[str] = typer.Option(
         None,
         "--sep",
         "-s",
         help="Override delimiter: ',' or '\\t'. Auto-detected from extension if not set",
+        rich_help_panel="Input",
     ),
     quiet: bool = typer.Option(
-        False, "--quiet", help="Suppress routine progress output."
+        False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", help="Show additional progress details."
+        False, "--verbose", help="Show additional progress details.", rich_help_panel="Runtime"
     ),
 ):
     """
@@ -546,35 +561,37 @@ def avger(
         exists=True,
         readable=True,
         help="Trusted viral contigs FASTA",
+        rich_help_panel="Input",
     ),
     output_folder: Path = typer.Option(
-        Path("phu-avger"), "--output-folder", "-o", help="Output directory"
+        Path("phu-avger"), "--output-folder", "-o", help="Output directory", rich_help_panel="Output"
     ),
-    threads: int = typer.Option(1, "--threads", "-t", min=1),
+    threads: int = typer.Option(1, "--threads", "-t", min=1, help="Threads for prediction and annotation", rich_help_panel="Runtime"),
     mode: str = typer.Option(
-        "meta", "--mode", "-m", help="pyrodigal mode: meta|single"
+        "meta", "--mode", "-m", help="pyrodigal mode: meta|single", rich_help_panel="Prediction"
     ),
-    min_gene_len: int = typer.Option(90, "--min-gene-len", min=1),
-    min_protein_len_aa: int = typer.Option(30, "--min-protein-len-aa", min=1),
+    min_gene_len: int = typer.Option(90, "--min-gene-len", min=1, help="Minimum gene length for pyrodigal (nt)", rich_help_panel="Prediction"),
+    min_protein_len_aa: int = typer.Option(30, "--min-protein-len-aa", min=1, help="Minimum translated protein length to keep (aa)", rich_help_panel="Prediction"),
     translation_table: Optional[int] = typer.Option(
         None,
         "--ttable",
         "-T",
         min=1,
         help="NCBI translation table; default uses each contig's predicted table",
+        rich_help_panel="Prediction",
     ),
-    min_amg_weight: float = typer.Option(0.6, "--min-amg-weight", min=0.0, max=1.0),
-    filter_mode: str = typer.Option("standard", "--filter-mode"),
-    keep_hits: bool = typer.Option(False, "--keep-hits/--no-keep-hits"),
-    scaffold_avl_cutoff: float = typer.Option(3.0, "--scaffold-avl-cutoff", min=0.0),
-    gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0),
-    gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0),
-    scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0),
+    min_amg_weight: float = typer.Option(0.6, "--min-amg-weight", min=0.0, max=1.0, help="Minimum AMG evidence weight", rich_help_panel="Scoring"),
+    filter_mode: str = typer.Option("standard", "--filter-mode", help="Candidate filter mode: standard|strict|none", rich_help_panel="Scoring"),
+    keep_hits: bool = typer.Option(False, "--keep-hits/--no-keep-hits", help="Keep intermediate annotation hits", rich_help_panel="Output"),
+    scaffold_avl_cutoff: float = typer.Option(3.0, "--scaffold-avl-cutoff", min=0.0, help="Minimum scaffold AVL score", rich_help_panel="Scoring"),
+    gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0, help="Minimum gene VL-score", rich_help_panel="Scoring"),
+    gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0, help="Minimum gene V-score", rich_help_panel="Scoring"),
+    scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0, help="E-value cutoff for scoring searches", rich_help_panel="Scoring"),
     quiet: bool = typer.Option(
-        False, "--quiet", help="Suppress routine progress output."
+        False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", help="Show additional progress details."
+        False, "--verbose", help="Show additional progress details.", rich_help_panel="Runtime"
     ),
 ) -> None:
     """Predict and curate putative auxiliary viral genes."""

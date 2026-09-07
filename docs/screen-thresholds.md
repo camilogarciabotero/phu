@@ -1,4 +1,4 @@
-# screen thresholds and decision logic
+# Screen thresholds and decision logic
 
 This page documents how `phu screen` decides whether a hit, protein, or contig passes filtering.
 

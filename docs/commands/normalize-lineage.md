@@ -1,8 +1,71 @@
 # normalize-lineage
 
-Normalize vContact lineage predictions into compact, rank-aware lineage codes without renaming input columns.
+## What does it do?
 
-## Usage
+The `phu normalize-lineage` command normalizes vContact lineage predictions
+into compact, rank-aware lineage values without renaming the input columns. It
+is intended for tables produced by vContact workflows.
+
+## Synopsis
+
+```bash
+phu normalize-lineage -i <INPUT_FILE> -o <OUTPUT_FILE> [OPTIONS]
+```
+
+The input delimiter is inferred from the filename unless `--sep` is supplied.
+The output table preserves the original columns and is written to the path
+provided by `--output-file`.
+
+## Input and output
+
+The command recognizes lineage prediction columns by their taxonomic rank, such
+as `genus_prediction`, `family_prediction`, and `order_prediction`. Missing
+values remain missing. Values that cannot be parsed are preserved rather than
+silently discarded.
+
+For example:
+
+```text
+novel_genus_1_of_Viruses
+Viruses:NG1
+```
+
+The normalized values remain in their original columns. With `--add-lineage`,
+a compact lineage column is appended; without it, no new column is added.
+
+## Normalization and quality checks
+
+Existing compact values are left unchanged. The command reports the number of
+examined, normalized, unchanged, missing, unparsed, rank-mismatched, and
+multi-candidate cells in its QA summary.
+
+The `--strict` option makes quality problems fatal: the command exits non-zero
+when values are unparsed or when a value's rank does not match its column. In
+non-strict mode, those values are retained and reported. Multiple candidates
+separated by `||` are normalized independently.
+
+## Command options
+
+```text
+Usage: phu normalize-lineage [OPTIONS]
+
+ Normalize vContact lineage predictions without changing column names.
+
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ *  --input-file   -i      <path>  [required]                                 │
+│ *  --output-file  -o      <path>  [required]                                 │
+│    --add-lineage  -a                                                         │
+│    --lineage-col  -l      <str>   [default: compact_lineage]                 │
+│    --sep          -s      <str>                                              │
+│    --strict                                                                  │
+│    --quiet                                                                   │
+│    --help         -h              Show this message and exit.                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+## Examples
+
+Normalize a vContact table and append a lineage column:
 
 ```bash
 phu normalize-lineage \
@@ -11,27 +74,34 @@ phu normalize-lineage \
   --add-lineage
 ```
 
-The input is read as a delimited table. The separator is inferred by default; use `--sep` when an explicit delimiter is required. The command writes the normalized table to `--output-file` and preserves the original columns.
-
-Lineage values are normalized in columns whose names identify a taxonomic rank, such as `genus_prediction`. For example, `novel_genus_1_of_Viruses` becomes `Viruses:NG1`. Existing compact values remain unchanged. Missing values remain missing, and values that cannot be parsed are preserved.
-
-Use `--lineage-col` to choose the column used for the optional compact lineage output. With `--add-lineage`, that column is appended to the table, or replaced when it already exists. Without this flag, no new column is added.
+Choose a custom lineage column name:
 
 ```bash
-phu normalize-lineage -i assignments.csv -o normalized.csv \
-  --lineage-col compact_lineage --add-lineage
+phu normalize-lineage \
+  -i assignments.csv \
+  -o normalized.csv \
+  --add-lineage \
+  --lineage-col best_taxonomy
 ```
 
-The `--strict` option makes quality problems fatal. The command exits non-zero when values are unparsed or when a value's taxonomic rank does not match its column. Without `--strict`, these values are retained and reported in the QA summary. Use `--quiet` to suppress that summary.
+Require clean, rank-consistent input:
 
-## Options
+```bash
+phu normalize-lineage \
+  -i assignments.csv \
+  -o normalized.csv \
+  --strict
+```
 
-| Option | Description |
-| --- | --- |
-| `-i, --input-file` | Input delimited table. |
-| `-o, --output-file` | Output normalized table. |
-| `-a, --add-lineage` | Append the compact lineage column. |
-| `-l, --lineage-col` | Name for the compact lineage column. |
-| `-s, --sep` | Explicit input/output separator. |
-| `--strict` | Fail on unparsed or rank-mismatched values. |
-| `--quiet` | Suppress the QA summary. |
+## Workflow integration
+
+```bash
+vcontact3 --nucleotide viral-genomes.fasta --output-dir vcontact-output
+phu normalize-lineage \
+  -i vcontact-output/final_assignments.csv \
+  -o normalized_assignments.csv \
+  --add-lineage
+```
+
+The normalized table can then be used for taxonomy filtering, visualization,
+and downstream analysis while retaining the source columns.

@@ -1,10 +1,10 @@
 # simplify-taxa
 
-Convert selected vContact taxonomy prediction strings into compact lineage codes for downstream analysis. This command is experimental for nested novel-lineage grammar until golden fixtures establish the intended contract.
+## What does it do?
 
-## Overview
-
-`phu simplify-taxa` transforms verbose vContact3 `*_prediction` columns into compact, standardized lineage codes (e.g. `Caudoviricetes:NF2:NG1`) to make taxonomy easier to filter, visualize, and analyze.
+The `phu simplify-taxa` command converts verbose vContact taxonomy prediction
+values into compact lineage codes for downstream analysis. It is designed for
+vContact3 `final_assignments.csv` or TSV-style output.
 
 ## Synopsis
 
@@ -12,216 +12,139 @@ Convert selected vContact taxonomy prediction strings into compact lineage codes
 phu simplify-taxa -i <INPUT_FILE> -o <OUTPUT_FILE> [OPTIONS]
 ```
 
-Input accepts CSV or TSV files from vContact3's `final_assignments.csv` output. Output format is automatically detected from file extension.
+Input and output formats are selected from their file extensions. Use `--sep`
+when the input delimiter cannot be inferred from the filename.
 
-## Input/Output Formats
+## Input and output
 
-### Supported Formats
-- **Input**: CSV, TSV (auto-detected from extension or `--sep` parameter)
-- **Output**: CSV, TSV (auto-detected from file extension)
+The command processes columns ending in `_prediction`, including:
 
-### Expected Input Columns
-The command automatically detects and processes any columns matching the pattern `*_prediction`:
+- `realm_prediction`
 - `kingdom_prediction`
-- `phylum_prediction` 
+- `phylum_prediction`
 - `class_prediction`
 - `order_prediction`
 - `family_prediction`
 - `subfamily_prediction`
 - `genus_prediction`
-- `realm_prediction` (if present)
 
-## Transformation Logic
+Other columns and their order are preserved. Values that do not match a
+supported vContact pattern are preserved. Multiple candidate values separated
+by `||` are processed independently.
 
-### Before Transformation
+CSV output is used unless the output filename ends in `.tsv`; TSV output is
+used in that case. With `--add-lineage`, one additional column is appended.
+
+## Transformation logic
+
+A value such as:
+
+```text
+novel_genus_1_of_novel_family_2_of_Caudoviricetes
 ```
-novel_genus_1_of_novel_family_2_of_novel_order_3_of_Caudoviricetes
+
+becomes:
+
+```text
+Caudoviricetes:NF2:NG1
 ```
 
-### After Transformation  
-```
-Caudoviricetes:NO3:NF2:NG1
-```
+Compact codes use these rank prefixes:
 
-### Compact Code Format
+- `NK`: novel kingdom
+- `NP`: novel phylum
+- `NC`: novel class
+- `NO`: novel order
+- `NF`: novel family
+- `NSF`: novel subfamily
+- `NG`: novel genus
 
-The transformation uses standardized rank codes:
-- `NK` = Novel Kingdom
-- `NP` = Novel Phylum  
-- `NC` = Novel Class
-- `NO` = Novel Order
-- `NF` = Novel Family
-- `NSF` = Novel Subfamily
-- `NG` = Novel Genus
+Some vContact zero-index chains have explicit compatibility handling. Validate
+those version-sensitive cases against representative vContact output before
+using them as a scientific contract.
 
-## Command Options
+## Command options
 
-```bash
- Simplify vContact taxonomy prediction columns into compact lineage codes.   
-                                                                             
- Transforms verbose vContact taxonomy strings like                           
- 'novel_genus_1_of_novel_family_2_of_Caudoviricetes' into compact codes like 
- 'Caudoviricetes:NF2:NG1'.                                                   
-                                                                             
- Example:                                                                    
-     phu simplify-taxa -i final_assignments.csv -o simplified.csv           
-     --add-lineage                                                           
-                                                                             
-╭─ Options ─────────────────────────────────────────────────────────────────╮
-│ *  --input-file       -i  PATH  Input vContact final_assignments.csv       │
-│                              [required]                                   │
-│ *  --output-file      -o  PATH  Output path (.csv or .tsv) [required]      │
-│    --add-lineage         FLAG  Append compact_lineage column from deepest │
-│                              simplified rank                              │
-│    --lineage-col         TEXT  Name of the lineage column                 │
-│                              [default: compact_lineage]                   │
-│    --sep                 TEXT  Override delimiter: ',' or '\t'.           │
-│                              Auto-detected from extension if not set      │
-│    --help            -h        Show this message and exit.                │
-╰───────────────────────────────────────────────────────────────────────────╯
+```text
+Usage: phu simplify-taxa [OPTIONS]
+
+ Simplify vContact taxonomy prediction columns into compact lineage codes.
+
+ Transforms verbose vContact taxonomy strings like
+ 'novel_genus_1_of_novel_family_2_of_Caudoviricetes'
+ into compact codes like 'Caudoviricetes:NF2:NG1'.
+
+ Example:
+   phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
+
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ *  --input-file   -i      <path>  Input vContact final_assignments.csv       │
+│                                   [required]                                 │
+│ *  --output-file  -o      <path>  Output file path (.csv or .tsv) [required] │
+│    --add-lineage  -a              Append compact_lineage column from deepest │
+│                                   simplified rank                            │
+│    --lineage-col  -l      <str>   Name of the lineage column                 │
+│                                   [default: compact_lineage]                 │
+│    --sep          -s      <str>   Override delimiter: ',' or '\t'.           │
+│                                   Auto-detected from extension if not set    │
+│    --quiet                        Suppress routine progress output.          │
+│    --verbose                      Show additional progress details.          │
+│    --help         -h              Show this message and exit.                │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Examples
 
-### Basic Usage
+Simplify a vContact CSV file:
 
 ```bash
-# Simplify CSV
-phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
-
-# Process TSV format with automatic detection
-phu simplify-taxa -i final_assignments.tsv -o simplified_taxonomy.tsv
-
-# Override input delimiter detection
-phu simplify-taxa -i data.txt -o output.csv --sep "\t"
+phu simplify-taxa \
+  --input-file final_assignments.csv \
+  --output-file simplified.csv
 ```
 
-### Advanced Usage
+Process TSV input and append the deepest available lineage:
 
 ```bash
-# Add compact lineage column with deepest available classification
-phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
-
-# Customize lineage column name
-phu simplify-taxa -i final_assignments.csv -o simplified.csv \
-  --add-lineage --lineage-col "best_taxonomy"
+phu simplify-taxa \
+  -i final_assignments.tsv \
+  -o simplified.tsv \
+  --add-lineage \
+  --lineage-col best_taxonomy
 ```
 
-## Lineage Column Feature
+Override delimiter detection:
 
-The `--add-lineage` option creates an additional column containing the deepest (most specific) available taxonomic classification for each sequence.
+```bash
+phu simplify-taxa -i assignments.txt -o simplified.csv --sep $'\t'
+```
 
-### Priority Order (Most → Least Specific)
+## Lineage column
+
+The `--add-lineage` option appends a column containing the deepest available
+simplified rank. The default column name is `compact_lineage`; use
+`--lineage-col` to choose another name.
+
+The priority order is:
+
 1. `genus_prediction`
 2. `subfamily_prediction`
-3. `family_prediction` 
+3. `family_prediction`
 4. `order_prediction`
 5. `class_prediction`
 6. `phylum_prediction`
 7. `kingdom_prediction`
 8. `realm_prediction`
 
-### Example Output
-
-
-| Sequence | genus_prediction | family_prediction | compact_lineage |
-|----------|------------------|-------------------|-----------------|
-| seq1 | Caudoviricetes:NF2:NG1 | Caudoviricetes:NF2 | Caudoviricetes:NF2:NG1 |
-| seq2 | - | Caudoviricetes:NF5 | Caudoviricetes:NF5 |
-| seq3 | - | - | - |
-
-
-## Special Cases Under Validation
-
-The examples below describe currently implemented patterns, not a guarantee of
-complete vContact3 edge-case coverage. Nested candidates, malformed values,
-missing values, and rank precedence require golden fixtures from real vContact3
-outputs before these transformations should be treated as a stable contract.
-Unknown or unmatched strings are currently preserved by the parser.
-
-### Edge Cases for "0" Chains
-The parser currently contains special handling for some vContact2-style "0"
-designation patterns. Verify results against a golden fixture before using
-them in a production taxonomy workflow:
+## Workflow integration
 
 ```bash
-# Input
-novel_class_0_of_novel_phylum_0_of_novel_kingdom_5_of_Duplodnaviria
-
-# Output  
-Duplodnaviria:NK5:NP0:NC0
+vcontact3 --nucleotide viral-genomes.fasta --output-dir vcontact-output
+phu simplify-taxa \
+  -i vcontact-output/final_assignments.csv \
+  -o taxonomy_simplified.csv \
+  --add-lineage
 ```
 
-### Multiple Candidates
-When vContact2 provides multiple taxonomic candidates (separated by `||`), the
-current parser attempts to process each candidate independently. This behavior
-is pending golden-fixture coverage:
-
-```bash
-# Input
-Caudoviricetes:NF1:NG2||Caudoviricetes:NF3:NG4
-
-# Output
-Caudoviricetes:NF1:NG2||Caudoviricetes:NF3:NG4
-```
-
-## Quality Assessment
-
-After processing, the command provides a summary showing remaining `novel_` strings for quality control:
-
-```
-QA Summary:
-  genus_prediction: 45 remaining 'novel_' strings
-  family_prediction: 12 remaining 'novel_' strings
-  order_prediction: 3 remaining 'novel_' strings
-```
-
-## Output contract
-
-The output preserves the input columns and order after normalizing column names
-to lower-case snake case. It uses comma-separated output unless the output
-filename ends in `.tsv`, in which case it uses tab-separated output. With
-`--add-lineage`, one additional `compact_lineage` column, or the name supplied
-by `--lineage-col`, is appended. Empty input tables retain their header. No
-versioned schema identifier is currently written, so this contract is
-development-only.
-
-## Workflow Integration
-
-### Typical Bioinformatics Pipeline
-
-```bash
-# 1. Run vContact3 (external)
-vcontact3 --nucleotide <viral-genome.fasta> --output-dir <vcontact-output>
-
-# 2. Simplify taxonomy predictions
-phu simplify-taxa -i vcontact_output/final_assignments.csv \
-  -o taxonomy_simplified.csv --add-lineage
-
-# 3. Use simplified taxonomy for downstream analysis
-# - Phylogenetic visualization
-# - Diversity analysis  
-# - Taxonomic filtering
-```
-
-## Comparison with Manual Processing
-
-
-| Task | phu simplify-taxa | Manual Processing |
-|------|-------------------|-------------------|
-| **Complexity** | Single command | Custom scripts/regex |
-| **Edge cases** | Automatically handled | Error-prone |
-| **Consistency** | Standardized format | Variable approaches |
-| **Speed** | Optimized pandas operations | Slower loops |
-| **Maintenance** | Built-in updates | Manual fixes needed |
-
-
-## Output File Structure
-
-The output file preserves the original structure while transforming taxonomy columns:
-
-```
-Original columns + Simplified *_prediction columns [+ compact_lineage column]
-```
-
-All non-taxonomy columns remain unchanged, ensuring compatibility with existing workflows.
+The resulting table can be used for taxonomy filtering, visualization, and
+other downstream analyses while retaining the original input fields.

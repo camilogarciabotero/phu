@@ -40,6 +40,10 @@ from .pfam_db import (
     remove_pfam_database,
 )
 from .screen import ScreenConfig, _screen
+from .normalize_vcontact_lineage import (
+    NormalizeLineageConfig,
+    normalize_lineage_file,
+)
 from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
 from .vscore_db import remove_vscore_database
 
@@ -410,6 +414,61 @@ def cluster(
         typer.echo(
             "Required executables on PATH: 'vclust' (or 'vclust.py') and 'seqkit'"
         )
+        raise typer.Exit(1)
+
+
+@app.command("normalize-lineage", rich_help_panel="Workflow")
+def normalize_lineage(
+    input_file: Path = typer.Option(
+        ..., "--input-file", "-i", exists=True, readable=True
+    ),
+    output_file: Path = typer.Option(..., "--output-file", "-o"),
+    add_lineage: bool = typer.Option(False, "--add-lineage", "-a"),
+    lineage_col: str = typer.Option("compact_lineage", "--lineage-col", "-l"),
+    sep: Optional[str] = typer.Option(None, "--sep", "-s"),
+    strict: bool = typer.Option(False, "--strict"),
+    quiet: bool = typer.Option(False, "--quiet"),
+):
+    """Normalize vContact lineage predictions without changing column names."""
+    config = NormalizeLineageConfig(
+        input_file=input_file,
+        output_file=output_file,
+        add_lineage=add_lineage,
+        lineage_col=lineage_col,
+        sep=sep,
+        strict=strict,
+    )
+    try:
+        summary = run_click_task(
+            "Normalizing lineage",
+            normalize_lineage_file,
+            config,
+            quiet=quiet,
+        )
+        typer.echo(
+            "QA Summary: "
+            + ", ".join(
+                f"{name}={getattr(summary, name)}"
+                for name in (
+                    "cells_examined",
+                    "normalized",
+                    "unchanged",
+                    "missing",
+                    "unparsed",
+                    "rank_mismatch",
+                    "multi_candidate",
+                    "lineage_skipped_unparsed",
+                )
+            ),
+            err=True,
+        )
+        if not quiet:
+            typer.echo(f"Normalized lineage data written to {output_file}", err=True)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1)
+    except OSError as exc:
+        typer.echo(f"Error processing {input_file}: {exc}", err=True)
         raise typer.Exit(1)
 
 

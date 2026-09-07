@@ -1,0 +1,40 @@
+case_id	tier	source	column_rank	raw_value	expected_value	expected_status	expected_rank_mismatch	reason
+single_realm	synthetic	grammar	realm	novel_realm_1_of_Viruses	Viruses:NR1	normalized	false	single node
+single_kingdom	synthetic	grammar	kingdom	novel_kingdom_2_of_Viruses	Viruses:NK2	normalized	false	single node
+single_phylum	synthetic	grammar	phylum	novel_phylum_3_of_Viruses	Viruses:NP3	normalized	false	single node
+single_class	synthetic	grammar	class	novel_class_4_of_Viruses	Viruses:NC4	normalized	false	single node
+single_order	synthetic	grammar	order	novel_order_5_of_Viruses	Viruses:NO5	normalized	false	single node
+single_family	synthetic	grammar	family	novel_family_6_of_Viruses	Viruses:NF6	normalized	false	single node
+single_subfamily	synthetic	grammar	subfamily	novel_subfamily_7_of_Viruses	Viruses:NSF7	normalized	false	single node
+single_genus	synthetic	grammar	genus	novel_genus_8_of_Viruses	Viruses:NG8	normalized	false	single node
+flagship_genus_family	docs	docs/commands/simplify-taxa.md	genus	novel_genus_1_of_novel_family_2_of_Caudoviricetes	Caudoviricetes:NF2:NG1	normalized	false	flagship documented case
+flagship_genus_family_order	docs	docs/commands/simplify-taxa.md	genus	novel_genus_1_of_novel_family_2_of_novel_order_3_of_Caudoviricetes	Caudoviricetes:NO3:NF2:NG1	normalized	false	flagship documented case
+full_eight_rank_chain	synthetic	grammar	genus	novel_genus_8_of_novel_subfamily_7_of_novel_family_6_of_novel_order_5_of_novel_class_4_of_novel_phylum_3_of_novel_kingdom_2_of_novel_realm_1_of_Viruses	Viruses:NR1:NK2:NP3:NC4:NO5:NF6:NSF7:NG8	normalized	false	all ranks
+missing_intermediate	synthetic	grammar	genus	novel_genus_1_of_novel_family_2_of_novel_class_3_of_Viruses	Viruses:NC3:NF2:NG1	normalized	false	missing intermediate ranks
+identifier_zero	synthetic	grammar	genus	novel_genus_0_of_Viruses	Viruses:NG0	normalized	false	zero is valid
+identifier_leading_zero	synthetic	grammar	genus	novel_genus_01_of_Viruses	Viruses:NG01	normalized	false	identifier text preserved
+intermediate_leading_zero	synthetic	grammar	genus	novel_genus_1_of_novel_family_01_of_Viruses	Viruses:NF01:NG1	normalized	false	intermediate text preserved
+multi_candidate	synthetic	grammar	genus	novel_genus_1_of_A||novel_genus_2_of_B	A:NG1||B:NG2	normalized	false	candidates preserved
+duplicate_candidate	synthetic	grammar	genus	novel_genus_1_of_A||novel_genus_1_of_A	A:NG1||A:NG1	normalized	false	duplicates preserved
+named_taxon	synthetic	grammar	genus	Caudoviricetes	Caudoviricetes	unchanged	false	ordinary name
+compact_idempotent	synthetic	grammar	genus	Caudoviricetes:NF2:NG1	Caudoviricetes:NF2:NG1	unchanged	false	already compact
+compact_out_of_order	synthetic	grammar	genus	Caudoviricetes:NG1:NF2	Caudoviricetes:NG1:NF2	unparsed	false	compact codes out of order
+missing_none	synthetic	missing	genus			missing	false	None loaded as null
+missing_empty	synthetic	missing	genus			missing	false	empty sentinel
+missing_space	synthetic	missing	genus	 		missing	false	space sentinel
+missing_dash	synthetic	missing	genus	-		missing	false	dash sentinel
+missing_na	synthetic	missing	genus	<NA>		missing	false	legacy input sentinel
+anchorless	synthetic	grammar	genus	novel_genus_1	novel_genus_1	unparsed	false	anchorless unsupported
+empty_anchor	synthetic	grammar	genus	novel_genus_1_of_	novel_genus_1_of_	unparsed	false	empty anchor
+unknown_rank	synthetic	grammar	genus	novel_species_1_of_Viruses	novel_species_1_of_Viruses	unparsed	false	unknown rank
+non_numeric_identifier	synthetic	grammar	genus	novel_genus_x_of_Viruses	novel_genus_x_of_Viruses	unparsed	false	non numeric identifier
+trailing_junk	synthetic	grammar	genus	novel_genus_1_of_Viruses_junk	Viruses_junk:NG1	normalized	false	anchor text is preserved
+duplicate_rank	synthetic	grammar	genus	novel_genus_1_of_novel_genus_2_of_Viruses	novel_genus_1_of_novel_genus_2_of_Viruses	unparsed	false	duplicate rank
+rank_reversal	synthetic	grammar	genus	novel_genus_1_of_novel_order_2_of_novel_family_3_of_Viruses	novel_genus_1_of_novel_order_2_of_novel_family_3_of_Viruses	unparsed	false	rank ordering reversal
+anchor_underscore	synthetic	grammar	genus	novel_genus_1_of_Caudo_viricetes	Caudo_viricetes:NG1	normalized	false	underscore anchor
+anchor_of_text	synthetic	grammar	genus	novel_genus_1_of_Caudo_of_viricetes	Caudo_of_viricetes:NG1	normalized	false	_of_ anchor
+anchor_colon	audit	C4c	genus	novel_genus_1_of_Foo:Bar	novel_genus_1_of_Foo:Bar	unparsed	false	colon anchor preserved
+rank_mismatch	synthetic	grammar	genus	novel_family_2_of_Viruses	Viruses:NF2	normalized	true	deepest rank differs from column
+compact_duplicate_code	synthetic	grammar	genus	Viruses:NF2:NF3	Viruses:NF2:NF3	unparsed	false	duplicate compact rank
+multi_unparsed	synthetic	grammar	genus	novel_genus_1_of_A||bad:bogus	A:NG1||bad:bogus	unparsed	false	cell status follows candidate failure
+whitespace_trim	synthetic	grammar	genus	 novel_genus_1_of_Viruses 	Viruses:NG1	normalized	false	outer whitespace stripped

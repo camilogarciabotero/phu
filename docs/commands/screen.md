@@ -101,6 +101,12 @@ matches. In that case the PUL tables are header-only and retained-contig
 outputs are empty. Reference substrates describe the database PUL annotation;
 they are not predictions for the query contigs.
 
+PUL rules that reference families unavailable in the installed dbCAN snapshot
+are reported as unresolved and skipped. The unresolved-rule count therefore
+describes database coverage, not failed HMM searches or evidence that the query
+contigs lack those PULs. Rebuild or refresh the dbCAN database when a newer
+snapshot is required.
+
 The durable all-PUL output tree is:
 
 ```text

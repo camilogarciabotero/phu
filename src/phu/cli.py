@@ -445,30 +445,30 @@ def normalize_lineage(
             config,
             quiet=quiet,
         )
-        typer.echo(
-            "QA Summary: "
-            + ", ".join(
-                f"{name}={getattr(summary, name)}"
-                for name in (
-                    "cells_examined",
-                    "normalized",
-                    "unchanged",
-                    "missing",
-                    "unparsed",
-                    "rank_mismatch",
-                    "multi_candidate",
-                    "lineage_skipped_unparsed",
-                )
-            ),
-            err=True,
-        )
         if not quiet:
+            typer.echo(
+                "QA Summary: "
+                + ", ".join(
+                    f"{name}={getattr(summary, name)}"
+                    for name in (
+                        "cells_examined",
+                        "normalized",
+                        "unchanged",
+                        "missing",
+                        "unparsed",
+                        "rank_mismatch",
+                        "multi_candidate",
+                        "lineage_skipped_unparsed",
+                    )
+                ),
+                err=True,
+            )
             typer.echo(f"Normalized lineage data written to {output_file}", err=True)
     except ValueError as exc:
-        typer.echo(str(exc), err=True)
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     except OSError as exc:
-        typer.echo(f"Error processing {input_file}: {exc}", err=True)
+        typer.secho(f"Error processing {input_file}: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
 
 

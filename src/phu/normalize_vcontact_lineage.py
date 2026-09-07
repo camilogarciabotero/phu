@@ -99,20 +99,30 @@ def normalize_cell(
     if pd.isna(value):
         summary.missing += 1
         return pd.NA
+
     text = str(value).strip()
     parts = text.split(CANDIDATE_DELIM)
     if len(parts) > 1:
         summary.multi_candidate += 1
+
     results = [parse_candidate(part, column_rank) for part in parts]
     if any(result.status == "unparsed" for result in results):
         summary.unparsed += 1
+    elif all(result.status == "missing" for result in results):
+        summary.missing += 1
+        return pd.NA
+    elif any(result.status == "normalized" for result in results):
+        summary.normalized += 1
     else:
-        for result in results:
-            setattr(summary, result.status, getattr(summary, result.status) + 1)
+        summary.unchanged += 1
+
     if any(result.rank_mismatch for result in results):
         summary.rank_mismatch += 1
+
     values = [result.value for result in results]
-    return CANDIDATE_DELIM.join(value or "" for value in values) if values else pd.NA
+    if all(value is None for value in values):
+        return pd.NA
+    return CANDIDATE_DELIM.join(value or "" for value in values)
 
 
 def normalize_dataframe(
@@ -211,7 +221,9 @@ def parse_candidate(raw: str, column_rank: str | None) -> ParseResult:
         indices = [RANK_INDEX[rank] for rank in ranks]
         if indices != sorted(set(indices)):
             return ParseResult("unparsed", text, reason="compact codes out of order")
-        return ParseResult("unchanged", text, deepest_rank=ranks[-1])
+        deepest_rank = ranks[-1]
+        mismatch = column_rank is not None and deepest_rank != column_rank
+        return ParseResult("unchanged", text, mismatch, deepest_rank=deepest_rank)
 
     segments = text.split("_of_")
     nodes: list[Node] = []

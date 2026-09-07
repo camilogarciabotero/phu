@@ -18,6 +18,7 @@ multi_candidate	synthetic	grammar	genus	novel_genus_1_of_A||novel_genus_2_of_B	A
 duplicate_candidate	synthetic	grammar	genus	novel_genus_1_of_A||novel_genus_1_of_A	A:NG1||A:NG1	normalized	false	duplicates preserved
 named_taxon	synthetic	grammar	genus	Caudoviricetes	Caudoviricetes	unchanged	false	ordinary name
 compact_idempotent	synthetic	grammar	genus	Caudoviricetes:NF2:NG1	Caudoviricetes:NF2:NG1	unchanged	false	already compact
+compact_rank_mismatch	synthetic	grammar	genus	Viruses:NF2	Viruses:NF2	unchanged	true	already compact but wrong rank for genus
 compact_out_of_order	synthetic	grammar	genus	Caudoviricetes:NG1:NF2	Caudoviricetes:NG1:NF2	unparsed	false	compact codes out of order
 missing_none	synthetic	missing	genus			missing	false	None loaded as null
 missing_empty	synthetic	missing	genus			missing	false	empty sentinel

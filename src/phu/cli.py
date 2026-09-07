@@ -881,25 +881,47 @@ def jack(
         help="Seed marker protein FASTA (supports one or more sequences)",
     ),
     output_folder: Path = typer.Option(
-        Path("phu-jack"), "--output-folder", "-o", help="Output directory"
+        Path("phu-jack"),
+        "--output-folder",
+        "-o",
+        help="Output directory",
+        rich_help_panel="Output",
     ),
     mode: str = typer.Option(
-        "meta", "--mode", "-m", help="pyrodigal mode: meta|single"
+        "meta",
+        "--mode",
+        "-m",
+        help="pyrodigal mode: meta|single",
+        rich_help_panel="Prediction",
     ),
     threads: int = typer.Option(
-        1, "--threads", "-t", min=1, help="Threads for both pyrodigal and pyhmmer"
+        1,
+        "--threads",
+        "-t",
+        min=1,
+        help="Threads for both pyrodigal and pyhmmer",
+        rich_help_panel="Runtime",
     ),
     iterations: int = typer.Option(
-        5, "--iterations", "-I", min=1, help="Maximum jackhmmer iterations"
+        5,
+        "--iterations",
+        "-I",
+        min=1,
+        help="Maximum jackhmmer iterations",
+        rich_help_panel="Iterative search",
     ),
     inc_evalue: float = typer.Option(
-        1e-3, "--inc-evalue", help="Inclusion E-value threshold for iterative jackhmmer"
+        1e-3,
+        "--inc-evalue",
+        help="Inclusion E-value threshold for iterative jackhmmer",
+        rich_help_panel="Search thresholds",
     ),
     max_evalue: Optional[float] = typer.Option(
         1e-5,
         "--max-evalue",
         "-e",
         help="Maximum independent E-value to keep a final hit",
+        rich_help_panel="Search thresholds",
     ),
     top_per_contig: int = typer.Option(
         1,
@@ -907,12 +929,17 @@ def jack(
         "-n",
         min=1,
         help="Keep top-N hits per contig (by bitscore)",
+        rich_help_panel="Matching behavior",
     ),
     combine_mode: str = typer.Option(
         "any",
         "--combine-mode",
         "-c",
-        help="How to combine hits from multiple seed proteins: any|all|threshold",
+        help=(
+            "How to combine hits from multiple seed proteins: "
+            "any|all|threshold"
+        ),
+        rich_help_panel="Matching behavior",
     ),
     min_seed_hits: int = typer.Option(
         1,
@@ -920,15 +947,21 @@ def jack(
         "-k",
         min=1,
         help="Minimum number of seeds that must hit a contig (for threshold mode)",
+        rich_help_panel="Matching behavior",
     ),
     min_gene_len: int = typer.Option(
-        90, "--min-gene-len", "-g", help="Minimum gene length for pyrodigal (nt)"
+        90,
+        "--min-gene-len",
+        "-g",
+        help="Minimum gene length for pyrodigal (nt)",
+        rich_help_panel="Prediction",
     ),
     min_protein_len_aa: int = typer.Option(
         30,
         "--min-protein-len-aa",
         min=1,
         help="Minimum translated protein length to keep (aa)",
+        rich_help_panel="Prediction",
     ),
     translation_table: Optional[int] = typer.Option(
         None,
@@ -936,26 +969,44 @@ def jack(
         "-T",
         min=1,
         help="NCBI translation table; default uses each contig's predicted table",
+        rich_help_panel="Prediction",
     ),
     keep_proteins: bool = typer.Option(
         False,
         "--keep-proteins/--no-keep-proteins",
         help="Keep the protein FASTA used for searching",
+        rich_help_panel="Output",
     ),
     save_hmm: bool = typer.Option(
         False,
         "--save-hmm/--no-save-hmm",
         help="Save the last jackhmmer iteration HMM as last_iteration.hmm",
+        rich_help_panel="Output",
     ),
     quiet: bool = typer.Option(
-        False, "--quiet", help="Suppress routine progress output."
+        False,
+        "--quiet",
+        help="Suppress routine progress output.",
+        rich_help_panel="Runtime",
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", help="Show additional progress details."
+        False,
+        "--verbose",
+        help="Show additional progress details.",
+        rich_help_panel="Runtime",
     ),
 ):
     """
-    Iteratively screen contigs from one or more seed protein markers with pyhmmer.jackhmmer.
+    Iteratively screen contigs from one or more seed protein markers with
+    pyhmmer.jackhmmer.
+
+    Prediction:
+    - Predict proteins with pyrodigal using --mode and the length/table options.
+    - Reuse cached proteins when prediction inputs are unchanged.
+
+    Search:
+    - Run up to --iterations jackhmmer rounds using --inc-evalue for inclusion.
+    - Keep final hits below --max-evalue and limit them with --top-per-contig.
 
     Combine modes for multi-seed screening:
     - any: keep contigs hit by at least one seed (default)

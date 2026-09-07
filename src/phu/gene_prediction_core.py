@@ -324,11 +324,7 @@ def get_or_predict_proteins(
 
     try:
         # Check for cache hit (must recheck after lock acquisition in case another process won)
-        if (
-            cache_proteins.exists()
-            and cache_manifest.exists()
-            and cache_genes.exists()
-        ):
+        if cache_proteins.exists() and cache_manifest.exists() and cache_genes.exists():
             try:
                 manifest = json.loads(cache_manifest.read_text())
                 if manifest.get("protein_fasta_format") != PROTEIN_FASTA_FORMAT_VERSION:

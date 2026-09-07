@@ -6,7 +6,10 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from phu.normalize_vcontact_lineage import parse_candidate
+from typer.testing import CliRunner
+
+from phu.cli import app
+from phu.normalize_vcontact_lineage import QualitySummary, normalize_cell, parse_candidate
 
 FIXTURE = Path(__file__).parent / "fixtures" / "normalize_vcontact_lineage_cases.tsv"
 
@@ -58,6 +61,45 @@ def test_normalized_values_are_idempotent(row: dict[str, str]) -> None:
         again = parse_candidate(result.value or "", row["column_rank"] or None)
         assert again.status == "unchanged"
         assert again.value == result.value
+
+
+def test_quality_summary_counts_one_status_per_cell() -> None:
+    summary = QualitySummary()
+
+    value = normalize_cell("novel_genus_1_of_Viruses||novel_genus_2_of_Viruses", "genus", summary)
+
+    assert value == "Viruses:NG1||Viruses:NG2"
+    assert summary.cells_examined == 1
+    assert summary.multi_candidate == 1
+    assert summary.normalized == 1
+    assert summary.unchanged == 0
+    assert summary.unparsed == 0
+
+
+def test_quiet_mode_hides_qa_summary() -> None:
+    runner = CliRunner()
+    input_file = FIXTURE.parent / "normalize_vcontact_lineage_quiet.tsv"
+    input_file.write_text("genus_prediction\nnovel_genus_1_of_Viruses\n")
+    output_file = input_file.with_name("normalize_vcontact_lineage_quiet_out.tsv")
+
+    result = runner.invoke(
+        app,
+        [
+            "normalize-lineage",
+            "--input-file",
+            str(input_file),
+            "--output-file",
+            str(output_file),
+            "--quiet",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "QA Summary" not in result.output
+    assert output_file.exists()
+
+    input_file.unlink(missing_ok=True)
+    output_file.unlink(missing_ok=True)
 
 
 @pytest.mark.parametrize("row", fixture_rows(), ids=lambda row: row["case_id"])

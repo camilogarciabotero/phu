@@ -37,6 +37,12 @@ As a command-line tool, `phu` follows a modular structure. You can access differ
 phu <command> [options]
 ```
 
+For the complete command list and global options, run:
+
+```bash
+phu --help
+```
+
 ## Commands
 
 - [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Screen contigs for specific protein families using HMMER on predicted coding sequences.
@@ -44,6 +50,10 @@ phu <command> [options]
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
 - [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
+- [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
+
+Each command page includes the current CLI help menu, input/output behavior,
+examples, and workflow guidance.
 
 ## Database Management
 
@@ -61,7 +71,7 @@ The cache is rebuilt when you change the contig input, `--mode`, an explicit `--
 
 To remove previously cached predictions, run `phu --clean-cache`.
 
-See the full cache guide in [Cache Handling](https://camilogarciabotero.github.io/phu/cache).
+See the full [Cache Handling guide](https://camilogarciabotero.github.io/phu/cache/), including cache locations, disabling reuse, and cleanup behavior.
 
 ## Contributing
 
@@ -84,6 +94,20 @@ uv sync
 
 ```bash
 uv tool install phu
+```
+
+Run the test suite and documentation build from a synced development checkout:
+
+```bash
+uv sync
+uv run pytest
+uv run mkdocs build --strict
+```
+
+The project uses `ruff` for linting when the lint dependency group is installed:
+
+```bash
+uv run ruff check src tests
 ```
 
 ## References

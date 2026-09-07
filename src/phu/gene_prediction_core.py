@@ -321,7 +321,11 @@ def get_or_predict_proteins(
 
     try:
         # Check for cache hit (must recheck after lock acquisition in case another process won)
-        if cache_proteins.exists() and cache_manifest.exists():
+        if (
+            cache_proteins.exists()
+            and cache_manifest.exists()
+            and cache_genes.exists()
+        ):
             try:
                 manifest = json.loads(cache_manifest.read_text())
                 n_prot = manifest.get("protein_count", 0)
@@ -334,9 +338,7 @@ def get_or_predict_proteins(
                     genes=[
                         PredictedGene(**item)
                         for item in json.loads(cache_genes.read_text())
-                    ]
-                    if cache_genes.exists()
-                    else None,
+                    ],
                 )
             except (json.JSONDecodeError, KeyError):
                 # Corrupted manifest; treat as miss and rebuild

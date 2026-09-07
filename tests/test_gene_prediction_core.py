@@ -293,6 +293,24 @@ class TestGetOrPredictProteins:
         # Should have rebuilt (not hit cache with corrupted manifest)
         assert not artifact2.cache_hit
 
+    def test_incomplete_cache_entry_triggers_rebuild(self, tmp_path, monkeypatch):
+        """A cache without serialized genes is not a valid hit."""
+        cache_dir = tmp_path / "cache"
+        monkeypatch.setenv("PHU_CACHE_DIR", str(cache_dir))
+
+        contigs = tmp_path / "contigs.fa"
+        contigs.write_text(">c1\nATG" + "A" * 87 + "TAA\n")
+        inputs = PredictionInputs(input_contigs=contigs, min_gene_len=60)
+
+        artifact1 = get_or_predict_proteins(inputs, use_cache=True)
+        artifact1.cache_dir.joinpath("genes.json").unlink()
+
+        artifact2 = get_or_predict_proteins(inputs, use_cache=True)
+
+        assert not artifact2.cache_hit
+        assert artifact2.genes is not None
+        assert artifact2.cache_dir.joinpath("genes.json").exists()
+
 
 class TestWritePredictionMetadata:
     """Test metadata file writing."""

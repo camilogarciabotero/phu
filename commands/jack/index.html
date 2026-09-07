@@ -446,6 +446,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../normalize-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    normalize-lineage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../screen/" class="md-nav__link">
         
   
@@ -556,10 +584,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#iterative-search" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it works
+        Iterative search
       
     </span>
   </a>
@@ -567,21 +595,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#outputs" class="md-nav__link">
+  <a href="#input-and-output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Outputs
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cache-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cache handling
+        Input and output
       
     </span>
   </a>
@@ -592,7 +609,7 @@
   <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Command Options
+        Command options
       
     </span>
   </a>
@@ -600,10 +617,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
+  <a href="#workflow-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notes
+        Workflow integration
       
     </span>
   </a>
@@ -659,53 +676,6 @@
   
   
   
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Thresholds
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Thresholds
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../screen-thresholds/" class="md-nav__link">
         
@@ -714,7 +684,7 @@
   <span class="md-ellipsis">
     
   
-    screen thresholds and decision logic
+    Thresholds
   
 
     
@@ -723,14 +693,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -865,10 +827,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#iterative-search" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it works
+        Iterative search
       
     </span>
   </a>
@@ -876,21 +838,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#outputs" class="md-nav__link">
+  <a href="#input-and-output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Outputs
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cache-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cache handling
+        Input and output
       
     </span>
   </a>
@@ -901,7 +852,7 @@
   <a href="#command-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Command Options
+        Command options
       
     </span>
   </a>
@@ -909,10 +860,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
+  <a href="#workflow-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notes
+        Workflow integration
       
     </span>
   </a>
@@ -941,131 +892,148 @@
 
 <h1 id="jack">jack<a class="headerlink" href="#jack" title="Permanent link">&para;</a></h1>
 <h2 id="what-does-it-do">What does it do?<a class="headerlink" href="#what-does-it-do" title="Permanent link">&para;</a></h2>
-<p>The <code>phu jack</code> command screens contigs using an iterative protein-seed search with <code>pyhmmer.hmmer.jackhmmer</code>.</p>
-<p>It predicts proteins from your contigs, runs iterative searches from one or more seed proteins, and extracts contigs that contain significant included hits.</p>
-<p>This implementation supports multi-seed workflows:</p>
-<ul>
-<li>It accepts one seed marker FASTA file containing one or more protein sequences.</li>
-<li>Seed IDs in FASTA headers must be unique.</li>
-<li>You can combine seed evidence with <code>--combine-mode any|all|threshold</code>.</li>
-</ul>
+<p>The <code>phu jack</code> command iteratively screens contigs from one or more seed protein markers using <code>pyhmmer.hmmer.jackhmmer</code>. It predicts proteins from the input contigs, searches them against each seed, and uses successive iterations to expand the detected protein family.</p>
+<p>This command is useful when a trusted marker protein is available but a profile HMM is not. Interpret expanded hits as sequence-similarity evidence, not as a validated functional or taxonomic assignment.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>SEED_MARKER<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>&lt;INPUT_CONTIGS&gt;<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>&lt;SEED_MARKER&gt;
 </code></pre></div>
-<p><strong>Example:</strong></p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>marker_seed.faa
-phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>marker_seeds.faa
-phu<span class="w"> </span>jack<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>threshold<span class="w"> </span>--min-seed-hits<span class="w"> </span><span class="m">3</span><span class="w"> </span>marker_seeds.faa<span class="w"> </span>
+<p><code>&lt;SEED_MARKER&gt;</code> is a protein FASTA file and may contain one or more seed sequences.</p>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>marker_seed.faa
+phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>marker_seeds.faa
+phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--iterations<span class="w"> </span><span class="m">7</span><span class="w"> </span>--inc-evalue<span class="w"> </span>1e-4<span class="w"> </span>marker_seed.faa
 </code></pre></div>
-<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Predict proteins from contigs with <code>pyrodigal</code>.
-    Proteins shorter than <code>--min-protein-len-aa</code> are discarded before iterative searching.</li>
-<li>Run iterative <code>jackhmmer</code> from each seed marker against predicted proteins.</li>
-<li>Keep included final hits and apply final <code>--max-evalue</code> filtering.</li>
-<li>Combine across seeds:</li>
-<li><code>any</code>: keep contigs hit by at least one seed.</li>
-<li><code>all</code>: keep contigs hit by all seeds.</li>
-<li><code>threshold</code>: keep contigs hit by at least <code>--min-seed-hits</code> seeds.</li>
-<li>Keep top hits per contig (<code>--top-per-contig</code>) using the selected combine mode.</li>
-<li>Extract matching contigs to <code>screened_contigs.fasta</code>.</li>
-</ol>
-<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
-<p>By default in <code>phu-jack/</code>:</p>
+<h2 id="iterative-search">Iterative search<a class="headerlink" href="#iterative-search" title="Permanent link">&para;</a></h2>
+<p>Each seed is searched independently with <code>jackhmmer</code>. The <code>--iterations</code> option sets the maximum number of iterations, while <code>--inc-evalue</code> controls which hits are included in the next iteration. Final hits are filtered by <code>--max-evalue</code>. The <code>--top-per-contig</code> option limits retained hits by bitscore after filtering.</p>
+<p>When multiple seed sequences are provided, <code>--combine-mode</code> controls contig retention:</p>
 <ul>
-<li><code>screened_contigs.fasta</code>: extracted contigs that matched iterative search.</li>
-<li><code>kept_contigs.txt</code>: contig IDs kept in final output.</li>
-<li><code>jackhmmer_hits.tsv</code>: final retained protein-level hits with <code>seed_id</code>.</li>
-<li><code>jackhmmer_iterations.tsv</code>: iteration-level summary with <code>seed_id</code>, <code>n_hits</code>, <code>n_included</code>, <code>converged</code>.</li>
+<li><code>any</code>: retain contigs hit by at least one seed.</li>
+<li><code>all</code>: retain contigs hit by every seed.</li>
+<li><code>threshold</code>: retain contigs hit by at least <code>--min-seed-hits</code> seeds.</li>
 </ul>
-<p>When <code>--save-hmm</code> is enabled:</p>
-<ul>
-<li>Single-seed input: writes <code>last_iteration.hmm</code>.</li>
-<li>Multi-seed input: writes one HMM per seed in <code>last_iteration_hmms/*.hmm</code>.</li>
-</ul>
-<h2 id="cache-handling">Cache handling<a class="headerlink" href="#cache-handling" title="Permanent link">&para;</a></h2>
-<p>Protein prediction is cached and reused when the input contigs and prediction parameters are unchanged. For <code>phu jack</code>, changing <code>--min-gene-len</code>, <code>--min-protein-len-aa</code>, <code>--mode</code>, or <code>--ttable</code> rebuilds the cached proteins. Changing seed markers, combine mode, or output options does not.</p>
-<p>See <a href="../../cache/">cache.md</a> for the shared cache rules used by both <code>screen</code> and <code>jack</code>.</p>
-<h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>Usage:<span class="w"> </span>phu<span class="w"> </span>jack<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>seed_marker<span class="o">}</span>
-
-Iteratively<span class="w"> </span>screen<span class="w"> </span>contigs<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>seed<span class="w"> </span>protein<span class="w"> </span>markers<span class="w"> </span>with<span class="w"> </span>pyhmmer.jackhmmer.
-
-Combine<span class="w"> </span>modes<span class="w"> </span><span class="k">for</span><span class="w"> </span>multi-seed<span class="w"> </span>screening:
--<span class="w"> </span>any:<span class="w"> </span>keep<span class="w"> </span>contigs<span class="w"> </span>hit<span class="w"> </span>by<span class="w"> </span>at<span class="w"> </span>least<span class="w"> </span>one<span class="w"> </span>seed<span class="w"> </span><span class="o">(</span>default<span class="o">)</span>
--<span class="w"> </span>all:<span class="w"> </span>keep<span class="w"> </span>contigs<span class="w"> </span>hit<span class="w"> </span>by<span class="w"> </span>all<span class="w"> </span>seeds
--<span class="w"> </span>threshold:<span class="w"> </span>keep<span class="w"> </span>contigs<span class="w"> </span>hit<span class="w"> </span>by<span class="w"> </span>at<span class="w"> </span>least<span class="w"> </span>--min-seed-hits<span class="w"> </span>seeds
-
-Examples:
-<span class="w">    </span>phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>marker_seed.faa
-<span class="w">    </span>phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>marker_seeds.faa
-<span class="w">    </span>phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--iterations<span class="w"> </span><span class="m">7</span><span class="w"> </span>--inc-evalue<span class="w"> </span>1e-4<span class="w"> </span>marker_seed.faa
-
-╭─<span class="w"> </span>Arguments<span class="w"> </span>──────────────────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>*<span class="w">    </span>seed_marker<span class="w">      </span>&lt;path&gt;<span class="w">  </span>Seed<span class="w"> </span>marker<span class="w"> </span>protein<span class="w"> </span>FASTA<span class="w"> </span><span class="o">(</span>supports<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>sequences<span class="o">)</span><span class="w">         </span>│
-│<span class="w">                               </span><span class="o">[</span>required<span class="o">]</span><span class="w">                                                         </span>│
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─<span class="w"> </span>Options<span class="w"> </span>────────────────────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>*<span class="w">  </span>--input-contigs<span class="w">       </span>-i<span class="w">                        </span>&lt;path&gt;<span class="w">              </span>Input<span class="w"> </span>contigs<span class="w"> </span>FASTA<span class="w">       </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>required<span class="o">]</span><span class="w">                </span>│
-│<span class="w">    </span>--output-folder<span class="w">       </span>-o<span class="w">                        </span>&lt;path&gt;<span class="w">              </span>Output<span class="w"> </span>directory<span class="w">          </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span>phu-jack<span class="o">]</span><span class="w">       </span>│
-│<span class="w">    </span>--mode<span class="w">                </span>-m<span class="w">                        </span>&lt;str&gt;<span class="w">               </span>pyrodigal<span class="w"> </span>mode:<span class="w">           </span>│
-│<span class="w">                                                                        </span>meta<span class="p">|</span>single<span class="w">               </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span>meta<span class="o">]</span><span class="w">           </span>│
-│<span class="w">    </span>--threads<span class="w">             </span>-t<span class="w">                        </span>&lt;int<span class="w"> </span>range&gt;<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">  </span>Threads<span class="w"> </span><span class="k">for</span><span class="w"> </span>both<span class="w">          </span>│
-│<span class="w">                                                                        </span>pyrodigal<span class="w"> </span>and<span class="w"> </span>pyhmmer<span class="w">     </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">              </span>│
-│<span class="w">    </span>--iterations<span class="w">          </span>-I<span class="w">                        </span>&lt;int<span class="w"> </span>range&gt;<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">  </span>Maximum<span class="w"> </span>jackhmmer<span class="w">         </span>│
-│<span class="w">                                                                        </span>iterations<span class="w">                </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span><span class="m">5</span><span class="o">]</span><span class="w">              </span>│
-│<span class="w">    </span>--inc-evalue<span class="w">                                    </span>&lt;float&gt;<span class="w">             </span>Inclusion<span class="w"> </span>E-value<span class="w">         </span>│
-│<span class="w">                                                                        </span>threshold<span class="w"> </span><span class="k">for</span><span class="w"> </span>iterative<span class="w">   </span>│
-│<span class="w">                                                                        </span>jackhmmer<span class="w">                 </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span><span class="m">0</span>.001<span class="o">]</span><span class="w">          </span>│
-│<span class="w">    </span>--max-evalue<span class="w">          </span>-e<span class="w">                        </span>&lt;float&gt;<span class="w">             </span>Maximum<span class="w"> </span>independent<span class="w">       </span>│
-│<span class="w">                                                                        </span>E-value<span class="w"> </span>to<span class="w"> </span>keep<span class="w"> </span>a<span class="w"> </span>final<span class="w">   </span>│
-│<span class="w">                                                                        </span>hit<span class="w">                       </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span>1e-05<span class="o">]</span><span class="w">          </span>│
-│<span class="w">    </span>--top-per-contig<span class="w">      </span>-n<span class="w">                        </span>&lt;int<span class="w"> </span>range&gt;<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">  </span>Keep<span class="w"> </span>top-N<span class="w"> </span>hits<span class="w"> </span>per<span class="w">       </span>│
-│<span class="w">                                                                        </span>contig<span class="w"> </span><span class="o">(</span>by<span class="w"> </span>bitscore<span class="o">)</span><span class="w">      </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">              </span>│
-│<span class="w">    </span>--combine-mode<span class="w">        </span>-c<span class="w">                        </span>&lt;str&gt;<span class="w">               </span>How<span class="w"> </span>to<span class="w"> </span>combine<span class="w"> </span>hits<span class="w"> </span>from<span class="w">  </span>│
-│<span class="w">                                                                        </span>multiple<span class="w"> </span>seed<span class="w"> </span>proteins:<span class="w">   </span>│
-│<span class="w">                                                                        </span>any<span class="p">|</span>all<span class="p">|</span>threshold<span class="w">         </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span>any<span class="o">]</span><span class="w">            </span>│
-│<span class="w">    </span>--min-seed-hits<span class="w">       </span>-k<span class="w">                        </span>&lt;int<span class="w"> </span>range&gt;<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">  </span>Minimum<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>seeds<span class="w">   </span>│
-│<span class="w">                                                                        </span>that<span class="w"> </span>must<span class="w"> </span>hit<span class="w"> </span>a<span class="w"> </span>contig<span class="w">    </span>│
-│<span class="w">                                                                        </span><span class="o">(</span><span class="k">for</span><span class="w"> </span>threshold<span class="w"> </span>mode<span class="o">)</span><span class="w">      </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w">              </span>│
-│<span class="w">    </span>--min-gene-len<span class="w">        </span>-g<span class="w">                        </span>&lt;int&gt;<span class="w">               </span>Minimum<span class="w"> </span>gene<span class="w"> </span>length<span class="w"> </span><span class="k">for</span><span class="w">   </span>│
-│<span class="w">                                                                        </span>pyrodigal<span class="w"> </span><span class="o">(</span>nt<span class="o">)</span><span class="w">            </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span><span class="m">90</span><span class="o">]</span><span class="w">             </span>│
-│<span class="w">    </span>--min-protein-len-aa<span class="w">                            </span>&lt;int<span class="w"> </span>range&gt;<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">1</span><span class="o">]</span><span class="w">  </span>Minimum<span class="w"> </span>translated<span class="w">        </span>│
-│<span class="w">                                                                        </span>protein<span class="w"> </span>length<span class="w"> </span>to<span class="w"> </span>keep<span class="w">    </span>│
-│<span class="w">                                                                        </span><span class="o">(</span>aa<span class="o">)</span><span class="w">                      </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span><span class="m">30</span><span class="o">]</span><span class="w">             </span>│
-│<span class="w">    </span>--ttable<span class="w">              </span>-T<span class="w">                        </span>&lt;int&gt;<span class="w">               </span>NCBI<span class="w"> </span>translation<span class="w"> </span>table<span class="w">    </span>│
-│<span class="w">                                                                        </span><span class="k">for</span><span class="w"> </span>coding<span class="w"> </span>sequences<span class="w">      </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span>none<span class="o">]</span><span class="w">           </span>│
-│<span class="w">    </span>--keep-proteins<span class="w">           </span>--no-keep-proteins<span class="w">                        </span>Keep<span class="w"> </span>the<span class="w"> </span>protein<span class="w"> </span>FASTA<span class="w">    </span>│
-│<span class="w">                                                                        </span>used<span class="w"> </span><span class="k">for</span><span class="w"> </span>searching<span class="w">        </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w">                 </span>│
-│<span class="w">                                                                        </span>no-keep-proteins<span class="o">]</span><span class="w">         </span>│
-│<span class="w">    </span>--save-hmm<span class="w">                </span>--no-save-hmm<span class="w">                             </span>Save<span class="w"> </span>the<span class="w"> </span>last<span class="w"> </span>jackhmmer<span class="w">   </span>│
-│<span class="w">                                                                        </span>iteration<span class="w"> </span>HMM<span class="w"> </span>as<span class="w">          </span>│
-│<span class="w">                                                                        </span>last_iteration.hmm<span class="w">        </span>│
-│<span class="w">                                                                        </span><span class="o">[</span>default:<span class="w"> </span>no-save-hmm<span class="o">]</span><span class="w">    </span>│
-│<span class="w">    </span>--quiet<span class="w">                                                             </span>Suppress<span class="w"> </span>routine<span class="w"> </span>progress<span class="w"> </span>│
-│<span class="w">                                                                        </span>output.<span class="w">                   </span>│
-│<span class="w">    </span>--verbose<span class="w">                                                           </span>Show<span class="w"> </span>additional<span class="w"> </span>progress<span class="w">  </span>│
-│<span class="w">                                                                        </span>details.<span class="w">                  </span>│
-│<span class="w">    </span>--help<span class="w">                </span>-h<span class="w">                                            </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w">     </span>│
-│<span class="w">                                                                        </span>exit.<span class="w">                     </span>│
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+<h2 id="input-and-output">Input and output<a class="headerlink" href="#input-and-output" title="Permanent link">&para;</a></h2>
+<p>The input contigs are translated with pyrodigal using <code>--mode</code>, <code>--min-gene-len</code>, <code>--min-protein-len-aa</code>, and optionally <code>--ttable</code>. The resulting protein FASTA is cached and reused when the prediction inputs are unchanged. Use <code>--keep-proteins</code> to retain the FASTA in the output directory.</p>
+<p>A successful run writes these core outputs:</p>
+<div class="highlight"><pre><span></span><code>phu-jack/
+├── screened_contigs.fasta
+├── kept_contigs.txt
+├── jackhmmer_hits.tsv
+├── jackhmmer_iterations.tsv
+└── .phu/
+    └── run.json
 </code></pre></div>
-<h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
-<p>If you use <code>--combine-mode threshold</code>, <code>--min-seed-hits</code> cannot exceed the number of seed sequences in <code>SEED_MARKER</code>.</p>
+<p><code>jackhmmer_hits.tsv</code> contains final hit records and filtering metadata. <code>jackhmmer_iterations.tsv</code> records the per-iteration search summary. With <code>--save-hmm</code>, the final model is written as <code>last_iteration.hmm</code> for a single seed or under <code>last_iteration_hmms/</code> for multiple seeds.</p>
+<h2 id="command-options">Command options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>Usage: phu jack [OPTIONS] {seed_marker}
+
+ Iteratively screen contigs from one or more seed protein markers with
+ pyhmmer.jackhmmer.
+
+ Combine modes for multi-seed screening:
+ - any: keep contigs hit by at least one seed (default)
+ - all: keep contigs hit by all seeds
+ - threshold: keep contigs hit by at least --min-seed-hits seeds
+
+ Examples:
+     phu jack -i contigs.fa marker_seed.faa
+     phu jack -i contigs.fa --combine-mode all marker_seeds.faa
+     phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
+
+╭─ Arguments ───────────────────────────────────────────────────────────────╮
+│ *    seed_marker      &lt;path&gt;  Seed marker protein FASTA (supports one or  │
+│                               more sequences) [required]                   │
+╰───────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────╮
+│ *  --input-contigs  -i                     &lt;path&gt;           Input contigs  │
+│                                                             FASTA          │
+│                                                             [required]     │
+│    --output-folder  -o                     &lt;path&gt;           Output         │
+│                                                             directory      │
+│                                                             [default:      │
+│                                                             phu-jack]      │
+│    --mode           -m                     &lt;str&gt;            pyrodigal mode:│
+│                                                             meta|single    │
+│                                                             [default: meta]│
+│    --threads        -t                     &lt;int range&gt;      Threads for    │
+│                                            [x&gt;=1]           both pyrodigal  │
+│                                                             and pyhmmer     │
+│                                                             [default: 1]    │
+│    --iterations     -I                     &lt;int range&gt;      Maximum         │
+│                                            [x&gt;=1]           jackhmmer       │
+│                                                             iterations      │
+│                                                             [default: 5]    │
+│    --inc-evalue                            &lt;float&gt;          Inclusion       │
+│                                                             E-value         │
+│                                                             threshold for   │
+│                                                             iterative       │
+│                                                             jackhmmer       │
+│                                                             [default: 0.001]│
+│    --max-evalue     -e                     &lt;float&gt;          Maximum         │
+│                                                             independent     │
+│                                                             E-value to keep │
+│                                                             a final hit     │
+│                                                             [default: 1e-05]│
+│    --top-per-cont…  -n                     &lt;int range&gt;      Keep top-N hits │
+│                                            [x&gt;=1]           per contig       │
+│                                                             (by bitscore)   │
+│                                                             [default: 1]    │
+│    --combine-mode   -c                     &lt;str&gt;            How to combine  │
+│                                                             hits from       │
+│                                                             multiple seed   │
+│                                                             proteins:       │
+│                                                             any|all|thresho… │
+│                                                             [default: any]  │
+│    --min-seed-hits  -k                     &lt;int range&gt;      Minimum number  │
+│                                            [x&gt;=1]           of seeds that    │
+│                                                             must hit a      │
+│                                                             contig (for     │
+│                                                             threshold mode) │
+│                                                             [default: 1]    │
+│    --min-gene-len   -g                     &lt;int&gt;            Minimum gene    │
+│                                                             length for      │
+│                                                             pyrodigal (nt)  │
+│                                                             [default: 90]    │
+│    --min-protein-…                         &lt;int range&gt;      Minimum         │
+│                                            [x&gt;=1]           translated      │
+│                                                             protein length  │
+│                                                             to keep (aa)    │
+│                                                             [default: 30]    │
+│    --ttable         -T                     &lt;int range&gt;      NCBI translation│
+│                                            [x&gt;=1]           table; default  │
+│                                                             uses each       │
+│                                                             contig's        │
+│                                                             predicted table │
+│    --keep-proteins      --no-keep-prot…                     Keep the protein│
+│                                                             FASTA used for  │
+│                                                             searching       │
+│                                                             [default:       │
+│                                                             no-keep-protein…│
+│    --save-hmm           --no-save-hmm                       Save the last   │
+│                                                             jackhmmer       │
+│                                                             iteration HMM as│
+│                                                             last_iteration… │
+│                                                             [default:       │
+│                                                             no-save-hmm]    │
+│    --quiet                                                  Suppress routine│
+│                                                             progress output.│
+│    --verbose                                                Show additional │
+│                                                             progress        │
+│                                                             details.         │
+│    --help           -h                                      Show this        │
+│                                                             message and     │
+│                                                             exit.            │
+╰───────────────────────────────────────────────────────────────────────────╯
+</code></pre></div>
+<h2 id="workflow-integration">Workflow integration<a class="headerlink" href="#workflow-integration" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># Start with a trusted marker protein.</span>
+phu<span class="w"> </span>jack<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--input-contigs<span class="w"> </span>viral_assembly.fasta<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output-folder<span class="w"> </span>phu-jack-capsid<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--iterations<span class="w"> </span><span class="m">7</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--inc-evalue<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>marker_seed.faa
+</code></pre></div>
+<p>Use <code>--save-hmm</code> when the final iterative model is needed for inspection or follow-up searches. Use <code>--quiet</code> in scripted workflows and retain the default output tables for provenance.</p>
 
 
 

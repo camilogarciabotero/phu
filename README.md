@@ -29,7 +29,8 @@ You can install `phu` using `mamba` or `conda` from the `bioconda` channel:
 mamba create -n phu bioconda::phu
 ```
 
-To try unreleased changes from the `main` branch without installing them:
+To try unreleased changes from the `main` branch without installing them using
+[uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```bash
 uvx --from git+https://github.com/camilogarciabotero/phu.git@main phu --help
@@ -120,7 +121,8 @@ tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Developers
 
-You can also install the development version of `phu` directly from GitHub with `uv`:
+You can also install the development version of `phu` directly from GitHub with
+[uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```bash
 git clone https://github.com/camilogarciabotero/phu.git
@@ -128,7 +130,8 @@ cd phu
 uv sync
 ```
 
-`phu` is also available on PyPI and can be installed with `uv`:
+`phu` is also available on PyPI and can be installed with
+[uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```bash
 uv tool install phu

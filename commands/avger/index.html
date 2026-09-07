@@ -1156,7 +1156,29 @@ not exposed as separate subcommands.</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>avger<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>-o<span class="w"> </span>phu-avger
 </code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<p>The command-line menu is available directly with <code>phu avger --help</code>:</p>
+<p>The command-line menu is available directly with <code>phu avger --help</code>. Options
+are grouped into <strong>Input</strong>, <strong>Output</strong>, <strong>Runtime</strong>, <strong>Prediction</strong>, and
+<strong>Scoring</strong> panels. The current panel layout is:</p>
+<div class="highlight"><pre><span></span><code>╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ --input-contigs  -i  Trusted viral contigs FASTA                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
+│ --output-folder  -o  Output directory                                       │
+│ --keep-hits          Keep intermediate annotation hits                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --threads  -t  Threads for prediction and annotation                       │
+│ --quiet             Suppress routine progress output.                       │
+│ --verbose           Show additional progress details.                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Prediction ─────────────────────────────────────────────────────────────────╮
+│ --mode  -m, --min-gene-len, --min-protein-len-aa, --ttable                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Scoring ────────────────────────────────────────────────────────────────────╮
+│ --min-amg-weight, --filter-mode, --scaffold-avl-cutoff, --gene-vl-cutoff,   │
+│ --gene-v-cutoff, --scoring-evalue                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+</code></pre></div>
 <div class="highlight"><pre><span></span><code>Usage: phu avger [OPTIONS]
 
 Predict and curate putative auxiliary viral genes.

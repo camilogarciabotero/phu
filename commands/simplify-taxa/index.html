@@ -980,6 +980,8 @@ used in that case. With <code>--add-lineage</code>, one additional column is app
 those version-sensitive cases against representative vContact output before
 using them as a scientific contract.</p>
 <h2 id="command-options">Command options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
+<p>The live CLI groups options into <strong>Input</strong>, <strong>Output</strong>, and <strong>Runtime</strong> panels.
+Run <code>phu simplify-taxa --help</code> for the current terminal menu.</p>
 <div class="highlight"><pre><span></span><code>Usage: phu simplify-taxa [OPTIONS]
 
  Simplify vContact taxonomy prediction columns into compact lineage codes.
@@ -992,18 +994,24 @@ using them as a scientific contract.</p>
    phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --input-file   -i      &lt;path&gt;  Input vContact final_assignments.csv       │
-│                                   [required]                                 │
+│ --help  -h        Show this message and exit.                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ *  --input-file  -i      &lt;path&gt;  Input vContact final_assignments.csv        │
+│                                  [required]                                  │
+│    --sep         -s      &lt;str&gt;   Override delimiter: ',' or '\t'.            │
+│                                  Auto-detected from extension if not set     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
 │ *  --output-file  -o      &lt;path&gt;  Output file path (.csv or .tsv) [required] │
 │    --add-lineage  -a              Append compact_lineage column from deepest │
 │                                   simplified rank                            │
 │    --lineage-col  -l      &lt;str&gt;   Name of the lineage column                 │
 │                                   [default: compact_lineage]                 │
-│    --sep          -s      &lt;str&gt;   Override delimiter: ',' or '\t'.           │
-│                                   Auto-detected from extension if not set    │
-│    --quiet                        Suppress routine progress output.          │
-│    --verbose                      Show additional progress details.          │
-│    --help         -h              Show this message and exit.                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --quiet            Suppress routine progress output.                         │
+│ --verbose          Show additional progress details.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>

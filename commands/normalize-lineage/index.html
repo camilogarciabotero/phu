@@ -941,19 +941,31 @@ when values are unparsed or when a value's rank does not match its column. In
 non-strict mode, those values are retained and reported. Multiple candidates
 separated by <code>||</code> are normalized independently.</p>
 <h2 id="command-options">Command options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
+<p>The live CLI groups options into <strong>Input</strong>, <strong>Output</strong>, <strong>Quality checks</strong>, and
+<strong>Runtime</strong> panels. Run <code>phu normalize-lineage --help</code> for the current terminal
+menu.</p>
 <div class="highlight"><pre><span></span><code>Usage: phu normalize-lineage [OPTIONS]
 
  Normalize vContact lineage predictions without changing column names.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --input-file   -i      &lt;path&gt;  [required]                                 │
-│ *  --output-file  -o      &lt;path&gt;  [required]                                 │
-│    --add-lineage  -a                                                         │
-│    --lineage-col  -l      &lt;str&gt;   [default: compact_lineage]                 │
-│    --sep          -s      &lt;str&gt;                                              │
-│    --strict                                                                  │
-│    --quiet                                                                   │
-│    --help         -h              Show this message and exit.                │
+│ --help  -h        Show this message and exit.                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ *  --input-file  -i      &lt;path&gt;  Input delimited table [required]            │
+│    --sep         -s      &lt;str&gt;   Explicit input/output separator             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
+│ *  --output-file  -o      &lt;path&gt;  Output normalized table [required]         │
+│    --add-lineage  -a              Append the compact lineage column          │
+│    --lineage-col  -l      &lt;str&gt;   Name of the lineage column                 │
+│                                   [default: compact_lineage]                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Quality checks ─────────────────────────────────────────────────────────────╮
+│ --strict          Fail on unparsed or rank-mismatched values                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --quiet          Suppress the QA summary                                     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>

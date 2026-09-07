@@ -874,6 +874,30 @@
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>DATABASES...<span class="o">]</span>
 </code></pre></div>
 <h2 id="supported-commands">Supported commands<a class="headerlink" href="#supported-commands" title="Permanent link">&para;</a></h2>
+<p>The database subcommands use a separate <strong>Selection</strong> panel for <code>--all</code> and a
+command-specific action panel for preparation or removal options. Run each
+subcommand with <code>--help</code> to see its current grouped menu.</p>
+<p>For example, the rendered menus are:</p>
+<div class="highlight"><pre><span></span><code>Usage: phu dbs status [OPTIONS] [databases]...
+
+ Show detailed status for one or more databases.
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│ databases  Database names (default: all)                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Selection ───────────────────────────────────────────────────────────────────╮
+│ --all  Show status for all supported databases                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Usage: phu dbs prepare [OPTIONS] [databases]...
+
+╭─ Selection ───────────────────────────────────────────────────────────────────╮
+│ --all  Prepare all supported databases                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Preparation ─────────────────────────────────────────────────────────────────╮
+│ --force-refresh  Force re-download/rebuild when supported                    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+</code></pre></div>
 <ul>
 <li><code>phu dbs list</code></li>
 <li><code>phu dbs status [DATABASES...] [--all]</code></li>

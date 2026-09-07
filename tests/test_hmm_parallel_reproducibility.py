@@ -55,8 +55,8 @@ def test_hmmsearch_results_are_reproducible_across_cpu_counts(tmp_path: Path) ->
     proteins_path = tmp_path / "proteins.faa"
     _write_fixture_hmm(hmm_path)
     proteins_path.write_text(
-        ">p1\nMKKLLAAVAGAAAAPAAA\n"
-        ">p2\nGKKLLAAVAGAAAAPAAA\n"
+        ">p1\nMAAAAAAAAAAAAAAAAAAA\n"
+        ">p2\nGAAAAAAAAAAAAAAAAAAA\n"
         ">p3\nVVVVVVVVVVVVVVVVVVV\n"
     )
 

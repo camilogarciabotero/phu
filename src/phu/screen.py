@@ -1150,7 +1150,11 @@ def _hmmsearch(
                 hmm_names.append(hmm_path.stem)  # Use filename for pure mode
 
     # Load proteins into memory
-    with pyhmmer.easel.SequenceFile(proteins_fa, digital=True) as seq_file:
+    with pyhmmer.easel.SequenceFile(
+        proteins_fa,
+        digital=True,
+        alphabet=pyhmmer.easel.Alphabet.amino(),
+    ) as seq_file:
         proteins = seq_file.read_block()
 
     # Run hmmsearch with pyHMMER

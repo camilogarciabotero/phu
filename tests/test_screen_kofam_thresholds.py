@@ -259,7 +259,7 @@ def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
             return False
 
     class _FakeSequenceFile:
-        def __init__(self, _path, digital=True):
+        def __init__(self, _path, digital=True, alphabet=None):
             self._proteins = object()
 
         def __enter__(self):

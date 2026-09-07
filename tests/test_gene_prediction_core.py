@@ -18,6 +18,26 @@ from phu.gene_prediction_core import (
 from phu.screen import _predict_proteins_pyrodigal
 
 
+
+def test_write_predicted_proteins_fasta_strips_terminal_stop(tmp_path):
+    out = tmp_path / "proteins.faa"
+    genes = [
+        PredictedGene(
+            gene_id="gene1",
+            contig_id="contig1",
+            start=1,
+            end=9,
+            strand=1,
+            ordinal=1,
+            nucleotide_sequence="ATGAAATAG",
+            amino_acid_sequence="MKT*",
+        )
+    ]
+
+    write_predicted_proteins_fasta(genes, out)
+
+    assert out.read_text() == ">gene1\nMKT\n"
+
 class TestPredictionInputs:
     """Test validation and properties of PredictionInputs."""
 
@@ -293,6 +313,26 @@ class TestGetOrPredictProteins:
         # Should have rebuilt (not hit cache with corrupted manifest)
         assert not artifact2.cache_hit
 
+    def test_old_protein_fasta_format_triggers_rebuild(self, tmp_path, monkeypatch):
+        """Changing serialized proteins invalidates existing cache entries."""
+        cache_dir = tmp_path / "cache"
+        monkeypatch.setenv("PHU_CACHE_DIR", str(cache_dir))
+
+        contigs = tmp_path / "contigs.fa"
+        contigs.write_text(">c1\nATG" + "A" * 87 + "TAA\n")
+        inputs = PredictionInputs(input_contigs=contigs, min_gene_len=60)
+        artifact = get_or_predict_proteins(inputs, use_cache=True)
+
+        manifest_path = artifact.cache_dir / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["protein_fasta_format"] = 1
+        manifest_path.write_text(json.dumps(manifest))
+
+        rebuilt = get_or_predict_proteins(inputs, use_cache=True)
+
+        assert not rebuilt.cache_hit
+        assert json.loads(manifest_path.read_text())["protein_fasta_format"] == 2
+
     def test_incomplete_cache_entry_triggers_rebuild(self, tmp_path, monkeypatch):
         """A cache without serialized genes is not a valid hit."""
         cache_dir = tmp_path / "cache"
@@ -525,4 +565,4 @@ def test_write_predicted_proteins_fasta_writes_expected_records(tmp_path):
     count = write_predicted_proteins_fasta(genes, out)
 
     assert count == 2
-    assert out.read_text() == ">c1|gene1\nMK*\n>c2|gene1\nMP*\n"
+    assert out.read_text() == ">c1|gene1\nMK\n>c2|gene1\nMP\n"

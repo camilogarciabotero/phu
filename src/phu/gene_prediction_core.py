@@ -30,6 +30,8 @@ from typing import Optional
 
 from pyrodigal_gv import ViralGeneFinder
 
+PROTEIN_FASTA_FORMAT_VERSION = 2
+
 
 @dataclass
 class PredictionInputs:
@@ -253,7 +255,8 @@ def write_predicted_proteins_fasta(
     count = 0
     with output_path.open("w") as out:
         for gene in genes:
-            out.write(f">{gene.gene_id}\n{gene.amino_acid_sequence}\n")
+            protein = gene.amino_acid_sequence.rstrip("*")
+            out.write(f">{gene.gene_id}\n{protein}\n")
             count += 1
     return count
 
@@ -328,6 +331,8 @@ def get_or_predict_proteins(
         ):
             try:
                 manifest = json.loads(cache_manifest.read_text())
+                if manifest.get("protein_fasta_format") != PROTEIN_FASTA_FORMAT_VERSION:
+                    raise ValueError("outdated protein FASTA format")
                 n_prot = manifest.get("protein_count", 0)
                 return CacheArtifact(
                     proteins_path=cache_proteins,
@@ -340,7 +345,7 @@ def get_or_predict_proteins(
                         for item in json.loads(cache_genes.read_text())
                     ],
                 )
-            except (json.JSONDecodeError, KeyError):
+            except (json.JSONDecodeError, KeyError, ValueError):
                 # Corrupted manifest; treat as miss and rebuild
                 cache_manifest.unlink(missing_ok=True)
 
@@ -373,6 +378,7 @@ def get_or_predict_proteins(
             "translation_table": inputs.translation_table,
             "protein_count": n_prot,
             "cache_key": cache_key,
+            "protein_fasta_format": PROTEIN_FASTA_FORMAT_VERSION,
         }
         tmp_manifest = cache_subdir / ".manifest.tmp"
         tmp_manifest.write_text(json.dumps(manifest_data, indent=2))

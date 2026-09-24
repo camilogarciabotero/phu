@@ -10,7 +10,6 @@ import pyhmmer
 
 from .kofam_db import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
 from .pfam_db import ensure_pfam_database, normalize_pfam_id
-from .vscore_db import VScoreRecord
 
 
 @dataclass(frozen=True)
@@ -72,23 +71,6 @@ class AnnotationResults:
     passing_hit_count: int
     scanned_model_count: int
     skipped_pfam_models_missing_ga: int
-
-def _resolve_vscore_for_row(
-    row: AnnotationHit,
-    results: AnnotationResults,
-    vscore_by_accession: Optional[dict[str, VScoreRecord]],
-) -> Optional[VScoreRecord]:
-    if not vscore_by_accession:
-        return None
-
-    if row.model_id in vscore_by_accession:
-        return vscore_by_accession[row.model_id]
-
-    ko_hit = results.best_kofam_by_protein.get(row.protein_id)
-    if ko_hit is not None and ko_hit.model_id in vscore_by_accession:
-        return vscore_by_accession[ko_hit.model_id]
-
-    return None
 
 def parse_contig_id_from_protein_id(protein_id: str) -> str:
     marker = "|gene"

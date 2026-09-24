@@ -579,9 +579,9 @@ def avger(
     min_amg_weight: float = typer.Option(0.6, "--min-amg-weight", min=0.0, max=1.0, help="Minimum AMG evidence weight", rich_help_panel="Scoring"),
     filter_mode: str = typer.Option("standard", "--filter-mode", help="Candidate filter mode: standard|strict|none", rich_help_panel="Scoring"),
     keep_hits: bool = typer.Option(False, "--keep-hits/--no-keep-hits", help="Keep intermediate annotation hits", rich_help_panel="Output"),
-    scaffold_avl_cutoff: float = typer.Option(3.0, "--scaffold-avl-cutoff", min=0.0, help="Minimum scaffold AVL score", rich_help_panel="Scoring"),
-    gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0, help="Minimum gene VL-score", rich_help_panel="Scoring"),
-    gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0, help="Minimum gene V-score", rich_help_panel="Scoring"),
+    scaffold_avl_cutoff: float = typer.Option(3.0, "--scaffold-avl-cutoff", min=0.0, help="Minimum scaffold AVL score (exclusive)", rich_help_panel="Scoring"),
+    gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0, help="Maximum gene VL-score (exclusive)", rich_help_panel="Scoring"),
+    gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0, help="Maximum gene V-score (exclusive)", rich_help_panel="Scoring"),
     scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0, help="E-value cutoff for scoring searches", rich_help_panel="Scoring"),
     quiet: bool = typer.Option(
         False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"

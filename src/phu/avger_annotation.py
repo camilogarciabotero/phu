@@ -11,7 +11,6 @@ import pyhmmer
 from .kofam_db import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
 from .pfam_db import ensure_pfam_database, normalize_pfam_id
 from .vscore_db import VScoreRecord
-from .avger_classification import ClassificationRules, classify_protein_annotations
 
 
 @dataclass(frozen=True)
@@ -90,117 +89,6 @@ def _resolve_vscore_for_row(
         return vscore_by_accession[ko_hit.model_id]
 
     return None
-
-def write_best_hits_tsv(
-    results: AnnotationResults,
-    output_path: Path,
-    vscore_by_accession: Optional[dict[str, VScoreRecord]] = None,
-    classification_rules: Optional[ClassificationRules] = None,
-    candidate_evaluations=None,
-) -> int:
-    """Write one deterministic best annotation row per protein and database."""
-    rows = list(results.best_pfam_by_protein.values()) + list(
-        results.best_kofam_by_protein.values()
-    )
-    rows.sort(key=lambda row: (row.protein_id, row.database, row.model_accession))
-    rows_by_protein: dict[str, list[AnnotationHit]] = {}
-    for row in rows:
-        rows_by_protein.setdefault(row.protein_id, []).append(row)
-    evaluations_by_key = {
-        (item.protein_id, item.database): item for item in (candidate_evaluations or [])
-    }
-    avg_candidate_by_protein: dict[str, bool] = {}
-    for item in candidate_evaluations or []:
-        avg_candidate_by_protein[item.protein_id] = (
-            avg_candidate_by_protein.get(item.protein_id, False) or item.candidate
-        )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", newline="") as handle:
-        writer = csv.writer(handle, delimiter="\t")
-        writer.writerow(
-            [
-                "protein_id",
-                "contig_id",
-                "database",
-                "model_id",
-                "model_name",
-                "model_description",
-                "score_type",
-                "effective_score",
-                "full_score",
-                "domain_score",
-                "evalue",
-                "hmm_from",
-                "hmm_to",
-                "target_from",
-                "target_to",
-                "threshold_source",
-                "threshold_value",
-                "v_score",
-                "vl_score",
-                "v_score_log10_hit_number",
-                "v_score_database_origin",
-                "contig_avl_score",
-                "database_candidate",
-                "avg_candidate",
-                "evidence_state",
-                "upstream_support",
-                "downstream_support",
-                "nearest_upstream_distance",
-                "nearest_downstream_distance",
-                "flank_supported",
-                "flank_reason_codes",
-                "classification",
-                "classification_rule_id",
-                "classification_rule_version",
-            ]
-        )
-        for row in rows:
-            vscore = _resolve_vscore_for_row(row, results, vscore_by_accession)
-            classification, rule_id, rule_version = classify_protein_annotations(
-                rows_by_protein[row.protein_id], classification_rules, vscore_by_accession
-            )
-            evaluation = evaluations_by_key.get((row.protein_id, row.database))
-            writer.writerow(
-                [
-                    row.protein_id,
-                    row.contig_id,
-                    row.database,
-                    row.model_id,
-                    row.model_name or "",
-                    row.model_description or "",
-                    row.score_type,
-                    f"{row.effective_score:.6f}",
-                    f"{row.full_score:.6f}",
-                    "" if row.domain_score is None else f"{row.domain_score:.6f}",
-                    f"{row.evalue:.6g}",
-                    "" if row.hmm_from is None else row.hmm_from,
-                    "" if row.hmm_to is None else row.hmm_to,
-                    "" if row.target_from is None else row.target_from,
-                    "" if row.target_to is None else row.target_to,
-                    row.threshold_source,
-                    "" if row.threshold_value is None else f"{row.threshold_value:.6f}",
-                    "" if vscore is None else f"{vscore.v_score:.6f}",
-                    "" if vscore is None else f"{vscore.vl_score:.6f}",
-                    "" if vscore is None else f"{vscore.log10_hit_number:.6f}",
-                    "" if vscore is None else vscore.database_origin,
-                    "" if evaluation is None or evaluation.contig_avl_score is None else f"{evaluation.contig_avl_score:.6f}",
-                    "" if evaluation is None else ("true" if evaluation.candidate else "false"),
-                    "true" if avg_candidate_by_protein.get(row.protein_id, False) else "false",
-                    "" if evaluation is None else evaluation.evidence_state,
-                    "" if evaluation is None else ("true" if evaluation.flank.upstream_supported else "false"),
-                    "" if evaluation is None else ("true" if evaluation.flank.downstream_supported else "false"),
-                    "" if evaluation is None else evaluation.flank.nearest_upstream_distance,
-                    "" if evaluation is None else evaluation.flank.nearest_downstream_distance,
-                    "" if evaluation is None else ("true" if evaluation.flank.flank_supported else "false"),
-                    "" if evaluation is None else ";".join(evaluation.flank.reason_codes),
-                    classification,
-                    "" if rule_id is None else rule_id,
-                    "" if rule_version is None else rule_version,
-                ]
-            )
-    return len(rows)
-
 
 def parse_contig_id_from_protein_id(protein_id: str) -> str:
     marker = "|gene"

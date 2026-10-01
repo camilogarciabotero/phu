@@ -1,0 +1,283 @@
+{
+  "bundle_version": "phu-db-0.1.1-fixture",
+  "layout_version": 1,
+  "generator": {
+    "name": "phu-db-prep",
+    "version": "0.1.1-fixture"
+  },
+  "bundle": {
+    "name": "phu-db.tar.gz",
+    "layout_root": "phu-db",
+    "url": null
+  },
+  "zenodo": {
+    "concept_doi": null,
+    "version_doi": null,
+    "record_url": null
+  },
+  "databases": {
+    "pfam": {
+      "provenance": "fetch",
+      "redistribution": "pin-only",
+      "upstream_version": "37.0",
+      "license": "CC0-1.0",
+      "citation": "Mistry J, et al. Nucleic Acids Res. 2021;49(D1):D412-D419.",
+      "layout_dir": "pfam",
+      "sources": [
+        {
+          "name": "Pfam-A.hmm.gz",
+          "url": "https://phu-db-fixture.invalid/pfam/Pfam-A.hmm.gz",
+          "sha256": "727516f53ca46e0859f6b213ff679ddde8a7c17508887deddf42b6ac49930aec",
+          "bytes": 16017
+        }
+      ],
+      "steps": [
+        "gunzip:Pfam-A.hmm.gz -> profiles.hmm"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 15994,
+          "sha256": "6ea1a1c576bcf5e3aa7f8762ebed40376a060d30143f9ab4517bdc8a2b71ff85",
+          "count": 2
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": null
+    },
+    "kofam": {
+      "provenance": "fetch",
+      "redistribution": "pin-only",
+      "upstream_version": "genome.jp archives/2026-07-02",
+      "license": "UNKNOWN",
+      "citation": "KOfamKOALA",
+      "layout_dir": "kofam",
+      "sources": [
+        {
+          "name": "profiles.tar.gz",
+          "url": "https://phu-db-fixture.invalid/kofam/profiles.tar.gz",
+          "sha256": "786c01d0f9744430ba0d2838bb075bac9ab7b69fcc3310a57ec8a94372169454",
+          "bytes": 30743
+        },
+        {
+          "name": "ko_list.gz",
+          "url": "https://phu-db-fixture.invalid/kofam/ko_list.gz",
+          "sha256": "df91ef96c3c13f780da4ef8aaecb33446e0e3b2a5422b281740616b7d64a29ea",
+          "bytes": 372
+        }
+      ],
+      "steps": [
+        "extract:profiles.tar.gz -> profiles/",
+        "concatenate:profiles/*.hmm -> profiles.hmm",
+        "gunzip:ko_list.gz -> ko_list.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 23855,
+          "sha256": "f84feaa45dc79982f2d2fc7cffc3c7389714622b99f550182f12dc5ef95629a1",
+          "count": 3
+        },
+        {
+          "path": "ko_list.tsv",
+          "format": "tsv",
+          "bytes": 349,
+          "sha256": "c71765ac183fc6c61b10ab15287852194bba3888644f17c5781c39742d64ed95",
+          "count": 4
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": null
+    },
+    "dbcan": {
+      "provenance": "fetch",
+      "redistribution": "pin-only",
+      "upstream_version": "V15",
+      "license": "UNKNOWN",
+      "citation": "dbCAN",
+      "layout_dir": "dbcan",
+      "sources": [
+        {
+          "name": "dbCAN-HMMdb-V15.txt",
+          "url": "https://phu-db-fixture.invalid/dbcan/dbCAN-HMMdb-V15.txt",
+          "sha256": "6c3e536b5921cf195dda8886ebf0c57d7d2abd57e5e7860e3dfdd37437dd8044",
+          "bytes": 15907
+        },
+        {
+          "name": "dbCAN-PUL-substrate-metadata.txt",
+          "url": "https://phu-db-fixture.invalid/dbcan/dbCAN-PUL-substrate-metadata.txt",
+          "sha256": "f83a315def3bce1686049032bfe50a0b79e37ad56a27245980448beba702e133",
+          "bytes": 49
+        },
+        {
+          "name": "dbCAN-PUL.xlsx",
+          "url": "https://phu-db-fixture.invalid/dbcan/dbCAN-PUL.xlsx",
+          "sha256": "1808afa36740c900b4e9751f74bdaa5226d183b3c1fae34a3b9521d48410da42",
+          "bytes": 4710
+        }
+      ],
+      "steps": [
+        "rename:dbCAN-HMMdb-V15.txt -> profiles.hmm",
+        "rename:dbCAN-PUL-substrate-metadata.txt -> family_substrate.tsv",
+        "pul-table:dbCAN-PUL.xlsx -> pul_rules.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 15907,
+          "sha256": "6c3e536b5921cf195dda8886ebf0c57d7d2abd57e5e7860e3dfdd37437dd8044",
+          "count": 2
+        },
+        {
+          "path": "family_substrate.tsv",
+          "format": "tsv",
+          "bytes": 49,
+          "sha256": "f83a315def3bce1686049032bfe50a0b79e37ad56a27245980448beba702e133",
+          "count": 3
+        },
+        {
+          "path": "pul_rules.tsv",
+          "format": "tsv",
+          "bytes": 130,
+          "sha256": "d5c0470b0ddbce176211b7e1ae4dab9c52f027d1b3ca38e8f8ac462901dd9a56",
+          "count": 4
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": null
+    },
+    "avg": {
+      "provenance": "build",
+      "redistribution": "pin-only",
+      "upstream_version": "v1.1.1",
+      "license": "UNKNOWN",
+      "citation": "CheckAMG",
+      "layout_dir": "avg",
+      "sources": [
+        {
+          "name": "AMGs.tsv",
+          "url": "https://phu-db-fixture.invalid/avg/AMGs.tsv",
+          "sha256": "dca9970e4e5e6a4468fd5824be67b5883f764689ae624d4786d6fda71e17cb02",
+          "bytes": 455
+        },
+        {
+          "name": "APGs.tsv",
+          "url": "https://phu-db-fixture.invalid/avg/APGs.tsv",
+          "sha256": "c3ddd10c389aa260393a78765a7fe229ea9812d61dcd53eac83000fe1d91d528",
+          "bytes": 259
+        },
+        {
+          "name": "AReGs.tsv",
+          "url": "https://phu-db-fixture.invalid/avg/AReGs.tsv",
+          "sha256": "f493f05d1d93671611c8fd5e3f52bd371f905a32b9566b4cf6ce7a980c655a21",
+          "bytes": 258
+        },
+        {
+          "name": "AMG_filters.tsv",
+          "url": "https://phu-db-fixture.invalid/avg/AMG_filters.tsv",
+          "sha256": "92e0d35cb4330d4b9a2ffc81d89aac0e8c4859a0d041791f54c0540db8a87354",
+          "bytes": 408
+        },
+        {
+          "name": "APG_filters.tsv",
+          "url": "https://phu-db-fixture.invalid/avg/APG_filters.tsv",
+          "sha256": "46c0d7a4b95c61a5283b9d7d5ce12247459520cdc03a19bff719f25c4a927319",
+          "bytes": 408
+        },
+        {
+          "name": "AReG_filters.tsv",
+          "url": "https://phu-db-fixture.invalid/avg/AReG_filters.tsv",
+          "sha256": "26c3ce90f542a3b7826e8ac6f93b01130bcbcb6fb301c3d72dea80e1b84f4eb9",
+          "bytes": 409
+        },
+        {
+          "name": "vscores.tsv",
+          "url": "https://phu-db-fixture.invalid/avg/vscores.tsv",
+          "sha256": "2718822724ed48b0f71e7f580357656dca23c5ba104ec097dd85d9c4622a01cb",
+          "bytes": 272
+        }
+      ],
+      "steps": [
+        "rename:vscores.tsv -> v_scores.tsv",
+        "rename:AMGs.tsv -> positive_amg.tsv",
+        "rename:APGs.tsv -> positive_apg.tsv",
+        "rename:AReGs.tsv -> positive_areg.tsv",
+        "rename:AMG_filters.tsv -> filters_amg.tsv",
+        "rename:APG_filters.tsv -> filters_apg.tsv",
+        "rename:AReG_filters.tsv -> filters_areg.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "v_scores.tsv",
+          "format": "tsv",
+          "bytes": 272,
+          "sha256": "2718822724ed48b0f71e7f580357656dca23c5ba104ec097dd85d9c4622a01cb",
+          "count": 6
+        },
+        {
+          "path": "positive_amg.tsv",
+          "format": "tsv",
+          "bytes": 455,
+          "sha256": "dca9970e4e5e6a4468fd5824be67b5883f764689ae624d4786d6fda71e17cb02",
+          "count": 6
+        },
+        {
+          "path": "positive_apg.tsv",
+          "format": "tsv",
+          "bytes": 259,
+          "sha256": "c3ddd10c389aa260393a78765a7fe229ea9812d61dcd53eac83000fe1d91d528",
+          "count": 6
+        },
+        {
+          "path": "positive_areg.tsv",
+          "format": "tsv",
+          "bytes": 258,
+          "sha256": "f493f05d1d93671611c8fd5e3f52bd371f905a32b9566b4cf6ce7a980c655a21",
+          "count": 6
+        },
+        {
+          "path": "filters_amg.tsv",
+          "format": "tsv",
+          "bytes": 408,
+          "sha256": "92e0d35cb4330d4b9a2ffc81d89aac0e8c4859a0d041791f54c0540db8a87354",
+          "count": 6
+        },
+        {
+          "path": "filters_apg.tsv",
+          "format": "tsv",
+          "bytes": 408,
+          "sha256": "46c0d7a4b95c61a5283b9d7d5ce12247459520cdc03a19bff719f25c4a927319",
+          "count": 6
+        },
+        {
+          "path": "filters_areg.tsv",
+          "format": "tsv",
+          "bytes": 409,
+          "sha256": "26c3ce90f542a3b7826e8ac6f93b01130bcbcb6fb301c3d72dea80e1b84f4eb9",
+          "count": 6
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": {
+        "source_repo": "https://github.com/AnantharamanLab/CheckAMG",
+        "source_tag": "v1.1.1",
+        "tool_version_key": "phu.avg_reference_db"
+      }
+    }
+  }
+}

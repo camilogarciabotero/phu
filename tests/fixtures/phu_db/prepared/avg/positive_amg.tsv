@@ -1,0 +1,6 @@
+id	db	name	metabolic_paths	total_paths	path_source	metabolic_ratio	VL-score	AMG_weight	amg_level
+K00001	KEGG	fixture dehydrogenase A [EC:1.1.1.1]	5.0	5.0	KEGG	1.0		1.0	very high
+K00002	KEGG	fixture monooxygenase	2.0	4.0	KEGG	0.5	2.104233101	0.5	medium
+K00003	KEGG	fixture transferase C	1.0	5.0	KEGG	0.2		0.2	low
+PF00001.1	Pfam	phu fixture domain A	4.0	4.0	GO	1.0	0.0	1.0	very high
+PF00002.1	Pfam	phu fixture domain B	1.0	2.0	GO	0.5	0.811402377	0.5	medium

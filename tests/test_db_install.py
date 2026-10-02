@@ -16,7 +16,6 @@ import pytest
 
 from phu import db_bundle
 from phu.db_bundle import (
-    DatabaseMissingFromBundle,
     LockTimeout,
     TarballMismatch,
     TreeInvalid,
@@ -26,7 +25,12 @@ from phu.db_bundle import (
     tree_problems,
     validate_tree,
 )
-from phu.db_fetch import InsufficientSpace, download_verified, required_install_bytes
+from phu.db_fetch import (
+    DownloadError,
+    InsufficientSpace,
+    download_verified,
+    required_install_bytes,
+)
 from phu.db_manifest import DATABASE_NAMES, loads_manifest
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "phu_db"
@@ -150,10 +154,17 @@ def test_install_from_phu_db_bundle_env(
     assert target == _target(db_folder, fixture_pins)
     _assert_installed(target)
     record = json.loads((target / "installed.json").read_text())
-    assert set(record) == {"bundle_version", "source", "tarball_sha256", "installed_at"}
+    assert set(record) == {
+        "bundle_version",
+        "source",
+        "tarball_sha256",
+        "installed_at",
+        "upstream_databases",
+    }
     assert record["bundle_version"] == fixture_pins.bundle_version
     assert record["source"] == "local"
     assert record["tarball_sha256"] == fixture_pins.sha256
+    assert record["upstream_databases"] == []
     installed_at = datetime.fromisoformat(record["installed_at"])
     assert installed_at.utcoffset() == timedelta(0)
     assert abs(datetime.now(timezone.utc) - installed_at) < timedelta(minutes=5)
@@ -277,18 +288,24 @@ def test_stale_invalid_target_is_replaced(run, db_folder, fixture_pins):
     assert _leftovers(db_folder) == []
 
 
-def test_bundle_missing_a_database_installs_nothing(
+def test_bundle_missing_an_unreachable_database_installs_nothing(
     run, make_bundle, db_folder, fixture_pins, fixture_manifest
 ):
+    # Upstream fallback itself is covered in test_db_resolve.py.
     avg = fixture_manifest.databases["avg"].member_paths()
     tarball = make_bundle(drop=avg)
     data = tarball.read_bytes()
     pins = replace(fixture_pins, sha256=hashlib.sha256(data).hexdigest(), size=len(data))
+    urls = []
 
-    with pytest.raises(DatabaseMissingFromBundle) as raised:
-        run(pins=pins, bundle_path=tarball)
+    def offline(url, dest, sha256, size):
+        urls.append(url)
+        raise DownloadError(f"{url}: no network")
 
-    assert raised.value.databases == ("avg",)
+    with pytest.raises(DownloadError):
+        run(pins=pins, bundle_path=tarball, fetch=offline)
+
+    assert urls == [fixture_manifest.databases["avg"].sources[0].url]
     assert _leftovers(db_folder) == []
     assert not _target(db_folder, pins).exists()
     assert not (db_folder / "phu-db").exists()

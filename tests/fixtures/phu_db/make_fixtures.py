@@ -501,9 +501,11 @@ def run_steps(steps: tuple[str, ...], downloads: dict[str, bytes]) -> dict[str, 
 
 
 def _count(data: bytes, kind: str) -> int:
+    # Contract section 5: lines end at b"\n" only; a bare b"\r" does not end one.
+    lines = data.split(b"\n")
     if kind == "hmm":
-        return sum(1 for line in data.splitlines() if line.startswith(b"NAME "))
-    return sum(1 for line in data.splitlines() if line.strip())
+        return sum(1 for line in lines if line.startswith(b"NAME "))
+    return sum(1 for line in lines if line.strip())
 
 
 def build(out: Path) -> None:

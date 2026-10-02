@@ -446,7 +446,7 @@ def test_fixture_files_match_manifest():
         )
         for item in entry["prepared_files"]:
             data = (prepared / item["path"]).read_bytes()
-            lines = data.splitlines()
+            lines = data.split(b"\n")
             if item["format"] == "hmm":
                 count = sum(1 for line in lines if line.startswith(b"NAME "))
             else:

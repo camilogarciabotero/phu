@@ -60,9 +60,6 @@ phu --help
 │ jack           Iteratively screen contigs from one or more seed protein markers with         │
 │                pyhmmer.jackhmmer.                                                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Database Management ────────────────────────────────────────────────────────────────────────╮
-│ dbs            Manage local phu databases                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -111,28 +108,12 @@ phu cluster --mode votu --input-contigs viral-genomes.fasta
 [Learn more about clustering →](commands/cluster.md)
 
 
-### `dbs` - Database Management
+### Databases
 
-Manage local database lifecycle with a command group designed for multiple backends.
+`screen` and `avger` install their reference databases automatically on first
+use, as one pinned and checksummed bundle.
 
-Available operations:
-
-- `phu dbs list`
-- `phu dbs status [DB ...]`
-- `phu dbs prepare [DB ...]`
-- `phu dbs refresh [DB ...]`
-- `phu dbs remove [DB ...] --yes`
-
-`pfam`, `kofam`, `dbcan`, and `avg` are available in this build.
-Database preparation may download large files; inspect status and available
-metadata before preparing a backend.
-
-**Example:**
-```bash
-phu dbs prepare pfam kofam
-```
-
-[Learn more about database management →](commands/dbs.md)
+[Learn more about databases and provenance →](databases.md)
 
 
 ### `simplify-taxa` - Taxonomy Simplification

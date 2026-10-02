@@ -163,21 +163,13 @@ Positional arguments in `phu screen` can be mixed:
 
 When PFAM accessions are used, `phu` will:
 
-1. Ensure a local `Pfam-A.hmm` database exists (download on first use).
+1. Use the installed Pfam database, installing the database bundle first if this is the first database-backed run.
 2. Resolve each accession to the normalized accession (for example, `PF00589.17` -> `PF00589`).
 3. Extract those models and run screening normally.
 
-Tip: prepare PFAM ahead of time to avoid first-run setup delays:
-
-```bash
-phu dbs prepare pfam
-```
-
-Database location:
-
-- `PHU_DB_FOLDER` if set.
-- Otherwise `$XDG_DATA_HOME/phu/db` when `XDG_DATA_HOME` is set.
-- Otherwise `~/.local/share/phu/db`.
+The first database-backed run installs the database bundle (about 1.9 GB
+download). For install location, offline use and disk needs, see
+[Databases and Provenance](../databases.md).
 
 ## Using Multiple HMMs
 

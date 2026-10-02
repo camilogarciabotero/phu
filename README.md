@@ -77,9 +77,6 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 │                    markers with                                              │
 │                    pyhmmer.jackhmmer.                                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Database Management ────────────────────────────────────────────────────────╮
-│ dbs                Manage local phu databases                                │
-╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Commands
@@ -94,11 +91,9 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 Each command page includes the current CLI help menu, input/output behavior,
 examples, and workflow guidance.
 
-## Database Management
+## Databases
 
-A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Built-in backends currently include `pfam`, `kofam`, `dbcan`, and `avg`.
-
-- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam`, `kofam`, `dbcan`, and `avg`.
+`screen` and `avger` install their reference databases (Pfam, KOfam, dbCAN and the CheckAMG AVG tables) automatically on first use, as one pinned and checksummed bundle. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for disk needs, offline use and citation.
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 

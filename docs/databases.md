@@ -42,6 +42,7 @@ Inside that folder:
 phu-db/
   phu-db-0.1.1/
     installed.json        # source, tarball SHA-256, install time
+    phu-db.json           # the bundle manifest: upstream URLs, digests, steps
     pfam/  profiles.hmm
     kofam/ profiles.hmm, ko_list.tsv
     dbcan/ profiles.hmm, family_substrate.tsv, pul_rules.tsv

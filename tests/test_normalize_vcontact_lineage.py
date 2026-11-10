@@ -9,7 +9,12 @@ import pytest
 from typer.testing import CliRunner
 
 from phu.cli import app
-from phu.normalize_vcontact_lineage import QualitySummary, normalize_cell, parse_candidate
+from phu.normalize_vcontact_lineage import (
+    QualitySummary,
+    normalize_cell,
+    normalize_dataframe,
+    parse_candidate,
+)
 
 FIXTURE = Path(__file__).parent / "fixtures" / "normalize_vcontact_lineage_cases.tsv"
 
@@ -107,3 +112,110 @@ def test_unparsed_values_are_preserved(row: dict[str, str]) -> None:
     result = parse_candidate(raw_value(row), row["column_rank"] or None)
     if result.status == "unparsed":
         assert result.value == raw_value(row).strip()
+
+
+@pytest.mark.parametrize(
+    ("raw", "rank", "expected"),
+    [
+        ("unplaced_phylum_within_unplaced_kingdom_within_default", "phylum", "DEF:UK:UP"),
+        (
+            "unplaced_class_within_unplaced_phylum_within_unplaced_kingdom_within_default",
+            "class",
+            "DEF:UK:UP:UC",
+        ),
+        ("unplaced_order_within_Caudoviricetes", "order", "Caudoviricetes:UO"),
+        (
+            "novel_genus_1_of_novel_family_2_of_unplaced_order_within_Caudoviricetes",
+            "genus",
+            "Caudoviricetes:UO:NF2:NG1",
+        ),
+    ],
+)
+def test_unplaced_chains_are_normalized(raw: str, rank: str, expected: str) -> None:
+    result = parse_candidate(raw, rank)
+
+    assert result.status == "normalized"
+    assert result.value == expected
+    assert result.deepest_rank == rank
+    assert result.rank_mismatch is False
+
+    again = parse_candidate(expected, rank)
+    assert again.status == "unchanged"
+    assert again.value == expected
+    assert again.deepest_rank == rank
+    assert again.rank_mismatch is False
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "unplaced_kingdom_within_unplaced_phylum_within_default",
+        "unplaced_phylum_within_unplaced_kingdom",
+        "unplaced_phylum",
+    ],
+)
+def test_invalid_unplaced_chains_are_unparsed(raw: str) -> None:
+    result = parse_candidate(raw, "phylum")
+
+    assert result.status == "unparsed"
+    assert result.value == raw
+
+
+def test_unplaced_multi_candidate_cell_counts_as_normalized() -> None:
+    summary = QualitySummary()
+
+    value = normalize_cell(
+        "unplaced_phylum_within_unplaced_kingdom_within_default"
+        "||novel_phylum_3_of_Viruses",
+        "phylum",
+        summary,
+    )
+
+    assert value == "DEF:UK:UP||Viruses:NP3"
+    assert summary.cells_examined == 1
+    assert summary.multi_candidate == 1
+    assert summary.normalized == 1
+    assert summary.unchanged == 0
+    assert summary.unparsed == 0
+    assert summary.rank_mismatch == 0
+
+
+def test_unplaced_dataframe_second_run_is_a_no_op() -> None:
+    dataframe = pd.DataFrame(
+        {
+            "contig": ["a", "b"],
+            "kingdom_prediction": ["unplaced_kingdom_within_default", "Bamfordvirae"],
+            "phylum_prediction": [
+                "unplaced_phylum_within_unplaced_kingdom_within_default",
+                "",
+            ],
+            "class_prediction": [
+                "unplaced_class_within_unplaced_phylum_within_unplaced_kingdom_within_default",
+                "novel_class_1_of_unplaced_phylum_within_Bamfordvirae",
+            ],
+        }
+    )
+
+    first, first_summary = normalize_dataframe(dataframe, add_lineage=True)
+
+    assert first["kingdom_prediction"].tolist() == ["DEF:UK", "Bamfordvirae"]
+    assert first["phylum_prediction"].iloc[0] == "DEF:UK:UP"
+    assert first["class_prediction"].tolist() == ["DEF:UK:UP:UC", "Bamfordvirae:UP:NC1"]
+    assert first["compact_lineage"].tolist() == ["DEF:UK:UP:UC", "Bamfordvirae:UP:NC1"]
+    assert first_summary.normalized == 4
+    assert first_summary.unchanged == 1
+    assert first_summary.missing == 1
+    assert first_summary.unparsed == 0
+    assert first_summary.rank_mismatch == 0
+    assert first_summary.lineage_skipped_unparsed == 0
+
+    second, second_summary = normalize_dataframe(
+        first.drop(columns="compact_lineage"), add_lineage=True
+    )
+
+    pd.testing.assert_frame_equal(second, first)
+    assert second_summary.normalized == 0
+    assert second_summary.unchanged == 5
+    assert second_summary.unparsed == 0
+    assert second_summary.rank_mismatch == 0
+    assert second_summary.lineage_skipped_unparsed == 0

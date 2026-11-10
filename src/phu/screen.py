@@ -1194,13 +1194,18 @@ def _hmmsearch(
 
     # Write domtbl files if requested
     if keep_domtbl:
+        # An HMM file may hold several models: the first one creates the table
+        # (with header), the following ones are appended to it.
+        written_paths: set[Path] = set()
         for i, top_hits in enumerate(hits_list):
             # Map back to original HMM file for domtbl naming
             hmm_name = hmm_names[i] if i < len(hmm_names) else f"hmm_{i}"
             if hmm_name in domtbl_paths:
                 domtbl_path = domtbl_paths[hmm_name]
-                with domtbl_path.open("wb") as f:
-                    top_hits.write(f, format="domains")
+                first = domtbl_path not in written_paths
+                written_paths.add(domtbl_path)
+                with domtbl_path.open("wb" if first else "ab") as f:
+                    top_hits.write(f, format="domains", header=first)
 
     # Process hits and yield Hit objects
     for i, top_hits in enumerate(hits_list):

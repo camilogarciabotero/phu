@@ -458,3 +458,25 @@ def test_resume_refused_when_server_reports_another_total(server, tmp_path, slee
 
     assert [r.status for r in server.requests] == [206]
     assert not _part(dest).exists()
+
+
+def test_untrusted_certificate_fails_at_once_and_names_the_fix(tmp_path, monkeypatch):
+    import ssl
+    import urllib.error
+
+    from phu import db_fetch
+
+    calls = []
+
+    class Untrusted:
+        def open(self, request, timeout=None):
+            calls.append(request)
+            raise urllib.error.URLError(ssl.SSLCertVerificationError(1, "certificate verify failed"))
+
+    monkeypatch.setattr(db_fetch, "_opener", lambda url: Untrusted())
+
+    with pytest.raises(db_fetch.DownloadError, match="SSL_CERT_FILE"):
+        db_fetch.download_verified(
+            "https://example.org/a", tmp_path / "a", "0" * 64, 10, sleep=lambda seconds: None
+        )
+    assert len(calls) == 1

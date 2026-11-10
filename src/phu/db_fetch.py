@@ -210,7 +210,13 @@ class _Download:
             raise DownloadError(f"{self.url}: HTTP {error.code} {error.reason}") from error
         except urllib.error.URLError as error:
             if isinstance(error.reason, ssl.SSLCertVerificationError):
-                raise DownloadError(f"{self.url}: {error.reason}") from error
+                # A Python without a CA bundle (uv-managed ones on some systems)
+                # fails here for every host; retrying cannot help.
+                raise DownloadError(
+                    f"{self.url}: {error.reason}. If this Python has no CA bundle, "
+                    "set SSL_CERT_FILE to the system one, e.g. "
+                    "/etc/pki/tls/certs/ca-bundle.crt or /etc/ssl/certs/ca-certificates.crt"
+                ) from error
             raise _Transient(str(error.reason)) from error
         except http.client.InvalidURL as error:
             # Malformed (for example a non-numeric port): no retry can fix it.

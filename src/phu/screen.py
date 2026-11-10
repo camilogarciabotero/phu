@@ -24,7 +24,7 @@ import typer
 from . import __version__
 from ._click import run_click_task
 from ._exec import _executable
-from .db_bundle import database_hashes
+from .db_bundle import bundle_provenance, database_hashes
 from .dbcan_db import (
     ensure_dbcan_database,
     extract_dbcan_models,
@@ -685,7 +685,7 @@ def _resolve_all_cazymes_inputs(
         total_hmm_profiles=len(canonical) + len(excluded),
         excluded_ancillary_profiles=excluded,
         database_version=database_manifest.get("release"),
-        database_digest=database_manifest.get("files", {}).get("hmm", {}).get("sha256"),
+        database_digest=database_manifest.get("hmm_sha256"),
     )
     print(
         f"Resolved {len(dbcan_hmms)} canonical dbCAN CAZyme profile(s); "
@@ -798,8 +798,7 @@ def _resolve_hmm_inputs(
         if missing:
             missing_msg = ", ".join(missing)
             raise FileNotFoundError(
-                f"KO identifier(s) not found in local KOFam database: {missing_msg}. "
-                "Run `phu dbs refresh kofam` and try again."
+                f"KO identifier(s) not found in the KOfam database: {missing_msg}."
             )
 
         ko_metadata = get_kofam_metadata_map(dedup_ko_ids)
@@ -858,8 +857,7 @@ def _resolve_hmm_inputs(
         )
         if missing:
             raise FileNotFoundError(
-                "dbCAN family model(s) not found in local database: "
-                f"{', '.join(missing)}. Run `phu dbs refresh dbcan` and try again."
+                f"dbCAN family model(s) not found in the dbCAN database: {', '.join(missing)}."
             )
         query = ScreenQuery(
             original_inputs=tuple(str(value) for value in hmm_inputs),
@@ -1806,6 +1804,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "input": str(plan.input_contigs),
                         "database_name": "dbcan",
                         "database_hashes": _dbcan_hashes(),
+                        "phu_db": bundle_provenance(),
                         "searched_family_count": len(query.normalized_models),
                         "raw_hmm_hit_count": 0,
                         "qualifying_hmm_hit_count": 0,
@@ -1843,6 +1842,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "database_version": query.database_version,
                         "database_digest": query.database_digest,
                         "database_hashes": _dbcan_hashes(),
+                        "phu_db": bundle_provenance(),
                         "thresholds": {
                             "max_evalue": plan.max_evalue,
                             "min_bitscore": plan.min_bitscore,
@@ -2053,6 +2053,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         else query.matching_rule,
         "database_hashes": database_hashes,
     }
+    if database_hashes:
+        query_manifest["phu_db"] = bundle_provenance()
     if query.all_cazymes:
         by_class = defaultdict(int)
         for model in query.normalized_models:
@@ -2131,6 +2133,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             "input": str(plan.input_contigs),
             "database_name": "dbcan",
             "database_hashes": _dbcan_hashes(),
+            "phu_db": bundle_provenance(),
             "searched_family_count": len(query.normalized_models),
             "raw_hmm_hit_count": len(all_hits),
             "qualifying_hmm_hit_count": len(qualifying_cazyme_hits),

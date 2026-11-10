@@ -7,7 +7,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from .db_bundle import resolve_db
+from .db_bundle import bundle_provenance, database_hashes, resolve_db
 
 DBCAN_NAME = "dbcan"
 DBCAN_SCHEMA_VERSION = 3
@@ -184,10 +184,13 @@ def _load_offsets() -> dict[str, list[int]]:
 
 def ensure_dbcan_database() -> dict[str, str]:
     """Locate dbCAN in the phu-db bundle, installing the bundle on first use."""
+    hmm_path = _hmm_path()
     return {
         "name": DBCAN_NAME,
-        "hmm_path": str(_hmm_path()),
+        "hmm_path": str(hmm_path),
         "pul_rules_path": str(_pul_rules_path()),
+        "release": str(bundle_provenance()["upstream_versions"][DBCAN_NAME]),
+        "hmm_sha256": database_hashes(DBCAN_NAME)[hmm_path.name],
     }
 
 

@@ -506,13 +506,13 @@ def test_fixture_pul_rules_follow_pul_table_semantics():
     )
 
 
-def test_fixture_pul_rules_agree_with_phu_workbook_reader():
-    from phu.dbcan_db import parse_pul_workbook
+def test_fixture_pul_rules_agree_with_phu_rule_reader():
+    from phu.dbcan_db import parse_pul_rules
 
-    rules = parse_pul_workbook(FIXTURE_DIR / "upstream" / "dbcan" / "dbCAN-PUL.xlsx", {"GH5", "CBM48"})
+    rules = parse_pul_rules(FIXTURE_DIR / "prepared" / "dbcan" / "pul_rules.tsv", {"GH5", "CBM48"})
     rows = (FIXTURE_DIR / "prepared" / "dbcan" / "pul_rules.tsv").read_text().splitlines()[1:]
 
     assert [row.split("\t") for row in rows] == [
-        [rule.pul_id, rule.substrate.replace("\n", " "), rule.raw_rule] for rule in rules.values()
+        [rule.pul_id, rule.substrate, rule.raw_rule] for rule in rules.values()
     ]
     assert rules["PUL0003"].unresolved_tokens == ("GH999",)

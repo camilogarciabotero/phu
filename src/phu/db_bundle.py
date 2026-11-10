@@ -924,6 +924,19 @@ def resolve_db(
     return target / manifest.databases[name].layout_dir
 
 
+def database_hashes(
+    name: str,
+    *,
+    pins: BundlePins | None = None,
+    vendored_manifest_bytes: bytes | None = None,
+) -> dict[str, str]:
+    """Prepared file -> pinned sha256 for database ``name``; never installs."""
+    _, manifest, _ = _pinned(pins, vendored_manifest_bytes)
+    if name not in manifest.databases:
+        raise ValueError(f"unknown phu-db database {name!r}")
+    return {item.path: item.sha256 for item in manifest.databases[name].prepared_files}
+
+
 def bundle_provenance(
     *,
     pins: BundlePins | None = None,

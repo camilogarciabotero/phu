@@ -11,6 +11,7 @@ import pytest
 from phu import db_bundle
 from phu.db_bundle import (
     bundle_provenance,
+    database_hashes,
     default_db_folder,
     resolve_db,
     tree_problems,
@@ -343,4 +344,19 @@ def test_bundle_provenance_never_installs(
             pins=fixture_pins, db_folder=db_folder, vendored_manifest_bytes=fixture_manifest_bytes
         )
 
+    assert not db_folder.exists()
+
+
+def test_database_hashes_come_from_the_pinned_manifest(
+    db_folder, fixture_pins, fixture_manifest, fixture_manifest_bytes
+):
+    hashes = database_hashes(
+        "dbcan", pins=fixture_pins, vendored_manifest_bytes=fixture_manifest_bytes
+    )
+
+    assert hashes == {
+        item.path: item.sha256 for item in fixture_manifest.databases["dbcan"].prepared_files
+    }
+    assert set(hashes) == {"profiles.hmm", "family_substrate.tsv", "pul_rules.tsv"}
+    # Nothing was installed to answer.
     assert not db_folder.exists()

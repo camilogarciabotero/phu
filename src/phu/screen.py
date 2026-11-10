@@ -24,10 +24,10 @@ import typer
 from . import __version__
 from ._click import run_click_task
 from ._exec import _executable
+from .db_bundle import database_hashes
 from .dbcan_db import (
     ensure_dbcan_database,
     extract_dbcan_models,
-    get_dbcan_database_status,
     get_dbcan_model_inventory,
     get_dbcan_pul,
     get_dbcan_pul_rules,
@@ -106,18 +106,8 @@ def _best_hit_key(hit: Hit) -> tuple[float, float, float, str]:
 
 
 def _dbcan_hashes() -> dict[str, str]:
-    manifest_path = Path(str(get_dbcan_database_status()["manifest_path"]))
-    if not manifest_path.exists():
-        return {}
-    try:
-        manifest = json.loads(manifest_path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return {
-        name: item["sha256"]
-        for name, item in manifest.get("files", {}).items()
-        if isinstance(item, dict) and item.get("sha256")
-    }
+    """The pinned sha256 of each dbCAN file in the phu-db bundle."""
+    return database_hashes("dbcan")
 
 
 def _write_tsv(

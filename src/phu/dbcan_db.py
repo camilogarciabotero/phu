@@ -1,23 +1,17 @@
 from __future__ import annotations
 
-import hashlib
+import functools
 import json
-import os
 import re
-import shutil
 import tempfile
-import zipfile
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
-from urllib.request import urlopen
-from xml.etree import ElementTree
+
+from .db_bundle import resolve_db
 
 DBCAN_NAME = "dbcan"
-DBCAN_SCHEMA_VERSION = 2
-DBCAN_HMM_URL = "https://pro.unl.edu/dbCAN2/download_file.php?file=Databases/V15/dbCAN-HMMdb-V15.txt"
-DBCAN_PUL_URL = "https://pro.unl.edu/dbCAN2/download_file.php?file=run_dbCAN_database_total/db_current/dbCAN-PUL.xlsx"
-DBCAN_SUBSTRATE_URL = "https://pro.unl.edu/dbCAN2/download_file.php?file=Databases/dbCAN-PUL_12-12-2023.txt"
+DBCAN_SCHEMA_VERSION = 3
+PUL_RULES_HEADER = ("pul_id", "substrate", "cazymes_predicted_dbcan")
 DBCAN_FAMILY_RE = re.compile(r"^[A-Z]{2,}\d+(?:_\d+)?$")
 DBCAN_PUL_RE = re.compile(r"^PUL\d+$")
 DBCAN_CANONICAL_RE = re.compile(r"^(?:AA|CBM|CE|GH|GT|PL)\d+(?:_\d+)?$")
@@ -67,24 +61,22 @@ def normalize_dbcan_pul_id(token: str) -> str:
     return value
 
 
-def _db_root() -> Path:
-    if db_env := os.environ.get("PHU_DB_FOLDER"):
-        return Path(db_env)
-    if xdg_data_home := os.environ.get("XDG_DATA_HOME"):
-        return Path(xdg_data_home) / "phu" / "db"
-    return Path.home() / ".local" / "share" / "phu" / "db"
-
-
+@functools.lru_cache(maxsize=1)
 def _dbcan_root() -> Path:
-    return _db_root() / DBCAN_NAME
+    """dbCAN in the phu-db bundle, installed on first use; checked once per process."""
+    return resolve_db(DBCAN_NAME)
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+def _hmm_path() -> Path:
+    return _dbcan_root() / "profiles.hmm"
+
+
+def _pul_rules_path() -> Path:
+    return _dbcan_root() / "pul_rules.tsv"
+
+
+def _offsets_path() -> Path:
+    return _dbcan_root() / "family_offsets.json"
 
 
 def _atomic_write(path: Path, content: bytes) -> None:
@@ -93,35 +85,6 @@ def _atomic_write(path: Path, content: bytes) -> None:
         temporary_path = Path(handle.name)
         handle.write(content)
     temporary_path.replace(path)
-
-
-def _download(url: str, destination: Path) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(delete=False, dir=destination.parent) as tmp:
-        temporary_path = Path(tmp.name)
-        with urlopen(url) as response:
-            shutil.copyfileobj(response, tmp, length=1024 * 1024)
-    temporary_path.replace(destination)
-
-
-def _hmm_path() -> Path:
-    return _dbcan_root() / "dbCAN-HMMdb-V15.txt"
-
-
-def _pul_path() -> Path:
-    return _dbcan_root() / "dbCAN-PUL.xlsx"
-
-
-def _manifest_path() -> Path:
-    return _dbcan_root() / "manifest.json"
-
-
-def _offsets_path() -> Path:
-    return _dbcan_root() / "family_offsets.json"
-
-
-def _pul_index_path() -> Path:
-    return _dbcan_root() / "pul_rules.json"
 
 
 def _models_dir() -> Path:
@@ -134,11 +97,6 @@ def _clear_sparse_models_cache() -> None:
         return
     for path in models.glob("*.hmm"):
         path.unlink()
-
-
-def _family_from_name(name: str) -> str | None:
-    value = name.strip().split()[0].removesuffix(".hmm")
-    return normalize_dbcan_id(value) if is_dbcan_id(value) else None
 
 
 def _model_from_name(name: str) -> str | None:
@@ -164,193 +122,78 @@ def build_family_offsets(hmm_path: Path) -> dict[str, list[int]]:
     return offsets
 
 
-def _xlsx_values(path: Path) -> list[list[str]]:
-    namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-    with zipfile.ZipFile(path) as archive:
-        shared: list[str] = []
-        if "xl/sharedStrings.xml" in archive.namelist():
-            root = ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))
-            shared = ["".join(node.itertext()) for node in root.findall(f"{{{namespace}}}si")]
-        workbook = ElementTree.fromstring(archive.read("xl/workbook.xml"))
-        rels = ElementTree.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
-        rel_map = {
-            item.attrib["Id"]: item.attrib["Target"]
-            for item in rels
-        }
-        sheet = workbook.find(f".//{{{namespace}}}sheet")
-        if sheet is None:
-            raise ValueError("PUL workbook has no worksheets")
-        target = rel_map[sheet.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]]
-        sheet_path = "xl/" + target.removeprefix("/") if not target.startswith("xl/") else target
-        root = ElementTree.fromstring(archive.read(sheet_path))
-        rows: list[list[str]] = []
-        for row in root.findall(f".//{{{namespace}}}row"):
-            values: dict[int, str] = {}
-            for cell in row.findall(f"{{{namespace}}}c"):
-                ref = cell.attrib.get("r", "")
-                match = re.search(r"[A-Z]+", ref)
-                if not match:
-                    continue
-                column = 0
-                for character in match.group():
-                    column = column * 26 + ord(character) - 64
-                column -= 1
-                value = cell.find(f"{{{namespace}}}v")
-                text = "" if value is None else value.text or ""
-                if cell.attrib.get("t") == "s" and text:
-                    text = shared[int(text)]
-                elif cell.attrib.get("t") == "inlineStr":
-                    inline = cell.find(f"{{{namespace}}}is")
-                    text = "" if inline is None else "".join(inline.itertext())
-                values[column] = text
-            if values:
-                rows.append([values.get(i, "") for i in range(max(values) + 1)])
-        return rows
-
-
-def parse_pul_workbook(path: Path, family_ids: set[str]) -> dict[str, PULRule]:
-    rows = _xlsx_values(path)
-    if not rows:
-        raise ValueError("PUL workbook is empty")
-    headers = {value.strip().lower(): index for index, value in enumerate(rows[0])}
-    pul_column = next(
-        (
-            headers[name]
-            for name in ("id", "pul", "pul_id", "pul id")
-            if name in headers
-        ),
-        None,
-    )
-    rule_column = headers.get("cazymes_predicted_dbcan")
-    if pul_column is None:
-        raise ValueError("PUL workbook is missing columns: pul")
-    if rule_column is None:
-        raise ValueError("PUL workbook is missing columns: cazymes_predicted_dbcan")
-    substrate_column = next((index for name, index in headers.items() if "substrate" in name), None)
-    rules: dict[str, PULRule] = {}
-    for row in rows[1:]:
-        if pul_column >= len(row):
-            continue
-        pul_id = row[pul_column].strip().upper()
-        if not is_dbcan_pul_id(pul_id):
-            continue
-        raw_rule = row[rule_column].strip() if rule_column < len(row) else ""
-        tokens = tuple(
-            token.strip().upper()
-            for token in re.split(r"[,|]", raw_rule)
-            if token.strip()
-        )
-        families = tuple(dict.fromkeys(token for token in tokens if token in family_ids))
-        unresolved = tuple(dict.fromkeys(token for token in tokens if token not in family_ids))
-        substrate = row[substrate_column].strip() if substrate_column is not None and substrate_column < len(row) else ""
-        rules[pul_id] = PULRule(pul_id, substrate, raw_rule, families, unresolved)
-    return rules
-
-
 def _write_json(path: Path, value: object) -> None:
     _atomic_write(path, (json.dumps(value, indent=2) + "\n").encode())
 
 
-def prepare_dbcan_database(*, force_refresh: bool = False) -> dict[str, object]:
-    root = _dbcan_root()
-    root.mkdir(parents=True, exist_ok=True)
-    hmm_path, pul_path = _hmm_path(), _pul_path()
-    if force_refresh:
-        _clear_sparse_models_cache()
-    if force_refresh or not hmm_path.exists():
-        _download(DBCAN_HMM_URL, hmm_path)
-    if force_refresh or not pul_path.exists():
-        _download(DBCAN_PUL_URL, pul_path)
+def parse_pul_rules(path: Path, family_ids: set[str]) -> dict[str, PULRule]:
+    """Read the bundle's pul_rules.tsv; ``family_ids`` are the canonical models.
+
+    A rule's tokens are split on ``,`` and ``|``. Those naming a canonical
+    model become its families; the rest stay as unresolved tokens. A PUL listed
+    twice keeps its first position and its last rule, as the workbook reader did.
+    """
+    rules: dict[str, PULRule] = {}
+    with Path(path).open(encoding="utf-8", newline="") as handle:
+        header = handle.readline().rstrip("\n").split("\t")
+        if tuple(header) != PUL_RULES_HEADER:
+            raise ValueError(f"unexpected PUL rules header in {Path(path).name}: {header}")
+        for line in handle:
+            if not line.strip():
+                continue
+            fields = line.rstrip("\n").split("\t")
+            fields += [""] * (len(PUL_RULES_HEADER) - len(fields))
+            pul_id = fields[0].strip().upper()
+            if not is_dbcan_pul_id(pul_id):
+                continue
+            raw_rule = fields[2].strip()
+            tokens = tuple(
+                token.strip().upper() for token in re.split(r"[,|]", raw_rule) if token.strip()
+            )
+            families = tuple(dict.fromkeys(token for token in tokens if token in family_ids))
+            unresolved = tuple(dict.fromkeys(token for token in tokens if token not in family_ids))
+            rules[pul_id] = PULRule(pul_id, fields[1].strip(), raw_rule, families, unresolved)
+    return rules
+
+
+def _load_offsets() -> dict[str, list[int]]:
+    """Model name -> byte span in profiles.hmm, from an index kept beside it.
+
+    The index is rebuilt, and the sparse model cache cleared, whenever it does
+    not describe the profiles.hmm that is there now.
+    """
+    hmm_path = _hmm_path()
+    stat = hmm_path.stat()
+    source = {"size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+    try:
+        index = json.loads(_offsets_path().read_text())
+        if (
+            index["schema_version"] == DBCAN_SCHEMA_VERSION
+            and index["source"] == source
+            and isinstance(index["offsets"], dict)
+        ):
+            return index["offsets"]
+    except (OSError, KeyError, TypeError, ValueError):
+        pass
+    _clear_sparse_models_cache()
     offsets = build_family_offsets(hmm_path)
-    _write_json(_offsets_path(), {"schema_version": DBCAN_SCHEMA_VERSION, "offsets": offsets})
-    canonical_ids = {model for model in offsets if is_canonical_dbcan_id(model)}
-    rules = parse_pul_workbook(pul_path, canonical_ids)
-    _write_json(_pul_index_path(), {"schema_version": DBCAN_SCHEMA_VERSION, "rules": {key: value.__dict__ for key, value in rules.items()}})
-    manifest = {
-        "name": DBCAN_NAME,
-        "schema_version": DBCAN_SCHEMA_VERSION,
-        "retrieved_at": datetime.now(timezone.utc).isoformat(),
-        "source_urls": {"hmm": DBCAN_HMM_URL, "pul": DBCAN_PUL_URL, "substrate_metadata": DBCAN_SUBSTRATE_URL},
-        "files": {
-            "hmm": {"path": str(hmm_path), "sha256": _sha256(hmm_path)},
-            "pul": {"path": str(pul_path), "sha256": _sha256(pul_path)},
-            "family_offsets": {"path": str(_offsets_path()), "sha256": _sha256(_offsets_path())},
-            "pul_rules": {"path": str(_pul_index_path()), "sha256": _sha256(_pul_index_path())},
-        },
-        "family_count": len(offsets),
-        "pul_count": len(rules),
-    }
-    _write_json(_manifest_path(), manifest)
-    return manifest
+    index = {"schema_version": DBCAN_SCHEMA_VERSION, "source": source, "offsets": offsets}
+    _atomic_write(_offsets_path(), (json.dumps(index, indent=2) + "\n").encode())
+    return offsets
 
 
-def ensure_dbcan_database(*, force_refresh: bool = False) -> dict[str, object]:
-    if force_refresh or not _manifest_path().exists():
-        return prepare_dbcan_database(force_refresh=force_refresh)
-    try:
-        manifest = json.loads(_manifest_path().read_text())
-        if manifest.get("schema_version") != DBCAN_SCHEMA_VERSION:
-            _clear_sparse_models_cache()
-            return prepare_dbcan_database(force_refresh=False)
-        for name in ("hmm", "pul", "family_offsets", "pul_rules"):
-            item = manifest["files"][name]
-            path = Path(item["path"])
-            if not path.exists() or _sha256(path) != item["sha256"]:
-                _clear_sparse_models_cache()
-                return prepare_dbcan_database(force_refresh=True)
-        return manifest
-    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
-        return prepare_dbcan_database(force_refresh=True)
-
-
-def refresh_dbcan_database() -> dict[str, object]:
-    return prepare_dbcan_database(force_refresh=True)
-
-
-def remove_dbcan_database() -> bool:
-    root = _dbcan_root()
-    if not root.exists():
-        return False
-    shutil.rmtree(root)
-    return True
-
-
-def get_dbcan_database_status() -> dict[str, object]:
-    root = _dbcan_root()
-    manifest = _manifest_path()
-    data: dict[str, object] = {}
-    if manifest.exists():
-        try:
-            data = json.loads(manifest.read_text())
-        except (OSError, json.JSONDecodeError):
-            data = {}
-    offsets = _offsets_path()
-    try:
-        family_count = len(json.loads(offsets.read_text()).get("offsets", {}))
-    except (OSError, json.JSONDecodeError, AttributeError):
-        family_count = 0
-    models = _models_dir()
+def ensure_dbcan_database() -> dict[str, str]:
+    """Locate dbCAN in the phu-db bundle, installing the bundle on first use."""
     return {
         "name": DBCAN_NAME,
-        "root": str(root),
         "hmm_path": str(_hmm_path()),
-        "pul_path": str(_pul_path()),
-        "offsets_path": str(offsets),
-        "pul_index_path": str(_pul_index_path()),
-        "manifest_path": str(manifest),
-        "downloaded": _hmm_path().exists() and _pul_path().exists(),
-        "indexed": offsets.exists() and _pul_index_path().exists(),
-        "manifest_exists": manifest.exists(),
-        "model_count": family_count,
-        "pul_count": data.get("pul_count", 0),
-        "sparse_cached_count": len(list(models.glob("*.hmm"))) if models.exists() else 0,
+        "pul_rules_path": str(_pul_rules_path()),
     }
 
 
 def extract_dbcan_models(requested_ids: list[str], output_dir: Path) -> tuple[list[Path], list[str]]:
-    ensure_dbcan_database()
+    offsets = _load_offsets()
     output_dir.mkdir(parents=True, exist_ok=True)
-    offsets = json.loads(_offsets_path().read_text())["offsets"]
     models = _models_dir()
     models.mkdir(parents=True, exist_ok=True)
     normalized = list(dict.fromkeys(normalize_dbcan_id(value) for value in requested_ids))
@@ -372,28 +215,19 @@ def extract_dbcan_models(requested_ids: list[str], output_dir: Path) -> tuple[li
     return paths, missing
 
 
-def get_dbcan_pul(pul_id: str) -> PULRule | None:
-    ensure_dbcan_database()
-    payload = json.loads(_pul_index_path().read_text()).get("rules", {}).get(normalize_dbcan_pul_id(pul_id))
-    return None if payload is None else PULRule(**payload)
-
-
-def get_dbcan_pul_rules() -> dict[str, PULRule]:
-    """Load every PUL rule from the installed dbCAN rule index."""
-    ensure_dbcan_database()
-    payload = json.loads(_pul_index_path().read_text()).get("rules", {})
-    return {
-        pul_id: PULRule(**rule)
-        for pul_id, rule in payload.items()
-        if isinstance(rule, dict)
-    }
-
-
 def get_dbcan_model_inventory() -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return indexed canonical models and excluded ancillary model names."""
-    ensure_dbcan_database()
-    offsets = json.loads(_offsets_path().read_text()).get("offsets", {})
-    models = tuple(offsets) if isinstance(offsets, dict) else ()
+    models = tuple(_load_offsets())
     canonical = tuple(model for model in models if is_canonical_dbcan_id(model))
     excluded = tuple(model for model in models if not is_canonical_dbcan_id(model))
     return canonical, excluded
+
+
+def get_dbcan_pul_rules() -> dict[str, PULRule]:
+    """Every PUL rule in the bundle, resolved against the canonical models."""
+    canonical, _ = get_dbcan_model_inventory()
+    return parse_pul_rules(_pul_rules_path(), set(canonical))
+
+
+def get_dbcan_pul(pul_id: str) -> PULRule | None:
+    return get_dbcan_pul_rules().get(normalize_dbcan_pul_id(pul_id))

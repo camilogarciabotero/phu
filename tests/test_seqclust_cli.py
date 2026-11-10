@@ -165,3 +165,23 @@ def test_simplify_taxa_short_options_present_in_help():
     assert "-o" in output
     assert "--sep" in output
     assert "-s" in output
+
+
+@pytest.mark.parametrize("command", [["avger"], ["screen", "PF00001"]])
+def test_database_errors_are_reported_without_a_traceback(tmp_path, monkeypatch, command):
+    from phu.db_fetch import DatabaseError
+
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c1\nATG\n")
+
+    def fail(*args, **kwargs):
+        raise DatabaseError("phu-db could not be installed: no space")
+
+    monkeypatch.setattr(cli_module, "run_avg", fail)
+    monkeypatch.setattr(cli_module, "_screen", fail)
+
+    result = runner.invoke(app, [*command, "-i", str(contigs), "-o", str(tmp_path / "out")])
+
+    assert result.exit_code == 1
+    assert "phu-db could not be installed: no space" in result.stderr
+    assert "Traceback" not in result.stderr

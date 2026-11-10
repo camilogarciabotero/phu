@@ -10,6 +10,7 @@ from phu import __version__
 from ._click import ProgressReporter, run_click_task
 from ._exec import CmdNotFound
 from .avg import AvgConfig, run_avg
+from .db_fetch import DatabaseError
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .gene_prediction_core import (
     clean_prediction_cache,
@@ -356,7 +357,7 @@ def avger(
             )
         else:
             result = run_avg(config)
-    except (FileNotFoundError, ValueError, OSError) as exc:
+    except (FileNotFoundError, ValueError, OSError, DatabaseError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
 
@@ -607,7 +608,7 @@ def screen(
 
     try:
         _screen(cfg)
-    except FileNotFoundError as e:
+    except (FileNotFoundError, DatabaseError) as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     except ValueError as e:

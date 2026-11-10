@@ -1,9 +1,11 @@
+import json
 from pathlib import Path
 
 import pytest
 
 import phu.avg as avg
 from phu.avg_annotation import AvgAnnotationResults
+from phu.avg_reference_db import AvgReference
 from phu.avger_annotation import AnnotationHit, AnnotationResults
 from phu.gene_prediction_core import CacheArtifact, PredictedGene
 
@@ -30,15 +32,17 @@ def test_database_readiness_and_actionable_missing_message(monkeypatch):
     status = {
         "pfam": {"downloaded": True, "indexed": True},
         "kofam": {"downloaded": False, "indexed": False},
-        "avg": {"downloaded": True, "indexed": False},
     }
+    resolved = []
     monkeypatch.setattr(avg, "get_pfam_database_status", lambda: status["pfam"])
     monkeypatch.setattr(avg, "get_kofam_database_status", lambda: status["kofam"])
-    monkeypatch.setattr(avg, "get_avg_database_status", lambda: status["avg"])
+    monkeypatch.setattr(avg, "resolve_db", resolved.append)
 
-    assert avg.missing_databases() == ["kofam", "avg"]
-    with pytest.raises(FileNotFoundError, match="phu dbs prepare pfam kofam avg"):
+    assert avg.missing_databases() == ["kofam"]
+    with pytest.raises(FileNotFoundError, match="not ready: kofam"):
         avg.require_databases()
+    # The bundle is installed before anything else is checked.
+    assert resolved == ["avg"]
 
 
 def test_run_avg_reuses_prediction_cache_and_passes_track_paths(monkeypatch, tmp_path):
@@ -103,17 +107,18 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
         AnnotationResults({}, {strict_hit.protein_id: strict_hit}, 1, 1, 0),
     )
     prediction = CacheArtifact(tmp_path / "proteins.faa", 1, True, "key", genes=[gene])
-    (tmp_path / "manifest.json").write_text("{}")
-    monkeypatch.setattr(avg, "get_avg_database_status", lambda: {"root": str(tmp_path)})
+    provenance = {"source": "local", "bundle_version": "phu-db-test"}
+    monkeypatch.setattr(avg, "resolve_db", lambda name: tmp_path / name)
+    monkeypatch.setattr(avg, "bundle_provenance", lambda: provenance)
     monkeypatch.setattr(avg, "get_pfam_database_status", lambda: {"name": "pfam"})
     monkeypatch.setattr(avg, "get_kofam_database_status", lambda: {"name": "kofam"})
     monkeypatch.setattr(
         avg,
-        "_reference_rows",
-        lambda path: (
-            [{"database": "pfam", "accession": "PF00001", "v_score": "9", "vl_score": "2"}]
-            if path.name == "v_scores.tsv"
-            else []
+        "load_avg_reference",
+        lambda root: AvgReference(
+            scores=[{"database": "pfam", "accession": "PF00001", "v_score": "9", "vl_score": "2"}],
+            positive=[],
+            filters=[],
         ),
     )
 
@@ -130,4 +135,6 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
     assert "PF test" in evidence
     assert "Pfam function" in evidence
     assert not (tmp_path / "out" / "run.json").exists()
-    assert (tmp_path / "out" / ".phu" / "run.json").exists()
+    run = json.loads((tmp_path / "out" / ".phu" / "run.json").read_text())
+    assert run["phu_db"] == provenance
+    assert "avg_reference" not in run

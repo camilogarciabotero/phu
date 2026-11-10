@@ -1,5 +1,6 @@
 import re
 
+import pytest
 from typer.testing import CliRunner
 
 import phu.cli as cli_module
@@ -17,12 +18,11 @@ def test_root_help_runs():
     output = plain_output(result)
     assert result.exit_code == 0
     assert "Workflow" in output
-    assert "Database Management" in output
     assert "cluster" in output
     assert "screen" in output
     assert "avger" in output
     assert "jack" in output
-    assert "dbs" in output
+    assert "dbs" not in output
     assert "simplify-taxa" in output
     assert "--clean-cache" in output
 
@@ -55,8 +55,7 @@ def test_avg_fails_before_prediction_when_databases_are_missing(tmp_path, monkey
     contigs.write_text(">c1\nATG\n")
     monkeypatch.setattr(cli_module, "run_avg", lambda config: (_ for _ in ()).throw(
         FileNotFoundError(
-            "Required databases are not ready: pfam, avg. "
-            "Run: phu dbs prepare pfam kofam avg"
+            "Required databases are not ready: pfam, avg."
         )
     ))
 
@@ -64,140 +63,18 @@ def test_avg_fails_before_prediction_when_databases_are_missing(tmp_path, monkey
 
     assert result.exit_code == 1
     assert "Required databases are not ready: pfam, avg" in result.stderr
-    assert "phu dbs prepare pfam kofam avg" in result.stderr
 
 
-def test_dbs_help_runs():
-    result = runner.invoke(app, ["dbs", "--help"])
-    output = plain_output(result)
-    assert result.exit_code == 0
-    assert "list" in output
-    assert "status" in output
-    assert "prepare" in output
-    assert "refresh" in output
-    assert "remove" in output
-
-
-def test_dbs_list_includes_avg(monkeypatch):
-    monkeypatch.setattr(
-        cli_module,
-        "get_avg_database_status",
-        lambda: {"downloaded": True, "indexed": True},
-    )
-
-    result = runner.invoke(app, ["dbs", "list"])
+@pytest.mark.parametrize(
+    "args",
+    [[], ["list"], ["prepare", "pfam", "--force-refresh"], ["remove", "--all", "--yes"], ["--help"]],
+)
+def test_dbs_only_prints_a_notice(args):
+    result = runner.invoke(app, ["dbs", *args])
 
     assert result.exit_code == 0
-    assert "avg\tready" in result.stdout
-
-
-def test_dbs_prepare_calls_avg_prepare(monkeypatch):
-    called = {}
-
-    def fake_prepare(*, force_refresh):
-        called["force_refresh"] = force_refresh
-        return {"root": "/tmp/avg", "release": "v1.1.1"}
-
-    monkeypatch.setattr(cli_module, "ensure_avg_database", fake_prepare)
-
-    result = runner.invoke(app, ["dbs", "prepare", "avg"])
-
-    assert result.exit_code == 0
-    assert called["force_refresh"] is False
-    assert "Prepared avg" in result.stdout
-
-
-def test_dbs_remove_calls_avg_remove(monkeypatch):
-    monkeypatch.setattr(cli_module, "remove_avg_database", lambda: True)
-
-    result = runner.invoke(app, ["dbs", "remove", "avg", "--yes"])
-
-    assert result.exit_code == 0
-    assert "Removed avg database" in result.stdout
-
-
-def test_dbs_prepare_calls_pfam_prepare(monkeypatch, tmp_path):
-    hmm_path = tmp_path / "Pfam-A.hmm"
-    offsets_path = tmp_path / "offsets.json"
-
-    def fake_prepare_pfam_database(*, download, index, force_refresh):
-        assert download is True
-        assert index is True
-        assert force_refresh is False
-        hmm_path.write_text("dummy")
-        return {
-            "hmm_path": str(hmm_path),
-            "offsets_path": str(offsets_path),
-            "downloaded": True,
-            "indexed": True,
-        }
-
-    monkeypatch.setattr(cli_module, "prepare_pfam_database", fake_prepare_pfam_database)
-
-    result = runner.invoke(app, ["dbs", "prepare", "pfam"])
-
-    assert result.exit_code == 0
-    assert "Prepared pfam" in result.stdout
-    assert "Index ready" in result.stdout
-
-
-def test_dbs_refresh_calls_pfam_refresh(monkeypatch, tmp_path):
-    hmm_path = tmp_path / "Pfam-A.hmm"
-    hmm_path.write_text("dummy")
-    offsets_path = tmp_path / "offsets.json"
-
-    def fake_refresh_pfam_database():
-        offsets_path.write_text("{}")
-        return {
-            "hmm_path": str(hmm_path),
-            "offsets_path": str(offsets_path),
-            "downloaded": True,
-            "indexed": True,
-        }
-
-    monkeypatch.setattr(cli_module, "refresh_pfam_database", fake_refresh_pfam_database)
-
-    result = runner.invoke(app, ["dbs", "refresh", "pfam"])
-
-    assert result.exit_code == 0
-    assert "Refreshed pfam" in result.stdout
-    assert "Index ready" in result.stdout
-
-
-def test_dbs_status_shows_pfam_state(monkeypatch):
-    def fake_status():
-        return {
-            "name": "pfam",
-            "downloaded": True,
-            "indexed": True,
-            "manifest_exists": True,
-            "model_count": 100,
-            "sparse_cached_count": 5,
-            "root": "/tmp/pfam",
-        }
-
-    monkeypatch.setattr(cli_module, "get_pfam_database_status", fake_status)
-
-    result = runner.invoke(app, ["dbs", "status", "pfam"])
-
-    assert result.exit_code == 0
-    assert "pfam:" in result.stdout
-    assert "downloaded: True" in result.stdout
-    assert "indexed: True" in result.stdout
-
-
-def test_dbs_remove_requires_yes():
-    result = runner.invoke(app, ["dbs", "remove", "pfam"])
-    assert result.exit_code == 1
-
-
-def test_dbs_remove_calls_pfam_remove(monkeypatch):
-    monkeypatch.setattr(cli_module, "remove_pfam_database", lambda: True)
-
-    result = runner.invoke(app, ["dbs", "remove", "pfam", "--yes"])
-
-    assert result.exit_code == 0
-    assert "Removed pfam database" in result.stdout
+    assert result.stdout == ""
+    assert "install" in result.stderr and "automatically" in result.stderr
 
 
 def test_cluster_short_options_present_in_help():

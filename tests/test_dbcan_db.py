@@ -4,9 +4,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from typer.testing import CliRunner
 
-import phu.cli as cli_module
 from phu import dbcan_db
-from phu.cli import app
 from phu.dbcan_db import (
     build_family_offsets,
     is_dbcan_id,
@@ -117,31 +115,3 @@ def test_pul_rule_marks_ancillary_profiles_unresolved(tmp_path: Path):
     assert rule.families == ("GH16_21", "CBM54")
     assert rule.unresolved_tokens == ("SLH",)
     assert not rule.resolved
-
-
-def test_dbcan_cli_lifecycle_dispatch(monkeypatch):
-    manifest = {
-        "files": {
-            "hmm": {"path": "/tmp/hmm"},
-            "family_offsets": {"path": "/tmp/family_offsets"},
-            "pul_rules": {"path": "/tmp/pul_rules"},
-        }
-    }
-    monkeypatch.setattr(cli_module, "get_dbcan_database_status", lambda: {
-        "downloaded": True,
-        "indexed": True,
-        "manifest_exists": True,
-        "model_count": 4,
-        "sparse_cached_count": 0,
-        "root": "/tmp/dbcan",
-    })
-    monkeypatch.setattr(cli_module, "prepare_dbcan_database", lambda **_: manifest)
-    monkeypatch.setattr(cli_module, "refresh_dbcan_database", lambda: manifest)
-    monkeypatch.setattr(cli_module, "remove_dbcan_database", lambda: True)
-
-    assert runner.invoke(app, ["dbs", "list"]).exit_code == 0
-    assert "dbcan\tready" in runner.invoke(app, ["dbs", "list"]).stdout
-    assert runner.invoke(app, ["dbs", "status", "dbcan"]).exit_code == 0
-    assert runner.invoke(app, ["dbs", "prepare", "dbcan"]).exit_code == 0
-    assert runner.invoke(app, ["dbs", "refresh", "dbcan"]).exit_code == 0
-    assert runner.invoke(app, ["dbs", "remove", "dbcan", "--yes"]).exit_code == 0

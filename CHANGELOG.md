@@ -20,9 +20,8 @@ behavior in the unreleased branch and may change before a release.
   installed file on this run).
 - `.phu/run.json` now records the bundle version, tarball SHA-256 and each
   database's upstream release.
-- Migration: after the first successful install, the old `pfam/`, `kofam/`,
-  `dbcan/`, `avg/` and `vscore/` folders in `PHU_DB_FOLDER` are deleted and
-  each deletion is logged. No other action is needed. See
+- Migration: the old `pfam/`, `kofam/`, `dbcan/`, `avg/` and `vscore/` folders
+  in `PHU_DB_FOLDER` are no longer read and can be deleted by hand. See
   [Databases and Provenance](docs/databases.md).
 
 ## 0.9.0

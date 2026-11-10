@@ -120,7 +120,7 @@ Earlier releases downloaded each database separately and managed them with
 `phu dbs`. That command group is gone; `phu dbs …` now only prints a notice
 that databases install automatically.
 
-After the first successful bundle install, PHU deletes the old per-database
-folders in `PHU_DB_FOLDER` (`pfam/`, `kofam/`, `dbcan/`, `avg/` and `vscore/`)
-and logs each path and its size. Move anything of your own out of those
-folders before upgrading.
+PHU no longer reads the old per-database folders in `PHU_DB_FOLDER` (`pfam/`,
+`kofam/`, `dbcan/`, `avg/` and `vscore/`) and never deletes them. Once the
+bundle is installed you can remove them yourself to free about 10 GB; the
+bundle lives in `phu-db/` beside them.

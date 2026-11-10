@@ -9,9 +9,7 @@ install() runs under an exclusive lock on the db folder: it verifies the tarball
 (downloaded, or the user's PHU_DB_BUNDLE) like a download, extracts it, deep
 validates the result against the manifest and moves the finished tree into
 ``phu-db/<bundle_version>`` in one rename, so no reader ever sees half a tree.
-A database the bundle leaves out (one phu-db may not redistribute) is fetched
-from its pinned upstream sources and prepared with the manifest's steps; it
-must then hash exactly like the bundled copy would, or nothing is installed.
+A bundle that leaves a database out is refused.
 
 resolve_db() is what commands call: it checks the installed tree (shallowly, or
 deeply with PHU_DB_VERIFY=1), installs when that fails, and returns the path of
@@ -52,19 +50,15 @@ from phu.db_manifest import (
     DATABASE_NAMES,
     MANIFEST_MEMBER,
     MANIFEST_NAME,
-    DatabaseEntry,
     Manifest,
     PreparedFile,
-    Source,
     loads_manifest,
-    parse_step,
 )
-from phu.db_prepare_verbs import (
+from phu.db_archive import (
     ArchiveError,
     UnsafeArchive,
     check_tar_members,
     extract_member,
-    run_steps,
 )
 
 try:
@@ -124,10 +118,6 @@ class TreeInvalid(DatabaseError):
         more = f"; and {len(self.problems) - 5} more" if len(self.problems) > 5 else ""
         where = f" {root}" if root is not None else ""
         super().__init__(f"phu-db tree{where} is invalid: {shown}{more}")
-
-
-class UpstreamMismatch(IntegrityError):
-    """A database fetched from upstream is not what the manifest pins."""
 
 
 class LockTimeout(DatabaseError):
@@ -709,115 +699,6 @@ def _download_bundle(
     return dest
 
 
-def _verify_source(path: Path, sha256: str, size: int) -> str | None:
-    """What is wrong with a fetched source file; None when it matches its pin."""
-    try:
-        actual_size = path.stat().st_size if path.is_file() else None
-    except OSError as error:
-        return f"cannot be read: {error}"
-    if actual_size is None:
-        return "was not downloaded"
-    if actual_size != size:
-        return f"is {actual_size} bytes, expected {size}"
-    actual, _ = _scan_file(path, digest=True, file_format=None)
-    if actual != sha256:
-        return f"has sha256 {actual}, expected {sha256}"
-    return None
-
-
-def _fetch_source(database: str, source: Source, dest: Path, fetch: Callable[..., Path]) -> None:
-    try:
-        fetch(source.url, dest, source.sha256, source.bytes)
-    except IntegrityError as error:
-        raise UpstreamMismatch(
-            f"upstream {database} source {source.name} from {source.url} is not the "
-            f"pinned file; upstream may have changed since this bundle was cut ({error})"
-        ) from error
-    # A fetch is injectable; never prepare from a file it did not leave verified.
-    problem = _verify_source(dest, source.sha256, source.bytes)
-    if problem is not None:
-        raise UpstreamMismatch(
-            f"upstream {database} source {source.name} from {source.url} {problem}"
-        )
-
-
-def _upstream_scratch_bytes(entry: DatabaseEntry) -> int:
-    """Bytes one database's upstream fetch holds besides its prepared files.
-
-    Its sources, plus, when a step unpacks an archive, the unpacked files: kofam
-    keeps every per-KO HMM beside the profiles.hmm concatenated from them, so
-    they are bounded by its prepared bytes again.
-    """
-    scratch = sum(source.bytes for source in entry.sources)
-    if any(parse_step(step).verb == "extract" for step in entry.steps):
-        scratch += sum(item.bytes for item in entry.prepared_files)
-    return scratch
-
-
-def _complete_from_upstream(
-    extracted: ExtractedBundle,
-    manifest: Manifest,
-    db_folder: Path,
-    target: Path,
-    fetch: Callable[..., Path],
-    log: Callable[[str], None],
-) -> frozenset[str]:
-    """Supply the databases the bundle left out; returns their names.
-
-    For each, every source is fetched (verified against its pinned size and
-    sha256) into a staging directory inside ``db_folder``, the manifest's steps
-    run in a workdir there, and only the declared prepared files move into
-    ``extracted.root``, each database checked deeply against the manifest
-    first. Its downloads and workdir are removed before the next database, so
-    the free-space check needs every prepared file but only the largest
-    database's scratch. Anything that does not match raises; the staging
-    directory is always removed. The caller still deep-validates the whole tree.
-    """
-    missing = sorted(set(manifest.databases) - extracted.databases)
-    if not missing:
-        return frozenset()
-    entries = [manifest.databases[name] for name in missing]
-    sources = [(name, source) for name, entry in zip(missing, entries) for source in entry.sources]
-    source_bytes = sum(source.bytes for _, source in sources)
-    prepared_bytes = sum(item.bytes for entry in entries for item in entry.prepared_files)
-    scratch_bytes = max(_upstream_scratch_bytes(entry) for entry in entries)
-    ensure_free_space(db_folder, required_install_bytes(scratch_bytes, prepared_bytes))
-
-    staging = Path(tempfile.mkdtemp(dir=db_folder, prefix=TEMP_PREFIX))
-    try:
-        log(
-            f"phu-db: the {manifest.bundle_version} bundle does not include "
-            f"{', '.join(missing)}; downloading {len(sources)} upstream "
-            f"file{'s' if len(sources) != 1 else ''} ({_human(source_bytes)}) "
-            f"to install into {target} (staging in {staging}):\n"
-            + "\n".join(f"  {name}: {source.url}" for name, source in sources)
-        )
-        for name, entry in zip(missing, entries):
-            database_staging = staging / name
-            downloads = database_staging / "downloads"
-            # Laid out as <layout_dir>/<path>, so tree_problems can check it in place.
-            work_root = database_staging / "work"
-            workdir = work_root / entry.layout_dir
-            for source in entry.sources:
-                _fetch_source(name, source, downloads / source.name, fetch)
-            run_steps(entry.steps, workdir=workdir, downloads=downloads)
-            problems = tree_problems(work_root, manifest, deep=True, databases=[name])
-            if problems:
-                raise UpstreamMismatch(
-                    f"{name} prepared from its upstream sources does not match the "
-                    f"manifest: {'; '.join(problems)}"
-                )
-            for item in entry.prepared_files:
-                dest = extracted.root.joinpath(entry.layout_dir, *item.path.split("/"))
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                # Both sides are inside db_folder, so this is a rename, not a copy.
-                os.replace(workdir.joinpath(*item.path.split("/")), dest)
-            shutil.rmtree(database_staging)
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
-    return frozenset(missing)
-
-
 def _write_json(path: Path, data: dict) -> None:
     temporary = path.with_name(f".{path.name}.{os.urandom(6).hex()}.tmp")
     try:
@@ -901,9 +782,7 @@ def install(
     its size and sha256 match the pins, extract it, deep validate every file and
     replace the installed tree in one rename. Older versions and the downloaded
     tarball are removed after, and again by any later call, so an interrupted
-    clean-up is finished. Databases the bundle leaves out are fetched from
-    upstream with ``fetch`` and recorded in installed.json. The user's own
-    tarball is never modified or deleted.
+    clean-up is finished. The user's own tarball is never modified or deleted.
     Progress goes to ``log`` (stderr by default).
     """
     db_folder = Path(db_folder)
@@ -933,9 +812,11 @@ def install(
         log(f"phu-db: extracting {pins.bundle_version} into {db_folder}")
         extracted = extract_bundle(tarball, db_folder, pins, manifest, vendored_manifest_bytes)
         try:
-            upstream = _complete_from_upstream(
-                extracted, manifest, db_folder, target, fetch, log
-            )
+            missing = sorted(set(manifest.databases) - extracted.databases)
+            if missing:
+                raise BundleMismatch(
+                    f"the {pins.bundle_version} bundle does not include {', '.join(missing)}"
+                )
             validate_tree(extracted.root, manifest, deep=True)
             _write_json(
                 extracted.root / INSTALLED_NAME,
@@ -944,7 +825,6 @@ def install(
                     "source": "local" if bundle_path is not None else "zenodo",
                     "tarball_sha256": pins.sha256,
                     "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                    "upstream_databases": sorted(upstream),
                 },
             )
             _move_into_place(extracted.root, target, db_folder)
@@ -1053,9 +933,8 @@ def bundle_provenance(
     """Where the installed databases came from, for .phu/run.json; never installs.
 
     Returns ``source`` ("zenodo" or "local"), ``bundle_version``, ``sha256``
-    of the tarball, ``upstream_versions`` (database -> its manifest
-    upstream_version) and ``upstream_databases`` (those fetched from upstream
-    rather than taken from the bundle).
+    of the tarball and ``upstream_versions`` (database -> its manifest
+    upstream_version).
     """
     pins, manifest, _ = _pinned(pins, vendored_manifest_bytes)
     db_folder = default_db_folder() if db_folder is None else Path(db_folder)
@@ -1073,6 +952,4 @@ def bundle_provenance(
         "upstream_versions": {
             name: entry.upstream_version for name, entry in manifest.databases.items()
         },
-        # Installs from before the upstream fallback took every database from the bundle.
-        "upstream_databases": list(record.get("upstream_databases", [])),
     }

@@ -17,6 +17,7 @@ import pytest
 from phu import db_bundle
 from phu.db_bundle import (
     LockTimeout,
+    BundleMismatch,
     TarballMismatch,
     TreeInvalid,
     install,
@@ -26,7 +27,6 @@ from phu.db_bundle import (
     validate_tree,
 )
 from phu.db_fetch import (
-    DownloadError,
     InsufficientSpace,
     download_verified,
     required_install_bytes,
@@ -159,12 +159,10 @@ def test_install_from_phu_db_bundle_env(
         "source",
         "tarball_sha256",
         "installed_at",
-        "upstream_databases",
     }
     assert record["bundle_version"] == fixture_pins.bundle_version
     assert record["source"] == "local"
     assert record["tarball_sha256"] == fixture_pins.sha256
-    assert record["upstream_databases"] == []
     installed_at = datetime.fromisoformat(record["installed_at"])
     assert installed_at.utcoffset() == timedelta(0)
     assert abs(datetime.now(timezone.utc) - installed_at) < timedelta(minutes=5)
@@ -288,26 +286,21 @@ def test_stale_invalid_target_is_replaced(run, db_folder, fixture_pins):
     assert _leftovers(db_folder) == []
 
 
-def test_bundle_missing_an_unreachable_database_installs_nothing(
+def test_bundle_missing_a_database_installs_nothing(
     run, make_bundle, db_folder, fixture_pins, fixture_manifest
 ):
-    # Upstream fallback itself is covered in test_db_resolve.py.
     avg = fixture_manifest.databases["avg"].member_paths()
     tarball = make_bundle(drop=avg)
     data = tarball.read_bytes()
     pins = replace(fixture_pins, sha256=hashlib.sha256(data).hexdigest(), size=len(data))
-    urls = []
 
-    def offline(url, dest, sha256, size):
-        urls.append(url)
-        raise DownloadError(f"{url}: no network")
+    def no_fetch(url, dest, sha256, size):
+        raise AssertionError("nothing may be downloaded")
 
-    with pytest.raises(DownloadError):
-        run(pins=pins, bundle_path=tarball, fetch=offline)
+    with pytest.raises(BundleMismatch, match="does not include avg"):
+        run(pins=pins, bundle_path=tarball, fetch=no_fetch)
 
-    assert urls == [fixture_manifest.databases["avg"].sources[0].url]
     assert _leftovers(db_folder) == []
-    assert not _target(db_folder, pins).exists()
     assert not (db_folder / "phu-db").exists()
     assert tarball.read_bytes() == data
 

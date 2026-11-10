@@ -30,6 +30,8 @@ from typing import Optional
 
 from pyrodigal_gv import ViralGeneFinder
 
+from ._log import log_call
+
 PROTEIN_FASTA_FORMAT_VERSION = 2
 
 
@@ -233,6 +235,21 @@ def predict_genes_pyrodigal(
     contigs = list(_read_fasta_python(inputs.input_contigs))
     if not contigs:
         return []
+
+    log_call(
+        "pyrodigal_gv.ViralGeneFinder",
+        contigs=len(contigs),
+        mode=inputs.mode,
+        meta=inputs.mode == "meta",
+        min_gene=inputs.min_gene_len,
+        max_overlap=max(0, inputs.min_gene_len - 1),
+        translation_table=inputs.translation_table or "auto",
+        training_table=(inputs.translation_table or 11)
+        if inputs.mode == "single"
+        else "none",
+        min_protein_len_aa=inputs.min_protein_len_aa,
+        threads=max(1, threads),
+    )
 
     if threads > 1:
         from multiprocessing.pool import ThreadPool

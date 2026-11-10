@@ -363,7 +363,13 @@ Usage: phu screen [OPTIONS] [QUERY]...
 │                            'mixed' (pressed/concatenated HMMs)               │
 │                            [default: pure]                                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --quiet            Suppress routine progress output.                         │
+│ --verbose          Show additional progress details.                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ```
+
+Use `--verbose` to record how each tool was run: every `seqkit` and `mafft` command line, and the effective parameters of the in-process gene prediction and `hmmsearch` steps, are printed on lines that start with `[cmd]`. Use `--quiet` to hide the timed step lines. See [Run logs](../troubleshooting.md#run-logs) for the log format.
 
 Use `--output-folder` to change where the results are saved. The default is a folder called `phu-screen` in your current directory.
 

@@ -1,94 +1,148 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from threading import Lock
 from typing import Any
 
 from rich.console import Console
 from rich.live import Live
-from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.markup import escape
 from rich.progress import TaskID
+from rich.spinner import Spinner
+from rich.table import Table
+
+from ._log import format_duration, is_quiet, is_verbose
+
+_SYMBOLS = {"success": "✓", "failed": "✗", "skipped": "○", "cancelled": "!"}
+_PLAIN_ENDINGS = {
+    "success": "done in",
+    "failed": "failed after",
+    "skipped": "skipped after",
+    "cancelled": "cancelled after",
+}
 
 
 @dataclass
 class _Task:
     label: str
+    started: float
     status: str = "running"
     detail: str = ""
     completed: int = 0
     total: int | None = None
+    ended: float | None = None
 
 
 class ProgressReporter:
-    """Small, thread-safe Rich reporter for blocking CLI work."""
+    """Small, thread-safe reporter for blocking CLI work.
 
-    def __init__(self, *, console: Console | None = None, quiet: bool = False, verbose: bool = False) -> None:
+    On a terminal it shows a live line per step with its elapsed time. When
+    the output is not a terminal (a SLURM log, a pipe) it prints one plain
+    line when a step starts and one when it ends::
+
+        [14:02:11] Predicting proteins ...
+        [14:04:25] Predicting proteins done in 2m14s
+
+    ``quiet`` and ``verbose`` default to the process-wide setting made by the
+    CLI (see ``phu._log``). ``clock`` (monotonic seconds) and ``now``
+    (wall-clock ``datetime``) can be replaced in tests.
+    """
+
+    def __init__(
+        self,
+        *,
+        console: Console | None = None,
+        quiet: bool | None = None,
+        verbose: bool | None = None,
+        clock: Callable[[], float] = time.monotonic,
+        now: Callable[[], datetime] = datetime.now,
+    ) -> None:
         self.console = console or Console()
-        self.quiet = quiet
-        self.verbose = verbose
+        self.quiet = is_quiet() if quiet is None else quiet
+        self.verbose = is_verbose() if verbose is None else verbose
+        self._clock = clock
+        self._now = now
         self._tasks: dict[TaskID, _Task] = {}
+        self._spinner = Spinner("dots")
         self._lock = Lock()
         self._next_id = 0
         self._live: Live | None = None
 
-    def _render(self) -> Progress:
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("{task.description}"),
-            TimeElapsedColumn(),
-            console=self.console,
-        )
-        for task in self._tasks.values():
-            symbol = {
-                "success": "✓",
-                "failed": "✗",
-                "skipped": "○",
-                "cancelled": "!",
-            }.get(task.status, "⠋")
-            progress.add_task(
-                f"{symbol} {task.label}" + (f"  {task.detail}" if task.detail else ""),
-                total=task.total,
-                completed=task.completed,
-            )
-        return progress
+    def elapsed(self, task_id: TaskID) -> float:
+        """Seconds the task has run so far, or its total once it has ended."""
+        task = self._tasks[task_id]
+        end = task.ended if task.ended is not None else self._clock()
+        return max(0.0, end - task.started)
 
-    def start_phase(self, label: str) -> None:
+    def _plain(self, message: str) -> None:
+        stamp = self._now().strftime("%H:%M:%S")
+        self.console.print(
+            f"[{stamp}] {message}", markup=False, highlight=False, soft_wrap=True
+        )
+
+    def _render(self) -> Table:
+        # Called by the Live refresh thread, so elapsed times keep ticking.
+        # It must not take self._lock: Live holds its own lock while rendering.
+        grid = Table.grid(padding=(0, 1))
+        for task_id, task in list(self._tasks.items()):
+            mark: Any = _SYMBOLS.get(task.status, self._spinner)
+            text = escape(task.label)
+            if task.total and task.status == "running":
+                text += f"  {task.completed}/{task.total}"
+            if task.detail:
+                text += f"  {escape(task.detail)}"
+            grid.add_row(mark, text, format_duration(self.elapsed(task_id)))
+        return grid
+
+    def start_phase(self, label: str, *, announce: bool = True) -> None:
         if self.quiet:
             return
         if self.console.is_terminal:
-            self._live = Live(self._render(), console=self.console, refresh_per_second=8)
+            self._live = Live(
+                get_renderable=self._render,
+                console=self.console,
+                refresh_per_second=8,
+            )
             self._live.start()
-        else:
-            self.console.print(label)
+        elif announce:
+            self._plain(label)
 
     def start_task(self, label: str, *, total: int | None = None) -> TaskID:
         with self._lock:
             self._next_id += 1
             task_id = TaskID(self._next_id)
-            self._tasks[task_id] = _Task(label, total=total)
-            if self.verbose and not self.console.is_terminal and not self.quiet:
-                self.console.print(f"Starting: {label}")
-            if self._live:
-                self._live.update(self._render())
+            self._tasks[task_id] = _Task(label, started=self._clock(), total=total)
+            if not self.quiet and not self.console.is_terminal:
+                self._plain(f"{label} ...")
             return task_id
 
-    def update_task(self, task_id: TaskID, *, completed: int | None = None, total: int | None = None) -> None:
+    def update_task(
+        self, task_id: TaskID, *, completed: int | None = None, total: int | None = None
+    ) -> None:
         with self._lock:
             task = self._tasks[task_id]
             if completed is not None:
                 task.completed = completed
             if total is not None:
                 task.total = total
-            if self._live:
-                self._live.update(self._render())
 
     def _finish(self, task_id: TaskID, status: str, detail: str = "") -> None:
         with self._lock:
             task = self._tasks[task_id]
+            if task.ended is None:
+                task.ended = self._clock()
             task.status, task.detail = status, detail
-            if self._live:
-                self._live.update(self._render())
+            if not self.quiet and not self.console.is_terminal:
+                line = (
+                    f"{task.label} {_PLAIN_ENDINGS[status]} "
+                    f"{format_duration(self.elapsed(task_id))}"
+                )
+                if detail:
+                    line += f": {' '.join(detail.split())}"
+                self._plain(line)
 
     def succeed_task(self, task_id: TaskID) -> None:
         self._finish(task_id, "success")
@@ -107,38 +161,45 @@ class ProgressReporter:
             if task.status == "running":
                 self.fail_task(task_id, detail)
 
-    def finish(self) -> None:
+    def finish(self, *, summary: bool = True) -> None:
         with self._lock:
-            if self._live:
-                self._live.update(self._render())
-                self._live.stop()
-                self._live = None
-            if self.quiet:
-                return
-            counts = {status: sum(task.status == status for task in self._tasks.values()) for status in ("success", "skipped", "failed", "cancelled")}
-            self.console.print(f"Completed: {counts['success']}")
-            self.console.print(f"Skipped: {counts['skipped']}")
-            self.console.print(f"Failed: {counts['failed'] + counts['cancelled']}")
+            live, self._live = self._live, None
+        if live:
+            live.stop()  # renders the final state, with the real durations
+        if self.quiet or not summary:
+            return
+        counts = {
+            status: sum(task.status == status for task in self._tasks.values())
+            for status in ("success", "skipped", "failed", "cancelled")
+        }
+        self.console.print(f"Completed: {counts['success']}")
+        self.console.print(f"Skipped: {counts['skipped']}")
+        self.console.print(f"Failed: {counts['failed'] + counts['cancelled']}")
 
 
 def run_click_task(
     label: str,
     func: Callable[..., Any],
     *args: Any,
-    quiet: bool = False,
-    verbose: bool = False,
+    quiet: bool | None = None,
+    verbose: bool | None = None,
     **kwargs: Any,
 ) -> Any:
-    """Run a blocking task with a Rich progress indicator."""
+    """Run a blocking task as one timed step.
+
+    ``quiet`` and ``verbose`` default to the process-wide setting, so nested
+    steps follow the command's ``--quiet`` / ``--verbose`` flags. The step's
+    own final line carries its status and duration, so no summary is printed.
+    """
     reporter = ProgressReporter(quiet=quiet, verbose=verbose)
-    reporter.start_phase(label)
+    reporter.start_phase(label, announce=False)
     task_id = reporter.start_task(label)
     try:
         result = func(*args, **kwargs)
     except BaseException as exc:
         reporter.fail_task(task_id, str(exc))
-        reporter.finish()
+        reporter.finish(summary=False)
         raise
     reporter.succeed_task(task_id)
-    reporter.finish()
+    reporter.finish(summary=False)
     return result

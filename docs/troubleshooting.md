@@ -61,7 +61,43 @@ stale files are removed automatically.
 
 ## Debug diagnostics
 
-Use command-specific `--help` to identify supported verbosity controls. Where
-available, `--verbose` adds progress details. Preserve the complete command,
-version, input identifiers, database status, and error output when reporting a
-reproducible problem.
+The workflow commands (`screen`, `jack`, `cluster`, `avger`,
+`normalize-lineage`, `simplify-taxa`) accept `--verbose` and `--quiet`.
+Preserve the complete command, version, input identifiers, database status,
+and error output when reporting a reproducible problem.
+
+## Run logs
+
+When the output is not a terminal (for example a SLURM `.out` file), each step
+prints one line when it starts and one when it ends, with the wall-clock time
+and the step's real duration, and without colour codes:
+
+```text
+[14:02:11] Predicting proteins ...
+[14:04:25] Predicting proteins done in 2m14s
+[14:04:25] Running HMM searches ...
+[14:09:02] Running HMM searches failed after 4m37s: <error message>
+```
+
+A step ends with `done in`, `failed after`, `skipped after`, or
+`cancelled after`. On a terminal the same steps are shown as live lines with a
+running timer.
+
+`--verbose` adds one line per tool invocation, always prefixed with `[cmd]`.
+External programs (`vclust`, `seqkit`, `mafft`) are shown as the exact,
+shell-quoted command that was executed, including any output redirection.
+In-process steps (pyrodigal-gv gene prediction, pyhmmer `hmmsearch` and
+`jackhmmer`) are shown as the function name followed by the `key=value`
+parameters that determine the result:
+
+```text
+[cmd] pyrodigal_gv.ViralGeneFinder contigs=4 mode=meta meta=True min_gene=90 max_overlap=89 translation_table=auto training_table=none min_protein_len_aa=30 threads=2
+[cmd] pyhmmer.hmmsearch hmm_files=1 models=1 sequences=19 cpus=2 parallel=queries bit_cutoffs=gathering hmm_mode=pure ...
+[cmd] /usr/bin/seqkit grep -f out/screened_contigs.fasta.ids.txt contigs.fna > out/screened_contigs.fasta
+```
+
+Extract them with `grep '^\[cmd\]' run.log`. Gene prediction prints no
+`[cmd]` line when the predicted proteins come from the cache, because nothing
+is run. `--quiet` hides the step lines and the `[cmd]` lines; errors are still
+printed. Nothing is written to a log file: redirect stdout and stderr to keep
+a record.

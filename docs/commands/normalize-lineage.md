@@ -72,7 +72,8 @@ Usage: phu normalize-lineage [OPTIONS]
 │ --strict          Fail on unparsed or rank-mismatched values                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Runtime ────────────────────────────────────────────────────────────────────╮
-│ --quiet          Suppress the QA summary                                     │
+│ --quiet            Suppress the QA summary                                   │
+│ --verbose          Show additional progress details.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

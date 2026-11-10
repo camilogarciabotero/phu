@@ -1,33 +1,22 @@
 from __future__ import annotations
 
-import gzip
-import hashlib
+import functools
 import json
 import logging
-import lzma
-import os
-import shutil
 import tempfile
 from collections.abc import Callable, Iterable
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import Lock
 from typing import Optional
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
 import click
-import typer
 
 from ._click import run_click_task
+from .db_bundle import resolve_db
 
 logger = logging.getLogger(__name__)
 
-KOFAM_BASE_URL = "https://zenodo.org/records/19503464/files/"
-KOFAM_KO_LIST_GZ_URL = KOFAM_BASE_URL + "ko_list.gz"
-KOFAM_HMM_XZ_URL = KOFAM_BASE_URL + "kofam.hmm.xz"
 KOFAM_ID_PREFIX = "K"
 KOFAM_NAME = "kofam"
 KOFAM_OFFSETS_SCHEMA_VERSION = 1
@@ -47,41 +36,31 @@ def normalize_kofam_id(token: str) -> str:
     return token
 
 
-def _db_root() -> Path:
-    if db_env := os.environ.get("PHU_DB_FOLDER"):
-        return Path(db_env)
-
-    if xdg_data_home := os.environ.get("XDG_DATA_HOME"):
-        return Path(xdg_data_home) / "phu" / "db"
-    return Path.home() / ".local" / "share" / "phu" / "db"
-
-
+@functools.lru_cache(maxsize=1)
 def _kofam_root() -> Path:
-    return _db_root() / "kofam"
+    """KOfam in the phu-db bundle, installed on first use; checked once per process."""
+    return resolve_db("kofam")
 
 
-def _kofam_ko_list_gz_path() -> Path:
-    return _kofam_root() / "ko_list.gz"
+def ensure_kofam_database() -> dict[str, str]:
+    """Locate KOfam in the phu-db bundle, installing the bundle on first use."""
+    return {
+        "name": KOFAM_NAME,
+        "hmm_path": str(_kofam_hmm_path()),
+        "ko_list_path": str(_kofam_ko_list_path()),
+    }
 
 
 def _kofam_ko_list_path() -> Path:
-    return _kofam_root() / "ko_list"
-
-
-def _kofam_hmm_xz_path() -> Path:
-    return _kofam_root() / "kofam.hmm.xz"
+    return _kofam_root() / "ko_list.tsv"
 
 
 def _kofam_hmm_path() -> Path:
-    return _kofam_root() / "kofam.hmm"
+    return _kofam_root() / "profiles.hmm"
 
 
 def _kofam_models_dir() -> Path:
     return _kofam_root() / "models"
-
-
-def _kofam_manifest_path() -> Path:
-    return _kofam_root() / "manifest.json"
 
 
 def _kofam_metadata_index_path() -> Path:
@@ -90,207 +69,6 @@ def _kofam_metadata_index_path() -> Path:
 
 def _kofam_offsets_index_path() -> Path:
     return _kofam_root() / "offsets.json"
-
-
-def _get_file_size(url: str) -> Optional[int]:
-    """Get remote file size from Content-Length when available."""
-    try:
-        with urlopen(url) as response:
-            content_length = response.info().get("Content-Length")
-            if content_length and content_length.isdigit():
-                return int(content_length)
-    except (HTTPError, URLError, OSError, ValueError) as exc:
-        logger.debug("Could not determine remote file size for %s: %s", url, exc)
-    return None
-
-
-def _stream_download_to_path(url: str, destination: Path, label: str) -> None:
-    """Download URL content to destination atomically via temporary file."""
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(delete=False, dir=destination.parent) as tmp:
-        tmp_path = Path(tmp.name)
-        with urlopen(url) as response:
-            content_length = response.info().get("Content-Length")
-            total_size = (
-                int(content_length)
-                if content_length and content_length.isdigit()
-                else None
-            )
-
-            if total_size is not None and total_size > 0:
-                with click.progressbar(
-                    length=total_size,
-                    label=label,
-                    show_pos=True,
-                    show_percent=True,
-                    show_eta=True,
-                ) as bar:
-                    while True:
-                        chunk = response.read(1024 * 1024)
-                        if not chunk:
-                            break
-                        tmp.write(chunk)
-                        bar.update(len(chunk))
-            else:
-
-                def _copy_stream() -> None:
-                    while True:
-                        chunk = response.read(1024 * 1024)
-                        if not chunk:
-                            break
-                        tmp.write(chunk)
-
-                run_click_task(label, _copy_stream)
-
-    tmp_path.replace(destination)
-
-
-def _download_range(
-    url: str,
-    start: int,
-    end: int,
-    destination: Path,
-    progress_callback: Optional[Callable[[int], None]] = None,
-) -> None:
-    """Download one byte-range chunk into a temporary part file."""
-    req = Request(url)
-    req.add_header("Range", f"bytes={start}-{end}")
-
-    with urlopen(req) as response:
-        status = getattr(response, "status", response.getcode())
-        content_range = response.headers.get("Content-Range")
-        if status != 206 or not content_range:
-            raise RuntimeError(
-                "Server did not honor byte-range request; falling back to single-stream download"
-            )
-
-        chunk_file = destination.parent / f"{destination.name}.part.{start}-{end}"
-        with chunk_file.open("wb") as out:
-            while True:
-                chunk = response.read(1024 * 1024)
-                if not chunk:
-                    break
-                out.write(chunk)
-                if progress_callback is not None:
-                    progress_callback(len(chunk))
-
-
-def _range_download_supported(url: str) -> bool:
-    """Probe whether the server supports partial-content downloads."""
-    req = Request(url)
-    req.add_header("Range", "bytes=0-0")
-
-    try:
-        with urlopen(req) as response:
-            status = getattr(response, "status", response.getcode())
-            content_range = response.headers.get("Content-Range", "")
-            return status == 206 and content_range.startswith("bytes 0-0/")
-    except (HTTPError, URLError, OSError, ValueError):
-        return False
-
-
-def _download_parallel_chunked(
-    url: str, destination: Path, label: str, num_chunks: int = 4
-) -> None:
-    """Download file with HTTP range requests (pget-like parallel mode)."""
-    destination.parent.mkdir(parents=True, exist_ok=True)
-
-    file_size = _get_file_size(url)
-    if file_size is None or file_size < 1024 * 1024:
-        typer.secho(f"Downloading {label} (single connection)...", fg="cyan")
-        _stream_download_to_path(url, destination, label)
-        return
-
-    if not _range_download_supported(url):
-        typer.secho(f"Downloading {label} (single connection)...", fg="cyan")
-        _stream_download_to_path(url, destination, label)
-        return
-
-    typer.secho(
-        f"Downloading {label} ({num_chunks} parallel connections)...", fg="cyan"
-    )
-    chunk_size = file_size // num_chunks
-
-    with tempfile.NamedTemporaryFile(delete=False, dir=destination.parent) as tmp:
-        tmp_path = Path(tmp.name)
-
-    ranges: list[tuple[int, int]] = []
-    for i in range(num_chunks):
-        start = i * chunk_size
-        end = file_size - 1 if i == num_chunks - 1 else start + chunk_size - 1
-        ranges.append((start, end))
-
-    progress_lock = Lock()
-    downloaded = [0]
-
-    def _progress_callback(size: int) -> None:
-        with progress_lock:
-            downloaded[0] += size
-            pct = int(100 * downloaded[0] / file_size)
-            typer.secho(
-                f"\r{label}: {pct}% ({downloaded[0] // 1024 // 1024}MB / {file_size // 1024 // 1024}MB)",
-                nl=False,
-            )
-
-    with ThreadPoolExecutor(max_workers=num_chunks) as executor:
-        futures = [
-            executor.submit(
-                _download_range, url, start, end, destination, _progress_callback
-            )
-            for start, end in ranges
-        ]
-        for future in as_completed(futures):
-            future.result()
-
-    typer.secho("")
-
-    with tmp_path.open("wb") as out:
-        for start, end in ranges:
-            chunk_file = destination.parent / f"{destination.name}.part.{start}-{end}"
-            with chunk_file.open("rb") as src:
-                shutil.copyfileobj(src, out, length=1024 * 1024)
-            chunk_file.unlink()
-
-    tmp_path.replace(destination)
-
-
-def _decompress_gzip_to_path(gz_path: Path, out_path: Path) -> None:
-    """Decompress a gzip file atomically."""
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(delete=False, dir=out_path.parent) as tmp:
-        tmp_path = Path(tmp.name)
-        with gzip.open(gz_path, "rb") as src:
-            while True:
-                chunk = src.read(1024 * 1024)
-                if not chunk:
-                    break
-                tmp.write(chunk)
-    tmp_path.replace(out_path)
-
-
-def _decompress_xz_to_path(xz_path: Path, out_path: Path) -> None:
-    """Decompress an xz file atomically."""
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(delete=False, dir=out_path.parent) as tmp:
-        tmp_path = Path(tmp.name)
-        with lzma.open(xz_path, "rb") as src:
-            while True:
-                chunk = src.read(1024 * 1024)
-                if not chunk:
-                    break
-                tmp.write(chunk)
-    tmp_path.replace(out_path)
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while True:
-            chunk = handle.read(1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _write_manifest_atomically(
@@ -382,9 +160,7 @@ def _load_kofam_metadata() -> dict[str, KOFamMetadata]:
 
     if not index_path.exists():
         if not ko_list_path.exists():
-            raise FileNotFoundError(
-                f"KOFam metadata not found: {ko_list_path}. Run `phu dbs prepare kofam` first."
-            )
+            raise FileNotFoundError(f"KOFam metadata not found: {ko_list_path}")
         return _build_kofam_metadata_index(ko_list_path)
 
     data = _read_json(index_path)
@@ -535,144 +311,6 @@ def _build_offsets_index(hmm_db_path: Path) -> None:
         "complete": True,
     }
     _write_manifest_atomically(_kofam_offsets_index_path(), metadata)
-
-
-def ensure_kofam_database(force_refresh: bool = False) -> dict[str, str]:
-    """Ensure local KOFam database exists and return metadata."""
-    root = _kofam_root()
-    root.mkdir(parents=True, exist_ok=True)
-
-    ko_list_gz = _kofam_ko_list_gz_path()
-    ko_list = _kofam_ko_list_path()
-    hmm_xz = _kofam_hmm_xz_path()
-    hmm = _kofam_hmm_path()
-    manifest = _kofam_manifest_path()
-
-    needs_fetch = force_refresh or not ko_list.exists() or not hmm.exists()
-
-    if needs_fetch:
-        typer.secho("Downloading KOFam database files...", fg="cyan")
-
-        _stream_download_to_path(KOFAM_KO_LIST_GZ_URL, ko_list_gz, "ko_list.gz")
-        _download_parallel_chunked(
-            KOFAM_HMM_XZ_URL, hmm_xz, "kofam.hmm.xz", num_chunks=4
-        )
-
-        typer.secho("Decompressing KOFam files...", fg="cyan")
-        _decompress_gzip_to_path(ko_list_gz, ko_list)
-        _decompress_xz_to_path(hmm_xz, hmm)
-
-        ko_metadata = _build_kofam_metadata_index(ko_list)
-        _clear_sparse_models_cache()
-        _build_offsets_index(hmm)
-
-        metadata = {
-            "name": KOFAM_NAME,
-            "source_url": KOFAM_BASE_URL,
-            "downloaded_at": datetime.now(timezone.utc).isoformat(),
-            "ko_list_path": str(ko_list),
-            "ko_list_gz_path": str(ko_list_gz),
-            "hmm_path": str(hmm),
-            "hmm_xz_path": str(hmm_xz),
-            "ko_list_sha256": _sha256(ko_list),
-            "ko_list_gz_sha256": _sha256(ko_list_gz),
-            "hmm_sha256": _sha256(hmm),
-            "hmm_xz_sha256": _sha256(hmm_xz),
-            "model_count": len(ko_metadata),
-            "ko_metadata_count": len(ko_metadata),
-        }
-        _write_manifest_atomically(manifest, metadata)
-
-    if manifest.exists():
-        data = _read_json(manifest)
-    else:
-        data = {
-            "name": KOFAM_NAME,
-            "source_url": KOFAM_BASE_URL,
-            "downloaded_at": "unknown",
-            "hmm_path": str(hmm),
-            "ko_list_path": str(ko_list),
-        }
-
-    data["hmm_path"] = str(hmm)
-    data["ko_list_path"] = str(ko_list)
-    return {k: str(v) for k, v in data.items()}
-
-
-def prepare_kofam_database(force_refresh: bool = False) -> dict[str, object]:
-    result = ensure_kofam_database(force_refresh=force_refresh)
-    hmm = _kofam_hmm_path()
-    if not _is_offsets_index_valid(hmm):
-        _clear_sparse_models_cache()
-        _build_offsets_index(hmm)
-    result["offsets_path"] = str(_kofam_offsets_index_path())
-    result["prepared"] = True
-    return result
-
-
-def refresh_kofam_database() -> dict[str, object]:
-    ko_list = _kofam_ko_list_path()
-    hmm = _kofam_hmm_path()
-    if not ko_list.exists() or not hmm.exists():
-        return prepare_kofam_database(force_refresh=False)
-
-    _build_kofam_metadata_index(ko_list)
-    if not _is_offsets_index_valid(hmm):
-        _clear_sparse_models_cache()
-        _build_offsets_index(hmm)
-
-    status = get_kofam_database_status()
-    status["refreshed"] = True
-    return status
-
-
-def remove_kofam_database() -> bool:
-    root = _kofam_root()
-    if not root.exists():
-        return False
-    shutil.rmtree(root)
-    return True
-
-
-def get_kofam_database_status() -> dict[str, object]:
-    root = _kofam_root()
-    manifest = _kofam_manifest_path()
-    ko_list = _kofam_ko_list_path()
-    hmm = _kofam_hmm_path()
-    hmm_xz = _kofam_hmm_xz_path()
-    metadata_index = _kofam_metadata_index_path()
-    offsets = _kofam_offsets_index_path()
-    models_dir = _kofam_models_dir()
-
-    model_count = 0
-    if offsets.exists():
-        try:
-            index_data = _read_json(offsets)
-            offset_map = index_data.get("offsets")
-            if isinstance(offset_map, dict):
-                model_count = len(offset_map)
-        except (json.JSONDecodeError, OSError, ValueError):
-            model_count = 0
-
-    sparse_cached_count = (
-        len(list(models_dir.glob("*.hmm"))) if models_dir.exists() else 0
-    )
-
-    return {
-        "name": KOFAM_NAME,
-        "root": str(root),
-        "hmm_path": str(hmm),
-        "hmm_xz_path": str(hmm_xz),
-        "ko_list_path": str(ko_list),
-        "manifest_path": str(manifest),
-        "metadata_index_path": str(metadata_index),
-        "offsets_path": str(offsets),
-        "downloaded": ko_list.exists() and hmm.exists(),
-        "manifest_exists": manifest.exists(),
-        "indexed": _is_offsets_index_valid(hmm),
-        "model_count": model_count,
-        "sparse_cached_count": sparse_cached_count,
-    }
 
 
 def extract_kofam_models(

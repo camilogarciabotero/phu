@@ -30,8 +30,6 @@ from .gene_prediction_core import (
     get_or_predict_proteins,
 )
 from .db_bundle import bundle_provenance, resolve_db
-from .kofam_db import get_kofam_database_status
-from .pfam_db import get_pfam_database_status
 from ._click import ProgressReporter
 
 
@@ -90,30 +88,10 @@ class AvgRunResult:
     outputs: tuple[Path, ...] = ()
 
 
-def database_readiness() -> dict[str, bool]:
-    """Return readiness for the databases AVG still prepares itself."""
-    statuses = {
-        "pfam": get_pfam_database_status(),
-        "kofam": get_kofam_database_status(),
-    }
-    return {
-        name: bool(status.get("downloaded") and status.get("indexed"))
-        for name, status in statuses.items()
-    }
-
-
-def missing_databases() -> list[str]:
-    """Return required database names that are not ready."""
-    return [name for name, ready in database_readiness().items() if not ready]
-
-
 def require_databases() -> None:
-    """Install the phu-db bundle if needed; raise when a database is not ready."""
-    resolve_db("avg")
-    missing = missing_databases()
-    if missing:
-        names = ", ".join(missing)
-        raise FileNotFoundError(f"Required databases are not ready: {names}.")
+    """Install the phu-db bundle unless Pfam, KOfam and the AVG tables are in place."""
+    for name in ("pfam", "kofam", "avg"):
+        resolve_db(name)
 
 
 def run_avg(
@@ -509,10 +487,6 @@ def write_avg_outputs(
             "gene_vl_cutoff": config.gene_vl_cutoff,
             "gene_v_cutoff": config.gene_v_cutoff,
             "scoring_evalue": config.scoring_evalue,
-        },
-        "databases": {
-            "pfam": get_pfam_database_status(),
-            "kofam": get_kofam_database_status(),
         },
         "phu_db": bundle_provenance(),
         "output_schema_version": 1,

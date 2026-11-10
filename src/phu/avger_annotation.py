@@ -356,8 +356,8 @@ def annotate_proteins_complete_databases(
     if cfg.keep_all_hits and cfg.all_hits_path is None:
         raise ValueError("all_hits_path is required when keep_all_hits is True")
 
-    pfam_meta = ensure_pfam_database(force_refresh=False)
-    kofam_meta = ensure_kofam_database(force_refresh=False)
+    pfam_meta = ensure_pfam_database()
+    kofam_meta = ensure_kofam_database()
 
     pfam_hmm_path = Path(pfam_meta["hmm_path"])
     kofam_hmm_path = Path(kofam_meta["hmm_path"])

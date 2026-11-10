@@ -28,21 +28,13 @@ def test_avg_config_defaults_and_validation(tmp_path: Path):
         avg.AvgConfig(input_contigs=config.input_contigs, filter_mode="bad")
 
 
-def test_database_readiness_and_actionable_missing_message(monkeypatch):
-    status = {
-        "pfam": {"downloaded": True, "indexed": True},
-        "kofam": {"downloaded": False, "indexed": False},
-    }
+def test_require_databases_resolves_every_database_avger_uses(monkeypatch):
     resolved = []
-    monkeypatch.setattr(avg, "get_pfam_database_status", lambda: status["pfam"])
-    monkeypatch.setattr(avg, "get_kofam_database_status", lambda: status["kofam"])
     monkeypatch.setattr(avg, "resolve_db", resolved.append)
 
-    assert avg.missing_databases() == ["kofam"]
-    with pytest.raises(FileNotFoundError, match="not ready: kofam"):
-        avg.require_databases()
-    # The bundle is installed before anything else is checked.
-    assert resolved == ["avg"]
+    avg.require_databases()
+
+    assert resolved == ["pfam", "kofam", "avg"]
 
 
 def test_run_avg_reuses_prediction_cache_and_passes_track_paths(monkeypatch, tmp_path):
@@ -110,8 +102,6 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
     provenance = {"source": "local", "bundle_version": "phu-db-test"}
     monkeypatch.setattr(avg, "resolve_db", lambda name: tmp_path / name)
     monkeypatch.setattr(avg, "bundle_provenance", lambda: provenance)
-    monkeypatch.setattr(avg, "get_pfam_database_status", lambda: {"name": "pfam"})
-    monkeypatch.setattr(avg, "get_kofam_database_status", lambda: {"name": "kofam"})
     monkeypatch.setattr(
         avg,
         "load_avg_reference",

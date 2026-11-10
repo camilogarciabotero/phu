@@ -95,16 +95,13 @@ each run's provenance.
 
 The bundle's own manifest, `phu-db.json`, lists every upstream URL, SHA-256,
 byte size, license and record count, and the exact preparation steps that turn
-each upstream download into the installed file. If a future bundle omits a
-database, PHU downloads that database's pinned upstream files, repeats those
-steps and refuses the result unless every file matches the manifest.
+each upstream download into the installed file.
 
 ## Provenance
 
 Each run writes the database provenance to `.phu/run.json` in its output
-folder: the bundle version, the tarball SHA-256, each database's upstream
-release, and whether any database was built from upstream instead of the
-bundle. Keep this file with your results.
+folder: the bundle version, the tarball SHA-256 and each database's upstream
+release. Keep this file with your results.
 
 ## Citation
 

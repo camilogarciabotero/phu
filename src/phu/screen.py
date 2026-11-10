@@ -24,6 +24,7 @@ import typer
 from . import __version__
 from ._click import run_click_task
 from ._exec import _executable
+from ._log import log_call, log_command
 from .dbcan_db import (
     ensure_dbcan_database,
     extract_dbcan_models,
@@ -1486,6 +1487,7 @@ def _seqkit_extract(
     tmp = output_fa.parent / (output_fa.name + ".ids.txt")
     tmp.write_text("\n".join(ids) + "\n")
     cmd = [seqkit_bin, "grep", "-f", str(tmp), str(input_fa)]
+    log_command(cmd, stdout=output_fa)
     with output_fa.open("w") as out:
         p = subprocess.run(cmd, stdout=out, text=True, check=False)
     if p.returncode != 0:
@@ -1544,6 +1546,7 @@ def _extract_target_proteins(
         tmp_ids_file.write_text("\n".join(unique_protein_ids) + "\n")
 
         cmd = [seqkit_bin, "grep", "-f", str(tmp_ids_file), str(proteins_fa)]
+        log_command(cmd, stdout=output_path)
 
         with output_path.open("w") as out:
             result = subprocess.run(cmd, stdout=out, text=True, check=False)
@@ -1621,16 +1624,18 @@ def _build_target_hmms(
                 print(f"      Built HMM from 1 sequence: {model_name}")
             else:
                 aligned_path = protein_file.with_suffix(".aligned.faa")
+                aligner_cmd = [
+                    aligner_bin,
+                    "--auto",
+                    "--thread",
+                    str(1 if threads and threads > 1 else max(1, threads)),
+                    str(protein_file),
+                ]
+                log_command(aligner_cmd, stdout=aligned_path)
                 try:
                     with aligned_path.open("w") as aligned_output:
                         result = subprocess.run(
-                            [
-                                aligner_bin,
-                                "--auto",
-                                "--thread",
-                                str(1 if threads and threads > 1 else max(1, threads)),
-                                str(protein_file),
-                            ],
+                            aligner_cmd,
                             stdout=aligned_output,
                             stderr=subprocess.PIPE,
                             text=True,
@@ -1895,6 +1900,23 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
 
     print(
         f"Running pyhmmer.hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…"
+    )
+
+    log_call(
+        "pyhmmer.hmmsearch",
+        hmm_files=len(plan.hmms),
+        models=len(queried_model_ids),
+        sequences=n_prot,
+        cpus=plan.threads,
+        parallel="queries",
+        bit_cutoffs="gathering" if plan.cut_ga else "none",
+        hmm_mode=plan.hmm_mode,
+        keep_domtbl=plan.keep_domtbl,
+        min_bitscore=plan.min_bitscore,
+        max_evalue=plan.max_evalue,
+        use_kofam_thresholds=plan.use_kofam_thresholds,
+        combine_mode=plan.combine_mode,
+        top_per_contig=plan.top_per_contig,
     )
 
     # Use pyHMMER for all searches

@@ -12,6 +12,7 @@ import pyhmmer.easel
 import pyhmmer.hmmer
 
 from ._exec import _executable
+from ._log import log_call
 from .gene_prediction_core import (
     PredictionInputs,
     get_or_predict_proteins,
@@ -96,6 +97,18 @@ def _run_jackhmmer(
     ) as seq_file:
         targets = seq_file.read_block()
 
+    log_call(
+        "pyhmmer.hmmer.jackhmmer",
+        seed=seed_id,
+        queries=1,
+        sequences=len(targets),
+        max_iterations=iterations,
+        incE=inc_evalue,
+        incdomE=inc_evalue,
+        cpus=threads,
+        checkpoints=True,
+        max_evalue=max_evalue,
+    )
     results = list(
         pyhmmer.hmmer.jackhmmer(
             query,

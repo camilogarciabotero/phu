@@ -315,10 +315,10 @@ Rows from Pfam and KOfam remain database-specific. Empty scoring fields mean
 that no matching AVG reference record was available; they can prevent a gene
 from becoming a candidate.
 
-Prepare the required databases before running the workflow:
+The Pfam, KOfam and AVG databases install automatically on the first run (see
+[Databases and Provenance](../databases.md)):
 
 ```bash
-phu dbs prepare pfam kofam avg
 phu avger -i contigs.fa -o phu-avger
 ```
 

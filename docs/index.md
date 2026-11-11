@@ -54,7 +54,6 @@ phu --help
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Workflow ───────────────────────────────────────────────────────────────────────────────────╮
 │ cluster        Sequence clustering wrapper around external 'vclust' with three modes.        │
-│ simplify-taxa  Simplify vContact taxonomy prediction columns into compact lineage codes.     │
 │ avger          Predict and curate putative auxiliary viral genes.                            │
 │ screen         Screen contigs for protein families using HMMER on predicted CDS.             │
 │ jack           Iteratively screen contigs from one or more seed protein markers with         │
@@ -134,16 +133,6 @@ phu dbs prepare pfam kofam
 
 [Learn more about database management →](commands/dbs.md)
 
-
-### `simplify-taxa` - Taxonomy Simplification
-
-Simplify verbose vContact taxonomy predictions into compact lineage codes for easier analysis and visualization.
-**Example:**
-```bash
-phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
-```
-
-[Learn more about taxonomy simplification →](commands/simplify-taxa.md)
 
 ### `normalize-lineage` - Normalize vContact Lineage
 

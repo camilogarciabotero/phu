@@ -68,8 +68,6 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 │                    three modes.                                              │
 │ normalize-lineage  Normalize vContact lineage predictions without changing   │
 │                    column names.                                             │
-│ simplify-taxa      Simplify vContact taxonomy prediction columns into        │
-│                    compact lineage codes.                                    │
 │ avger              Predict and curate putative auxiliary viral genes.        │
 │ screen             Screen contigs using protein-family or PUL CAZyme         │
 │                    signatures.                                               │
@@ -88,7 +86,6 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 - [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine seeds hits.
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
-- [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
 
 Each command page includes the current CLI help menu, input/output behavior,

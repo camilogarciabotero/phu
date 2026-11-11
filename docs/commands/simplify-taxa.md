@@ -1,5 +1,10 @@
 # simplify-taxa
 
+!!! warning "Deprecated"
+    `phu simplify-taxa` is deprecated and will be removed in a future release.
+    It is no longer listed in `phu --help`, but it still runs as documented
+    here and prints a one-line deprecation notice to stderr.
+
 ## What does it do?
 
 The `phu simplify-taxa` command converts verbose vContact taxonomy prediction

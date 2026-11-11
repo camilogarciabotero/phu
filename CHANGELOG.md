@@ -56,6 +56,12 @@ behavior in the unreleased branch and may change before a release.
 - With `--verbose`, a `screen` search that is retried without gathering
   cutoffs logs a second `[cmd]` line with the parameters actually used.
 
+### Deprecated
+
+- `simplify-taxa` is deprecated. It no longer appears in `phu --help` and
+  prints a one-line deprecation notice to stderr when run; its behavior and
+  output are otherwise unchanged, and `phu simplify-taxa --help` still works.
+
 ### Renamed output files
 
 Output files and folders now follow one kebab-case scheme: the name says what

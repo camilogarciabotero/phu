@@ -24,8 +24,29 @@ def test_root_help_runs():
     assert "avger" in output
     assert "jack" in output
     assert "dbs" in output
-    assert "simplify-taxa" in output
+    assert "simplify-taxa" not in output  # deprecated: hidden from the listing
     assert "--clean-cache" in output
+
+
+def test_deprecated_simplify_taxa_help_still_runs():
+    result = runner.invoke(app, ["simplify-taxa", "--help"])
+    output = plain_output(result)
+    assert result.exit_code == 0
+    assert "Usage:" in output
+    assert "simplify-taxa" in output
+    assert "Deprecated" in output
+
+
+def test_simplify_taxa_prints_deprecation_notice_on_stderr(tmp_path):
+    table = tmp_path / "in.tsv"
+    table.write_text("genome\tfamily\ng1\tnovel_family_2_of_Caudoviricetes\n")
+    out = tmp_path / "out.tsv"
+
+    result = runner.invoke(app, ["simplify-taxa", "-i", str(table), "-o", str(out)])
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert "deprecated" in result.stderr
+    assert "deprecated" not in result.stdout
 
 
 def test_clean_cache_removes_prediction_cache(tmp_path, monkeypatch):

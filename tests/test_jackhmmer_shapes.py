@@ -110,7 +110,7 @@ def test_run_jackhmmer_saves_last_iteration_hmm(monkeypatch, tmp_path):
             self.hmm = hmm
 
     hit = _FakeHit("contigD|gene1", True, 77.0, 1e-30)
-    final_hmm_path = tmp_path / "last_iteration.hmm"
+    final_hmm_path = tmp_path / "final-iteration.hmm"
     iter1 = _Iteration(1, False, [hit], _FakeHMM(b"HMM-1\n"))
     iter2 = _Iteration(2, True, [hit], _FakeHMM(b"HMM-2\n"))
 
@@ -138,7 +138,7 @@ def test_run_jackhmmer_saves_last_iteration_hmm(monkeypatch, tmp_path):
 
 def test_run_jackhmmer_skip_hmm_export_when_unavailable(monkeypatch, tmp_path):
     iter1 = [_FakeHit("contigE|gene1", True, 43.0, 1e-15)]
-    final_hmm_path = tmp_path / "last_iteration.hmm"
+    final_hmm_path = tmp_path / "final-iteration.hmm"
 
     monkeypatch.setattr(jack.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
     monkeypatch.setattr(jack.pyhmmer.hmmer, "jackhmmer", lambda *a, **k: [[iter1]])

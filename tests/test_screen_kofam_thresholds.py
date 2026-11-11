@@ -234,7 +234,7 @@ def test_extract_target_proteins_adds_ko_definition_to_headers(
         },
     )
 
-    out = tmp_path / "target_proteins" / "K00001_proteins.mfa"
+    out = tmp_path / "target-proteins" / "K00001.faa"
     content = out.read_text()
     assert ">contigA|gene1|K00001|hexokinase" in content
 

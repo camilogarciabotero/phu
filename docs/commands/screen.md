@@ -238,10 +238,15 @@ both the file name and the internal `NAME` are identical, the files cannot be
 told apart: `phu` prints a warning, pools their hits under one model ID and
 writes them to one domain table.
 
-With `--save-target-hmms`, multi-sequence protein sets are aligned into a
-temporary `target-proteins/{model}-aligned.faa`, which is removed once the HMM
-is built. A query that contains both a model `X` and a model literally named
-`X-aligned` is therefore refused.
+Model names are made safe for file names by replacing unusual characters with
+`_`. If two different models would end up with the same file name (for example
+`beta/1` and `beta_1`), `phu` refuses the query rather than mix their results;
+rename one of them.
+
+With `--save-target-hmms`, HMMs are built only from the protein sets written
+by the current run; files left in `target-proteins/` by an earlier run are not
+read. The alignments used to build them are temporary and are not written into
+the output folder.
 
 ## Pass/fail behavior summary
 

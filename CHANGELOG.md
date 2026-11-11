@@ -44,9 +44,17 @@ behavior in the unreleased branch and may change before a release.
   `NAME` inside each HMM, which becomes their model ID and names their domain
   tables and target files. If the internal `NAME` is identical too, `screen`
   warns and pools their hits under one model ID.
-- `screen --save-target-hmms` refuses a query holding both a model `X` and a
-  model named `X-aligned`, whose proteins would collide with the temporary
-  alignment of `X`.
+- `screen` refuses a query in which two different models would get the same
+  output file name once unusual characters are replaced (for example `beta/1`
+  and `beta_1`), instead of mixing their domain tables and target proteins.
+- `screen --save-target-hmms` builds HMMs only from the protein sets written by
+  the current run, and keeps its temporary alignments outside the output
+  folder. Files left in `target-proteins/` by an earlier run are not read.
+- `normalize-lineage` reports a chain as unparsed when what remains after its
+  valid nodes still starts with `novel_` or `unplaced_` (an unknown rank or a
+  missing number), instead of treating that remainder as a taxon name.
+- With `--verbose`, a `screen` search that is retried without gathering
+  cutoffs logs a second `[cmd]` line with the parameters actually used.
 
 ### Renamed output files
 
@@ -68,7 +76,7 @@ unchanged.
 | screen | `resolved_kofam_hmms/` | `query-hmms/kofam/` |
 | screen | `resolved_dbcan_hmms/` | `query-hmms/dbcan/` |
 | screen | `target_proteins/<model>_proteins.mfa` | `target-proteins/<model>.faa` |
-| screen | `target_proteins/<model>_proteins.aligned.faa` (temporary) | `target-proteins/<model>-aligned.faa` (temporary) |
+| screen | `target_proteins/<model>_proteins.aligned.faa` (temporary) | no longer written to the output folder |
 | screen | `target_hmms/` | `target-hmms/` |
 | screen | `cazyme_matches.tsv.gz` | `cazyme-matches.tsv.gz` |
 | screen | `cazyme_summary.tsv` | `cazyme-family-summary.tsv` |

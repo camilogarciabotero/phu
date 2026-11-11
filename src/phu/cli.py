@@ -354,7 +354,7 @@ def cluster(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input FASTA", rich_help_panel="Input"
     ),
     output_folder: Path = typer.Option(
-        Path("clustered-contigs"), "--output-folder", "-o", help="Output directory", rich_help_panel="Output"
+        Path("phu-cluster"), "--output-folder", "-o", help="Output directory", rich_help_panel="Output"
     ),
     threads: int = typer.Option(
         0, "--threads", "-t", min=0, help="0=all cores; otherwise N threads", rich_help_panel="Runtime"
@@ -722,7 +722,7 @@ def screen(
     keep_domtbl: bool = typer.Option(
         True,
         "--keep-domtbl/--no-keep-domtbl",
-        help="Keep raw domtblout from hmmsearch",
+        help="Keep the hmmsearch domain tables (one -hmmsearch-domains.tbl per HMM file)",
         rich_help_panel="Output",
     ),
     combine_mode: str = typer.Option(
@@ -745,13 +745,13 @@ def screen(
     save_target_proteins: bool = typer.Option(
         False,
         "--save-target-proteins/--no-save-target-proteins",
-        help="Save matched proteins per HMM model in target_proteins/ subfolder",
+        help="Save matched proteins per HMM model in target-proteins/ subfolder",
         rich_help_panel="Output",
     ),
     save_target_hmms: bool = typer.Option(
         False,
         "--save-target-hmms/--no-save-target-hmms",
-        help="Save HMMs built from target proteins in target_hmms/ subfolder",
+        help="Save HMMs built from target proteins in target-hmms/ subfolder",
         rich_help_panel="Output",
     ),
     hmm_mode: str = typer.Option(
@@ -784,7 +784,7 @@ def screen(
 
     [bold]--all-cazymes[/bold] searches every indexed AA, CBM, CE, GH, GT, and PL
     profile once and keeps contigs with at least one qualifying family hit.
-    Ancillary profiles are excluded; see cazyme_matches.tsv for retained hits.
+    Ancillary profiles are excluded; see cazyme-matches.tsv for retained hits.
 
     Direct family queries support multiple HMM files with different modes:
     - any: Keep contigs matching any HMM (default, most permissive)
@@ -1006,7 +1006,7 @@ def jack(
     save_hmm: bool = typer.Option(
         False,
         "--save-hmm/--no-save-hmm",
-        help="Save the last jackhmmer iteration HMM as last_iteration.hmm",
+        help="Save the last jackhmmer iteration HMM as final-iteration.hmm",
         rich_help_panel="Output",
     ),
     quiet: bool = typer.Option(

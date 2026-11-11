@@ -117,7 +117,7 @@ def test_mixed_mode_domtbl_keeps_hits_of_every_model_in_file(tmp_path: Path) -> 
         _build_hmm("model_b", seq_b).write(handle)
     proteins_path = tmp_path / "proteins.faa"
     proteins_path.write_text(f">pa\n{seq_a}\n>pb\n{seq_b}\n")
-    domtbl_path = tmp_path / "hits_multi.domtblout"
+    domtbl_path = tmp_path / "multi-hmmsearch-domains.tbl"
 
     hits = list(
         _hmmsearch(
@@ -148,7 +148,7 @@ def test_pure_mode_single_model_domtbl_has_header_and_rows(tmp_path: Path) -> No
         _build_hmm("model_a", seq_a).write(handle)
     proteins_path = tmp_path / "proteins.faa"
     proteins_path.write_text(f">pa\n{seq_a}\n")
-    domtbl_path = tmp_path / "hits_single.domtblout"
+    domtbl_path = tmp_path / "single-hmmsearch-domains.tbl"
 
     list(
         _hmmsearch(

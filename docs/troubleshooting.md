@@ -93,7 +93,7 @@ parameters that determine the result:
 ```text
 [cmd] pyrodigal_gv.ViralGeneFinder contigs=4 mode=meta meta=True min_gene=90 max_overlap=89 translation_table=auto training_table=none min_protein_len_aa=30 threads=2
 [cmd] pyhmmer.hmmsearch hmm_files=1 models=1 sequences=19 cpus=2 parallel=queries bit_cutoffs=gathering hmm_mode=pure ...
-[cmd] /usr/bin/seqkit grep -f out/screened_contigs.fasta.ids.txt contigs.fna > out/screened_contigs.fasta
+[cmd] /usr/bin/seqkit grep -f out/matched-contigs.fna.ids.txt contigs.fna > out/matched-contigs.fna
 ```
 
 Extract them with `grep '^\[cmd\]' run.log`. Gene prediction prints no

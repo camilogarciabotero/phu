@@ -358,7 +358,7 @@ class TestWritePredictionMetadata:
     def test_metadata_file_written(self, tmp_path):
         """Metadata JSON file is written with correct format."""
         cache_dir = tmp_path / "cache"
-        metadata_path = tmp_path / ".phu_prediction_metadata.json"
+        metadata_path = tmp_path / ".phu/prediction.json"
 
         write_prediction_metadata(
             metadata_path,
@@ -375,7 +375,7 @@ class TestWritePredictionMetadata:
 
     def test_metadata_with_none_cache_dir(self, tmp_path):
         """Metadata handles None cache_dir gracefully."""
-        metadata_path = tmp_path / ".phu_prediction_metadata.json"
+        metadata_path = tmp_path / ".phu/prediction.json"
 
         write_prediction_metadata(
             metadata_path,

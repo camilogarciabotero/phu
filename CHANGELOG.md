@@ -5,6 +5,17 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Changed
+
+- `screen`: input HMM files that share a file name (`a/foo.hmm`, `b/foo.hmm`)
+  no longer fail with "Duplicate HMM model ID". They are told apart by the
+  `NAME` inside each HMM, which becomes their model ID and names their domain
+  tables and target files. If the internal `NAME` is identical too, `screen`
+  warns and pools their hits under one model ID.
+- `screen --save-target-hmms` refuses a query holding both a model `X` and a
+  model named `X-aligned`, whose proteins would collide with the temporary
+  alignment of `X`.
+
 ### Renamed output files
 
 Output files and folders now follow one kebab-case scheme: the name says what

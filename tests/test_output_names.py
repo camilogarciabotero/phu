@@ -283,3 +283,145 @@ def test_cluster_default_output_folder() -> None:
         mode=cluster.Mode.votu, input_contigs=Path("contigs.fna")
     )
     assert config.output_folder == Path("phu-cluster")
+
+
+# ---------- HMM files that share a file name ----------
+
+
+def _table_rows(path: Path) -> list[list[str]]:
+    return [
+        line.split()
+        for line in path.read_text().splitlines()
+        if line and not line.startswith("#")
+    ]
+
+
+def test_same_stem_different_name_stay_separate(workspace: Path, capsys) -> None:
+    out = workspace / "out"
+    hmms = [
+        _write_hmm(workspace / "a" / "foo.hmm", "alpha", SEQ_A),
+        _write_hmm(workspace / "b" / "foo.hmm", "beta/1", SEQ_B),
+    ]
+    assert screen._query_model_ids(hmms, "pure") == ["alpha", "beta/1"]
+
+    screen._screen(
+        screen.ScreenConfig(
+            input_contigs=workspace / "contigs.fna",
+            hmms=hmms,
+            outdir=out,
+            cut_ga=False,
+            save_target_proteins=True,
+        )
+    )
+
+    # The internal NAME (sanitised for file names) replaces the shared stem.
+    assert _listing(out) == [
+        ".phu/query.json",
+        "alpha-hmmsearch-domains.tbl",
+        "beta_1-hmmsearch-domains.tbl",
+        "matched-contig-ids.txt",
+        "matched-contigs.fna",
+        "target-proteins/alpha.faa",
+        "target-proteins/beta_1.faa",
+    ]
+    alpha = _fasta_records(out / "target-proteins" / "alpha.faa")
+    beta = _fasta_records(out / "target-proteins" / "beta_1.faa")
+    assert [name for name, _ in alpha] == ["c1|gene1", "c2|gene1"]
+    assert [name for name, _ in beta] == ["c1|gene2"]
+    for table, query in (("alpha", "alpha"), ("beta_1", "beta/1")):
+        rows = _table_rows(out / f"{table}-hmmsearch-domains.tbl")
+        assert rows and {row[3] for row in rows} == {query}
+    assert "Warning" not in capsys.readouterr().out
+
+
+def test_same_stem_same_name_warns_and_pools_hits(workspace: Path, capsys) -> None:
+    out = workspace / "out"
+    first = _write_hmm(workspace / "a" / "dup.hmm", "same", SEQ_A)
+    second = _write_hmm(workspace / "b" / "dup.hmm", "same", SEQ_B)
+
+    screen._screen(
+        screen.ScreenConfig(
+            input_contigs=workspace / "contigs.fna",
+            hmms=[first, second],
+            outdir=out,
+            cut_ga=False,
+            top_per_contig=5,
+            save_target_proteins=True,
+        )
+    )
+
+    warning = capsys.readouterr().out
+    assert "Warning" in warning
+    assert str(first) in warning and str(second) in warning
+    assert "cannot be told apart" in warning
+    assert _listing(out) == [
+        ".phu/query.json",
+        "matched-contig-ids.txt",
+        "matched-contigs.fna",
+        "same-hmmsearch-domains.tbl",
+        "target-proteins/same.faa",
+    ]
+    # Hits of both files end up under the one model ID and in the one table.
+    pooled = _fasta_records(out / "target-proteins" / "same.faa")
+    assert sorted(name for name, _ in pooled) == ["c1|gene1", "c1|gene2", "c2|gene1"]
+    table = out / "same-hmmsearch-domains.tbl"
+    assert table.read_text().count("# target name") == 1
+    assert {"c1|gene1", "c1|gene2"} <= {row[0] for row in _table_rows(table)}
+
+
+def test_unique_stems_keep_stem_as_model_id(workspace: Path, capsys) -> None:
+    hmms = [
+        _write_hmm(workspace / "a" / "famA.hmm", "shared_name", SEQ_A),
+        _write_hmm(workspace / "b" / "famB.hmm", "shared_name", SEQ_B),
+    ]
+
+    assert screen._hmm_file_labels(hmms) == ["famA", "famB"]
+    assert screen._query_model_ids(hmms, "pure") == ["famA", "famB"]
+    plan = screen.ScreenConfig(
+        input_contigs=workspace / "contigs.fna", hmms=hmms, outdir=workspace / "out"
+    ).plan()
+    assert plan.domtbl_paths == {
+        "famA": workspace / "out" / "famA-hmmsearch-domains.tbl",
+        "famB": workspace / "out" / "famB-hmmsearch-domains.tbl",
+    }
+    assert "Warning" not in capsys.readouterr().out
+
+
+def test_duplicate_model_id_error_still_fires(workspace: Path) -> None:
+    # A NAME-derived ID that equals the stem of another input file.
+    hmms = [
+        _write_hmm(workspace / "a" / "foo.hmm", "bar", SEQ_A),
+        _write_hmm(workspace / "b" / "foo.hmm", "baz", SEQ_B),
+        _write_hmm(workspace / "c" / "bar.hmm", "other", SEQ_B),
+    ]
+    with pytest.raises(ValueError, match="Duplicate HMM model ID: bar"):
+        screen._query_model_ids(hmms, "pure")
+
+    # Mixed mode: model IDs are the internal NAMEs, whatever the file names.
+    mixed = [
+        _write_hmm(workspace / "d" / "one.hmm", "same", SEQ_A),
+        _write_hmm(workspace / "e" / "two.hmm", "same", SEQ_B),
+    ]
+    with pytest.raises(ValueError, match="Duplicate HMM model ID: same"):
+        screen._query_model_ids(mixed, "mixed")
+
+
+def test_aligned_model_name_collision_is_refused(workspace: Path) -> None:
+    config = screen.ScreenConfig(
+        input_contigs=workspace / "contigs.fna",
+        hmms=[
+            _write_hmm(workspace / "famA.hmm", "model_a", SEQ_A),
+            _write_hmm(workspace / "famA-aligned.hmm", "model_b", SEQ_B),
+        ],
+        outdir=workspace / "out",
+        cut_ga=False,
+        save_target_proteins=True,
+        save_target_hmms=True,
+    )
+    with pytest.raises(ValueError, match="famA-aligned"):
+        screen._screen(config)
+
+    # Without target HMMs nothing is aligned, so the names are fine.
+    config.save_target_hmms = False
+    screen._screen(config)
+    assert (workspace / "out" / "target-proteins" / "famA-aligned.faa").exists()

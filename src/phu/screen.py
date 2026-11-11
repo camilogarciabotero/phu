@@ -1148,9 +1148,37 @@ def _safe_file_label(name: str) -> str:
     return re.sub(r"[^\w\-_.]", "_", name)
 
 
+def _first_model_name(hmm_path: Path) -> Optional[str]:
+    """Return the internal NAME of the first model in an HMM file."""
+    try:
+        with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
+            model = next(iter(hmm_file), None)
+    except (OSError, ValueError):
+        return None
+    if model is None or not model.name:
+        return None
+    name = model.name
+    return name.decode() if isinstance(name, bytes) else str(name)
+
+
 def _hmm_file_labels(hmm_paths: list[Path]) -> list[str]:
-    """Return one label per HMM file (its stem), in input order."""
-    return [hmm_path.stem for hmm_path in hmm_paths]
+    """
+    Return one label per HMM file, in input order.
+
+    The label names the file's domain table and, in pure mode, is its model ID.
+    A file whose stem is unique among the inputs is labelled by that stem.
+    Files that share a stem (``a/foo.hmm`` and ``b/foo.hmm``) are labelled by
+    the internal NAME of their (first) model instead, so they stay separate.
+    """
+    stem_counts: dict[str, int] = defaultdict(int)
+    for hmm_path in hmm_paths:
+        stem_counts[hmm_path.stem] += 1
+    return [
+        hmm_path.stem
+        if stem_counts[hmm_path.stem] == 1
+        else (_first_model_name(hmm_path) or hmm_path.stem)
+        for hmm_path in hmm_paths
+    ]
 
 
 def _domtbl_name(hmm_path: Path, label: str) -> str:
@@ -1166,6 +1194,26 @@ def _domtbl_paths(hmm_paths: list[Path], outdir: Path) -> dict[str, Path]:
         label: outdir / _domtbl_name(hmm_path, label)
         for hmm_path, label in zip(hmm_paths, _hmm_file_labels(hmm_paths))
     }
+
+
+def _check_aligned_name_collisions(model_ids: Iterable[str]) -> None:
+    """
+    Refuse model names that would collide with a per-model alignment file.
+
+    Building target HMMs aligns ``target-proteins/<model>.faa`` into
+    ``target-proteins/<model>-aligned.faa``; a model literally named
+    ``<model>-aligned`` owns that very path for its own proteins.
+    """
+    safe_names = {_safe_file_label(model_id) for model_id in model_ids}
+    for name in sorted(safe_names):
+        base = name[: -len(ALIGNED_SUFFIX)]
+        if name.endswith(ALIGNED_SUFFIX) and base in safe_names:
+            raise ValueError(
+                f"Cannot build target HMMs: the proteins of model '{name}' and the "
+                f"alignment of model '{base}' would both be written to "
+                f"{TARGET_PROTEINS_DIR}/{name}.faa. Rename one of the two models "
+                "(or its HMM file) and run again."
+            )
 
 
 # ---------- Core pipeline ----------
@@ -1363,8 +1411,9 @@ def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
     """Return the complete, ordered model inventory before searching."""
     model_ids: list[str] = []
     sources: dict[str, Path] = {}
+    labels = _hmm_file_labels(hmm_paths)
 
-    for hmm_path in hmm_paths:
+    for hmm_path, label in zip(hmm_paths, labels):
         with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
             models = list(hmm_file)
 
@@ -1378,14 +1427,39 @@ def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
             model_name = model.name
             if isinstance(model_name, bytes):
                 model_name = model_name.decode()
-            model_id = hmm_path.stem if hmm_mode == "pure" else str(model_name)
+            model_id = label if hmm_mode == "pure" else str(model_name)
             prev = sources.get(model_id)
             if prev is not None:
+                if hmm_mode == "pure" and prev.stem == hmm_path.stem:
+                    # Same file stem and same internal NAME: nothing is left
+                    # to tell the two files apart, so they act as one model.
+                    print(
+                        f"Warning: HMM files {prev} and {hmm_path} share both the "
+                        f"file name '{hmm_path.stem}' and the internal model NAME "
+                        f"'{model_id}', so they cannot be told apart: their hits "
+                        f"are pooled under the single model ID '{model_id}' and "
+                        f"written to one domain table "
+                        f"({_domtbl_name(hmm_path, label)})."
+                    )
+                    continue
                 raise ValueError(
                     f"Duplicate HMM model ID: {model_id} (seen in {prev} and {hmm_path})"
                 )
             sources[model_id] = hmm_path
             model_ids.append(model_id)
+
+    if hmm_mode != "pure":
+        # Model IDs are the internal NAMEs here, but each file still gets one
+        # domain table named after its label.
+        table_sources: dict[str, Path] = {}
+        for hmm_path, label in zip(hmm_paths, labels):
+            table = _domtbl_name(hmm_path, label)
+            prev = table_sources.setdefault(table, hmm_path)
+            if prev != hmm_path:
+                print(
+                    f"Warning: HMM files {prev} and {hmm_path} share the domain "
+                    f"table {table}; the rows of both files are written to it."
+                )
 
     if not model_ids:
         raise ValueError("No HMM models found in the supplied files")
@@ -1841,6 +1915,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             raise FileNotFoundError(f"HMM file not found: {hmm}")
 
     queried_model_ids = _query_model_ids(cfg.hmms, cfg.hmm_mode)
+    if cfg.save_target_hmms:
+        _check_aligned_name_collisions(queried_model_ids)
 
     # Discover binaries required by the selected output paths.
     seqkit_bin = _binaries()

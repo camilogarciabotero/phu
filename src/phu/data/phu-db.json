@@ -1,0 +1,283 @@
+{
+  "bundle_version": "phu-db-0.1.1",
+  "layout_version": 1,
+  "generator": {
+    "name": "phu-db-prep",
+    "version": "0.1.1"
+  },
+  "bundle": {
+    "name": "phu-db.tar.gz",
+    "layout_root": "phu-db",
+    "url": null
+  },
+  "zenodo": {
+    "concept_doi": null,
+    "version_doi": null,
+    "record_url": null
+  },
+  "databases": {
+    "pfam": {
+      "provenance": "fetch",
+      "redistribution": "pin-only",
+      "upstream_version": "37.0",
+      "license": "CC0-1.0",
+      "citation": "Mistry J, et al. Nucleic Acids Res. 2021;49(D1):D412-D419.",
+      "layout_dir": "pfam",
+      "sources": [
+        {
+          "name": "Pfam-A.hmm.gz",
+          "url": "https://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam37.0/Pfam-A.hmm.gz",
+          "sha256": "66f57012fe5825c82f2e31447d7a8026367e1ca9e5e91b4b716c594c268db69b",
+          "bytes": 310495632
+        }
+      ],
+      "steps": [
+        "gunzip:Pfam-A.hmm.gz -> profiles.hmm"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 1694833729,
+          "sha256": "827d458228d87f97328d6fb937b3bae33d8fc3dd735daa4ce711fec7b957acea",
+          "count": 21979
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": null
+    },
+    "kofam": {
+      "provenance": "fetch",
+      "redistribution": "pin-only",
+      "upstream_version": "genome.jp archives/2026-07-02",
+      "license": "UNKNOWN",
+      "citation": "KOfamKOALA",
+      "layout_dir": "kofam",
+      "sources": [
+        {
+          "name": "profiles.tar.gz",
+          "url": "https://www.genome.jp/ftp/db/kofam/archives/2026-07-02/profiles.tar.gz",
+          "sha256": "a7cbd00746fb03fd37661768d2de54875f59f55dfe9ba1c6229cd94513e06de4",
+          "bytes": 1560800080
+        },
+        {
+          "name": "ko_list.gz",
+          "url": "https://www.genome.jp/ftp/db/kofam/archives/2026-07-02/ko_list.gz",
+          "sha256": "892d0c923f23b776d38617d0ccc2ced3aba0f32e057a761bc1df5d3a6ba0bb02",
+          "bytes": 911374
+        }
+      ],
+      "steps": [
+        "extract:profiles.tar.gz -> profiles/",
+        "concatenate:profiles/*.hmm -> profiles.hmm",
+        "gunzip:ko_list.gz -> ko_list.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 7648509826,
+          "sha256": "83794c44d1b048d3dd890d6dd916dcb17b923f38abea746635f0d16627028d2c",
+          "count": 27816
+        },
+        {
+          "path": "ko_list.tsv",
+          "format": "tsv",
+          "bytes": 2870196,
+          "sha256": "f7cf94b595def80949b4e7335b2f99ea91dad8be197a2efe86977c0dd0cdb463",
+          "count": 28340
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": null
+    },
+    "dbcan": {
+      "provenance": "fetch",
+      "redistribution": "pin-only",
+      "upstream_version": "V15",
+      "license": "UNKNOWN",
+      "citation": "dbCAN",
+      "layout_dir": "dbcan",
+      "sources": [
+        {
+          "name": "dbCAN-HMMdb-V15.txt",
+          "url": "https://pro.unl.edu/dbCAN2/download_file.php?file=Databases/V15/dbCAN-HMMdb-V15.txt",
+          "sha256": "530055eef06d005bdd462d18ff861319fc20ded981cbc5553d94ed5128cbcf44",
+          "bytes": 118854953
+        },
+        {
+          "name": "dbCAN-PUL-substrate-metadata.txt",
+          "url": "https://pro.unl.edu/dbCAN2/download_file.php?file=Databases/dbCAN-PUL_12-12-2023.txt",
+          "sha256": "3996aac3a7bef470f8fe3273867ea4ad1bb0ecc19d11b8982aa80a22534d727a",
+          "bytes": 15352
+        },
+        {
+          "name": "dbCAN-PUL.xlsx",
+          "url": "https://pro.unl.edu/dbCAN2/download_file.php?file=run_dbCAN_database_total/db_current/dbCAN-PUL.xlsx",
+          "sha256": "68a2eaa0536bec8facc5bc2ae062a7d8d96deb1e991d2e7210418c42ff11c740",
+          "bytes": 125973
+        }
+      ],
+      "steps": [
+        "rename:dbCAN-HMMdb-V15.txt -> profiles.hmm",
+        "rename:dbCAN-PUL-substrate-metadata.txt -> family_substrate.tsv",
+        "pul-table:dbCAN-PUL.xlsx -> pul_rules.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 118854953,
+          "sha256": "530055eef06d005bdd462d18ff861319fc20ded981cbc5553d94ed5128cbcf44",
+          "count": 881
+        },
+        {
+          "path": "family_substrate.tsv",
+          "format": "tsv",
+          "bytes": 15352,
+          "sha256": "3996aac3a7bef470f8fe3273867ea4ad1bb0ecc19d11b8982aa80a22534d727a",
+          "count": 673
+        },
+        {
+          "path": "pul_rules.tsv",
+          "format": "tsv",
+          "bytes": 26750,
+          "sha256": "a72bca22159b174ed49f4f819a6890ac8070482f7a35b4379522fba65c045301",
+          "count": 634
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": null
+    },
+    "avg": {
+      "provenance": "build",
+      "redistribution": "pin-only",
+      "upstream_version": "v1.1.1",
+      "license": "UNKNOWN",
+      "citation": "CheckAMG",
+      "layout_dir": "avg",
+      "sources": [
+        {
+          "name": "AMGs.tsv",
+          "url": "https://raw.githubusercontent.com/AnantharamanLab/CheckAMG/v1.1.1/CheckAMG/files/AMGs.tsv",
+          "sha256": "c361be551db10fa13b8b4452e16e6e04d9e2536dcc6b0a2267c15912980ab56b",
+          "bytes": 8182557
+        },
+        {
+          "name": "APGs.tsv",
+          "url": "https://raw.githubusercontent.com/AnantharamanLab/CheckAMG/v1.1.1/CheckAMG/files/APGs.tsv",
+          "sha256": "c2e8e74be62598a9a8f0894982816f29878feb2fbdb6de29f5e4a62b2cd0e5b7",
+          "bytes": 103285
+        },
+        {
+          "name": "AReGs.tsv",
+          "url": "https://raw.githubusercontent.com/AnantharamanLab/CheckAMG/v1.1.1/CheckAMG/files/AReGs.tsv",
+          "sha256": "e6bc21080180cdab95d6b10f18106a9c0c100698fcc25f1da9f713524177e664",
+          "bytes": 1557350
+        },
+        {
+          "name": "AMG_filters.tsv",
+          "url": "https://raw.githubusercontent.com/AnantharamanLab/CheckAMG/v1.1.1/CheckAMG/files/AMG_filters.tsv",
+          "sha256": "8c1067fa536cb1f50010a2f7845cc61bb4d1b58531295814525da4d8eb649767",
+          "bytes": 3856604
+        },
+        {
+          "name": "APG_filters.tsv",
+          "url": "https://raw.githubusercontent.com/AnantharamanLab/CheckAMG/v1.1.1/CheckAMG/files/APG_filters.tsv",
+          "sha256": "2998f861c9b8778f484fa7a3e1c6274c6fa8bf3d9deb7a3873993cd9f4346138",
+          "bytes": 1159810
+        },
+        {
+          "name": "AReG_filters.tsv",
+          "url": "https://raw.githubusercontent.com/AnantharamanLab/CheckAMG/v1.1.1/CheckAMG/files/AReG_filters.tsv",
+          "sha256": "b1f8c23c32f0dcf0255fcb15c1514bfe2172f28be7fd66427582d3c6d3b33f11",
+          "bytes": 887574
+        },
+        {
+          "name": "vscores.tsv",
+          "url": "https://raw.githubusercontent.com/AnantharamanLab/CheckAMG/v1.1.1/CheckAMG/files/vscores.tsv",
+          "sha256": "ffdef3c242d0ee966f926a35ade5fc1b5b5f84dc8e339cf621864b1ede36b401",
+          "bytes": 3593845
+        }
+      ],
+      "steps": [
+        "rename:vscores.tsv -> v_scores.tsv",
+        "rename:AMGs.tsv -> positive_amg.tsv",
+        "rename:APGs.tsv -> positive_apg.tsv",
+        "rename:AReGs.tsv -> positive_areg.tsv",
+        "rename:AMG_filters.tsv -> filters_amg.tsv",
+        "rename:APG_filters.tsv -> filters_apg.tsv",
+        "rename:AReG_filters.tsv -> filters_areg.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "v_scores.tsv",
+          "format": "tsv",
+          "bytes": 3593845,
+          "sha256": "ffdef3c242d0ee966f926a35ade5fc1b5b5f84dc8e339cf621864b1ede36b401",
+          "count": 69719
+        },
+        {
+          "path": "positive_amg.tsv",
+          "format": "tsv",
+          "bytes": 8182557,
+          "sha256": "c361be551db10fa13b8b4452e16e6e04d9e2536dcc6b0a2267c15912980ab56b",
+          "count": 60771
+        },
+        {
+          "path": "positive_apg.tsv",
+          "format": "tsv",
+          "bytes": 103285,
+          "sha256": "c2e8e74be62598a9a8f0894982816f29878feb2fbdb6de29f5e4a62b2cd0e5b7",
+          "count": 1509
+        },
+        {
+          "path": "positive_areg.tsv",
+          "format": "tsv",
+          "bytes": 1557350,
+          "sha256": "e6bc21080180cdab95d6b10f18106a9c0c100698fcc25f1da9f713524177e664",
+          "count": 14283
+        },
+        {
+          "path": "filters_amg.tsv",
+          "format": "tsv",
+          "bytes": 3856604,
+          "sha256": "8c1067fa536cb1f50010a2f7845cc61bb4d1b58531295814525da4d8eb649767",
+          "count": 38769
+        },
+        {
+          "path": "filters_apg.tsv",
+          "format": "tsv",
+          "bytes": 1159810,
+          "sha256": "2998f861c9b8778f484fa7a3e1c6274c6fa8bf3d9deb7a3873993cd9f4346138",
+          "count": 13363
+        },
+        {
+          "path": "filters_areg.tsv",
+          "format": "tsv",
+          "bytes": 887574,
+          "sha256": "b1f8c23c32f0dcf0255fcb15c1514bfe2172f28be7fd66427582d3c6d3b33f11",
+          "count": 9869
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": {
+        "source_repo": "https://github.com/AnantharamanLab/CheckAMG",
+        "source_tag": "v1.1.1",
+        "tool_version_key": "phu.avg_reference_db"
+      }
+    }
+  }
+}

@@ -1,5 +1,4 @@
 import hashlib
-import importlib.util
 import json
 import socket
 import sys
@@ -204,16 +203,17 @@ def test_unpinned_phu_raises_a_database_error(monkeypatch, db_folder):
     assert not db_folder.exists()
 
 
-@pytest.mark.skipif(
-    importlib.util.find_spec("phu._bundle") is not None,
-    reason="phu._bundle exists: phu is pinned",
-)
-def test_this_phu_is_not_pinned_yet(db_folder):
-    # Nothing patched: the real state until 0.1.1 is published.
-    with pytest.raises(DatabaseError, match="not pinned yet") as raised:
-        resolve_db("pfam", db_folder=db_folder)
-    assert not isinstance(raised.value, ImportError)
-    assert not db_folder.exists()
+def test_production_pins_agree_with_the_vendored_manifest():
+    # What a released phu installs: the pins, the vendored manifest and the
+    # member list must describe the same bundle, or every install would fail.
+    pins, manifest, vendored = db_bundle._pinned(None, None)
+
+    assert pins.bundle_version == manifest.bundle_version
+    assert pins.url.startswith("https://zenodo.org/records/")
+    assert pins.url.endswith("/files/phu-db.tar.gz")
+    assert pins.expected_members == manifest.expected_members()
+    assert set(manifest.databases) == DATABASE_NAMES
+    assert hashlib.sha256(vendored).hexdigest() == pins.manifest_sha256
 
 
 def _vendored_data(monkeypatch, root: Path) -> None:

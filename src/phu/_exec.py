@@ -5,6 +5,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from shutil import which
 
+from ._log import log_command
+
 
 class CmdNotFound(RuntimeError):
     pass
@@ -29,9 +31,13 @@ def run(
 ) -> subprocess.CompletedProcess[str]:
     """
     Run a command in a subprocess.
+
+    With ``--verbose`` the exact argv is printed first (see ``phu._log``).
     """
+    command = list(map(str, argv))
+    log_command(command, cwd=cwd)
     proc = subprocess.run(
-        list(map(str, argv)),
+        command,
         cwd=str(cwd) if cwd else None,
         text=True,
         capture_output=False,  # stream to console

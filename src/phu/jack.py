@@ -12,12 +12,21 @@ import pyhmmer.easel
 import pyhmmer.hmmer
 
 from ._exec import _executable
+from ._log import log_call
 from .gene_prediction_core import (
     PredictionInputs,
     get_or_predict_proteins,
     write_prediction_metadata,
 )
-from .screen import Hit, _read_fasta, _seqkit_extract
+from .screen import (
+    MATCHED_CONTIG_IDS,
+    MATCHED_CONTIGS,
+    PREDICTED_PROTEINS,
+    PREDICTION_METADATA,
+    Hit,
+    _read_fasta,
+    _seqkit_extract,
+)
 
 
 @dataclass
@@ -96,6 +105,18 @@ def _run_jackhmmer(
     ) as seq_file:
         targets = seq_file.read_block()
 
+    log_call(
+        "pyhmmer.hmmer.jackhmmer",
+        seed=seed_id,
+        queries=1,
+        sequences=len(targets),
+        max_iterations=iterations,
+        incE=inc_evalue,
+        incdomE=inc_evalue,
+        cpus=threads,
+        checkpoints=True,
+        max_evalue=max_evalue,
+    )
     results = list(
         pyhmmer.hmmer.jackhmmer(
             query,
@@ -268,13 +289,13 @@ def _jack(cfg: JackConfig) -> None:
     seqkit_bin = _executable(["seqkit"])
     cfg.outdir.mkdir(parents=True, exist_ok=True)
 
-    proteins_fa = cfg.outdir / "proteins.faa"
-    kept_ids = cfg.outdir / "kept_contigs.txt"
-    out_contigs = cfg.outdir / "screened_contigs.fasta"
-    iter_tsv = cfg.outdir / "jackhmmer_iterations.tsv"
-    hits_tsv = cfg.outdir / "jackhmmer_hits.tsv"
-    final_hmm_path = cfg.outdir / "last_iteration.hmm"
-    hmm_dir = cfg.outdir / "last_iteration_hmms"
+    proteins_fa = cfg.outdir / PREDICTED_PROTEINS
+    kept_ids = cfg.outdir / MATCHED_CONTIG_IDS
+    out_contigs = cfg.outdir / MATCHED_CONTIGS
+    iter_tsv = cfg.outdir / "jackhmmer-iterations.tsv"
+    hits_tsv = cfg.outdir / "jackhmmer-hits.tsv"
+    final_hmm_path = cfg.outdir / "final-iteration.hmm"
+    hmm_dir = cfg.outdir / "final-iteration-hmms"
 
     if cfg.save_hmm:
         if final_hmm_path.exists():
@@ -378,7 +399,7 @@ def _jack(cfg: JackConfig) -> None:
     if cfg.keep_proteins:
         shutil.copy(proteins_fa_actual, proteins_fa)
         write_prediction_metadata(
-            cfg.outdir / ".phu_prediction_metadata.json",
+            cfg.outdir / PREDICTION_METADATA,
             cache_hit=cache_artifact.cache_hit,
             cache_key=cache_artifact.cache_key,
             cache_dir=cache_artifact.cache_dir,
@@ -389,16 +410,13 @@ def _jack(cfg: JackConfig) -> None:
         shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
 
     print(f"Done. Output FASTA: {out_contigs}")
-    files_msg = (
-        "Also wrote: kept_contigs.txt, jackhmmer_hits.tsv, jackhmmer_iterations.tsv"
-    )
+    files_msg = f"Also wrote: {kept_ids.name}, {hits_tsv.name}, {iter_tsv.name}"
     if cfg.keep_proteins:
-        proteins_msg = (
-            "proteins.faa (cached)" if cache_artifact.cache_hit else "proteins.faa"
-        )
-        files_msg += f", {proteins_msg}"
+        files_msg += f", {proteins_fa.name}"
+        if cache_artifact.cache_hit:
+            files_msg += " (cached)"
     if cfg.save_hmm and final_hmm_path.exists():
-        files_msg += ", last_iteration.hmm"
+        files_msg += f", {final_hmm_path.name}"
     elif cfg.save_hmm and hmm_dir.exists():
-        files_msg += ", last_iteration_hmms/*.hmm"
+        files_msg += f", {hmm_dir.name}/*.hmm"
     print(f"{files_msg}.")

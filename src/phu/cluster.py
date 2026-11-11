@@ -108,7 +108,7 @@ def parse_vclust_params(
 class ClusterConfig:
     mode: Mode
     input_contigs: Path
-    output_folder: Path = Path("clustered-contigs")
+    output_folder: Path = Path("phu-cluster")
     threads: int = 0  # 0 => all cores
     # defaults reflecting original bash behavior
     ani_cutoff: float = 0.95
@@ -145,7 +145,7 @@ class ClusterConfig:
             metric = "tani"
             ani_cutoff = 0.95
             qcov_cutoff = None
-            output_name = "species.tsv"
+            output_name = "species-clusters.tsv"
 
         out = self.output_folder
         return ClusterPlan(
@@ -153,16 +153,16 @@ class ClusterConfig:
             seqkit_bin="",
             input_contigs=self.input_contigs,
             out_dir=out,
-            fltr=out / "fltr.txt",
-            ani=out / "ani.tsv",
-            ids=out / "ani.ids.tsv",
+            fltr=out / "prefilter-pairs.txt",
+            ani=out / "ani-pairs.tsv",
+            ids=out / "ani-sequence-ids.tsv",
             output=out / output_name,
-            representatives_ids=out / "cluster_representatives_ids.txt",
+            representatives_ids=out / "cluster-representative-ids.txt",
             representatives_fna=out
             / (
-                "dereplicated_representatives.fna"
+                "dereplicated-representatives.fna"
                 if self.mode == Mode.dereplication
-                else "representatives.fna"
+                else "cluster-representatives.fna"
             ),
             algorithm=algorithm or "",
             metric=metric,
@@ -285,6 +285,12 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
         _add_custom_params(align_cmd, custom_align_params)
 
     run(align_cmd)
+
+    # vclust names the sequence-ID table after the ANI table (<ani stem>.ids.tsv)
+    # and has no option for it, so it is renamed once the alignment is done.
+    vclust_ids = plan.ani.with_suffix(".ids.tsv")
+    if vclust_ids.exists():
+        vclust_ids.replace(plan.ids)
 
     # Step 3: cluster
     print(f"Step 3: Clustering with {plan.algorithm} (metric={plan.metric})…")

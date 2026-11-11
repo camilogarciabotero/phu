@@ -12,16 +12,16 @@ The `phu cluster` command provides a simplified interface to `vclust`, implement
 phu cluster --mode <MODE> --input-contigs <FASTA_FILE> [OPTIONS]
 ```
 
-Outputs are placed in an output folder (default `clustered-contigs/`) and include cluster assignment TSVs and representative FASTA files, for example:
+Outputs are placed in an output folder (default `phu-cluster/`) and include cluster assignment TSVs and representative FASTA files, for example:
 
 ```
-clustered-contigs/
-├── ani.ids.tsv
-├── ani.tsv
-├── cluster_representatives_ids.txt
-├── fltr.txt
-├── representatives.fna
-└── species.tsv
+phu-cluster/
+├── prefilter-pairs.txt             # vclust prefilter: sequence pairs worth aligning
+├── ani-pairs.tsv                   # vclust align: ANI and coverage per sequence pair
+├── ani-sequence-ids.tsv            # vclust align: sequence IDs and lengths used by clustering
+├── species-clusters.tsv            # cluster assignments (`clusters.tsv` in dereplication and votu modes)
+├── cluster-representative-ids.txt  # one representative ID per input sequence's cluster
+└── cluster-representatives.fna     # representative sequences (`dereplicated-representatives.fna` in dereplication mode)
 ```
 
 ## Modes
@@ -70,7 +70,7 @@ The live CLI groups options into **Clustering**, **Input**, **Output**, and
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Output ─────────────────────────────────────────────────────────────────────╮
 │ --output-folder  -o      <path>  Output directory                            │
-│                                  [default: clustered-contigs]                │
+│                                  [default: phu-cluster]                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Runtime ────────────────────────────────────────────────────────────────────╮
 │ --threads  -t      <int range> [x>=0]  0=all cores; otherwise N threads      │
@@ -83,7 +83,7 @@ The live CLI groups options into **Clustering**, **Input**, **Output**, and
 ## Examples
 
 ```bash
-# Dereplicate viral contigs (default outputs in clustered-contigs/)
+# Dereplicate viral contigs (default outputs in phu-cluster/)
 phu cluster --mode dereplication --input-contigs viral_contigs.fna
 
 # Cluster into vOTUs following MIUViG standards

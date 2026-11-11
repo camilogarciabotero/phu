@@ -37,7 +37,7 @@ def test_write_cazyme_outputs_preserves_subfamilies_and_order(tmp_path: Path):
         screen.Hit("contig_A", "a|gene1", "GH5_2", 40, 1e-25, hmm_coverage=0.9),
         screen.Hit("contig_B", "b|gene2", "CBM89", 50, 1e-30, hmm_coverage=0.7),
     ]
-    output = tmp_path / "cazyme_matches.tsv.gz"
+    output = tmp_path / "cazyme-matches.tsv.gz"
 
     screen.write_cazyme_outputs(hits, hits, ["contig_A", "contig_B"], tmp_path)
 
@@ -62,11 +62,11 @@ def test_write_cazyme_outputs_aggregates_evidence_and_classes(tmp_path: Path):
 
     counts = screen.write_cazyme_outputs(hits, hits, ["contig_1", "contig_2"], tmp_path)
 
-    with gzip.open(tmp_path / "evidence/cazyme_hits.tsv.gz", "rt") as handle:
+    with gzip.open(tmp_path / "evidence/cazyme-hits.tsv.gz", "rt") as handle:
         evidence = list(csv.DictReader(handle, delimiter="\t"))
-    with gzip.open(tmp_path / "cazyme_matches.tsv.gz", "rt") as handle:
+    with gzip.open(tmp_path / "cazyme-matches.tsv.gz", "rt") as handle:
         matches = list(csv.DictReader(handle, delimiter="\t"))
-    with (tmp_path / "cazyme_class_summary.tsv").open() as handle:
+    with (tmp_path / "cazyme-class-summary.tsv").open() as handle:
         classes = list(csv.DictReader(handle, delimiter="\t"))
 
     assert len(evidence) == 6
@@ -76,7 +76,7 @@ def test_write_cazyme_outputs_aggregates_evidence_and_classes(tmp_path: Path):
     assert gh128["hit_count"] == "3"
     assert gh128["best_protein_id"] == "protein_1"
     assert gh128["best_bitscore"] == "80.000000"
-    with (tmp_path / "cazyme_summary.tsv").open() as handle:
+    with (tmp_path / "cazyme-family-summary.tsv").open() as handle:
         families = list(csv.DictReader(handle, delimiter="\t"))
     gh128_summary = next(row for row in families if row["cazyme_family"] == "GH128")
     assert gh128_summary["contig_count"] == "2"
@@ -96,10 +96,10 @@ def test_write_cazyme_outputs_aggregates_evidence_and_classes(tmp_path: Path):
 def test_write_cazyme_outputs_keeps_subfamilies_distinct_and_empty_headers(tmp_path: Path):
     screen.write_cazyme_outputs([], [], [], tmp_path)
 
-    assert (tmp_path / "cazyme_summary.tsv").read_text().splitlines() == [
+    assert (tmp_path / "cazyme-family-summary.tsv").read_text().splitlines() == [
         "cazyme_family\tcazyme_class\tcontig_count\tprotein_count\thit_count\tbest_bitscore\tbest_evalue"
     ]
-    with gzip.open(tmp_path / "cazyme_matches.tsv.gz", "rt") as handle:
+    with gzip.open(tmp_path / "cazyme-matches.tsv.gz", "rt") as handle:
         assert handle.readline().strip() == (
             "contig_id\tcazyme_family\tcazyme_class\tprotein_count\thit_count\t"
             "protein_ids\tbest_protein_id\tbest_bitscore\tbest_evalue\t"

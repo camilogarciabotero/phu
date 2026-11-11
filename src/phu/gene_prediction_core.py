@@ -30,6 +30,8 @@ from typing import Optional
 
 from pyrodigal_gv import ViralGeneFinder
 
+from ._log import log_call
+
 PROTEIN_FASTA_FORMAT_VERSION = 2
 
 
@@ -234,6 +236,21 @@ def predict_genes_pyrodigal(
     if not contigs:
         return []
 
+    log_call(
+        "pyrodigal_gv.ViralGeneFinder",
+        contigs=len(contigs),
+        mode=inputs.mode,
+        meta=inputs.mode == "meta",
+        min_gene=inputs.min_gene_len,
+        max_overlap=max(0, inputs.min_gene_len - 1),
+        translation_table=inputs.translation_table or "auto",
+        training_table=(inputs.translation_table or 11)
+        if inputs.mode == "single"
+        else "none",
+        min_protein_len_aa=inputs.min_protein_len_aa,
+        threads=max(1, threads),
+    )
+
     if threads > 1:
         from multiprocessing.pool import ThreadPool
 
@@ -289,7 +306,7 @@ def get_or_predict_proteins(
 
     if not use_cache:
         # No caching: predict to tempfile and return immediately
-        temp_dir = Path(tempfile.mkdtemp(prefix="phu_pred_"))
+        temp_dir = Path(tempfile.mkdtemp(prefix="phu-pred-"))
         temp_prot = temp_dir / "proteins.faa"
 
         genes = predict_genes_pyrodigal(inputs, threads=threads)
@@ -409,4 +426,5 @@ def write_prediction_metadata(
         "cache_key": cache_key,
         "cache_dir": str(cache_dir) if cache_dir else None,
     }
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(meta, indent=2))

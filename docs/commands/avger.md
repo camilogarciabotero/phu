@@ -203,7 +203,7 @@ criteria. `avger` does not silently apply them to individual proteins; the
 input contigs should therefore already have a documented viral-sequence
 assessment.
 
-Thus, a row in `avg_candidates.tsv` is an **AVG candidate record**, not a
+Thus, a row in `avg-candidates.tsv` is an **AVG candidate record**, not a
 confirmed AVG call, when it passes the candidate thresholds. A named
 classification requires an internal AVG rule that combines the relevant
 KOfam/Pfam evidence, V-score support where appropriate, and the already-
@@ -214,9 +214,9 @@ Passing a viral AV/AVᴸ cutoff does not by itself make a gene an AVG.
 
 | Output situation | Scientific meaning |
 | --- | --- |
-| Row in `genes.tsv` | Predicted gene, including strict annotation fields and any scoring evidence |
-| Row in `avg_candidates.tsv` | Candidate passed the AVL/V/VL predicate |
-| Row in `avg_predictions.tsv` | Candidate received a final curated AVG class |
+| Row in `gene-annotations.tsv` | Predicted gene, including strict annotation fields and any scoring evidence |
+| Row in `avg-candidates.tsv` | Candidate passed the AVL/V/VL predicate |
+| Row in `avg-predictions.tsv` | Candidate received a final curated AVG class |
 | Non-`classified` status | Candidate evidence exists, but no final named class was assigned or multiple classes conflicted |
 
 V-scores should not be treated as universal protein-level probability cutoffs.
@@ -279,10 +279,10 @@ flowchart TD
     J --> K[Apply standard, strict, or no class filters]
     K --> L{Final named class?}
     L -->|No| M[Candidate without final classification]
-    L -->|Yes| N[avg_predictions.tsv]
-    G --> O[genes.tsv]
+    L -->|Yes| N[avg-predictions.tsv]
+    G --> O[gene-annotations.tsv]
     M --> O
-    O --> P[evidence.tsv]
+    O --> P[avg-evidence.tsv]
     O --> Q[Metadata: .phu/run.json]
 ```
 
@@ -298,17 +298,17 @@ filters described below.
 
 ## Outputs
 
-- `genes.tsv`: one row per predicted gene, including annotation, V/VL scoring,
+- `gene-annotations.tsv`: one row per predicted gene, including annotation, V/VL scoring,
     AVL, candidate, curation, and classification fields.
-- `avg_candidates.tsv`: the subset of `genes.tsv` passing the database-specific
+- `avg-candidates.tsv`: the subset of `gene-annotations.tsv` passing the database-specific
     AVL/V/VL candidate predicate.
-- `avg_predictions.tsv`: candidates assigned a final named AVG class.
-- `evidence.tsv`: audit records from relaxed/strict hits and reference matches.
+- `avg-predictions.tsv`: candidates assigned a final named AVG class.
+- `avg-evidence.tsv`: audit records from relaxed/strict hits and reference matches.
 - `.phu/run.json`: automatically generated provenance metadata containing
     parameters, database manifests, cache information, schema version, output
     counts, and timestamps. It is not needed to read the TSV results, but should
     be retained when runs need to be reproduced, compared, or audited.
-- `relaxed_hits.tsv.gz` and `strict_hits.tsv.gz`: all annotation hits when
+- `hmm-hits-relaxed.tsv.gz` and `hmm-hits-strict.tsv.gz`: all annotation hits when
     `--keep-hits` is supplied.
 
 Rows from Pfam and KOfam remain database-specific. Empty scoring fields mean

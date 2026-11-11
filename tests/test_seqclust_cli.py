@@ -1,5 +1,6 @@
 import re
 
+import pytest
 from typer.testing import CliRunner
 
 import phu.cli as cli_module
@@ -288,3 +289,15 @@ def test_simplify_taxa_short_options_present_in_help():
     assert "-o" in output
     assert "--sep" in output
     assert "-s" in output
+
+
+@pytest.mark.parametrize(
+    "command",
+    ["screen", "jack", "cluster", "avger", "normalize-lineage", "simplify-taxa"],
+)
+def test_commands_have_quiet_and_verbose(command: str) -> None:
+    result = runner.invoke(app, [command, "--help"], terminal_width=400)
+    output = plain_output(result)
+    assert result.exit_code == 0
+    assert "--quiet" in output
+    assert "--verbose" in output

@@ -234,13 +234,13 @@ def test_extract_target_proteins_adds_ko_definition_to_headers(
         },
     )
 
-    out = tmp_path / "target_proteins" / "K00001_proteins.mfa"
+    out = tmp_path / "target-proteins" / "K00001.faa"
     content = out.read_text()
     assert ">contigA|gene1|K00001|hexokinase" in content
 
 
 def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch, capsys
 ):
     hmm_path = tmp_path / "K22014.hmm"
     hmm_path.write_text("HMMER3/f\nNAME  K22014\n//\n")
@@ -288,6 +288,9 @@ def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
     monkeypatch.setattr(screen.pyhmmer.plan7, "MissingCutoffs", _FakeMissingCutoffs)
     monkeypatch.setattr(screen.pyhmmer, "hmmsearch", _fake_hmmsearch)
 
+    from phu import _log
+
+    monkeypatch.setattr(_log, "_verbose", True)
     hits = list(
         screen._hmmsearch(
             hmm_paths=[hmm_path],
@@ -302,3 +305,10 @@ def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
 
     assert hits == []
     assert calls == ["gathering", None]
+    # The verbose log records the search that actually produced the hits.
+    retry_lines = [
+        line for line in capsys.readouterr().out.splitlines() if line.startswith("[cmd]")
+    ]
+    assert len(retry_lines) == 1
+    assert "pyhmmer.hmmsearch" in retry_lines[0]
+    assert "bit_cutoffs=none" in retry_lines[0]

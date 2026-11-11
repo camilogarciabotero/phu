@@ -185,3 +185,15 @@ def test_database_errors_are_reported_without_a_traceback(tmp_path, monkeypatch,
     assert result.exit_code == 1
     assert "phu-db could not be installed: no space" in result.stderr
     assert "Traceback" not in result.stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    ["screen", "jack", "cluster", "avger", "normalize-lineage", "simplify-taxa"],
+)
+def test_commands_have_quiet_and_verbose(command: str) -> None:
+    result = runner.invoke(app, [command, "--help"], terminal_width=400)
+    output = plain_output(result)
+    assert result.exit_code == 0
+    assert "--quiet" in output
+    assert "--verbose" in output

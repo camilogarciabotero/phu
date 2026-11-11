@@ -124,10 +124,10 @@ def run_avg(
             threads=config.threads,
             scoring_evalue=config.scoring_evalue,
             keep_all_hits=config.keep_hits,
-            relaxed_all_hits_path=(config.output_folder / "relaxed_hits.tsv.gz")
+            relaxed_all_hits_path=(config.output_folder / "hmm-hits-relaxed.tsv.gz")
             if config.keep_hits
             else None,
-            strict_all_hits_path=(config.output_folder / "strict_hits.tsv.gz")
+            strict_all_hits_path=(config.output_folder / "hmm-hits-strict.tsv.gz")
             if config.keep_hits
             else None,
         )
@@ -411,9 +411,9 @@ def write_avg_outputs(
     paths = []
     output_counts = {}
     for filename, selected, selected_fields in (
-        ("genes.tsv", rows, fields),
-        ("avg_candidates.tsv", candidates, fields),
-        ("avg_predictions.tsv", predictions, fields),
+        ("gene-annotations.tsv", rows, fields),
+        ("avg-candidates.tsv", candidates, fields),
+        ("avg-predictions.tsv", predictions, fields),
     ):
         path = config.output_folder / filename
         buffer = StringIO()
@@ -429,7 +429,7 @@ def write_avg_outputs(
         output_counts[filename] = len(selected)
         paths.append(path)
 
-    evidence_path = config.output_folder / "evidence.tsv"
+    evidence_path = config.output_folder / "avg-evidence.tsv"
     evidence_fields = [
         "protein_id",
         "contig_id",
@@ -457,7 +457,7 @@ def write_avg_outputs(
     writer.writeheader()
     writer.writerows(audit_rows)
     _atomic_write_text(evidence_path, buffer.getvalue())
-    output_counts["evidence.tsv"] = len(audit_rows)
+    output_counts["avg-evidence.tsv"] = len(audit_rows)
     paths.append(evidence_path)
 
     manifest_path = config.output_folder / ".phu" / "run.json"

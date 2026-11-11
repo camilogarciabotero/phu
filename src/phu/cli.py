@@ -9,6 +9,7 @@ from phu import __version__
 
 from ._click import ProgressReporter, run_click_task
 from ._exec import CmdNotFound
+from ._log import set_verbosity
 from .avg import AvgConfig, run_avg
 from .db_fetch import DatabaseError
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
@@ -64,6 +65,9 @@ def _root(
         help="Remove cached protein predictions and exit.",
     ),
 ) -> None:
+    # Each invocation starts from, and leaves behind, the default verbosity.
+    set_verbosity()
+    ctx.call_on_close(set_verbosity)
     if clean_cache:
         try:
             cache_dir, existed = clean_prediction_cache()
@@ -93,7 +97,7 @@ def cluster(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input FASTA", rich_help_panel="Input"
     ),
     output_folder: Path = typer.Option(
-        Path("clustered-contigs"), "--output-folder", "-o", help="Output directory", rich_help_panel="Output"
+        Path("phu-cluster"), "--output-folder", "-o", help="Output directory", rich_help_panel="Output"
     ),
     threads: int = typer.Option(
         0, "--threads", "-t", min=0, help="0=all cores; otherwise N threads", rich_help_panel="Runtime"
@@ -121,6 +125,7 @@ def cluster(
     Example:
         phu cluster --mode votu --input-contigs genomes.fna --vclust-params="--min-kmers 20 --outfmt lite"
     """
+    set_verbosity(quiet=quiet, verbose=verbose)
     # Convert CLI string to enum for compatibility.
     try:
         mode_enum = Mode(mode)
@@ -154,9 +159,7 @@ def cluster(
     )
 
     try:
-        run_click_task(
-            "Clustering contigs", _cluster, cfg, quiet=quiet, verbose=verbose
-        )
+        run_click_task("Clustering contigs", _cluster, cfg)
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -179,8 +182,12 @@ def normalize_lineage(
     sep: Optional[str] = typer.Option(None, "--sep", "-s", help="Explicit input/output separator", rich_help_panel="Input"),
     strict: bool = typer.Option(False, "--strict", help="Fail on unparsed or rank-mismatched values", rich_help_panel="Quality checks"),
     quiet: bool = typer.Option(False, "--quiet", help="Suppress the QA summary", rich_help_panel="Runtime"),
+    verbose: bool = typer.Option(
+        False, "--verbose", help="Show additional progress details.", rich_help_panel="Runtime"
+    ),
 ):
     """Normalize vContact lineage predictions without changing column names."""
+    set_verbosity(quiet=quiet, verbose=verbose)
     config = NormalizeLineageConfig(
         input_file=input_file,
         output_file=output_file,
@@ -194,7 +201,6 @@ def normalize_lineage(
             "Normalizing lineage",
             normalize_lineage_file,
             config,
-            quiet=quiet,
         )
         if not quiet:
             typer.echo(
@@ -270,6 +276,7 @@ def simplify_taxa(
     Example:
         phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
     """
+    set_verbosity(quiet=quiet, verbose=verbose)
     # Build config
     cfg = TaxaConfig(
         input_file=input_file,
@@ -280,9 +287,7 @@ def simplify_taxa(
     )
 
     try:
-        run_click_task(
-            "Simplifying taxonomy", _simplify_taxa, cfg, quiet=quiet, verbose=verbose
-        )
+        run_click_task("Simplifying taxonomy", _simplify_taxa, cfg)
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -334,6 +339,7 @@ def avger(
     ),
 ) -> None:
     """Predict and curate putative auxiliary viral genes."""
+    set_verbosity(quiet=quiet, verbose=verbose)
     try:
         config = AvgConfig(
             input_contigs=input_contigs,
@@ -459,7 +465,7 @@ def screen(
     keep_domtbl: bool = typer.Option(
         True,
         "--keep-domtbl/--no-keep-domtbl",
-        help="Keep raw domtblout from hmmsearch",
+        help="Keep the hmmsearch domain tables (one -hmmsearch-domains.tbl per HMM file)",
         rich_help_panel="Output",
     ),
     combine_mode: str = typer.Option(
@@ -482,13 +488,13 @@ def screen(
     save_target_proteins: bool = typer.Option(
         False,
         "--save-target-proteins/--no-save-target-proteins",
-        help="Save matched proteins per HMM model in target_proteins/ subfolder",
+        help="Save matched proteins per HMM model in target-proteins/ subfolder",
         rich_help_panel="Output",
     ),
     save_target_hmms: bool = typer.Option(
         False,
         "--save-target-hmms/--no-save-target-hmms",
-        help="Save HMMs built from target proteins in target_hmms/ subfolder",
+        help="Save HMMs built from target proteins in target-hmms/ subfolder",
         rich_help_panel="Output",
     ),
     hmm_mode: str = typer.Option(
@@ -497,6 +503,12 @@ def screen(
         "-M",
         help="HMM file type: 'pure' (one model per file) or 'mixed' (pressed/concatenated HMMs)",
         rich_help_panel="Search options",
+    ),
+    quiet: bool = typer.Option(
+        False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", help="Show additional progress details.", rich_help_panel="Runtime"
     ),
 ):
     """
@@ -515,7 +527,7 @@ def screen(
 
     [bold]--all-cazymes[/bold] searches every indexed AA, CBM, CE, GH, GT, and PL
     profile once and keeps contigs with at least one qualifying family hit.
-    Ancillary profiles are excluded; see cazyme_matches.tsv for retained hits.
+    Ancillary profiles are excluded; see cazyme-matches.tsv for retained hits.
 
     Direct family queries support multiple HMM files with different modes:
     - any: Keep contigs matching any HMM (default, most permissive)
@@ -539,6 +551,7 @@ def screen(
         phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
         phu screen -i contigs.fa --save-target-proteins *.hmm
     """
+    set_verbosity(quiet=quiet, verbose=verbose)
     # Remove duplicates while preserving order
     seen = set()
     unique_hmms = []
@@ -736,7 +749,7 @@ def jack(
     save_hmm: bool = typer.Option(
         False,
         "--save-hmm/--no-save-hmm",
-        help="Save the last jackhmmer iteration HMM as last_iteration.hmm",
+        help="Save the last jackhmmer iteration HMM as final-iteration.hmm",
         rich_help_panel="Output",
     ),
     quiet: bool = typer.Option(
@@ -774,6 +787,7 @@ def jack(
         phu jack -i contigs.fa --combine-mode all marker_seeds.faa
         phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
     """
+    set_verbosity(quiet=quiet, verbose=verbose)
     cfg = JackConfig(
         input_contigs=input_contigs,
         seed_marker=seed_marker,
@@ -794,9 +808,7 @@ def jack(
     )
 
     try:
-        run_click_task(
-            "Iterative marker screening", _jack, cfg, quiet=quiet, verbose=verbose
-        )
+        run_click_task("Iterative marker screening", _jack, cfg)
     except FileNotFoundError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)

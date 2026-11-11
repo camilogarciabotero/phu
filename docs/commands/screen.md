@@ -23,7 +23,7 @@ phu screen --input-contigs [INPUT_CONTIGS] [HMMS...]
 phu screen --input-contigs your_contigs.fasta your_protein_family.hmm
 ```
 
-This simple command will find all contigs in `your_contigs.fasta` that contain proteins matching `your_protein_family.hmm` and save them to a new file called `screened_contigs.fasta` in a folder named `phu-screen`.
+This simple command will find all contigs in `your_contigs.fasta` that contain proteins matching `your_protein_family.hmm` and save them to a new file called `matched-contigs.fna` in a folder named `phu-screen`.
 
 If an argument looks like a PFAM accession (`PF` + 5 digits, optionally with a version), `phu` resolves it from a local Pfam-A database automatically.
 
@@ -36,7 +36,7 @@ mixed with other database or local-HMM inputs.
 
 This is PUL CAZyme-signature screening. Family co-occurrence alone does not
 identify a biological PUL or predict its substrate. Each run writes
-`query_manifest.json` with the original query, expansion, matching rule, and
+`.phu/query.json` with the original query, expansion, matching rule, and
 database hashes.
 
 To screen against every resolvable PUL signature:
@@ -48,7 +48,7 @@ phu screen -i contigs.fa --all-puls
 Each unique required CAZyme profile is searched once. PUL signatures are
 evaluated independently: all required families must occur on the same contig,
 and a contig is retained when it matches at least one resolvable PUL.
-Unresolved rules are reported and skipped. The output `pul_matches.tsv.gz`
+Unresolved rules are reported and skipped. The output `pul-matches.tsv.gz`
 contains one row per matched contig-PUL pair. This remains CAZyme-signature
 co-occurrence screening, not proof of a biological PUL or substrate activity.
 
@@ -61,26 +61,26 @@ phu screen -i contigs.fa --all-cazymes
 This searches every AA, CBM, CE, GH, GT, and PL profile once. Ancillary
 profiles such as SLH, cohesin, and dockerin are excluded, while subfamily
 identities such as `GH5_2` are preserved. A contig is retained after at least
-one threshold-passing family hit. The `cazyme_matches.tsv.gz` output records the
+one threshold-passing family hit. The `cazyme-matches.tsv.gz` output records the
 retained contig, family, protein, bitscore, E-value, and HMM coverage.
 
 The default all-CAZyme outputs are compact and organized by evidence level:
 
 ```text
 phu-screen/
-├── screened_contigs.fasta
-├── kept_contigs.txt
-├── cazyme_matches.tsv.gz
-├── cazyme_summary.tsv
-├── cazyme_class_summary.tsv
+├── matched-contigs.fna
+├── matched-contig-ids.txt
+├── cazyme-matches.tsv.gz
+├── cazyme-family-summary.tsv
+├── cazyme-class-summary.tsv
 ├── evidence/
-│   └── cazyme_hits.tsv.gz
+│   └── cazyme-hits.tsv.gz
 └── .phu/
   └── run.json
 ```
 
-`evidence/cazyme_hits.tsv.gz` contains one row per qualifying HMM/domain hit.
-`cazyme_matches.tsv.gz` consolidates hits into one row per contig-family,
+`evidence/cazyme-hits.tsv.gz` contains one row per qualifying HMM/domain hit.
+`cazyme-matches.tsv.gz` consolidates hits into one row per contig-family,
 including unique protein counts, hit counts, protein IDs, and one deterministic
 best supporting hit. The family summary reports detected-family occurrence
 counts; the class summary reports unique contig and protein counts for the six
@@ -88,8 +88,8 @@ canonical classes. These are occurrence counts, not normalized abundance.
 The outputs describe targeted HMM-based CAZyme-family evidence, not substrate
 prediction or full multi-method `run_dbcan` consensus annotation.
 
-For both `--all-cazymes` and `--all-puls`, per-family HMM files and domtblout
-files are temporary search artifacts outside the output directory. They are
+For both `--all-cazymes` and `--all-puls`, per-family HMM files and hmmsearch
+domain tables are temporary search artifacts outside the output directory. They are
 removed automatically after success or failure. The durable all-CAZyme result
 contains compressed evidence, contig-family matches, family summaries, class
 summaries, and `.phu/run.json`. The durable all-PUL result contains compressed
@@ -111,20 +111,20 @@ The durable all-PUL output tree is:
 
 ```text
 phu-screen/
-├── screened_contigs.fasta
-├── kept_contigs.txt
-├── pul_matches.tsv.gz
-├── pul_family_support.tsv.gz
-├── pul_summary.tsv
-├── substrate_summary.tsv
+├── matched-contigs.fna
+├── matched-contig-ids.txt
+├── pul-matches.tsv.gz
+├── pul-family-support.tsv.gz
+├── pul-summary.tsv
+├── pul-substrate-summary.tsv
 ├── evidence/
-│   └── cazyme_hits.tsv.gz
+│   └── cazyme-hits.tsv.gz
 └── .phu/
   └── run.json
 ```
 
-`pul_matches.tsv.gz` contains one row per complete contig-PUL match.
-`pul_family_support.tsv.gz` records the supporting family evidence, while the
+`pul-matches.tsv.gz` contains one row per complete contig-PUL match.
+`pul-family-support.tsv.gz` records the supporting family evidence, while the
 PUL and substrate summaries aggregate matched reference records. Coordinates
 and reference substrates describe supporting database evidence; they are not
 validated PUL boundaries or substrate predictions for query contigs.
@@ -193,20 +193,51 @@ The tool offers powerful features for analyzing and reusing your screening resul
 
 ## Understanding Your Results
 
-The main output is `screened_contigs.fasta`, which contains all the contigs that passed your filtering criteria. You'll also get `kept_contigs.txt` with just the names of these contigs.
+The main output is `matched-contigs.fna`, which contains all the contigs that passed your filtering criteria. You'll also get `matched-contig-ids.txt` with just the names of these contigs.
 
 If you used multiple HMMs, pay attention to how the combine mode affects your results. In "any" mode (see above), a contig that matches multiple models will produce one (best) protein per matched model. In "all" mode, kept contigs must have at least one hit for every model, and the tool returns one best hit per model for each kept contig — so the per-model protein counts will be balanced across models.
 
-When you use the `--save-target-proteins` option, you'll get a folder called `target_proteins` with separate files for each model. Note the distinction:
+When you use the `--save-target-proteins` option, you'll get a folder called `target-proteins` with separate files for each model. Note the distinction:
 
 - In "pure" HMM mode (default), each input HMM file is treated as one model and the output files are grouped by HMM filename (one file per input file).
-- In "mixed" HMM mode (used for concatenated/pressed HMM files), a single HMM file can contain multiple model names; in that case `--save-target-proteins` will create one output file per model name found inside the domtblout.
+- In "mixed" HMM mode (used for concatenated/pressed HMM files), a single HMM file can contain multiple model names; in that case `--save-target-proteins` will create one output file per model name found inside the HMM file.
 
-All saved protein FASTA files contain only proteins that come from contigs that were kept in the final `screened_contigs.fasta`, and are de-duplicated per model file.
+All saved protein FASTA files contain only proteins that come from contigs that were kept in the final `matched-contigs.fna`, and are de-duplicated per model file.
+
+## Output files
+
+| File or folder | Written when | Content |
+| --- | --- | --- |
+| `matched-contigs.fna` | always | Nucleotide FASTA of the contigs that passed the screen |
+| `matched-contig-ids.txt` | always | IDs of those contigs, one per line |
+| `{hmm}-hmmsearch-domains.tbl` | `--keep-domtbl` (default) | hmmsearch per-domain table, one per input HMM file |
+| `.phu/query.json` | always, except `--all-cazymes` / `--all-puls` | Original query, expansion, matching rule and database hashes |
+| `.phu/run.json` | `--all-cazymes` / `--all-puls` | Run manifest with counts, thresholds and `generated_files` |
+| `query-hmms/pfam/`, `query-hmms/kofam/`, `query-hmms/dbcan/` | Pfam, KO, dbCAN-family or PUL queries | The HMM files resolved from the local databases |
+| `predicted-proteins.faa` | `--keep-proteins` | Protein FASTA of all predicted proteins |
+| `.phu/prediction.json` | `--keep-proteins` | Protein-prediction cache key and cache location |
+| `target-proteins/{model}.faa` | `--save-target-proteins` | Matched proteins of each model, from kept contigs only |
+| `target-hmms/{model}.hmm` | `--save-target-hmms` | HMM built from each model's target proteins |
+| `cazyme-matches.tsv.gz`, `cazyme-family-summary.tsv`, `cazyme-class-summary.tsv` | `--all-cazymes` | Contig-family matches and per-family / per-class summaries |
+| `pul-matches.tsv.gz`, `pul-family-support.tsv.gz`, `pul-summary.tsv`, `pul-substrate-summary.tsv` | `--all-puls` | PUL signature matches, per-family support and summaries |
+| `evidence/cazyme-hits.tsv.gz` | `--all-cazymes` / `--all-puls` | Every qualifying CAZyme HMM hit |
+
+`{hmm}` is the HMM file name without its extension, and in pure mode it is also
+the model ID. If two input files share a file name (`a/foo.hmm` and
+`b/foo.hmm`), `phu` tells them apart by the `NAME` field inside each HMM: that
+name becomes the model ID and names their domain tables and target files. If
+both the file name and the internal `NAME` are identical, the files cannot be
+told apart: `phu` prints a warning, pools their hits under one model ID and
+writes them to one domain table.
+
+With `--save-target-hmms`, multi-sequence protein sets are aligned into a
+temporary `target-proteins/{model}-aligned.faa`, which is removed once the HMM
+is built. A query that contains both a model `X` and a model literally named
+`X-aligned` is therefore refused.
 
 ## Pass/fail behavior summary
 
-The screening decision uses pyHMMER hit objects, not a second parsing pass over domtblout text files.
+The screening decision uses pyHMMER hit objects, not a second parsing pass over the domain table text files.
 
 - Effective score is full-sequence score by default.
 - For KOfam models, if `score_type=domain`, effective score switches to domain score.
@@ -217,8 +248,8 @@ The screening decision uses pyHMMER hit objects, not a second parsing pass over 
 See the full rule set and examples in [screen thresholds and decision logic](../screen-thresholds.md).
 
 **Target Data Outputs:**
-- `target_proteins/{model}_proteins.mfa` - Proteins matching each model (if `--save-target-proteins`)
-- `target_hmms/{model}.hmm` - HMMs built from target proteins after MAFFT alignment (if `--save-target-hmms`)
+- `target-proteins/{model}.faa` - Proteins matching each model (if `--save-target-proteins`)
+- `target-hmms/{model}.hmm` - HMMs built from target proteins after MAFFT alignment (if `--save-target-hmms`)
 
 These outputs respect your HMM mode settings and combination logic, ensuring consistency between your screening criteria and extracted data.
 
@@ -242,7 +273,7 @@ Usage: phu screen [OPTIONS] [QUERY]...
 
  --all-cazymes searches every indexed AA, CBM, CE, GH, GT, and PL
  profile once and keeps contigs with at least one qualifying family hit.
- Ancillary profiles are excluded; see cazyme_matches.tsv for retained hits.
+ Ancillary profiles are excluded; see cazyme-matches.tsv for retained hits.
 
  Direct family queries support multiple HMM files with different modes:
  - any: Keep contigs matching any HMM (default, most permissive)
@@ -335,18 +366,18 @@ Usage: phu screen [OPTIONS] [QUERY]...
 │                                                      used for searching      │
 │                                                      [default:               │
 │                                                      no-keep-proteins]       │
-│ --keep-domtbl             --no-keep-domtbl           Keep raw domtblout from │
-│                                                      hmmsearch               │
+│ --keep-domtbl             --no-keep-domtbl           Keep the hmmsearch      │
+│                                                      domain tables           │
 │                                                      [default: keep-domtbl]  │
 │ --save-target-proteins    --no-save-target-pro…      Save matched proteins   │
 │                                                      per HMM model in        │
-│                                                      target_proteins/        │
+│                                                      target-proteins/        │
 │                                                      subfolder               │
 │                                                      [default:               │
 │                                                      no-save-target-protein… │
 │ --save-target-hmms        --no-save-target-hmms      Save HMMs built from    │
 │                                                      target proteins in      │
-│                                                      target_hmms/ subfolder  │
+│                                                      target-hmms/ subfolder  │
 │                                                      [default:               │
 │                                                      no-save-target-hmms]    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -355,7 +386,13 @@ Usage: phu screen [OPTIONS] [QUERY]...
 │                            'mixed' (pressed/concatenated HMMs)               │
 │                            [default: pure]                                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --quiet            Suppress routine progress output.                         │
+│ --verbose          Show additional progress details.                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ```
+
+Use `--verbose` to record how each tool was run: every `seqkit` and `mafft` command line, and the effective parameters of the in-process gene prediction and `hmmsearch` steps, are printed on lines that start with `[cmd]`. Use `--quiet` to hide the timed step lines. See [Run logs](../troubleshooting.md#run-logs) for the log format.
 
 Use `--output-folder` to change where the results are saved. The default is a folder called `phu-screen` in your current directory.
 

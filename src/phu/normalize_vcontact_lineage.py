@@ -31,16 +31,41 @@ CODES: dict[str, str] = {
 }
 RANK_INDEX = {rank: index for index, rank in enumerate(RANKS)}
 
-_NODE_RE = re.compile(r"^novel_(" + "|".join(RANKS) + r")_([0-9]+)$")
-_COMPACT_RE = re.compile(r"^[^:]+(?::N(?:SF|R|K|P|C|O|F|G)[0-9]+)+$")
-_COMPACT_CODE_RE = re.compile(r":(N(?:SF|R|K|P|C|O|F|G))[0-9]+")
-_CODE_TO_RANK = {code: rank for rank, code in CODES.items()}
+# ``unplaced_<rank>`` nodes carry no identifier: U + the rank letter of the N code.
+UNPLACED_CODES: dict[str, str] = {rank: "U" + code[1:] for rank, code in CODES.items()}
+DEFAULT_ANCHOR = "default"
+DEFAULT_ANCHOR_CODE = "DEF"
+
+_RANK_ALT = "|".join(RANKS)
+# One leading chain node plus its separator (or the end of the text). Nodes are
+# ``novel_<rank>_<n>`` or ``unplaced_<rank>``; either ``_of_`` or ``_within_``
+# may follow either kind of node.
+_LEADING_NODE_RE = re.compile(
+    rf"^(?:novel_(?P<novel>{_RANK_ALT})_(?P<id>[0-9]+)|unplaced_(?P<unplaced>{_RANK_ALT}))"
+    r"(?:_(?:of|within)_|$)"
+)
+_COMPACT_RE = re.compile(
+    r"^[^:]+(?::(?:N(?:SF|R|K|P|C|O|F|G)[0-9]+|U(?:SF|R|K|P|C|O|F|G)))+$"
+)
+_COMPACT_CODE_RE = re.compile(
+    r":(N(?:SF|R|K|P|C|O|F|G)(?=[0-9])|U(?:SF|R|K|P|C|O|F|G)(?=:|$))"
+)
+_CODE_TO_RANK = {
+    **{code: rank for rank, code in CODES.items()},
+    **{code: rank for rank, code in UNPLACED_CODES.items()},
+}
 MISSING_SENTINELS = frozenset({"", "-", "<NA>"})
 
 
 class Node(NamedTuple):
     rank: str
-    identifier: str
+    identifier: str | None  # None for an ``unplaced_<rank>`` node
+
+    @property
+    def code(self) -> str:
+        if self.identifier is None:
+            return UNPLACED_CODES[self.rank]
+        return f"{CODES[self.rank]}{self.identifier}"
 
 
 @dataclass(frozen=True)
@@ -225,36 +250,36 @@ def parse_candidate(raw: str, column_rank: str | None) -> ParseResult:
         mismatch = column_rank is not None and deepest_rank != column_rank
         return ParseResult("unchanged", text, mismatch, deepest_rank=deepest_rank)
 
-    segments = text.split("_of_")
     nodes: list[Node] = []
-    index = 0
-    while index < len(segments):
-        match = _NODE_RE.fullmatch(segments[index])
-        if match is None:
-            break
-        nodes.append(Node(match.group(1), match.group(2)))
-        index += 1
+    anchor = text
+    while (match := _LEADING_NODE_RE.match(anchor)) is not None:
+        if match.group("novel") is not None:
+            nodes.append(Node(match.group("novel"), match.group("id")))
+        else:
+            nodes.append(Node(match.group("unplaced"), None))
+        anchor = anchor[match.end() :]
 
     if not nodes:
-        if "novel_" in text or ":" in text:
+        if "novel_" in text or ":" in text or text.startswith("unplaced_"):
             return ParseResult(
-                "unparsed", text, reason="novel_ present but unparseable"
+                "unparsed", text, reason="novel_/unplaced_ present but unparseable"
             )
         return ParseResult("unchanged", text)
 
-    anchor = "_of_".join(segments[index:])
     if not anchor:
         return ParseResult("unparsed", text, reason="anchorless chain")
     if ":" in anchor:
         return ParseResult("unparsed", text, reason="anchor contains ':'")
+    if anchor.startswith("unplaced_"):
+        return ParseResult("unparsed", text, reason="unparseable unplaced_ node")
+    if anchor == DEFAULT_ANCHOR:
+        anchor = DEFAULT_ANCHOR_CODE
 
     indices = [RANK_INDEX[node.rank] for node in nodes]
     if any(left <= right for left, right in zip(indices, indices[1:])):
         return ParseResult("unparsed", text, reason="rank order invalid")
 
-    rendered = anchor + "".join(
-        f":{CODES[node.rank]}{node.identifier}" for node in reversed(nodes)
-    )
+    rendered = anchor + "".join(f":{node.code}" for node in reversed(nodes))
     deepest_rank = nodes[0].rank
     mismatch = column_rank is not None and deepest_rank != column_rank
     return ParseResult("normalized", rendered, mismatch, deepest_rank)

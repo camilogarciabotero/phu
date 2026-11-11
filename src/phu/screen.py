@@ -25,6 +25,7 @@ from . import __version__
 from ._click import run_click_task
 from ._exec import _executable
 from .db_bundle import bundle_provenance, database_hashes
+from ._log import log_call, log_command
 from .dbcan_db import (
     ensure_dbcan_database,
     extract_dbcan_models,
@@ -60,6 +61,47 @@ from .pfam_db import (
 )
 
 logger = logging.getLogger(__name__)
+
+# ---------- Output names ----------
+# Shared with `phu jack`, which writes the same contig/protein outputs.
+MATCHED_CONTIGS = "matched-contigs.fna"
+MATCHED_CONTIG_IDS = "matched-contig-ids.txt"
+PREDICTED_PROTEINS = "predicted-proteins.faa"
+PREDICTION_METADATA = Path(".phu") / "prediction.json"
+QUERY_MANIFEST = Path(".phu") / "query.json"
+RUN_MANIFEST = Path(".phu") / "run.json"
+QUERY_HMMS_DIR = "query-hmms"
+TARGET_PROTEINS_DIR = "target-proteins"
+TARGET_HMMS_DIR = "target-hmms"
+DOMTBL_SUFFIX = "-hmmsearch-domains.tbl"
+ALIGNED_SUFFIX = "-aligned"
+CAZYME_EVIDENCE = Path("evidence") / "cazyme-hits.tsv.gz"
+CAZYME_MATCHES = "cazyme-matches.tsv.gz"
+CAZYME_FAMILY_SUMMARY = "cazyme-family-summary.tsv"
+CAZYME_CLASS_SUMMARY = "cazyme-class-summary.tsv"
+PUL_MATCHES = "pul-matches.tsv.gz"
+PUL_FAMILY_SUPPORT = "pul-family-support.tsv.gz"
+PUL_SUMMARY = "pul-summary.tsv"
+PUL_SUBSTRATE_SUMMARY = "pul-substrate-summary.tsv"
+ALL_CAZYMES_FILES = [
+    MATCHED_CONTIGS,
+    MATCHED_CONTIG_IDS,
+    CAZYME_MATCHES,
+    CAZYME_FAMILY_SUMMARY,
+    CAZYME_CLASS_SUMMARY,
+    CAZYME_EVIDENCE.as_posix(),
+    RUN_MANIFEST.as_posix(),
+]
+ALL_PULS_FILES = [
+    MATCHED_CONTIGS,
+    MATCHED_CONTIG_IDS,
+    PUL_MATCHES,
+    PUL_FAMILY_SUPPORT,
+    PUL_SUMMARY,
+    PUL_SUBSTRATE_SUMMARY,
+    CAZYME_EVIDENCE.as_posix(),
+    RUN_MANIFEST.as_posix(),
+]
 
 app = typer.Typer(
     help="Screen contigs for a protein family using pyHMMER on predicted CDS."
@@ -235,7 +277,7 @@ def write_cazyme_outputs(
             }
         )
     _write_tsv(
-        output_dir / "evidence" / "cazyme_hits.tsv.gz",
+        output_dir / CAZYME_EVIDENCE,
         evidence_fields,
         evidence_rows,
         compressed=True,
@@ -286,9 +328,7 @@ def write_cazyme_outputs(
             str(row["cazyme_family"]),
         )
     )
-    _write_tsv(
-        output_dir / "cazyme_matches.tsv.gz", match_fields, match_rows, compressed=True
-    )
+    _write_tsv(output_dir / CAZYME_MATCHES, match_fields, match_rows, compressed=True)
 
     family_groups: dict[str, list[dict[str, object]]] = defaultdict(list)
     for row in match_rows:
@@ -322,7 +362,7 @@ def write_cazyme_outputs(
             }
         )
     _write_tsv(
-        output_dir / "cazyme_summary.tsv",
+        output_dir / CAZYME_FAMILY_SUMMARY,
         [
             "cazyme_family",
             "cazyme_class",
@@ -358,7 +398,7 @@ def write_cazyme_outputs(
             }
         )
     _write_tsv(
-        output_dir / "cazyme_class_summary.tsv",
+        output_dir / CAZYME_CLASS_SUMMARY,
         [
             "cazyme_class",
             "matched_family_count",
@@ -483,7 +523,7 @@ def write_pul_outputs(
         )
 
     _write_tsv(
-        output_dir / "pul_matches.tsv.gz",
+        output_dir / PUL_MATCHES,
         [
             "contig_id",
             "contig_length_bp",
@@ -504,7 +544,7 @@ def write_pul_outputs(
         compressed=True,
     )
     _write_tsv(
-        output_dir / "pul_family_support.tsv.gz",
+        output_dir / PUL_FAMILY_SUPPORT,
         [
             "contig_id",
             "pul_id",
@@ -548,7 +588,7 @@ def write_pul_outputs(
             }
         )
     _write_tsv(
-        output_dir / "pul_summary.tsv",
+        output_dir / PUL_SUMMARY,
         [
             "pul_id",
             "reference_substrate",
@@ -587,7 +627,7 @@ def write_pul_outputs(
             }
         )
     _write_tsv(
-        output_dir / "substrate_summary.tsv",
+        output_dir / PUL_SUBSTRATE_SUMMARY,
         [
             "reference_substrate",
             "supporting_pul_count",
@@ -633,7 +673,7 @@ def _resolve_all_puls_inputs(
         "Resolving dbCAN PUL families",
         extract_dbcan_models,
         requested_ids=families,
-        output_dir=outdir / "resolved_dbcan_hmms",
+        output_dir=outdir / QUERY_HMMS_DIR / "dbcan",
     )
     if missing:
         raise FileNotFoundError(
@@ -671,7 +711,7 @@ def _resolve_all_cazymes_inputs(
         "Resolving all dbCAN CAZyme families",
         extract_dbcan_models,
         requested_ids=list(canonical),
-        output_dir=outdir / "resolved_dbcan_hmms",
+        output_dir=outdir / QUERY_HMMS_DIR / "dbcan",
     )
     if missing:
         raise FileNotFoundError(
@@ -761,7 +801,7 @@ def _resolve_hmm_inputs(
         pfam_meta = run_click_task("Preparing PFAM database", ensure_pfam_database)
         pfam_hmm_db_path = Path(pfam_meta["hmm_path"])
 
-        pfam_dir = outdir / "resolved_pfam_hmms"
+        pfam_dir = outdir / QUERY_HMMS_DIR / "pfam"
         pfam_hmms, missing = run_click_task(
             "Resolving PFAM accessions",
             extract_pfam_models,
@@ -787,7 +827,7 @@ def _resolve_hmm_inputs(
     if dedup_ko_ids:
         run_click_task("Preparing KOFam database", ensure_kofam_database)
 
-        kofam_dir = outdir / "resolved_kofam_hmms"
+        kofam_dir = outdir / QUERY_HMMS_DIR / "kofam"
         kofam_hmms, missing = run_click_task(
             "Resolving KO identifiers",
             extract_kofam_models,
@@ -821,7 +861,7 @@ def _resolve_hmm_inputs(
                 f"PUL {pul.pul_id} has unresolved dbCAN rule token(s): {unresolved}"
             )
         dedup_dbcan_ids = list(pul.families)
-        dbcan_dir = outdir / "resolved_dbcan_hmms"
+        dbcan_dir = outdir / QUERY_HMMS_DIR / "dbcan"
         dbcan_hmms, missing = run_click_task(
             "Resolving dbCAN PUL families",
             extract_dbcan_models,
@@ -848,7 +888,7 @@ def _resolve_hmm_inputs(
         resolved.extend(dbcan_hmms)
     elif dedup_dbcan_ids:
         run_click_task("Preparing dbCAN database", ensure_dbcan_database)
-        dbcan_dir = outdir / "resolved_dbcan_hmms"
+        dbcan_dir = outdir / QUERY_HMMS_DIR / "dbcan"
         dbcan_hmms, missing = run_click_task(
             "Resolving dbCAN families",
             extract_dbcan_models,
@@ -939,11 +979,8 @@ class ScreenConfig:
 
         effective_threads = self.threads
 
-        # Create domtbl paths for each HMM
-        domtbl_paths = {}
-        for hmm in self.hmms:
-            hmm_name = hmm.stem  # filename without extension
-            domtbl_paths[hmm_name] = self.outdir / f"hits_{hmm_name}.domtblout"
+        # One domain table per HMM file (see _hmm_file_labels for the naming)
+        domtbl_paths = _domtbl_paths(self.hmms, self.outdir)
 
         return ScreenPlan(
             hmmer_bin="",
@@ -967,10 +1004,10 @@ class ScreenConfig:
             save_target_proteins=self.save_target_proteins,
             save_target_hmms=self.save_target_hmms,
             hmm_mode=self.hmm_mode,
-            proteins_fa=self.outdir / "proteins.faa",
+            proteins_fa=self.outdir / PREDICTED_PROTEINS,
             domtbl_paths=domtbl_paths,
-            kept_ids=self.outdir / "kept_contigs.txt",
-            out_contigs=self.outdir / "screened_contigs.fasta",
+            kept_ids=self.outdir / MATCHED_CONTIG_IDS,
+            out_contigs=self.outdir / MATCHED_CONTIGS,
         )
 
 
@@ -1091,6 +1128,82 @@ class Hit:
     target_to: Optional[int] = None
 
 
+# ---------- HMM file labels ----------
+
+
+def _safe_file_label(name: str) -> str:
+    """Make a model or seed name safe to use inside an output file name."""
+    return re.sub(r"[^\w\-_.]", "_", name)
+
+
+def _first_model_name(hmm_path: Path) -> Optional[str]:
+    """Return the internal NAME of the first model in an HMM file."""
+    try:
+        with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
+            model = next(iter(hmm_file), None)
+    except (OSError, ValueError):
+        return None
+    if model is None or not model.name:
+        return None
+    name = model.name
+    return name.decode() if isinstance(name, bytes) else str(name)
+
+
+def _hmm_file_labels(hmm_paths: list[Path]) -> list[str]:
+    """
+    Return one label per HMM file, in input order.
+
+    The label names the file's domain table and, in pure mode, is its model ID.
+    A file whose stem is unique among the inputs is labelled by that stem.
+    Files that share a stem (``a/foo.hmm`` and ``b/foo.hmm``) are labelled by
+    the internal NAME of their (first) model instead, so they stay separate.
+    """
+    stem_counts: dict[str, int] = defaultdict(int)
+    for hmm_path in hmm_paths:
+        stem_counts[hmm_path.stem] += 1
+    return [
+        hmm_path.stem
+        if stem_counts[hmm_path.stem] == 1
+        else (_first_model_name(hmm_path) or hmm_path.stem)
+        for hmm_path in hmm_paths
+    ]
+
+
+def _domtbl_name(hmm_path: Path, label: str) -> str:
+    """File name of the hmmsearch domain table of one HMM file."""
+    # A unique stem is used as is; a NAME-derived label is sanitised first.
+    safe = label if label == hmm_path.stem else _safe_file_label(label)
+    return f"{safe}{DOMTBL_SUFFIX}"
+
+
+def _domtbl_paths(hmm_paths: list[Path], outdir: Path) -> dict[str, Path]:
+    """Map each HMM file label to its domain table path inside ``outdir``."""
+    return {
+        label: outdir / _domtbl_name(hmm_path, label)
+        for hmm_path, label in zip(hmm_paths, _hmm_file_labels(hmm_paths))
+    }
+
+
+def _check_aligned_name_collisions(model_ids: Iterable[str]) -> None:
+    """
+    Refuse model names that would collide with a per-model alignment file.
+
+    Building target HMMs aligns ``target-proteins/<model>.faa`` into
+    ``target-proteins/<model>-aligned.faa``; a model literally named
+    ``<model>-aligned`` owns that very path for its own proteins.
+    """
+    safe_names = {_safe_file_label(model_id) for model_id in model_ids}
+    for name in sorted(safe_names):
+        base = name[: -len(ALIGNED_SUFFIX)]
+        if name.endswith(ALIGNED_SUFFIX) and base in safe_names:
+            raise ValueError(
+                f"Cannot build target HMMs: the proteins of model '{name}' and the "
+                f"alignment of model '{base}' would both be written to "
+                f"{TARGET_PROTEINS_DIR}/{name}.faa. Rename one of the two models "
+                "(or its HMM file) and run again."
+            )
+
+
 # ---------- Core pipeline ----------
 
 
@@ -1131,11 +1244,13 @@ def _hmmsearch(
     # Load all HMMs into memory
     hmms = []
     hmm_names = []
-    for hmm_path in hmm_paths:
+    for hmm_path, label in zip(hmm_paths, _hmm_file_labels(hmm_paths)):
         with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
             for hmm in hmm_file:
                 hmms.append(hmm)
-                hmm_names.append(hmm_path.stem)  # Use filename for pure mode
+                # File label: the file stem, or the internal NAME when two
+                # input files share a stem. It is the model ID in pure mode.
+                hmm_names.append(label)
 
     # Load proteins into memory
     with pyhmmer.easel.SequenceFile(
@@ -1182,13 +1297,18 @@ def _hmmsearch(
 
     # Write domtbl files if requested
     if keep_domtbl:
+        # An HMM file may hold several models: the first one creates the table
+        # (with header), the following ones are appended to it.
+        written_paths: set[Path] = set()
         for i, top_hits in enumerate(hits_list):
             # Map back to original HMM file for domtbl naming
             hmm_name = hmm_names[i] if i < len(hmm_names) else f"hmm_{i}"
             if hmm_name in domtbl_paths:
                 domtbl_path = domtbl_paths[hmm_name]
-                with domtbl_path.open("wb") as f:
-                    top_hits.write(f, format="domains")
+                first = domtbl_path not in written_paths
+                written_paths.add(domtbl_path)
+                with domtbl_path.open("wb" if first else "ab") as f:
+                    top_hits.write(f, format="domains", header=first)
 
     # Process hits and yield Hit objects
     for i, top_hits in enumerate(hits_list):
@@ -1199,7 +1319,7 @@ def _hmmsearch(
 
         # Determine model identifier based on hmm_mode
         if hmm_mode == "pure":
-            # Use filename as model ID for pure mode
+            # Use the file label (normally the file stem) as model ID
             model_id = hmm_names[i] if i < len(hmm_names) else model_name
         else:
             # Use actual HMM name for mixed mode
@@ -1279,8 +1399,9 @@ def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
     """Return the complete, ordered model inventory before searching."""
     model_ids: list[str] = []
     sources: dict[str, Path] = {}
+    labels = _hmm_file_labels(hmm_paths)
 
-    for hmm_path in hmm_paths:
+    for hmm_path, label in zip(hmm_paths, labels):
         with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
             models = list(hmm_file)
 
@@ -1294,14 +1415,39 @@ def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
             model_name = model.name
             if isinstance(model_name, bytes):
                 model_name = model_name.decode()
-            model_id = hmm_path.stem if hmm_mode == "pure" else str(model_name)
+            model_id = label if hmm_mode == "pure" else str(model_name)
             prev = sources.get(model_id)
             if prev is not None:
+                if hmm_mode == "pure" and prev.stem == hmm_path.stem:
+                    # Same file stem and same internal NAME: nothing is left
+                    # to tell the two files apart, so they act as one model.
+                    print(
+                        f"Warning: HMM files {prev} and {hmm_path} share both the "
+                        f"file name '{hmm_path.stem}' and the internal model NAME "
+                        f"'{model_id}', so they cannot be told apart: their hits "
+                        f"are pooled under the single model ID '{model_id}' and "
+                        f"written to one domain table "
+                        f"({_domtbl_name(hmm_path, label)})."
+                    )
+                    continue
                 raise ValueError(
                     f"Duplicate HMM model ID: {model_id} (seen in {prev} and {hmm_path})"
                 )
             sources[model_id] = hmm_path
             model_ids.append(model_id)
+
+    if hmm_mode != "pure":
+        # Model IDs are the internal NAMEs here, but each file still gets one
+        # domain table named after its label.
+        table_sources: dict[str, Path] = {}
+        for hmm_path, label in zip(hmm_paths, labels):
+            table = _domtbl_name(hmm_path, label)
+            prev = table_sources.setdefault(table, hmm_path)
+            if prev != hmm_path:
+                print(
+                    f"Warning: HMM files {prev} and {hmm_path} share the domain "
+                    f"table {table}; the rows of both files are written to it."
+                )
 
     if not model_ids:
         raise ValueError("No HMM models found in the supplied files")
@@ -1469,6 +1615,7 @@ def _seqkit_extract(
     tmp = output_fa.parent / (output_fa.name + ".ids.txt")
     tmp.write_text("\n".join(ids) + "\n")
     cmd = [seqkit_bin, "grep", "-f", str(tmp), str(input_fa)]
+    log_command(cmd, stdout=output_fa)
     with output_fa.open("w") as out:
         p = subprocess.run(cmd, stdout=out, text=True, check=False)
     if p.returncode != 0:
@@ -1500,15 +1647,15 @@ def _extract_target_proteins(
         if hit.contig in kept_contig_set:
             proteins_per_model[hit.model].append(hit.prot_id)
 
-    # Create target_proteins directory
-    target_proteins_dir = outdir / "target_proteins"
+    # Create target-proteins directory
+    target_proteins_dir = outdir / TARGET_PROTEINS_DIR
     target_proteins_dir.mkdir(parents=True, exist_ok=True)
 
     # Extract proteins for each model
     for model_id, protein_ids in proteins_per_model.items():
         # Create a safe filename from the model identifier
-        safe_model_name = re.sub(r"[^\w\-_.]", "_", model_id)
-        output_path = target_proteins_dir / f"{safe_model_name}_proteins.mfa"
+        safe_model_name = _safe_file_label(model_id)
+        output_path = target_proteins_dir / f"{safe_model_name}.faa"
 
         if not protein_ids:
             output_path.write_text("")
@@ -1527,6 +1674,7 @@ def _extract_target_proteins(
         tmp_ids_file.write_text("\n".join(unique_protein_ids) + "\n")
 
         cmd = [seqkit_bin, "grep", "-f", str(tmp_ids_file), str(proteins_fa)]
+        log_command(cmd, stdout=output_path)
 
         with output_path.open("w") as out:
             result = subprocess.run(cmd, stdout=out, text=True, check=False)
@@ -1567,10 +1715,19 @@ def _build_target_hmms(
     For single sequences, builds HMM directly using builder.build().
     For multiple sequences, uses the configured external aligner before MSA creation.
     """
-    target_hmms_dir = outdir / "target_hmms"
+    target_hmms_dir = outdir / TARGET_HMMS_DIR
     target_hmms_dir.mkdir(parents=True, exist_ok=True)
 
-    protein_files = list(target_proteins_dir.glob("*_proteins.mfa"))
+    # `<model>-aligned.faa` next to `<model>.faa` is an alignment left behind by
+    # an interrupted run, not a protein set (see _check_aligned_name_collisions).
+    protein_files = [
+        path
+        for path in target_proteins_dir.glob("*.faa")
+        if not (
+            path.stem.endswith(ALIGNED_SUFFIX)
+            and path.with_name(f"{path.stem[: -len(ALIGNED_SUFFIX)]}.faa").exists()
+        )
+    ]
 
     if not protein_files:
         print("    No target protein files found for HMM building")
@@ -1579,7 +1736,7 @@ def _build_target_hmms(
     print(f"    Building HMMs for {len(protein_files)} protein sets...")
 
     def _build_single_hmm(protein_file: Path) -> None:
-        model_name = protein_file.stem.replace("_proteins", "")
+        model_name = protein_file.stem
         hmm_output_path = target_hmms_dir / f"{model_name}.hmm"
 
         try:
@@ -1603,17 +1760,21 @@ def _build_target_hmms(
                 hmm.name = model_name.encode()
                 print(f"      Built HMM from 1 sequence: {model_name}")
             else:
-                aligned_path = protein_file.with_suffix(".aligned.faa")
+                aligned_path = protein_file.with_name(
+                    f"{model_name}{ALIGNED_SUFFIX}.faa"
+                )
+                aligner_cmd = [
+                    aligner_bin,
+                    "--auto",
+                    "--thread",
+                    str(1 if threads and threads > 1 else max(1, threads)),
+                    str(protein_file),
+                ]
+                log_command(aligner_cmd, stdout=aligned_path)
                 try:
                     with aligned_path.open("w") as aligned_output:
                         result = subprocess.run(
-                            [
-                                aligner_bin,
-                                "--auto",
-                                "--thread",
-                                str(1 if threads and threads > 1 else max(1, threads)),
-                                str(protein_file),
-                            ],
+                            aligner_cmd,
                             stdout=aligned_output,
                             stderr=subprocess.PIPE,
                             text=True,
@@ -1676,24 +1837,27 @@ def _screen(cfg: ScreenConfig) -> ScreenPlan:
 def _clean_bulk_output_artifacts(output_dir: Path) -> None:
     """Remove only known PHU-generated bulk intermediates and stale reports."""
     for name in (
-        "resolved_dbcan_hmms",
-        "cazyme_matches.tsv",
-        "cazyme_matches.tsv.gz",
-        "cazyme_summary.tsv",
-        "cazyme_class_summary.tsv",
-        "pul_matches.tsv",
-        "pul_matches.tsv.gz",
-        "pul_family_support.tsv.gz",
-        "pul_summary.tsv",
-        "substrate_summary.tsv",
-        "query_manifest.json",
+        Path(QUERY_HMMS_DIR) / "dbcan",
+        "cazyme-matches.tsv",
+        CAZYME_MATCHES,
+        CAZYME_FAMILY_SUMMARY,
+        CAZYME_CLASS_SUMMARY,
+        "pul-matches.tsv",
+        PUL_MATCHES,
+        PUL_FAMILY_SUPPORT,
+        PUL_SUMMARY,
+        PUL_SUBSTRATE_SUMMARY,
+        QUERY_MANIFEST,
     ):
         path = output_dir / name
         if path.is_dir():
             shutil.rmtree(path)
         elif path.exists():
             path.unlink()
-    for path in output_dir.glob("hits_*.domtblout"):
+    query_hmms_dir = output_dir / QUERY_HMMS_DIR
+    if query_hmms_dir.is_dir() and not any(query_hmms_dir.iterdir()):
+        query_hmms_dir.rmdir()
+    for path in output_dir.glob(f"*{DOMTBL_SUFFIX}"):
         path.unlink()
 
 
@@ -1739,15 +1903,15 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             raise FileNotFoundError(f"HMM file not found: {hmm}")
 
     queried_model_ids = _query_model_ids(cfg.hmms, cfg.hmm_mode)
+    if cfg.save_target_hmms:
+        _check_aligned_name_collisions(queried_model_ids)
 
     # Discover binaries required by the selected output paths.
     seqkit_bin = _binaries()
     aligner_bin = _executable(["mafft"]) if cfg.save_target_hmms else ""
     plan = cfg.plan()
     if bulk_work_dir is not None:
-        plan.domtbl_paths = {
-            hmm.stem: bulk_work_dir / f"hits_{hmm.stem}.domtblout" for hmm in plan.hmms
-        }
+        plan.domtbl_paths = _domtbl_paths(plan.hmms, bulk_work_dir)
     if query.all_cazymes or query.all_puls:
         plan.keep_domtbl = False
     if query.pul_id is not None and cfg.combine_mode == "any":
@@ -1789,10 +1953,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         plan.kept_ids.write_text("")
         if query.all_puls:
             write_pul_outputs([], [], [], plan.outdir)
-            write_cazyme_evidence(
-                [], [], plan.outdir / "evidence" / "cazyme_hits.tsv.gz"
-            )
-            run_path = plan.outdir / ".phu" / "run.json"
+            write_cazyme_evidence([], [], plan.outdir / CAZYME_EVIDENCE)
+            run_path = plan.outdir / RUN_MANIFEST
             run_path.parent.mkdir(parents=True, exist_ok=True)
             run_path.write_text(
                 json.dumps(
@@ -1811,16 +1973,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "contigs_with_cazyme_evidence": 0,
                         "complete_pul_match_count": 0,
                         "retained_contig_count": 0,
-                        "generated_files": [
-                            "screened_contigs.fasta",
-                            "kept_contigs.txt",
-                            "pul_matches.tsv.gz",
-                            "pul_family_support.tsv.gz",
-                            "pul_summary.tsv",
-                            "substrate_summary.tsv",
-                            "evidence/cazyme_hits.tsv.gz",
-                            ".phu/run.json",
-                        ],
+                        "generated_files": ALL_PULS_FILES,
                     },
                     indent=2,
                 )
@@ -1828,7 +1981,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             )
         if query.all_cazymes:
             write_cazyme_outputs([], [], [], plan.outdir)
-            run_path = plan.outdir / ".phu" / "run.json"
+            run_path = plan.outdir / RUN_MANIFEST
             run_path.parent.mkdir(parents=True, exist_ok=True)
             run_path.write_text(
                 json.dumps(
@@ -1860,15 +2013,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                             "matched_families": 0,
                             "matched_classes": 0,
                         },
-                        "generated_files": [
-                            "screened_contigs.fasta",
-                            "kept_contigs.txt",
-                            "cazyme_matches.tsv.gz",
-                            "cazyme_summary.tsv",
-                            "cazyme_class_summary.tsv",
-                            "evidence/cazyme_hits.tsv.gz",
-                            ".phu/run.json",
-                        ],
+                        "generated_files": ALL_CAZYMES_FILES,
                     },
                     indent=2,
                 )
@@ -1880,6 +2025,23 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
 
     print(
         f"Running pyhmmer.hmmsearch for {len(plan.hmms)} HMM file(s) (mode: {plan.hmm_mode})…"
+    )
+
+    log_call(
+        "pyhmmer.hmmsearch",
+        hmm_files=len(plan.hmms),
+        models=len(queried_model_ids),
+        sequences=n_prot,
+        cpus=plan.threads,
+        parallel="queries",
+        bit_cutoffs="gathering" if plan.cut_ga else "none",
+        hmm_mode=plan.hmm_mode,
+        keep_domtbl=plan.keep_domtbl,
+        min_bitscore=plan.min_bitscore,
+        max_evalue=plan.max_evalue,
+        use_kofam_thresholds=plan.use_kofam_thresholds,
+        combine_mode=plan.combine_mode,
+        top_per_contig=plan.top_per_contig,
     )
 
     # Use pyHMMER for all searches
@@ -1975,7 +2137,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         write_cazyme_evidence(
             qualifying_cazyme_hits,
             contig_ids,
-            plan.outdir / "evidence" / "cazyme_hits.tsv.gz",
+            plan.outdir / CAZYME_EVIDENCE,
         )
     if query.all_cazymes:
         write_cazyme_outputs(
@@ -2003,7 +2165,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         # Build HMMs from target proteins if requested
         if plan.save_target_hmms:
             print("Building HMMs from target protein sequences…")
-            target_proteins_dir = plan.outdir / "target_proteins"
+            target_proteins_dir = plan.outdir / TARGET_PROTEINS_DIR
             _build_target_hmms(
                 target_proteins_dir,
                 plan.outdir,
@@ -2023,9 +2185,9 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
 
     # Output handling: copy proteins to output folder if requested
     if plan.keep_proteins:
-        shutil.copy(proteins_fa, plan.outdir / "proteins.faa")
+        shutil.copy(proteins_fa, plan.proteins_fa)
         write_prediction_metadata(
-            plan.outdir / ".phu_prediction_metadata.json",
+            plan.outdir / PREDICTION_METADATA,
             cache_hit=cache_artifact.cache_hit,
             cache_key=cache_artifact.cache_key,
             cache_dir=cache_artifact.cache_dir,
@@ -2035,7 +2197,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     if cache_artifact.temp_dir is not None:
         shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
 
-    # Clean up domtblout if not requested
+    # Clean up the domain tables if not requested
     if not plan.keep_domtbl:
         for domtbl_path in plan.domtbl_paths.values():
             if domtbl_path.exists():
@@ -2110,18 +2272,10 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 "matched_families": len({hit.model for hit in kept_hits}),
                 "matched_classes": len({cazyme_class(hit.model) for hit in kept_hits}),
             },
-            "generated_files": [
-                "screened_contigs.fasta",
-                "kept_contigs.txt",
-                "cazyme_matches.tsv.gz",
-                "cazyme_summary.tsv",
-                "cazyme_class_summary.tsv",
-                "evidence/cazyme_hits.tsv.gz",
-                ".phu/run.json",
-            ],
+            "generated_files": ALL_CAZYMES_FILES,
             "query": query_manifest,
         }
-        manifest_path = plan.outdir / ".phu" / "run.json"
+        manifest_path = plan.outdir / RUN_MANIFEST
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(json.dumps(run_manifest, indent=2) + "\n")
     elif query.all_puls:
@@ -2143,48 +2297,39 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             "complete_pul_match_count": len(pul_matches),
             "retained_contig_count": len(contig_ids),
             "skipped_unresolved_puls": list(query.skipped_puls),
-            "generated_files": [
-                "screened_contigs.fasta",
-                "kept_contigs.txt",
-                "pul_matches.tsv.gz",
-                "pul_family_support.tsv.gz",
-                "pul_summary.tsv",
-                "substrate_summary.tsv",
-                "evidence/cazyme_hits.tsv.gz",
-                ".phu/run.json",
-            ],
+            "generated_files": ALL_PULS_FILES,
         }
-        manifest_path = plan.outdir / ".phu" / "run.json"
+        manifest_path = plan.outdir / RUN_MANIFEST
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(json.dumps(run_manifest, indent=2) + "\n")
     else:
-        (plan.outdir / "query_manifest.json").write_text(
-            json.dumps(query_manifest, indent=2) + "\n"
-        )
+        query_manifest_path = plan.outdir / QUERY_MANIFEST
+        query_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        query_manifest_path.write_text(json.dumps(query_manifest, indent=2) + "\n")
 
     print(f"Done. Output FASTA: {plan.out_contigs}")
     files_msg = f"Also wrote: {plan.kept_ids.name} (contig IDs)"
     if plan.keep_domtbl:
-        files_msg += f" and {len(plan.domtbl_paths)} domtblout files"
+        n_tables = len(set(plan.domtbl_paths.values()))
+        files_msg += f" and {n_tables} hmmsearch domain table(s) (*{DOMTBL_SUFFIX})"
     if query.all_cazymes:
         files_msg += (
-            " and cazyme_matches.tsv.gz, cazyme_summary.tsv, "
-            "cazyme_class_summary.tsv, and evidence/cazyme_hits.tsv.gz"
+            f" and {CAZYME_MATCHES}, {CAZYME_FAMILY_SUMMARY}, "
+            f"{CAZYME_CLASS_SUMMARY}, and {CAZYME_EVIDENCE.as_posix()}"
         )
     if query.all_puls:
         files_msg += (
-            " and pul_matches.tsv.gz, pul_family_support.tsv.gz, pul_summary.tsv, "
-            "substrate_summary.tsv, and evidence/cazyme_hits.tsv.gz"
+            f" and {PUL_MATCHES}, {PUL_FAMILY_SUPPORT}, {PUL_SUMMARY}, "
+            f"{PUL_SUBSTRATE_SUMMARY}, and {CAZYME_EVIDENCE.as_posix()}"
         )
     if plan.keep_proteins:
-        proteins_msg = (
-            "proteins.faa (cached)" if cache_artifact.cache_hit else "proteins.faa"
-        )
-        files_msg += f" and {proteins_msg}"
+        files_msg += f" and {plan.proteins_fa.name}"
+        if cache_artifact.cache_hit:
+            files_msg += " (cached)"
     if plan.save_target_proteins:
-        files_msg += " and target proteins in target_proteins/ folder"
+        files_msg += f" and target proteins in {TARGET_PROTEINS_DIR}/ folder"
     if plan.save_target_hmms:
-        files_msg += " and target HMMs in target_hmms/ folder"
+        files_msg += f" and target HMMs in {TARGET_HMMS_DIR}/ folder"
     print(f"{files_msg}.")
 
     return plan

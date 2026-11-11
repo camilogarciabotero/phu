@@ -30,6 +30,31 @@ novel_genus_1_of_Viruses
 Viruses:NG1
 ```
 
+Each `novel_<rank>_<n>` node becomes `N` plus the rank letter and its number
+(`NR`, `NK`, `NP`, `NC`, `NO`, `NF`, `NSF`, `NG`). The anchor comes first and
+the codes follow from the highest rank to the lowest.
+
+### Unplaced ranks and the `default` anchor
+
+vContact3 also writes `unplaced_<rank>` nodes, joined by `_within_`. They carry
+no number, so each one becomes `U` plus the same rank letter (`UR`, `UK`, `UP`,
+`UC`, `UO`, `UF`, `USF`, `UG`). The placeholder anchor `default` is written as
+`DEF`; any other anchor is kept as written.
+
+| Input | Output |
+| --- | --- |
+| `unplaced_phylum_within_unplaced_kingdom_within_default` | `DEF:UK:UP` |
+| `unplaced_class_within_unplaced_phylum_within_unplaced_kingdom_within_default` | `DEF:UK:UP:UC` |
+| `unplaced_order_within_Caudoviricetes` | `Caudoviricetes:UO` |
+| `novel_genus_1_of_novel_family_2_of_unplaced_order_within_Caudoviricetes` | `Caudoviricetes:UO:NF2:NG1` |
+
+A chain may mix `novel_` and `unplaced_` nodes, and either `_of_` or `_within_`
+may follow either kind of node. Every node must be of a strictly lower rank
+than the next one toward the anchor. A chain that breaks that order, has no
+anchor, or names an unknown rank is reported as unparsed and left as it was.
+Compact values that already use `U` codes are left unchanged, so running the
+command on its own output changes nothing.
+
 The normalized values remain in their original columns. With `--add-lineage`,
 a compact lineage column is appended; without it, no new column is added.
 
@@ -72,7 +97,8 @@ Usage: phu normalize-lineage [OPTIONS]
 │ --strict          Fail on unparsed or rank-mismatched values                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Runtime ────────────────────────────────────────────────────────────────────╮
-│ --quiet          Suppress the QA summary                                     │
+│ --quiet            Suppress the QA summary                                   │
+│ --verbose          Show additional progress details.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

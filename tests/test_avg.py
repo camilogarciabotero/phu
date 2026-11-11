@@ -61,8 +61,8 @@ def test_run_avg_reuses_prediction_cache_and_passes_track_paths(monkeypatch, tmp
     result = avg.run_avg(avg.AvgConfig(input_contigs=input_contigs, keep_hits=True))
 
     assert result.prediction.cache_hit is True
-    assert calls["relaxed_all_hits_path"].name == "relaxed_hits.tsv.gz"
-    assert calls["strict_all_hits_path"].name == "strict_hits.tsv.gz"
+    assert calls["relaxed_all_hits_path"].name == "hmm-hits-relaxed.tsv.gz"
+    assert calls["strict_all_hits_path"].name == "hmm-hits-strict.tsv.gz"
 
 
 def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_path):
@@ -114,14 +114,14 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
 
     avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=tmp_path / "out"), prediction, annotations)
 
-    header, row = (tmp_path / "out" / "genes.tsv").read_text().splitlines()
+    header, row = (tmp_path / "out" / "gene-annotations.tsv").read_text().splitlines()
     assert "pfam_name" in header
     assert "pfam_description" in header
     assert "kofam_name" in header
     assert "kofam_description" in header
     assert "K00001" in row
     assert "KOfam function" in row
-    evidence = (tmp_path / "out" / "evidence.tsv").read_text()
+    evidence = (tmp_path / "out" / "avg-evidence.tsv").read_text()
     assert "PF test" in evidence
     assert "Pfam function" in evidence
     assert not (tmp_path / "out" / "run.json").exists()

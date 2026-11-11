@@ -8,6 +8,7 @@ from typing import Optional
 
 import pyhmmer
 
+from ._log import log_call
 from .kofam_db import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
 from .pfam_db import ensure_pfam_database, normalize_pfam_id
 
@@ -207,6 +208,23 @@ def _search_and_collect(
     seen_models: set[str] = set()
     skipped_missing_ga = 0
     kofam_meta_by_model = kofam_meta_by_model or {}
+    if database == "pfam":
+        cutoffs = "pfam_ga" if cfg.pfam_require_ga else "none"
+    else:
+        cutoffs = "kofam_ko_list" if cfg.kofam_require_thresholds else "none"
+    log_call(
+        "pyhmmer.hmmsearch",
+        database=database,
+        track=cfg.track,
+        hmm_file=hmm_path,
+        proteins=proteins_path,
+        protein_batch_size=cfg.protein_batch_size,
+        cpus=cfg.threads,
+        parallel="queries",
+        bit_cutoffs="none",
+        max_evalue=cfg.max_evalue,
+        score_thresholds=cutoffs,
+    )
 
     with pyhmmer.easel.SequenceFile(proteins_path, digital=True) as seq_file:
         while True:

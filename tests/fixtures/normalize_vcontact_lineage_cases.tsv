@@ -39,3 +39,25 @@ rank_mismatch	synthetic	grammar	genus	novel_family_2_of_Viruses	Viruses:NF2	norm
 compact_duplicate_code	synthetic	grammar	genus	Viruses:NF2:NF3	Viruses:NF2:NF3	unparsed	false	duplicate compact rank
 multi_unparsed	synthetic	grammar	genus	novel_genus_1_of_A||bad:bogus	A:NG1||bad:bogus	unparsed	false	cell status follows candidate failure
 whitespace_trim	synthetic	grammar	genus	 novel_genus_1_of_Viruses 	Viruses:NG1	normalized	false	outer whitespace stripped
+unplaced_phylum_default	real	maintainer data	phylum	unplaced_phylum_within_unplaced_kingdom_within_default	DEF:UK:UP	normalized	false	unplaced chain on default anchor
+unplaced_class_default	real	maintainer data	class	unplaced_class_within_unplaced_phylum_within_unplaced_kingdom_within_default	DEF:UK:UP:UC	normalized	false	unplaced chain on default anchor
+unplaced_real_anchor	synthetic	grammar	order	unplaced_order_within_Caudoviricetes	Caudoviricetes:UO	normalized	false	real anchor kept as written
+unplaced_subfamily	synthetic	grammar	subfamily	unplaced_subfamily_within_unplaced_family_within_Viruses	Viruses:UF:USF	normalized	false	two-letter rank code
+unplaced_rank_mismatch	synthetic	grammar	genus	unplaced_phylum_within_unplaced_kingdom_within_default	DEF:UK:UP	normalized	true	deepest rank differs from column
+mixed_novel_in_unplaced	synthetic	grammar	genus	novel_genus_1_of_novel_family_2_of_unplaced_order_within_Caudoviricetes	Caudoviricetes:UO:NF2:NG1	normalized	false	novel nodes below an unplaced node
+mixed_unplaced_in_novel	synthetic	grammar	class	unplaced_class_within_novel_phylum_3_of_unplaced_kingdom_within_default	DEF:UK:NP3:UC	normalized	false	both separators alternate
+novel_default_anchor	synthetic	grammar	genus	novel_genus_1_of_default	DEF:NG1	normalized	false	default anchor renders as DEF in any chain
+unplaced_compact_idempotent	synthetic	grammar	phylum	DEF:UK:UP	DEF:UK:UP	unchanged	false	already compact U codes
+mixed_compact_idempotent	synthetic	grammar	genus	Caudoviricetes:UO:NF2:NG1	Caudoviricetes:UO:NF2:NG1	unchanged	false	already compact mixed codes
+unplaced_compact_rank_mismatch	synthetic	grammar	genus	DEF:UK:UP	DEF:UK:UP	unchanged	true	already compact but wrong rank for genus
+unplaced_compact_out_of_order	synthetic	grammar	phylum	DEF:UP:UK	DEF:UP:UK	unparsed	false	compact U codes out of order
+unplaced_compact_numbered	synthetic	grammar	phylum	DEF:UK1	DEF:UK1	unparsed	false	U codes take no number
+unplaced_rank_reversal	synthetic	grammar	phylum	unplaced_kingdom_within_unplaced_phylum_within_default	unplaced_kingdom_within_unplaced_phylum_within_default	unparsed	false	rank ordering reversal
+unplaced_duplicate_rank	synthetic	grammar	phylum	unplaced_phylum_within_unplaced_phylum_within_default	unplaced_phylum_within_unplaced_phylum_within_default	unparsed	false	duplicate rank
+mixed_rank_reversal	synthetic	grammar	genus	unplaced_order_within_novel_genus_1_of_Viruses	unplaced_order_within_novel_genus_1_of_Viruses	unparsed	false	rank ordering reversal across node kinds
+unplaced_anchorless	synthetic	grammar	phylum	unplaced_phylum_within_unplaced_kingdom	unplaced_phylum_within_unplaced_kingdom	unparsed	false	anchorless unsupported
+unplaced_anchorless_single	synthetic	grammar	phylum	unplaced_phylum	unplaced_phylum	unparsed	false	anchorless unsupported
+unplaced_unknown_rank	synthetic	grammar	genus	unplaced_species_within_default	unplaced_species_within_default	unparsed	false	unknown rank
+unplaced_unknown_rank_inner	synthetic	grammar	phylum	unplaced_phylum_within_unplaced_species_within_default	unplaced_phylum_within_unplaced_species_within_default	unparsed	false	unknown rank inside chain
+unplaced_multi_candidate	synthetic	grammar	phylum	unplaced_phylum_within_unplaced_kingdom_within_default||novel_phylum_3_of_Viruses	DEF:UK:UP||Viruses:NP3	normalized	false	candidates preserved
+bare_default	synthetic	grammar	genus	default	default	unchanged	false	default alone is not a chain

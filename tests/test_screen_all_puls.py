@@ -61,17 +61,17 @@ def test_evaluate_pul_signatures_preserves_identical_signatures():
 def test_clean_bulk_output_artifacts_preserves_unrelated_files(tmp_path: Path):
     output = tmp_path / "out"
     output.mkdir()
-    (output / "resolved_dbcan_hmms").mkdir()
-    (output / "resolved_dbcan_hmms" / "GH1.hmm").write_text("internal")
-    (output / "hits_GH1.domtblout").write_text("internal")
-    (output / "pul_matches.tsv").write_text("old")
+    (output / "query-hmms/dbcan").mkdir(parents=True)
+    (output / "query-hmms/dbcan" / "GH1.hmm").write_text("internal")
+    (output / "GH1-hmmsearch-domains.tbl").write_text("internal")
+    (output / "pul-matches.tsv").write_text("old")
     (output / "user-notes.txt").write_text("keep")
 
     screen._clean_bulk_output_artifacts(output)
 
-    assert not (output / "resolved_dbcan_hmms").exists()
-    assert not (output / "hits_GH1.domtblout").exists()
-    assert not (output / "pul_matches.tsv").exists()
+    assert not (output / "query-hmms").exists()
+    assert not (output / "GH1-hmmsearch-domains.tbl").exists()
+    assert not (output / "pul-matches.tsv").exists()
     assert (output / "user-notes.txt").read_text() == "keep"
 
 
@@ -86,13 +86,13 @@ def test_write_pul_outputs_has_compressed_tables(tmp_path: Path):
 
     screen.write_pul_outputs(matches, hits, ["contig_A"], tmp_path)
 
-    with gzip.open(tmp_path / "pul_matches.tsv.gz", "rt") as handle:
+    with gzip.open(tmp_path / "pul-matches.tsv.gz", "rt") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
     assert rows[0]["reference_substrate"] == "starch"
     assert rows[0]["required_families"] == "GH1;GH2"
-    assert (tmp_path / "pul_family_support.tsv.gz").exists()
-    assert (tmp_path / "pul_summary.tsv").exists()
-    assert (tmp_path / "substrate_summary.tsv").exists()
+    assert (tmp_path / "pul-family-support.tsv.gz").exists()
+    assert (tmp_path / "pul-summary.tsv").exists()
+    assert (tmp_path / "pul-substrate-summary.tsv").exists()
 
 
 def test_resolve_all_puls_deduplicates_family_union(monkeypatch, tmp_path: Path):

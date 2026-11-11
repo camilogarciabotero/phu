@@ -924,6 +924,39 @@ def resolve_db(
     return target / manifest.databases[name].layout_dir
 
 
+def prepare_bundle(
+    *,
+    pins: BundlePins | None = None,
+    db_folder: Path | None = None,
+    vendored_manifest_bytes: bytes | None = None,
+    bundle_path: Path | None = None,
+    deep: bool = False,
+    fetch: Callable[..., Path] = download_verified,
+    log: Callable[[str], None] = _log_stderr,
+) -> Path:
+    """Install the whole pinned bundle ahead of time; returns ``phu-db/<bundle_version>``.
+
+    What ``phu dbs prepare`` runs. Every database is checked, shallowly, or by
+    sha256 with ``deep`` or PHU_DB_VERIFY=1, and install() runs when the check
+    fails. ``bundle_path`` (else $PHU_DB_BUNDLE) is a pre-downloaded tarball.
+    """
+    pins, manifest, vendored_manifest_bytes = _pinned(pins, vendored_manifest_bytes)
+    db_folder = default_db_folder() if db_folder is None else Path(db_folder)
+    deep = deep or os.environ.get(VERIFY_ENV) == "1"
+    if not installed_problems(db_folder, pins, manifest, deep=deep):
+        return install_path(db_folder, pins)
+    return install(
+        db_folder=db_folder,
+        pins=pins,
+        manifest=manifest,
+        vendored_manifest_bytes=vendored_manifest_bytes,
+        bundle_path=bundle_path,
+        fetch=fetch,
+        log=log,
+        deep=deep,
+    )
+
+
 def database_hashes(
     name: str,
     *,

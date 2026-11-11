@@ -93,7 +93,7 @@ examples, and workflow guidance.
 
 ## Databases
 
-`screen` and `avger` install their reference databases (Pfam, KOfam, dbCAN and the CheckAMG AVG tables) automatically on first use, as one pinned and checksummed bundle. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for disk needs, offline use and citation.
+`screen` and `avger` install their reference databases (Pfam, KOfam, dbCAN and the CheckAMG AVG tables) automatically on first use, as one pinned and checksummed bundle. Run `phu dbs prepare` to install it ahead of time. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for disk needs, offline use and citation.
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 

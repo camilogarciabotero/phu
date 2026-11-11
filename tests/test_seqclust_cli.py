@@ -22,7 +22,7 @@ def test_root_help_runs():
     assert "screen" in output
     assert "avger" in output
     assert "jack" in output
-    assert "dbs" not in output
+    assert "dbs" in output
     assert "simplify-taxa" in output
     assert "--clean-cache" in output
 
@@ -67,14 +67,23 @@ def test_avg_fails_before_prediction_when_databases_are_missing(tmp_path, monkey
 
 @pytest.mark.parametrize(
     "args",
-    [[], ["list"], ["prepare", "pfam", "--force-refresh"], ["remove", "--all", "--yes"], ["--help"]],
+    [["list"], ["status", "pfam"], ["refresh", "--all"], ["remove", "--all", "--yes"]],
 )
-def test_dbs_only_prints_a_notice(args):
+def test_removed_dbs_commands_point_to_prepare(args):
     result = runner.invoke(app, ["dbs", *args])
 
     assert result.exit_code == 0
     assert result.stdout == ""
-    assert "install" in result.stderr and "automatically" in result.stderr
+    assert "phu dbs prepare" in result.stderr
+
+
+def test_dbs_help_lists_only_prepare():
+    result = runner.invoke(app, ["dbs", "--help"])
+    output = plain_output(result)
+
+    assert result.exit_code == 0
+    assert "prepare" in output
+    assert "refresh" not in output and "remove" not in output
 
 
 def test_cluster_short_options_present_in_help():

@@ -3,11 +3,32 @@
 `phu screen` and `phu avger` need reference databases: Pfam, KOfam, dbCAN
 and the CheckAMG-derived AVG tables (`phu jack` uses none). PHU ships them as one pinned
 bundle, `phu-db`, and installs it automatically the first time a command needs
-it. There is nothing to prepare by hand.
+it. You can also install it ahead of time with
+[`phu dbs prepare`](#installing-ahead-of-time).
+
+## Installing ahead of time
+
+```bash
+phu dbs prepare
+```
+
+This downloads the bundle from Zenodo, verifies it and installs it, then
+prints where it is and which upstream releases it holds. It is optional, but
+useful on a login node before submitting jobs, so that compute jobs neither
+download nor wait for each other. If the bundle is already installed, the
+command only checks it and returns.
+
+| Option | Effect |
+| --- | --- |
+| `--bundle PATH` | Install from a pre-downloaded `phu-db.tar.gz` instead of downloading (same as `PHU_DB_BUNDLE`). |
+| `--verify` | Re-hash every installed file and reinstall if any check fails (same as `PHU_DB_VERIFY=1`). |
+
+The bundle always holds all four databases, so database names given to
+`phu dbs prepare` are accepted and ignored.
 
 ## What happens on first use
 
-The first database-backed command:
+`phu dbs prepare`, or the first database-backed command if you skipped it:
 
 1. Checks free disk space. The install needs about **12 GB** free while it
    runs and keeps about **9.5 GB** afterwards.
@@ -69,8 +90,8 @@ same bundle at once. Download it once and point PHU at it:
 # On a node with internet access: get phu-db.tar.gz for phu-db-0.1.1 from
 # https://doi.org/10.5281/zenodo.19503347 (the page lists every version).
 export PHU_DB_FOLDER=/shared/project/phu-db      # on a shared filesystem
-export PHU_DB_BUNDLE=/shared/project/phu-db.tar.gz
-phu screen PF00001 -i contigs.fna                 # installs once, then runs
+phu dbs prepare --bundle /shared/project/phu-db.tar.gz   # installs once
+phu screen PF00001 -i contigs.fna                 # every job reuses the install
 ```
 
 Install once on a shared filesystem and every job reuses the same tree. The
@@ -117,8 +138,9 @@ project's own citation guidance. Pfam: Mistry J, et al. *Nucleic Acids Res.*
 ## Upgrading from PHU 0.9.x and earlier
 
 Earlier releases downloaded each database separately and managed them with
-`phu dbs`. That command group is gone; `phu dbs …` now only prints a notice
-that databases install automatically.
+`phu dbs`. `phu dbs prepare` remains and now installs the single bundle. The
+`list`, `status`, `refresh` and `remove` subcommands are gone; they only print
+a notice pointing to `phu dbs prepare`.
 
 PHU no longer reads the old per-database folders in `PHU_DB_FOLDER` (`pfam/`,
 `kofam/`, `dbcan/`, `avg/` and `vscore/`) and never deletes them. Once the

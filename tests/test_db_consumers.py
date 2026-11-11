@@ -4,9 +4,11 @@ from pathlib import Path
 
 import pyhmmer
 import pytest
+from typer.testing import CliRunner
 
 from phu import avg, db_bundle, dbcan_db, kofam_db, pfam_db
 from phu.avg_reference_db import load_avg_reference
+from phu.cli import app
 
 
 @pytest.fixture
@@ -108,3 +110,51 @@ def test_index_files_beside_the_databases_do_not_invalidate_the_install(installe
     assert (installed / "dbcan" / "family_offsets.json").is_file()
     pins, manifest, _ = db_bundle._pinned(None, None)
     assert db_bundle.installed_problems(installed.parent.parent, pins, manifest, deep=True) == []
+
+
+def test_dbs_prepare_installs_the_whole_bundle(installed, fixture_pins):
+    result = CliRunner().invoke(app, ["dbs", "prepare"])
+
+    assert result.exit_code == 0, result.output
+    assert f"{fixture_pins.bundle_version} is ready: {installed}" in result.stdout
+    for name in ("pfam", "kofam", "dbcan", "avg"):
+        assert (installed / name).is_dir()
+        assert f"  {name}: " in result.stdout
+
+
+def test_dbs_prepare_takes_a_bundle_path_and_old_arguments(
+    installed, monkeypatch, fixture_bundle
+):
+    monkeypatch.delenv("PHU_DB_BUNDLE")
+
+    result = CliRunner().invoke(
+        app, ["dbs", "prepare", "pfam", "--force-refresh", "--bundle", str(fixture_bundle)]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (installed / "pfam" / "profiles.hmm").is_file()
+    assert "all databases are installed together" in result.stderr
+    assert "--force-refresh is ignored" in result.stderr
+
+
+def test_dbs_prepare_verify_reinstalls_a_corrupt_file(installed):
+    runner = CliRunner()
+    assert runner.invoke(app, ["dbs", "prepare"]).exit_code == 0
+    target = installed / "avg" / "v_scores.tsv"
+    good = target.read_bytes()
+    target.write_bytes(good[:-1] + (b"0" if good[-1:] != b"0" else b"1"))
+
+    assert runner.invoke(app, ["dbs", "prepare"]).exit_code == 0
+    assert target.read_bytes() != good
+    assert runner.invoke(app, ["dbs", "prepare", "--verify"]).exit_code == 0
+    assert target.read_bytes() == good
+
+
+def test_dbs_prepare_reports_a_wrong_bundle(installed, monkeypatch, tmp_path):
+    wrong = tmp_path / "wrong.tar.gz"
+    wrong.write_bytes(b"not the bundle")
+
+    result = CliRunner().invoke(app, ["dbs", "prepare", "--bundle", str(wrong)])
+
+    assert result.exit_code == 1
+    assert "different or corrupt bundle" in result.stderr

@@ -111,7 +111,8 @@ phu cluster --mode votu --input-contigs viral-genomes.fasta
 ### Databases
 
 `screen` and `avger` install their reference databases automatically on first
-use, as one pinned and checksummed bundle.
+use, as one pinned and checksummed bundle. Run `phu dbs prepare` to install
+it ahead of time.
 
 [Learn more about databases and provenance →](databases.md)
 

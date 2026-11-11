@@ -11,6 +11,7 @@ from ._click import ProgressReporter, run_click_task
 from ._exec import CmdNotFound
 from ._log import set_verbosity
 from .avg import AvgConfig, run_avg
+from .db_bundle import bundle_provenance, prepare_bundle
 from .db_fetch import DatabaseError
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
 from .gene_prediction_core import (
@@ -31,25 +32,88 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
 )
+dbs_app = typer.Typer(
+    help="Install and check the phu-db database bundle",
+    rich_markup_mode="rich",
+    context_settings={"help_option_names": ["-h", "--help"]},
+    no_args_is_help=True,
+)
+app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
+
 DBS_NOTICE = (
-    "`phu dbs` is no longer needed: phu installs its databases automatically, as one "
-    "pinned bundle, the first time `screen` or `avger` needs them. "
+    "`phu dbs {name}` is no longer available: phu keeps its databases as one pinned "
+    "bundle. Use `phu dbs prepare` to download, verify and install it ahead of time; "
+    "`screen` and `avger` also install it on first use. "
     "See the Databases page of the documentation."
 )
 
 
-@app.command(
-    "dbs",
-    hidden=True,
-    context_settings={
-        "allow_extra_args": True,
-        "ignore_unknown_options": True,
-        "help_option_names": [],
-    },
-)
-def dbs(ctx: typer.Context) -> None:
-    """Deprecated: databases install automatically."""
-    typer.echo(DBS_NOTICE, err=True)
+@dbs_app.command("prepare")
+def dbs_prepare(
+    databases: Optional[list[str]] = typer.Argument(
+        None,
+        help="Accepted for compatibility; the bundle always holds every database",
+        hidden=True,
+    ),
+    bundle: Optional[Path] = typer.Option(
+        None,
+        "--bundle",
+        help="Install from this pre-downloaded phu-db.tar.gz instead of downloading "
+        "(same as PHU_DB_BUNDLE)",
+        rich_help_panel="Preparation",
+    ),
+    verify: bool = typer.Option(
+        False,
+        "--verify",
+        help="Re-hash every installed file, and reinstall if any check fails "
+        "(same as PHU_DB_VERIFY=1)",
+        rich_help_panel="Preparation",
+    ),
+    all_dbs: bool = typer.Option(False, "--all", hidden=True),
+    force_refresh: bool = typer.Option(False, "--force-refresh", hidden=True),
+) -> None:
+    """Download, verify and install the pinned phu-db bundle (Pfam, KOfam, dbCAN, AVG).
+
+    Optional: `screen` and `avger` install the bundle on first use. Run this
+    first on a login node, or before submitting many jobs at once.
+    """
+    if databases or all_dbs:
+        typer.echo(
+            "Note: phu-db is one bundle; all databases are installed together.", err=True
+        )
+    if force_refresh:
+        typer.echo(
+            "Note: --force-refresh is ignored; the bundle is pinned to this phu release. "
+            "Use --verify to re-check the installed files.",
+            err=True,
+        )
+    try:
+        root = prepare_bundle(bundle_path=bundle, deep=verify)
+        provenance = bundle_provenance()
+    except (DatabaseError, OSError) as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
+    typer.echo(f"{provenance['bundle_version']} is ready: {root}")
+    for name, release in provenance["upstream_versions"].items():
+        typer.echo(f"  {name}: {release}")
+
+
+def _dbs_removed(name: str) -> None:
+    @dbs_app.command(
+        name,
+        hidden=True,
+        context_settings={
+            "allow_extra_args": True,
+            "ignore_unknown_options": True,
+            "help_option_names": [],
+        },
+    )
+    def removed(ctx: typer.Context) -> None:
+        typer.echo(DBS_NOTICE.format(name=name), err=True)
+
+
+for _name in ("list", "status", "refresh", "remove"):
+    _dbs_removed(_name)
 
 
 @app.callback(invoke_without_command=True)

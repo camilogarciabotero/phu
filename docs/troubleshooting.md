@@ -16,7 +16,7 @@ binary automatically.
 
 ## Database install fails
 
-Databases install automatically on first use; see
+Databases install automatically on first use, or with `phu dbs prepare`; see
 [Databases and Provenance](databases.md). Common causes of a failed install:
 
 - **Not enough disk space.** The install needs about 12 GB free in

@@ -11,9 +11,13 @@ behavior in the unreleased branch and may change before a release.
   needs a database downloads one pinned, checksummed bundle, `phu-db-0.1.1`
   (about 1.9 GB, about 12 GB free disk needed while installing), verifies it
   and installs it under `PHU_DB_FOLDER`. Later runs reuse it.
-- Removed the `phu dbs` command group (`list`, `status`, `prepare`, `refresh`,
-  `remove`). `phu dbs …` now prints a deprecation notice and exits 0; it will
-  be removed in a later release.
+- `phu dbs prepare` now downloads, verifies and installs that single bundle
+  ahead of time. New options: `--bundle PATH` (pre-downloaded tarball) and
+  `--verify` (re-hash every installed file). Database names, `--all` and
+  `--force-refresh` are accepted and ignored.
+- Removed `phu dbs list`, `status`, `refresh` and `remove`. They now print a
+  notice pointing to `phu dbs prepare` and exit 0; they will be removed in a
+  later release.
 - Removed the per-database downloaders for Pfam, KOfam, dbCAN and the AVG/V-score
   tables. Pfam is now pinned to release 37.0 instead of the floating
   `current_release`.

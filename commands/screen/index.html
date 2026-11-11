@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -620,6 +620,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#passfail-behavior-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -968,6 +979,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#passfail-behavior-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1056,7 +1078,7 @@
 <p><strong>Example:</strong>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>your_contigs.fasta<span class="w"> </span>your_protein_family.hmm
 </code></pre></div></p>
-<p>This simple command will find all contigs in <code>your_contigs.fasta</code> that contain proteins matching <code>your_protein_family.hmm</code> and save them to a new file called <code>screened_contigs.fasta</code> in a folder named <code>phu-screen</code>.</p>
+<p>This simple command will find all contigs in <code>your_contigs.fasta</code> that contain proteins matching <code>your_protein_family.hmm</code> and save them to a new file called <code>matched-contigs.fna</code> in a folder named <code>phu-screen</code>.</p>
 <p>If an argument looks like a PFAM accession (<code>PF</code> + 5 digits, optionally with a version), <code>phu</code> resolves it from a local Pfam-A database automatically.</p>
 <p>dbCAN family inputs are case-insensitive and are validated against the local
 dbCAN HMM index. A PUL input expands to its ordered CAZyme-family signature
@@ -1066,7 +1088,7 @@ signatures. Only one PUL can be queried per run, and PUL queries cannot be
 mixed with other database or local-HMM inputs.</p>
 <p>This is PUL CAZyme-signature screening. Family co-occurrence alone does not
 identify a biological PUL or predict its substrate. Each run writes
-<code>query_manifest.json</code> with the original query, expansion, matching rule, and
+<code>.phu/query.json</code> with the original query, expansion, matching rule, and
 database hashes.</p>
 <p>To screen against every resolvable PUL signature:</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--all-puls
@@ -1074,7 +1096,7 @@ database hashes.</p>
 <p>Each unique required CAZyme profile is searched once. PUL signatures are
 evaluated independently: all required families must occur on the same contig,
 and a contig is retained when it matches at least one resolvable PUL.
-Unresolved rules are reported and skipped. The output <code>pul_matches.tsv.gz</code>
+Unresolved rules are reported and skipped. The output <code>pul-matches.tsv.gz</code>
 contains one row per matched contig-PUL pair. This remains CAZyme-signature
 co-occurrence screening, not proof of a biological PUL or substrate activity.</p>
 <p>To screen against all canonical CAZyme profiles in the installed dbCAN index:</p>
@@ -1083,30 +1105,30 @@ co-occurrence screening, not proof of a biological PUL or substrate activity.</p
 <p>This searches every AA, CBM, CE, GH, GT, and PL profile once. Ancillary
 profiles such as SLH, cohesin, and dockerin are excluded, while subfamily
 identities such as <code>GH5_2</code> are preserved. A contig is retained after at least
-one threshold-passing family hit. The <code>cazyme_matches.tsv.gz</code> output records the
+one threshold-passing family hit. The <code>cazyme-matches.tsv.gz</code> output records the
 retained contig, family, protein, bitscore, E-value, and HMM coverage.</p>
 <p>The default all-CAZyme outputs are compact and organized by evidence level:</p>
 <div class="highlight"><pre><span></span><code>phu-screen/
-├── screened_contigs.fasta
-├── kept_contigs.txt
-├── cazyme_matches.tsv.gz
-├── cazyme_summary.tsv
-├── cazyme_class_summary.tsv
+├── matched-contigs.fna
+├── matched-contig-ids.txt
+├── cazyme-matches.tsv.gz
+├── cazyme-family-summary.tsv
+├── cazyme-class-summary.tsv
 ├── evidence/
-│   └── cazyme_hits.tsv.gz
+│   └── cazyme-hits.tsv.gz
 └── .phu/
   └── run.json
 </code></pre></div>
-<p><code>evidence/cazyme_hits.tsv.gz</code> contains one row per qualifying HMM/domain hit.
-<code>cazyme_matches.tsv.gz</code> consolidates hits into one row per contig-family,
+<p><code>evidence/cazyme-hits.tsv.gz</code> contains one row per qualifying HMM/domain hit.
+<code>cazyme-matches.tsv.gz</code> consolidates hits into one row per contig-family,
 including unique protein counts, hit counts, protein IDs, and one deterministic
 best supporting hit. The family summary reports detected-family occurrence
 counts; the class summary reports unique contig and protein counts for the six
 canonical classes. These are occurrence counts, not normalized abundance.
 The outputs describe targeted HMM-based CAZyme-family evidence, not substrate
 prediction or full multi-method <code>run_dbcan</code> consensus annotation.</p>
-<p>For both <code>--all-cazymes</code> and <code>--all-puls</code>, per-family HMM files and domtblout
-files are temporary search artifacts outside the output directory. They are
+<p>For both <code>--all-cazymes</code> and <code>--all-puls</code>, per-family HMM files and hmmsearch
+domain tables are temporary search artifacts outside the output directory. They are
 removed automatically after success or failure. The durable all-CAZyme result
 contains compressed evidence, contig-family matches, family summaries, class
 summaries, and <code>.phu/run.json</code>. The durable all-PUL result contains compressed
@@ -1123,19 +1145,19 @@ contigs lack those PULs. Rebuild or refresh the dbCAN database when a newer
 snapshot is required.</p>
 <p>The durable all-PUL output tree is:</p>
 <div class="highlight"><pre><span></span><code>phu-screen/
-├── screened_contigs.fasta
-├── kept_contigs.txt
-├── pul_matches.tsv.gz
-├── pul_family_support.tsv.gz
-├── pul_summary.tsv
-├── substrate_summary.tsv
+├── matched-contigs.fna
+├── matched-contig-ids.txt
+├── pul-matches.tsv.gz
+├── pul-family-support.tsv.gz
+├── pul-summary.tsv
+├── pul-substrate-summary.tsv
 ├── evidence/
-│   └── cazyme_hits.tsv.gz
+│   └── cazyme-hits.tsv.gz
 └── .phu/
   └── run.json
 </code></pre></div>
-<p><code>pul_matches.tsv.gz</code> contains one row per complete contig-PUL match.
-<code>pul_family_support.tsv.gz</code> records the supporting family evidence, while the
+<p><code>pul-matches.tsv.gz</code> contains one row per complete contig-PUL match.
+<code>pul-family-support.tsv.gz</code> records the supporting family evidence, while the
 PUL and substrate summaries aggregate matched reference records. Coordinates
 and reference substrates describe supporting database evidence; they are not
 validated PUL boundaries or substrate predictions for query contigs.</p>
@@ -1185,16 +1207,108 @@ biological activity or PUL identity.</p>
 <p><strong>Custom HMM Building</strong> (<code>--save-target-hmms</code>) builds HMM files from matched target proteins and requires <code>--save-target-proteins</code>. For model sets containing multiple proteins, PHU runs the external <code>mafft</code> aligner before building the HMM. MAFFT is not installed by <code>uv</code> or bundled with PHU; install it in the environment or module used to run PHU, for example with <code>conda install -c bioconda mafft</code> or <code>pixi add mafft</code>. PHU fails clearly when MAFFT is unavailable. Single-protein outputs use a single-sequence HMM and are not a family alignment.</p>
 <p><strong>Viral Mode Support</strong> - When using viral gene prediction (if pyrodigal-gv is available), the tool is optimized for shorter, more compact viral genes and can handle overlapping gene structures common in viral genomes.</p>
 <h2 id="understanding-your-results">Understanding Your Results<a class="headerlink" href="#understanding-your-results" title="Permanent link">&para;</a></h2>
-<p>The main output is <code>screened_contigs.fasta</code>, which contains all the contigs that passed your filtering criteria. You'll also get <code>kept_contigs.txt</code> with just the names of these contigs.</p>
+<p>The main output is <code>matched-contigs.fna</code>, which contains all the contigs that passed your filtering criteria. You'll also get <code>matched-contig-ids.txt</code> with just the names of these contigs.</p>
 <p>If you used multiple HMMs, pay attention to how the combine mode affects your results. In "any" mode (see above), a contig that matches multiple models will produce one (best) protein per matched model. In "all" mode, kept contigs must have at least one hit for every model, and the tool returns one best hit per model for each kept contig — so the per-model protein counts will be balanced across models.</p>
-<p>When you use the <code>--save-target-proteins</code> option, you'll get a folder called <code>target_proteins</code> with separate files for each model. Note the distinction:</p>
+<p>When you use the <code>--save-target-proteins</code> option, you'll get a folder called <code>target-proteins</code> with separate files for each model. Note the distinction:</p>
 <ul>
 <li>In "pure" HMM mode (default), each input HMM file is treated as one model and the output files are grouped by HMM filename (one file per input file).</li>
-<li>In "mixed" HMM mode (used for concatenated/pressed HMM files), a single HMM file can contain multiple model names; in that case <code>--save-target-proteins</code> will create one output file per model name found inside the domtblout.</li>
+<li>In "mixed" HMM mode (used for concatenated/pressed HMM files), a single HMM file can contain multiple model names; in that case <code>--save-target-proteins</code> will create one output file per model name found inside the HMM file.</li>
 </ul>
-<p>All saved protein FASTA files contain only proteins that come from contigs that were kept in the final <code>screened_contigs.fasta</code>, and are de-duplicated per model file.</p>
+<p>All saved protein FASTA files contain only proteins that come from contigs that were kept in the final <code>matched-contigs.fna</code>, and are de-duplicated per model file.</p>
+<h2 id="output-files">Output files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>File or folder</th>
+<th>Written when</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>matched-contigs.fna</code></td>
+<td>always</td>
+<td>Nucleotide FASTA of the contigs that passed the screen</td>
+</tr>
+<tr>
+<td><code>matched-contig-ids.txt</code></td>
+<td>always</td>
+<td>IDs of those contigs, one per line</td>
+</tr>
+<tr>
+<td><code>{hmm}-hmmsearch-domains.tbl</code></td>
+<td><code>--keep-domtbl</code> (default)</td>
+<td>hmmsearch per-domain table, one per input HMM file</td>
+</tr>
+<tr>
+<td><code>.phu/query.json</code></td>
+<td>always, except <code>--all-cazymes</code> / <code>--all-puls</code></td>
+<td>Original query, expansion, matching rule and database hashes</td>
+</tr>
+<tr>
+<td><code>.phu/run.json</code></td>
+<td><code>--all-cazymes</code> / <code>--all-puls</code></td>
+<td>Run manifest with counts, thresholds and <code>generated_files</code></td>
+</tr>
+<tr>
+<td><code>query-hmms/pfam/</code>, <code>query-hmms/kofam/</code>, <code>query-hmms/dbcan/</code></td>
+<td>Pfam, KO, dbCAN-family or PUL queries</td>
+<td>The HMM files resolved from the local databases</td>
+</tr>
+<tr>
+<td><code>predicted-proteins.faa</code></td>
+<td><code>--keep-proteins</code></td>
+<td>Protein FASTA of all predicted proteins</td>
+</tr>
+<tr>
+<td><code>.phu/prediction.json</code></td>
+<td><code>--keep-proteins</code></td>
+<td>Protein-prediction cache key and cache location</td>
+</tr>
+<tr>
+<td><code>target-proteins/{model}.faa</code></td>
+<td><code>--save-target-proteins</code></td>
+<td>Matched proteins of each model, from kept contigs only</td>
+</tr>
+<tr>
+<td><code>target-hmms/{model}.hmm</code></td>
+<td><code>--save-target-hmms</code></td>
+<td>HMM built from each model's target proteins</td>
+</tr>
+<tr>
+<td><code>cazyme-matches.tsv.gz</code>, <code>cazyme-family-summary.tsv</code>, <code>cazyme-class-summary.tsv</code></td>
+<td><code>--all-cazymes</code></td>
+<td>Contig-family matches and per-family / per-class summaries</td>
+</tr>
+<tr>
+<td><code>pul-matches.tsv.gz</code>, <code>pul-family-support.tsv.gz</code>, <code>pul-summary.tsv</code>, <code>pul-substrate-summary.tsv</code></td>
+<td><code>--all-puls</code></td>
+<td>PUL signature matches, per-family support and summaries</td>
+</tr>
+<tr>
+<td><code>evidence/cazyme-hits.tsv.gz</code></td>
+<td><code>--all-cazymes</code> / <code>--all-puls</code></td>
+<td>Every qualifying CAZyme HMM hit</td>
+</tr>
+</tbody>
+</table>
+<p><code>{hmm}</code> is the HMM file name without its extension, and in pure mode it is also
+the model ID. If two input files share a file name (<code>a/foo.hmm</code> and
+<code>b/foo.hmm</code>), <code>phu</code> tells them apart by the <code>NAME</code> field inside each HMM: that
+name becomes the model ID and names their domain tables and target files. If
+both the file name and the internal <code>NAME</code> are identical, the files cannot be
+told apart: <code>phu</code> prints a warning, pools their hits under one model ID and
+writes them to one domain table.</p>
+<p>Model names are made safe for file names by replacing unusual characters with
+<code>_</code>. If two different models would end up with the same file name (for example
+<code>beta/1</code> and <code>beta_1</code>), <code>phu</code> refuses the query rather than mix their results;
+rename one of them.</p>
+<p>With <code>--save-target-hmms</code>, HMMs are built only from the protein sets written
+by the current run; files left in <code>target-proteins/</code> by an earlier run are not
+read. The alignments used to build them are temporary and are not written into
+the output folder.</p>
 <h2 id="passfail-behavior-summary">Pass/fail behavior summary<a class="headerlink" href="#passfail-behavior-summary" title="Permanent link">&para;</a></h2>
-<p>The screening decision uses pyHMMER hit objects, not a second parsing pass over domtblout text files.</p>
+<p>The screening decision uses pyHMMER hit objects, not a second parsing pass over the domain table text files.</p>
 <ul>
 <li>Effective score is full-sequence score by default.</li>
 <li>For KOfam models, if <code>score_type=domain</code>, effective score switches to domain score.</li>
@@ -1204,8 +1318,8 @@ biological activity or PUL identity.</p>
 </ul>
 <p>See the full rule set and examples in <a href="../../screen-thresholds/">screen thresholds and decision logic</a>.</p>
 <p><strong>Target Data Outputs:</strong>
-- <code>target_proteins/{model}_proteins.mfa</code> - Proteins matching each model (if <code>--save-target-proteins</code>)
-- <code>target_hmms/{model}.hmm</code> - HMMs built from target proteins after MAFFT alignment (if <code>--save-target-hmms</code>)</p>
+- <code>target-proteins/{model}.faa</code> - Proteins matching each model (if <code>--save-target-proteins</code>)
+- <code>target-hmms/{model}.hmm</code> - HMMs built from target proteins after MAFFT alignment (if <code>--save-target-hmms</code>)</p>
 <p>These outputs respect your HMM mode settings and combination logic, ensuring consistency between your screening criteria and extracted data.</p>
 <h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>Usage:<span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>QUERY<span class="o">]</span>...
@@ -1225,7 +1339,7 @@ biological activity or PUL identity.</p>
 
 <span class="w"> </span>--all-cazymes<span class="w"> </span>searches<span class="w"> </span>every<span class="w"> </span>indexed<span class="w"> </span>AA,<span class="w"> </span>CBM,<span class="w"> </span>CE,<span class="w"> </span>GH,<span class="w"> </span>GT,<span class="w"> </span>and<span class="w"> </span>PL
 <span class="w"> </span>profile<span class="w"> </span>once<span class="w"> </span>and<span class="w"> </span>keeps<span class="w"> </span>contigs<span class="w"> </span>with<span class="w"> </span>at<span class="w"> </span>least<span class="w"> </span>one<span class="w"> </span>qualifying<span class="w"> </span>family<span class="w"> </span>hit.
-<span class="w"> </span>Ancillary<span class="w"> </span>profiles<span class="w"> </span>are<span class="w"> </span>excluded<span class="p">;</span><span class="w"> </span>see<span class="w"> </span>cazyme_matches.tsv<span class="w"> </span><span class="k">for</span><span class="w"> </span>retained<span class="w"> </span>hits.
+<span class="w"> </span>Ancillary<span class="w"> </span>profiles<span class="w"> </span>are<span class="w"> </span>excluded<span class="p">;</span><span class="w"> </span>see<span class="w"> </span>cazyme-matches.tsv<span class="w"> </span><span class="k">for</span><span class="w"> </span>retained<span class="w"> </span>hits.
 
 <span class="w"> </span>Direct<span class="w"> </span>family<span class="w"> </span>queries<span class="w"> </span>support<span class="w"> </span>multiple<span class="w"> </span>HMM<span class="w"> </span>files<span class="w"> </span>with<span class="w"> </span>different<span class="w"> </span>modes:
 <span class="w"> </span>-<span class="w"> </span>any:<span class="w"> </span>Keep<span class="w"> </span>contigs<span class="w"> </span>matching<span class="w"> </span>any<span class="w"> </span>HMM<span class="w"> </span><span class="o">(</span>default,<span class="w"> </span>most<span class="w"> </span>permissive<span class="o">)</span>
@@ -1318,18 +1432,18 @@ biological activity or PUL identity.</p>
 │<span class="w">                                                      </span>used<span class="w"> </span><span class="k">for</span><span class="w"> </span>searching<span class="w">      </span>│
 │<span class="w">                                                      </span><span class="o">[</span>default:<span class="w">               </span>│
 │<span class="w">                                                      </span>no-keep-proteins<span class="o">]</span><span class="w">       </span>│
-│<span class="w"> </span>--keep-domtbl<span class="w">             </span>--no-keep-domtbl<span class="w">           </span>Keep<span class="w"> </span>raw<span class="w"> </span>domtblout<span class="w"> </span>from<span class="w"> </span>│
-│<span class="w">                                                      </span>hmmsearch<span class="w">               </span>│
+│<span class="w"> </span>--keep-domtbl<span class="w">             </span>--no-keep-domtbl<span class="w">           </span>Keep<span class="w"> </span>the<span class="w"> </span>hmmsearch<span class="w">      </span>│
+│<span class="w">                                                      </span>domain<span class="w"> </span>tables<span class="w">           </span>│
 │<span class="w">                                                      </span><span class="o">[</span>default:<span class="w"> </span>keep-domtbl<span class="o">]</span><span class="w">  </span>│
 │<span class="w"> </span>--save-target-proteins<span class="w">    </span>--no-save-target-pro…<span class="w">      </span>Save<span class="w"> </span>matched<span class="w"> </span>proteins<span class="w">   </span>│
 │<span class="w">                                                      </span>per<span class="w"> </span>HMM<span class="w"> </span>model<span class="w"> </span><span class="k">in</span><span class="w">        </span>│
-│<span class="w">                                                      </span>target_proteins/<span class="w">        </span>│
+│<span class="w">                                                      </span>target-proteins/<span class="w">        </span>│
 │<span class="w">                                                      </span>subfolder<span class="w">               </span>│
 │<span class="w">                                                      </span><span class="o">[</span>default:<span class="w">               </span>│
 │<span class="w">                                                      </span>no-save-target-protein…<span class="w"> </span>│
 │<span class="w"> </span>--save-target-hmms<span class="w">        </span>--no-save-target-hmms<span class="w">      </span>Save<span class="w"> </span>HMMs<span class="w"> </span>built<span class="w"> </span>from<span class="w">    </span>│
 │<span class="w">                                                      </span>target<span class="w"> </span>proteins<span class="w"> </span><span class="k">in</span><span class="w">      </span>│
-│<span class="w">                                                      </span>target_hmms/<span class="w"> </span>subfolder<span class="w">  </span>│
+│<span class="w">                                                      </span>target-hmms/<span class="w"> </span>subfolder<span class="w">  </span>│
 │<span class="w">                                                      </span><span class="o">[</span>default:<span class="w">               </span>│
 │<span class="w">                                                      </span>no-save-target-hmms<span class="o">]</span><span class="w">    </span>│
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -1338,7 +1452,12 @@ biological activity or PUL identity.</p>
 │<span class="w">                            </span><span class="s1">'mixed'</span><span class="w"> </span><span class="o">(</span>pressed/concatenated<span class="w"> </span>HMMs<span class="o">)</span><span class="w">               </span>│
 │<span class="w">                            </span><span class="o">[</span>default:<span class="w"> </span>pure<span class="o">]</span><span class="w">                                   </span>│
 ╰──────────────────────────────────────────────────────────────────────────────╯
+╭─<span class="w"> </span>Runtime<span class="w"> </span>────────────────────────────────────────────────────────────────────╮
+│<span class="w"> </span>--quiet<span class="w">            </span>Suppress<span class="w"> </span>routine<span class="w"> </span>progress<span class="w"> </span>output.<span class="w">                         </span>│
+│<span class="w"> </span>--verbose<span class="w">          </span>Show<span class="w"> </span>additional<span class="w"> </span>progress<span class="w"> </span>details.<span class="w">                         </span>│
+╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
+<p>Use <code>--verbose</code> to record how each tool was run: every <code>seqkit</code> and <code>mafft</code> command line, and the effective parameters of the in-process gene prediction and <code>hmmsearch</code> steps, are printed on lines that start with <code>[cmd]</code>. Use <code>--quiet</code> to hide the timed step lines. See <a href="../../troubleshooting/#run-logs">Run logs</a> for the log format.</p>
 <p>Use <code>--output-folder</code> to change where the results are saved. The default is a folder called <code>phu-screen</code> in your current directory.</p>
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
 <p>Use <code>--min-protein-len-aa</code> to keep only proteins at or above a given amino-acid length before running HMM searches.</p>
@@ -1470,10 +1589,10 @@ biological activity or PUL identity.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

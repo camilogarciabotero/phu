@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -961,14 +961,14 @@
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>cluster<span class="w"> </span>--mode<span class="w"> </span>&lt;MODE&gt;<span class="w"> </span>--input-contigs<span class="w"> </span>&lt;FASTA_FILE&gt;<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </code></pre></div>
-<p>Outputs are placed in an output folder (default <code>clustered-contigs/</code>) and include cluster assignment TSVs and representative FASTA files, for example:</p>
-<div class="highlight"><pre><span></span><code>clustered-contigs/
-├── ani.ids.tsv
-├── ani.tsv
-├── cluster_representatives_ids.txt
-├── fltr.txt
-├── representatives.fna
-└── species.tsv
+<p>Outputs are placed in an output folder (default <code>phu-cluster/</code>) and include cluster assignment TSVs and representative FASTA files, for example:</p>
+<div class="highlight"><pre><span></span><code>phu-cluster/
+├── prefilter-pairs.txt             # vclust prefilter: sequence pairs worth aligning
+├── ani-pairs.tsv                   # vclust align: ANI and coverage per sequence pair
+├── ani-sequence-ids.tsv            # vclust align: sequence IDs and lengths used by clustering
+├── species-clusters.tsv            # cluster assignments (`clusters.tsv` in dereplication and votu modes)
+├── cluster-representative-ids.txt  # one representative ID per input sequence's cluster
+└── cluster-representatives.fna     # representative sequences (`dereplicated-representatives.fna` in dereplication mode)
 </code></pre></div>
 <h2 id="modes">Modes<a class="headerlink" href="#modes" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1050,7 +1050,7 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─<span class="w"> </span>Output<span class="w"> </span>─────────────────────────────────────────────────────────────────────╮
 │<span class="w"> </span>--output-folder<span class="w">  </span>-o<span class="w">      </span>&lt;path&gt;<span class="w">  </span>Output<span class="w"> </span>directory<span class="w">                            </span>│
-│<span class="w">                                  </span><span class="o">[</span>default:<span class="w"> </span>clustered-contigs<span class="o">]</span><span class="w">                </span>│
+│<span class="w">                                  </span><span class="o">[</span>default:<span class="w"> </span>phu-cluster<span class="o">]</span><span class="w">                      </span>│
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─<span class="w"> </span>Runtime<span class="w"> </span>────────────────────────────────────────────────────────────────────╮
 │<span class="w"> </span>--threads<span class="w">  </span>-t<span class="w">      </span>&lt;int<span class="w"> </span>range&gt;<span class="w"> </span><span class="o">[</span>x&gt;<span class="o">=</span><span class="m">0</span><span class="o">]</span><span class="w">  </span><span class="nv">0</span><span class="o">=</span>all<span class="w"> </span>cores<span class="p">;</span><span class="w"> </span>otherwise<span class="w"> </span>N<span class="w"> </span>threads<span class="w">      </span>│
@@ -1060,7 +1060,7 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="c1"># Dereplicate viral contigs (default outputs in clustered-contigs/)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Dereplicate viral contigs (default outputs in phu-cluster/)</span>
 phu<span class="w"> </span>cluster<span class="w"> </span>--mode<span class="w"> </span>dereplication<span class="w"> </span>--input-contigs<span class="w"> </span>viral_contigs.fna
 
 <span class="c1"># Cluster into vOTUs following MIUViG standards</span>
@@ -1161,10 +1161,10 @@ phu<span class="w"> </span>cluster<span class="w"> </span>--mode<span class="w">
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

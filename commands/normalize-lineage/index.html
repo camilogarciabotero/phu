@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -534,6 +534,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Input and output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unplaced-ranks-and-the-default-anchor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unplaced ranks and the default anchor
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -844,6 +861,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Input and output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unplaced-ranks-and-the-default-anchor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unplaced ranks and the default anchor
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -930,6 +964,46 @@ silently discarded.</p>
 <div class="highlight"><pre><span></span><code>novel_genus_1_of_Viruses
 Viruses:NG1
 </code></pre></div>
+<p>Each <code>novel_&lt;rank&gt;_&lt;n&gt;</code> node becomes <code>N</code> plus the rank letter and its number
+(<code>NR</code>, <code>NK</code>, <code>NP</code>, <code>NC</code>, <code>NO</code>, <code>NF</code>, <code>NSF</code>, <code>NG</code>). The anchor comes first and
+the codes follow from the highest rank to the lowest.</p>
+<h3 id="unplaced-ranks-and-the-default-anchor">Unplaced ranks and the <code>default</code> anchor<a class="headerlink" href="#unplaced-ranks-and-the-default-anchor" title="Permanent link">&para;</a></h3>
+<p>vContact3 also writes <code>unplaced_&lt;rank&gt;</code> nodes, joined by <code>_within_</code>. They carry
+no number, so each one becomes <code>U</code> plus the same rank letter (<code>UR</code>, <code>UK</code>, <code>UP</code>,
+<code>UC</code>, <code>UO</code>, <code>UF</code>, <code>USF</code>, <code>UG</code>). The placeholder anchor <code>default</code> is written as
+<code>DEF</code>; any other anchor is kept as written.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unplaced_phylum_within_unplaced_kingdom_within_default</code></td>
+<td><code>DEF:UK:UP</code></td>
+</tr>
+<tr>
+<td><code>unplaced_class_within_unplaced_phylum_within_unplaced_kingdom_within_default</code></td>
+<td><code>DEF:UK:UP:UC</code></td>
+</tr>
+<tr>
+<td><code>unplaced_order_within_Caudoviricetes</code></td>
+<td><code>Caudoviricetes:UO</code></td>
+</tr>
+<tr>
+<td><code>novel_genus_1_of_novel_family_2_of_unplaced_order_within_Caudoviricetes</code></td>
+<td><code>Caudoviricetes:UO:NF2:NG1</code></td>
+</tr>
+</tbody>
+</table>
+<p>A chain may mix <code>novel_</code> and <code>unplaced_</code> nodes, and either <code>_of_</code> or <code>_within_</code>
+may follow either kind of node. Every node must be of a strictly lower rank
+than the next one toward the anchor. A chain that breaks that order, has no
+anchor, or names an unknown rank is reported as unparsed and left as it was.
+Compact values that already use <code>U</code> codes are left unchanged, so running the
+command on its own output changes nothing.</p>
 <p>The normalized values remain in their original columns. With <code>--add-lineage</code>,
 a compact lineage column is appended; without it, no new column is added.</p>
 <h2 id="normalization-and-quality-checks">Normalization and quality checks<a class="headerlink" href="#normalization-and-quality-checks" title="Permanent link">&para;</a></h2>
@@ -965,7 +1039,8 @@ menu.</p>
 │ --strict          Fail on unparsed or rank-mismatched values                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Runtime ────────────────────────────────────────────────────────────────────╮
-│ --quiet          Suppress the QA summary                                     │
+│ --quiet            Suppress the QA summary                                   │
+│ --verbose          Show additional progress details.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
@@ -1073,10 +1148,10 @@ and downstream analysis while retaining the source columns.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

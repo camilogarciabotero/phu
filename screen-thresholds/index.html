@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -708,10 +708,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#domtblout-interpretation" class="md-nav__link">
+  <a href="#domain-table-interpretation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        domtblout interpretation
+        Domain table interpretation
       
     </span>
   </a>
@@ -944,10 +944,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#domtblout-interpretation" class="md-nav__link">
+  <a href="#domain-table-interpretation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        domtblout interpretation
+        Domain table interpretation
       
     </span>
   </a>
@@ -1019,7 +1019,7 @@ required by the resolvable PUL rules is searched once; unresolved rules are
 skipped and listed in <code>.phu/run.json</code>.</p>
 <p>With <code>--all-cazymes</code>, every canonical indexed profile is searched once and
 the normal dbCAN thresholds are applied per hit. Any one qualifying canonical
-family retains its contig; ancillary profiles do not. Use <code>cazyme_matches.tsv</code>
+family retains its contig; ancillary profiles do not. Use <code>cazyme-matches.tsv</code>
 and the query manifest to audit the selected inventory and retained hits.</p>
 <h2 id="core-passfail-flow">Core pass/fail flow<a class="headerlink" href="#core-passfail-flow" title="Permanent link">&para;</a></h2>
 <p>For each hit emitted by pyHMMER:</p>
@@ -1058,7 +1058,7 @@ and the query manifest to audit the selected inventory and retained hits.</p>
 <p>This means user thresholds can only make filtering stricter when KOfam thresholds are active.</p>
 <h2 id="e-value-behavior">E-value behavior<a class="headerlink" href="#e-value-behavior" title="Permanent link">&para;</a></h2>
 <p><code>--max-evalue</code> is always applied using the hit independent E-value from the top-level hit.</p>
-<p>Important: even when KOfam <code>score_type</code> is <code>domain</code>, the E-value filter is still based on the hit-level E-value, not domain i-Evalue or c-Evalue from domtblout rows.</p>
+<p>Important: even when KOfam <code>score_type</code> is <code>domain</code>, the E-value filter is still based on the hit-level E-value, not domain i-Evalue or c-Evalue from the domain table rows.</p>
 <h2 id="pfam-behavior">PFAM behavior<a class="headerlink" href="#pfam-behavior" title="Permanent link">&para;</a></h2>
 <p>PFAM accessions are resolved to local models, then screened like any other HMM model.</p>
 <p>Threshold behavior for PFAM depends on CLI options:</p>
@@ -1074,10 +1074,10 @@ and the query manifest to audit the selected inventory and retained hits.</p>
 <li><code>score_type</code> (<code>full</code> or <code>domain</code>)</li>
 </ul>
 <p>When <code>--use-kofam-thresholds</code> is enabled (default), KOfam thresholding is applied per KO using the KO <code>score_type</code> logic above.</p>
-<h2 id="domtblout-interpretation">domtblout interpretation<a class="headerlink" href="#domtblout-interpretation" title="Permanent link">&para;</a></h2>
-<p><code>--keep-domtbl</code> keeps raw <code>domtblout</code> files for inspection and audit.</p>
-<p>In current implementation, pass/fail filtering does not re-parse domtblout text. The selection is performed from in-memory hit objects produced by pyHMMER.</p>
-<p>Use domtblout as an audit artifact to interpret why a hit likely passed or failed.</p>
+<h2 id="domain-table-interpretation">Domain table interpretation<a class="headerlink" href="#domain-table-interpretation" title="Permanent link">&para;</a></h2>
+<p><code>--keep-domtbl</code> keeps the raw hmmsearch domain tables (<code>&lt;hmm&gt;-hmmsearch-domains.tbl</code>, the HMMER per-domain table format) for inspection and audit.</p>
+<p>In current implementation, pass/fail filtering does not re-parse the domain table text. The selection is performed from in-memory hit objects produced by pyHMMER.</p>
+<p>Use the domain table as an audit artifact to interpret why a hit likely passed or failed.</p>
 <h2 id="combine-mode-after-filtering">combine mode after filtering<a class="headerlink" href="#combine-mode-after-filtering" title="Permanent link">&para;</a></h2>
 <p>After score/E-value filtering, contigs are retained by combine mode:</p>
 <ul>
@@ -1091,7 +1091,7 @@ and the query manifest to audit the selected inventory and retained hits.</p>
 <li><code>threshold = 136.43</code></li>
 <li><code>score_type = full</code></li>
 </ul>
-<p>Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in domtblout.</p>
+<p>Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in the domain table.</p>
 <p>If <code>--max-evalue</code> remains default (<code>1e-5</code>), many such hits also fail the E-value filter.</p>
 
 
@@ -1169,10 +1169,10 @@ and the query manifest to audit the selected inventory and retained hits.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

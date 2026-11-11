@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -739,6 +739,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#run-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run logs
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -866,6 +877,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#run-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run logs
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -925,10 +947,37 @@ before rerunning into a directory that contains results. PHU's commands do not
 provide one uniform overwrite contract across all workflows; do not assume that
 stale files are removed automatically.</p>
 <h2 id="debug-diagnostics">Debug diagnostics<a class="headerlink" href="#debug-diagnostics" title="Permanent link">&para;</a></h2>
-<p>Use command-specific <code>--help</code> to identify supported verbosity controls. Where
-available, <code>--verbose</code> adds progress details. Preserve the complete command,
-version, input identifiers, database status, and error output when reporting a
-reproducible problem.</p>
+<p>The workflow commands (<code>screen</code>, <code>jack</code>, <code>cluster</code>, <code>avger</code>,
+<code>normalize-lineage</code>, <code>simplify-taxa</code>) accept <code>--verbose</code> and <code>--quiet</code>.
+Preserve the complete command, version, input identifiers, database status,
+and error output when reporting a reproducible problem.</p>
+<h2 id="run-logs">Run logs<a class="headerlink" href="#run-logs" title="Permanent link">&para;</a></h2>
+<p>When the output is not a terminal (for example a SLURM <code>.out</code> file), each step
+prints one line when it starts and one when it ends, with the wall-clock time
+and the step's real duration, and without colour codes:</p>
+<div class="highlight"><pre><span></span><code>[14:02:11] Predicting proteins ...
+[14:04:25] Predicting proteins done in 2m14s
+[14:04:25] Running HMM searches ...
+[14:09:02] Running HMM searches failed after 4m37s: &lt;error message&gt;
+</code></pre></div>
+<p>A step ends with <code>done in</code>, <code>failed after</code>, <code>skipped after</code>, or
+<code>cancelled after</code>. On a terminal the same steps are shown as live lines with a
+running timer.</p>
+<p><code>--verbose</code> adds one line per tool invocation, always prefixed with <code>[cmd]</code>.
+External programs (<code>vclust</code>, <code>seqkit</code>, <code>mafft</code>) are shown as the exact,
+shell-quoted command that was executed, including any output redirection.
+In-process steps (pyrodigal-gv gene prediction, pyhmmer <code>hmmsearch</code> and
+<code>jackhmmer</code>) are shown as the function name followed by the <code>key=value</code>
+parameters that determine the result:</p>
+<div class="highlight"><pre><span></span><code>[cmd] pyrodigal_gv.ViralGeneFinder contigs=4 mode=meta meta=True min_gene=90 max_overlap=89 translation_table=auto training_table=none min_protein_len_aa=30 threads=2
+[cmd] pyhmmer.hmmsearch hmm_files=1 models=1 sequences=19 cpus=2 parallel=queries bit_cutoffs=gathering hmm_mode=pure ...
+[cmd] /usr/bin/seqkit grep -f out/matched-contigs.fna.ids.txt contigs.fna &gt; out/matched-contigs.fna
+</code></pre></div>
+<p>Extract them with <code>grep '^\[cmd\]' run.log</code>. Gene prediction prints no
+<code>[cmd]</code> line when the predicted proteins come from the cache, because nothing
+is run. <code>--quiet</code> hides the step lines and the <code>[cmd]</code> lines; errors are still
+printed. Nothing is written to a log file: redirect stdout and stderr to keep
+a record.</p>
 
 
 
@@ -1005,10 +1054,10 @@ reproducible problem.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -1338,7 +1338,7 @@ completeness. These are viral-classification criteria, not AVG-classification
 criteria. <code>avger</code> does not silently apply them to individual proteins; the
 input contigs should therefore already have a documented viral-sequence
 assessment.</p>
-<p>Thus, a row in <code>avg_candidates.tsv</code> is an <strong>AVG candidate record</strong>, not a
+<p>Thus, a row in <code>avg-candidates.tsv</code> is an <strong>AVG candidate record</strong>, not a
 confirmed AVG call, when it passes the candidate thresholds. A named
 classification requires an internal AVG rule that combines the relevant
 KOfam/Pfam evidence, V-score support where appropriate, and the already-
@@ -1354,15 +1354,15 @@ Passing a viral AV/AVᴸ cutoff does not by itself make a gene an AVG.</p>
 </thead>
 <tbody>
 <tr>
-<td>Row in <code>genes.tsv</code></td>
+<td>Row in <code>gene-annotations.tsv</code></td>
 <td>Predicted gene, including strict annotation fields and any scoring evidence</td>
 </tr>
 <tr>
-<td>Row in <code>avg_candidates.tsv</code></td>
+<td>Row in <code>avg-candidates.tsv</code></td>
 <td>Candidate passed the AVL/V/VL predicate</td>
 </tr>
 <tr>
-<td>Row in <code>avg_predictions.tsv</code></td>
+<td>Row in <code>avg-predictions.tsv</code></td>
 <td>Candidate received a final curated AVG class</td>
 </tr>
 <tr>
@@ -1422,10 +1422,10 @@ is true. The cutoffs are configurable with <code>--scaffold-avl-cutoff</code>,
     J --&gt; K[Apply standard, strict, or no class filters]
     K --&gt; L{Final named class?}
     L --&gt;|No| M[Candidate without final classification]
-    L --&gt;|Yes| N[avg_predictions.tsv]
-    G --&gt; O[genes.tsv]
+    L --&gt;|Yes| N[avg-predictions.tsv]
+    G --&gt; O[gene-annotations.tsv]
     M --&gt; O
-    O --&gt; P[evidence.tsv]
+    O --&gt; P[avg-evidence.tsv]
     O --&gt; Q[Metadata: .phu/run.json]</code></pre>
 <p>The Pfam and KOfam branches represented by this flow are independent; their
 AVL values are never mixed. AVL is therefore an active candidate-selection
@@ -1436,17 +1436,17 @@ Its context evidence comes from the reference tables, AMG weighting, and class
 filters described below.</p>
 <h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>genes.tsv</code>: one row per predicted gene, including annotation, V/VL scoring,
+<li><code>gene-annotations.tsv</code>: one row per predicted gene, including annotation, V/VL scoring,
     AVL, candidate, curation, and classification fields.</li>
-<li><code>avg_candidates.tsv</code>: the subset of <code>genes.tsv</code> passing the database-specific
+<li><code>avg-candidates.tsv</code>: the subset of <code>gene-annotations.tsv</code> passing the database-specific
     AVL/V/VL candidate predicate.</li>
-<li><code>avg_predictions.tsv</code>: candidates assigned a final named AVG class.</li>
-<li><code>evidence.tsv</code>: audit records from relaxed/strict hits and reference matches.</li>
+<li><code>avg-predictions.tsv</code>: candidates assigned a final named AVG class.</li>
+<li><code>avg-evidence.tsv</code>: audit records from relaxed/strict hits and reference matches.</li>
 <li><code>.phu/run.json</code>: automatically generated provenance metadata containing
     parameters, database manifests, cache information, schema version, output
     counts, and timestamps. It is not needed to read the TSV results, but should
     be retained when runs need to be reproduced, compared, or audited.</li>
-<li><code>relaxed_hits.tsv.gz</code> and <code>strict_hits.tsv.gz</code>: all annotation hits when
+<li><code>hmm-hits-relaxed.tsv.gz</code> and <code>hmm-hits-strict.tsv.gz</code>: all annotation hits when
     <code>--keep-hits</code> is supplied.</li>
 </ul>
 <p>Rows from Pfam and KOfam remain database-specific. Empty scoring fields mean
@@ -1626,10 +1626,10 @@ and data attribution rather than an official peer-reviewed paper citation.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

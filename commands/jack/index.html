@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -910,17 +910,17 @@ phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span
 <li><code>threshold</code>: retain contigs hit by at least <code>--min-seed-hits</code> seeds.</li>
 </ul>
 <h2 id="input-and-output">Input and output<a class="headerlink" href="#input-and-output" title="Permanent link">&para;</a></h2>
-<p>The input contigs are translated with pyrodigal using <code>--mode</code>, <code>--min-gene-len</code>, <code>--min-protein-len-aa</code>, and optionally <code>--ttable</code>. The resulting protein FASTA is cached and reused when the prediction inputs are unchanged. Use <code>--keep-proteins</code> to retain the FASTA in the output directory.</p>
+<p>The input contigs are translated with pyrodigal using <code>--mode</code>, <code>--min-gene-len</code>, <code>--min-protein-len-aa</code>, and optionally <code>--ttable</code>. The resulting protein FASTA is cached and reused when the prediction inputs are unchanged. Use <code>--keep-proteins</code> to retain the FASTA in the output directory as <code>predicted-proteins.faa</code> (with the cache key in <code>.phu/prediction.json</code>).</p>
 <p>A successful run writes these core outputs:</p>
 <div class="highlight"><pre><span></span><code>phu-jack/
-├── screened_contigs.fasta
-├── kept_contigs.txt
-├── jackhmmer_hits.tsv
-├── jackhmmer_iterations.tsv
+├── matched-contigs.fna
+├── matched-contig-ids.txt
+├── jackhmmer-hits.tsv
+├── jackhmmer-iterations.tsv
 └── .phu/
     └── run.json
 </code></pre></div>
-<p><code>jackhmmer_hits.tsv</code> contains final hit records and filtering metadata. <code>jackhmmer_iterations.tsv</code> records the per-iteration search summary. With <code>--save-hmm</code>, the final model is written as <code>last_iteration.hmm</code> for a single seed or under <code>last_iteration_hmms/</code> for multiple seeds.</p>
+<p><code>jackhmmer-hits.tsv</code> contains final hit records and filtering metadata. <code>jackhmmer-iterations.tsv</code> records the per-iteration search summary. With <code>--save-hmm</code>, the final model is written as <code>final-iteration.hmm</code> for a single seed or under <code>final-iteration-hmms/</code> for multiple seeds.</p>
 <h2 id="command-options">Command options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>Usage: phu jack [OPTIONS] {seed_marker}
 
@@ -954,7 +954,7 @@ phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span
 │                                                    no-keep-proteins]         │
 │ --save-hmm           --no-save-hmm                 Save the last jackhmmer   │
 │                                                    iteration HMM as          │
-│                                                    last_iteration.hmm        │
+│                                                    final-iteration.hmm       │
 │                                                    [default: no-save-hmm]    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Prediction ─────────────────────────────────────────────────────────────────╮
@@ -1090,10 +1090,10 @@ phu<span class="w"> </span>jack<span class="w"> </span><span class="se">\</span>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

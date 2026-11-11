@@ -167,15 +167,21 @@ def test_screen_bulk_generated_files_use_new_names() -> None:
     ]
 
 
-def test_build_target_hmms_ignores_leftover_alignment(workspace: Path) -> None:
+def test_build_target_hmms_reads_only_this_runs_protein_files(workspace: Path) -> None:
     proteins_dir = workspace / "out" / "target-proteins"
     proteins_dir.mkdir(parents=True)
-    (proteins_dir / "famA.faa").write_text(f">p1\n{SEQ_A}\n")
-    (proteins_dir / "famA-aligned.faa").write_text(f">p1\n{SEQ_A}\n")
+    current = proteins_dir / "famA.faa"
+    current.write_text(f">p1\n{SEQ_A}\n>p2\n{SEQ_A}\n")
+    # Left by an earlier run with a different query: never read, never touched.
+    stale = proteins_dir / "old.faa"
+    stale.write_text(f">q1\n{SEQ_B}\n>q2\n{SEQ_B}\n")
+    before = {path.name: path.read_text() for path in proteins_dir.iterdir()}
 
-    screen._build_target_hmms(proteins_dir, workspace / "out")
+    screen._build_target_hmms([current], workspace / "out")
 
     assert _listing(workspace / "out" / "target-hmms") == ["famA.hmm"]
+    # The alignment is scratch outside target-proteins/: nothing added or changed.
+    assert {path.name: path.read_text() for path in proteins_dir.iterdir()} == before
 
 
 def test_jack_output_names_single_seed(workspace: Path) -> None:
@@ -406,22 +412,45 @@ def test_duplicate_model_id_error_still_fires(workspace: Path) -> None:
         screen._query_model_ids(mixed, "mixed")
 
 
-def test_aligned_model_name_collision_is_refused(workspace: Path) -> None:
-    config = screen.ScreenConfig(
-        input_contigs=workspace / "contigs.fna",
-        hmms=[
-            _write_hmm(workspace / "famA.hmm", "model_a", SEQ_A),
-            _write_hmm(workspace / "famA-aligned.hmm", "model_b", SEQ_B),
-        ],
-        outdir=workspace / "out",
-        cut_ga=False,
-        save_target_proteins=True,
-        save_target_hmms=True,
-    )
-    with pytest.raises(ValueError, match="famA-aligned"):
-        screen._screen(config)
+def test_models_named_x_and_x_aligned_keep_their_own_files(workspace: Path) -> None:
+    out = workspace / "out"
+    stale = out / "target-proteins" / "famA-aligned.faa"
+    stale.parent.mkdir(parents=True)
+    stale.write_text(">left-by-an-earlier-run\nMMMM\n")
 
-    # Without target HMMs nothing is aligned, so the names are fine.
-    config.save_target_hmms = False
-    screen._screen(config)
-    assert (workspace / "out" / "target-proteins" / "famA-aligned.faa").exists()
+    screen._screen(
+        screen.ScreenConfig(
+            input_contigs=workspace / "contigs.fna",
+            hmms=[
+                _write_hmm(workspace / "famA.hmm", "model_a", SEQ_A),
+                _write_hmm(workspace / "famA-aligned.hmm", "model_b", SEQ_B),
+            ],
+            outdir=out,
+            cut_ga=False,
+            save_target_proteins=True,
+            save_target_hmms=True,
+        )
+    )
+
+    proteins_a = _fasta_records(out / "target-proteins" / "famA.faa")
+    proteins_b = _fasta_records(out / "target-proteins" / "famA-aligned.faa")
+    assert [name for name, _ in proteins_a] == ["c1|gene1", "c2|gene1"]
+    assert [name for name, _ in proteins_b] == ["c1|gene2"]
+    assert _listing(out / "target-hmms") == ["famA-aligned.hmm", "famA.hmm"]
+
+
+def test_names_that_sanitise_to_one_file_name_are_refused(workspace: Path) -> None:
+    hmms = [
+        _write_hmm(workspace / "a" / "foo.hmm", "beta/1", SEQ_A),
+        _write_hmm(workspace / "b" / "foo.hmm", "beta_1", SEQ_B),
+    ]
+
+    with pytest.raises(ValueError, match="'beta/1' and 'beta_1' would both be written"):
+        screen._query_model_ids(hmms, "pure")
+    # Mixed mode names target-protein files after the internal NAMEs too.
+    mixed = [
+        _write_hmm(workspace / "m1.hmm", "gamma/2", SEQ_A),
+        _write_hmm(workspace / "m2.hmm", "gamma_2", SEQ_B),
+    ]
+    with pytest.raises(ValueError, match="'gamma/2' and 'gamma_2' would both be written"):
+        screen._query_model_ids(mixed, "mixed")

@@ -74,7 +74,6 @@ QUERY_HMMS_DIR = "query-hmms"
 TARGET_PROTEINS_DIR = "target-proteins"
 TARGET_HMMS_DIR = "target-hmms"
 DOMTBL_SUFFIX = "-hmmsearch-domains.tbl"
-ALIGNED_SUFFIX = "-aligned"
 CAZYME_EVIDENCE = Path("evidence") / "cazyme-hits.tsv.gz"
 CAZYME_MATCHES = "cazyme-matches.tsv.gz"
 CAZYME_FAMILY_SUMMARY = "cazyme-family-summary.tsv"
@@ -1184,23 +1183,36 @@ def _domtbl_paths(hmm_paths: list[Path], outdir: Path) -> dict[str, Path]:
     }
 
 
-def _check_aligned_name_collisions(model_ids: Iterable[str]) -> None:
+def _check_output_name_collisions(
+    hmm_paths: list[Path], labels: list[str], model_ids: list[str]
+) -> None:
     """
-    Refuse model names that would collide with a per-model alignment file.
+    Refuse queries whose distinct models or files would share an output file.
 
-    Building target HMMs aligns ``target-proteins/<model>.faa`` into
-    ``target-proteins/<model>-aligned.faa``; a model literally named
-    ``<model>-aligned`` owns that very path for its own proteins.
+    Names are sanitised before they go into file names, so two different
+    model IDs (``beta/1`` and ``beta_1``) can map to one
+    ``target-proteins/<model>.faa``, and two different file labels to one
+    domain table. Sharing is only intended for identical IDs.
     """
-    safe_names = {_safe_file_label(model_id) for model_id in model_ids}
-    for name in sorted(safe_names):
-        base = name[: -len(ALIGNED_SUFFIX)]
-        if name.endswith(ALIGNED_SUFFIX) and base in safe_names:
+    by_file_name: dict[str, str] = {}
+    for model_id in model_ids:
+        safe = _safe_file_label(model_id)
+        prev = by_file_name.setdefault(safe, model_id)
+        if prev != model_id:
             raise ValueError(
-                f"Cannot build target HMMs: the proteins of model '{name}' and the "
-                f"alignment of model '{base}' would both be written to "
-                f"{TARGET_PROTEINS_DIR}/{name}.faa. Rename one of the two models "
-                "(or its HMM file) and run again."
+                f"HMM models '{prev}' and '{model_id}' would both be written as "
+                f"'{safe}' in output file names. Rename one of the two models "
+                "and run again."
+            )
+    by_table: dict[str, tuple[str, Path]] = {}
+    for hmm_path, label in zip(hmm_paths, labels):
+        table = _domtbl_name(hmm_path, label)
+        prev_label, prev_path = by_table.setdefault(table, (label, hmm_path))
+        if prev_label != label:
+            raise ValueError(
+                f"HMM files {prev_path} and {hmm_path} would both write the domain "
+                f"table {table}. Rename one of the two files or its model and "
+                "run again."
             )
 
 
@@ -1282,6 +1294,14 @@ def _hmmsearch(
             print(
                 " Warning: One or more models are missing gathering cutoffs; "
                 "retrying without --cut-ga."
+            )
+            log_call(
+                "pyhmmer.hmmsearch",
+                retry="models without gathering cutoffs",
+                models=len(hmms),
+                cpus=threads,
+                parallel="queries",
+                bit_cutoffs="none",
             )
             hits_list = list(
                 pyhmmer.hmmsearch(
@@ -1451,6 +1471,7 @@ def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
 
     if not model_ids:
         raise ValueError("No HMM models found in the supplied files")
+    _check_output_name_collisions(hmm_paths, labels, model_ids)
     return model_ids
 
 
@@ -1631,10 +1652,12 @@ def _extract_target_proteins(
     hmm_mode: str,
     seqkit_bin: str = "seqkit",
     kofam_metadata_by_model: Optional[dict[str, KOFamMetadata]] = None,
-) -> None:
+) -> list[Path]:
     """
     Extract matched proteins per HMM model from the final kept contigs only.
     For KOFam models, headers are enriched as KO|definition.
+
+    Returns the protein files written by this run, one per model.
     """
     # Create a set of kept contig IDs for fast lookup
     kept_contig_set = set(kept_contig_ids)
@@ -1652,10 +1675,12 @@ def _extract_target_proteins(
     target_proteins_dir.mkdir(parents=True, exist_ok=True)
 
     # Extract proteins for each model
+    written: list[Path] = []
     for model_id, protein_ids in proteins_per_model.items():
         # Create a safe filename from the model identifier
         safe_model_name = _safe_file_label(model_id)
         output_path = target_proteins_dir / f"{safe_model_name}.faa"
+        written.append(output_path)
 
         if not protein_ids:
             output_path.write_text("")
@@ -1701,33 +1726,26 @@ def _extract_target_proteins(
         # Cleanup temporary file
         tmp_ids_file.unlink()
 
+    return written
+
 
 def _build_target_hmms(
-    target_proteins_dir: Path,
+    protein_files: list[Path],
     outdir: Path,
     threads: int = 1,
     aligner_bin: str = "mafft",
 ) -> None:
     """
     Build HMM models from target protein sequences using pyHMMER.
-    Creates one HMM file per model from the corresponding protein FASTA files.
+    Creates one HMM file per model from ``protein_files``, the protein sets
+    written by this run (see _extract_target_proteins). Files left in
+    target-proteins/ by an earlier run are never read.
 
     For single sequences, builds HMM directly using builder.build().
     For multiple sequences, uses the configured external aligner before MSA creation.
     """
     target_hmms_dir = outdir / TARGET_HMMS_DIR
     target_hmms_dir.mkdir(parents=True, exist_ok=True)
-
-    # `<model>-aligned.faa` next to `<model>.faa` is an alignment left behind by
-    # an interrupted run, not a protein set (see _check_aligned_name_collisions).
-    protein_files = [
-        path
-        for path in target_proteins_dir.glob("*.faa")
-        if not (
-            path.stem.endswith(ALIGNED_SUFFIX)
-            and path.with_name(f"{path.stem[: -len(ALIGNED_SUFFIX)]}.faa").exists()
-        )
-    ]
 
     if not protein_files:
         print("    No target protein files found for HMM building")
@@ -1760,9 +1778,10 @@ def _build_target_hmms(
                 hmm.name = model_name.encode()
                 print(f"      Built HMM from 1 sequence: {model_name}")
             else:
-                aligned_path = protein_file.with_name(
-                    f"{model_name}{ALIGNED_SUFFIX}.faa"
-                )
+                # The alignment is scratch: keep it out of target-proteins/,
+                # where it could be mistaken for (or overwrite) a protein set.
+                align_dir = Path(tempfile.mkdtemp(prefix="phu-align-"))
+                aligned_path = align_dir / f"{model_name}.afa"
                 aligner_cmd = [
                     aligner_bin,
                     "--auto",
@@ -1801,7 +1820,7 @@ def _build_target_hmms(
                         f"      Built HMM from {len(aligned_sequences)} aligned sequences: {model_name}"
                     )
                 finally:
-                    aligned_path.unlink(missing_ok=True)
+                    shutil.rmtree(align_dir, ignore_errors=True)
 
             if not hmm.name:
                 hmm.name = model_name.encode()
@@ -1903,8 +1922,6 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             raise FileNotFoundError(f"HMM file not found: {hmm}")
 
     queried_model_ids = _query_model_ids(cfg.hmms, cfg.hmm_mode)
-    if cfg.save_target_hmms:
-        _check_aligned_name_collisions(queried_model_ids)
 
     # Discover binaries required by the selected output paths.
     seqkit_bin = _binaries()
@@ -2152,7 +2169,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     # Extract target proteins per HMM if requested
     if plan.save_target_proteins:
         print("Extracting matched proteins per HMM model from screened contigs…")
-        _extract_target_proteins(
+        target_protein_files = _extract_target_proteins(
             kept_hits,
             contig_ids,
             proteins_fa,
@@ -2165,9 +2182,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         # Build HMMs from target proteins if requested
         if plan.save_target_hmms:
             print("Building HMMs from target protein sequences…")
-            target_proteins_dir = plan.outdir / TARGET_PROTEINS_DIR
             _build_target_hmms(
-                target_proteins_dir,
+                target_protein_files,
                 plan.outdir,
                 threads=plan.threads,
                 aligner_bin=aligner_bin,

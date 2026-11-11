@@ -270,8 +270,10 @@ def parse_candidate(raw: str, column_rank: str | None) -> ParseResult:
         return ParseResult("unparsed", text, reason="anchorless chain")
     if ":" in anchor:
         return ParseResult("unparsed", text, reason="anchor contains ':'")
-    if anchor.startswith("unplaced_"):
-        return ParseResult("unparsed", text, reason="unparseable unplaced_ node")
+    if anchor.startswith(("novel_", "unplaced_")):
+        # What is left still looks like a chain node (unknown rank, missing
+        # number, ...): it is not a taxon name to anchor on.
+        return ParseResult("unparsed", text, reason="unparseable chain node")
     if anchor == DEFAULT_ANCHOR:
         anchor = DEFAULT_ANCHOR_CODE
 

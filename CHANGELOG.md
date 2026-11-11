@@ -26,16 +26,56 @@ behavior in the unreleased branch and may change before a release.
   in `PHU_DB_FOLDER` are no longer read and can be deleted by hand. See
   [Databases and Provenance](docs/databases.md).
 
+### Fixed
+
+- `screen --hmm-mode mixed`: the domain table of an HMM file holding several
+  models kept only the hits of its last model. It now holds the hits of every
+  model in the file, under one header.
+- Step timings were always reported as `0:00:00`. Every step now shows its
+  real elapsed time, on a terminal and in redirected output.
+
+### Added
+
+- `normalize-lineage` compacts `unplaced_<rank>` chains. `unplaced_<rank>`
+  becomes `U` plus the rank letter (`UR`, `UK`, `UP`, `UC`, `UO`, `UF`, `USF`,
+  `UG`), and the anchor `default` becomes `DEF`:
+  `unplaced_phylum_within_unplaced_kingdom_within_default` gives `DEF:UK:UP`.
+  Chains mixing `novel_` and `unplaced_` nodes are supported, already compact
+  values are left alone, and malformed `unplaced_` values (unknown rank, no
+  anchor, wrong rank order) are reported as unparsed.
+- Run logs for batch jobs: when the output is not a terminal, each step prints
+  a start line with a timestamp and an end line with its status and duration,
+  for example `[14:04:25] Predicting proteins done in 2m14s`.
+- `--verbose` prints one `[cmd]` line per tool: the exact command line of
+  external programs (vclust, seqkit, mafft) and the effective parameters of
+  in-process steps (pyhmmer, pyrodigal). `screen` gains `--quiet` and
+  `--verbose`, and `normalize-lineage` gains `--verbose`, so every command has
+  both. See "Run logs" in [Troubleshooting](docs/troubleshooting.md).
+
 ### Changed
 
+- `normalize-lineage`: the anchor `default` is written `DEF` in novel chains
+  too, so `novel_genus_1_of_default` now gives `DEF:NG1` instead of
+  `default:NG1`.
+- The three-line Completed / Skipped / Failed summary is no longer printed
+  after single steps; each step's own final line carries its status and time.
+  `avger`, which reports several steps together, still prints it.
 - `screen`: input HMM files that share a file name (`a/foo.hmm`, `b/foo.hmm`)
   no longer fail with "Duplicate HMM model ID". They are told apart by the
   `NAME` inside each HMM, which becomes their model ID and names their domain
   tables and target files. If the internal `NAME` is identical too, `screen`
   warns and pools their hits under one model ID.
-- `screen --save-target-hmms` refuses a query holding both a model `X` and a
-  model named `X-aligned`, whose proteins would collide with the temporary
-  alignment of `X`.
+- `screen` refuses a query in which two different models would get the same
+  output file name once unusual characters are replaced (for example `beta/1`
+  and `beta_1`), instead of mixing their domain tables and target proteins.
+- `screen --save-target-hmms` builds HMMs only from the protein sets written by
+  the current run, and keeps its temporary alignments outside the output
+  folder. Files left in `target-proteins/` by an earlier run are not read.
+- `normalize-lineage` reports a chain as unparsed when what remains after its
+  valid nodes still starts with `novel_` or `unplaced_` (an unknown rank or a
+  missing number), instead of treating that remainder as a taxon name.
+- With `--verbose`, a `screen` search that is retried without gathering
+  cutoffs logs a second `[cmd]` line with the parameters actually used.
 
 ### Renamed output files
 
@@ -57,7 +97,7 @@ unchanged.
 | screen | `resolved_kofam_hmms/` | `query-hmms/kofam/` |
 | screen | `resolved_dbcan_hmms/` | `query-hmms/dbcan/` |
 | screen | `target_proteins/<model>_proteins.mfa` | `target-proteins/<model>.faa` |
-| screen | `target_proteins/<model>_proteins.aligned.faa` (temporary) | `target-proteins/<model>-aligned.faa` (temporary) |
+| screen | `target_proteins/<model>_proteins.aligned.faa` (temporary) | no longer written to the output folder |
 | screen | `target_hmms/` | `target-hmms/` |
 | screen | `cazyme_matches.tsv.gz` | `cazyme-matches.tsv.gz` |
 | screen | `cazyme_summary.tsv` | `cazyme-family-summary.tsv` |

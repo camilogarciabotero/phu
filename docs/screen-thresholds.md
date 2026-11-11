@@ -30,7 +30,7 @@ skipped and listed in `.phu/run.json`.
 
 With `--all-cazymes`, every canonical indexed profile is searched once and
 the normal dbCAN thresholds are applied per hit. Any one qualifying canonical
-family retains its contig; ancillary profiles do not. Use `cazyme_matches.tsv`
+family retains its contig; ancillary profiles do not. Use `cazyme-matches.tsv`
 and the query manifest to audit the selected inventory and retained hits.
 
 ## Core pass/fail flow
@@ -78,7 +78,7 @@ This means user thresholds can only make filtering stricter when KOfam threshold
 
 `--max-evalue` is always applied using the hit independent E-value from the top-level hit.
 
-Important: even when KOfam `score_type` is `domain`, the E-value filter is still based on the hit-level E-value, not domain i-Evalue or c-Evalue from domtblout rows.
+Important: even when KOfam `score_type` is `domain`, the E-value filter is still based on the hit-level E-value, not domain i-Evalue or c-Evalue from the domain table rows.
 
 ## PFAM behavior
 
@@ -100,13 +100,13 @@ KOfam models are resolved by KO ID and enriched with metadata parsed from `ko_li
 
 When `--use-kofam-thresholds` is enabled (default), KOfam thresholding is applied per KO using the KO `score_type` logic above.
 
-## domtblout interpretation
+## Domain table interpretation
 
-`--keep-domtbl` keeps raw `domtblout` files for inspection and audit.
+`--keep-domtbl` keeps the raw hmmsearch domain tables (`<hmm>-hmmsearch-domains.tbl`, HMMER `--domtblout` format) for inspection and audit.
 
-In current implementation, pass/fail filtering does not re-parse domtblout text. The selection is performed from in-memory hit objects produced by pyHMMER.
+In current implementation, pass/fail filtering does not re-parse the domain table text. The selection is performed from in-memory hit objects produced by pyHMMER.
 
-Use domtblout as an audit artifact to interpret why a hit likely passed or failed.
+Use the domain table as an audit artifact to interpret why a hit likely passed or failed.
 
 ## combine mode after filtering
 
@@ -123,6 +123,6 @@ If KO metadata says:
 - `threshold = 136.43`
 - `score_type = full`
 
-Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in domtblout.
+Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in the domain table.
 
 If `--max-evalue` remains default (`1e-5`), many such hits also fail the E-value filter.

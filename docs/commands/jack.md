@@ -34,21 +34,21 @@ When multiple seed sequences are provided, `--combine-mode` controls contig rete
 
 ## Input and output
 
-The input contigs are translated with pyrodigal using `--mode`, `--min-gene-len`, `--min-protein-len-aa`, and optionally `--ttable`. The resulting protein FASTA is cached and reused when the prediction inputs are unchanged. Use `--keep-proteins` to retain the FASTA in the output directory.
+The input contigs are translated with pyrodigal using `--mode`, `--min-gene-len`, `--min-protein-len-aa`, and optionally `--ttable`. The resulting protein FASTA is cached and reused when the prediction inputs are unchanged. Use `--keep-proteins` to retain the FASTA in the output directory as `predicted-proteins.faa` (with the cache key in `.phu/prediction.json`).
 
 A successful run writes these core outputs:
 
 ```text
 phu-jack/
-├── screened_contigs.fasta
-├── kept_contigs.txt
-├── jackhmmer_hits.tsv
-├── jackhmmer_iterations.tsv
+├── matched-contigs.fna
+├── matched-contig-ids.txt
+├── jackhmmer-hits.tsv
+├── jackhmmer-iterations.tsv
 └── .phu/
     └── run.json
 ```
 
-`jackhmmer_hits.tsv` contains final hit records and filtering metadata. `jackhmmer_iterations.tsv` records the per-iteration search summary. With `--save-hmm`, the final model is written as `last_iteration.hmm` for a single seed or under `last_iteration_hmms/` for multiple seeds.
+`jackhmmer-hits.tsv` contains final hit records and filtering metadata. `jackhmmer-iterations.tsv` records the per-iteration search summary. With `--save-hmm`, the final model is written as `final-iteration.hmm` for a single seed or under `final-iteration-hmms/` for multiple seeds.
 
 ## Command options
 
@@ -85,7 +85,7 @@ Usage: phu jack [OPTIONS] {seed_marker}
 │                                                    no-keep-proteins]         │
 │ --save-hmm           --no-save-hmm                 Save the last jackhmmer   │
 │                                                    iteration HMM as          │
-│                                                    last_iteration.hmm        │
+│                                                    final-iteration.hmm       │
 │                                                    [default: no-save-hmm]    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Prediction ─────────────────────────────────────────────────────────────────╮

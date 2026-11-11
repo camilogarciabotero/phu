@@ -5,8 +5,40 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Fixed
+
+- `screen --hmm-mode mixed`: the domain table of an HMM file holding several
+  models kept only the hits of its last model. It now holds the hits of every
+  model in the file, under one header.
+- Step timings were always reported as `0:00:00`. Every step now shows its
+  real elapsed time, on a terminal and in redirected output.
+
+### Added
+
+- `normalize-lineage` compacts `unplaced_<rank>` chains. `unplaced_<rank>`
+  becomes `U` plus the rank letter (`UR`, `UK`, `UP`, `UC`, `UO`, `UF`, `USF`,
+  `UG`), and the anchor `default` becomes `DEF`:
+  `unplaced_phylum_within_unplaced_kingdom_within_default` gives `DEF:UK:UP`.
+  Chains mixing `novel_` and `unplaced_` nodes are supported, already compact
+  values are left alone, and malformed `unplaced_` values (unknown rank, no
+  anchor, wrong rank order) are reported as unparsed.
+- Run logs for batch jobs: when the output is not a terminal, each step prints
+  a start line with a timestamp and an end line with its status and duration,
+  for example `[14:04:25] Predicting proteins done in 2m14s`.
+- `--verbose` prints one `[cmd]` line per tool: the exact command line of
+  external programs (vclust, seqkit, mafft) and the effective parameters of
+  in-process steps (pyhmmer, pyrodigal). `screen` gains `--quiet` and
+  `--verbose`, and `normalize-lineage` gains `--verbose`, so every command has
+  both. See "Run logs" in [Troubleshooting](docs/troubleshooting.md).
+
 ### Changed
 
+- `normalize-lineage`: the anchor `default` is written `DEF` in novel chains
+  too, so `novel_genus_1_of_default` now gives `DEF:NG1` instead of
+  `default:NG1`.
+- The three-line Completed / Skipped / Failed summary is no longer printed
+  after single steps; each step's own final line carries its status and time.
+  `avger`, which reports several steps together, still prints it.
 - `screen`: input HMM files that share a file name (`a/foo.hmm`, `b/foo.hmm`)
   no longer fail with "Duplicate HMM model ID". They are told apart by the
   `NAME` inside each HMM, which becomes their model ID and names their domain

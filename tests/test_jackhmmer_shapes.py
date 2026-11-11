@@ -101,7 +101,7 @@ def test_run_jackhmmer_accepts_list_iterations(monkeypatch, tmp_path):
     assert summary[1]["n_included"] == 1
 
 
-def test_run_jackhmmer_saves_last_iteration_hmm(monkeypatch, tmp_path):
+def test_run_jackhmmer_saves_final_iteration_hmm(monkeypatch, tmp_path):
     class _Iteration:
         def __init__(self, iteration, converged, hits, hmm):
             self.iteration = iteration

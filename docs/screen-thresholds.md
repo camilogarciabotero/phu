@@ -102,7 +102,7 @@ When `--use-kofam-thresholds` is enabled (default), KOfam thresholding is applie
 
 ## Domain table interpretation
 
-`--keep-domtbl` keeps the raw hmmsearch domain tables (`<hmm>-hmmsearch-domains.tbl`, HMMER `--domtblout` format) for inspection and audit.
+`--keep-domtbl` keeps the raw hmmsearch domain tables (`<hmm>-hmmsearch-domains.tbl`, the HMMER per-domain table format) for inspection and audit.
 
 In current implementation, pass/fail filtering does not re-parse the domain table text. The selection is performed from in-memory hit objects produced by pyHMMER.
 

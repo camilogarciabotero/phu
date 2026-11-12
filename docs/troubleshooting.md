@@ -26,8 +26,20 @@ Databases install automatically on first use, or with `phu dbs prepare`; see
 - **Checksum mismatch.** The download or the `PHU_DB_BUNDLE` file is corrupt or
   is a different bundle version. Download the version named in the error.
 
+- **Certificate errors** (`CERTIFICATE_VERIFY_FAILED`). Some Python installs
+  have no certificate bundle. Point Python at the system one, for example
+  `export SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt`.
+- **A slow or stalled download.** The download shows its progress and resumes
+  where it stopped when you run the command again.
+
 An interrupted install leaves nothing half-installed; run the command again.
-If you suspect an installed file was changed, run once with `PHU_DB_VERIFY=1`.
+If you suspect an installed file was changed, run `phu dbs prepare --verify`
+(or any command once with `PHU_DB_VERIFY=1`): it re-hashes every database
+file and reinstalls if a check fails.
+
+A database folder you cannot write to, such as an install shared by a
+colleague, works as is: PHU keeps the index files it builds in your own cache
+folder. See [Databases and Provenance](databases.md).
 
 ## Cache or permissions errors
 

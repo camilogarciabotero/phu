@@ -39,27 +39,31 @@ phu --version
 phu --help
 ```
 
-```bash
- Usage: phu [OPTIONS] COMMAND [ARGS]...                                                         
-                                                                                                
- Phage utilities CLI                                                                            
-                                                                                                
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────╮
-│ --version             -v        Show version and exit.                                       │
-│ --clean-cache                   Remove cached protein predictions and exit.                  │
-│ --install-completion            Install completion for the current shell.                    │
-│ --show-completion               Show completion for the current shell, to copy it or         │
-│                                 customize the installation.                                  │
-│ --help                -h        Show this message and exit.                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Workflow ───────────────────────────────────────────────────────────────────────────────────╮
-│ cluster        Sequence clustering wrapper around external 'vclust' with three modes.        │
-│ avger          Predict and curate putative auxiliary viral genes.                            │
-│ screen         Screen contigs for protein families using HMMER on predicted CDS.             │
-│ jack           Iteratively screen contigs from one or more seed protein markers with         │
-│                pyhmmer.jackhmmer.                                                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+```text
+Usage: phu [OPTIONS] COMMAND [ARGS]...
 
+ Phage utilities CLI
+
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --version      -v        Show version and exit.                              │
+│ --clean-cache            Remove cached protein predictions and exit.         │
+│ --help         -h        Show this message and exit.                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Workflow ───────────────────────────────────────────────────────────────────╮
+│ cluster            Sequence clustering wrapper around external 'vclust' with │
+│                    three modes.                                              │
+│ normalize-lineage  Normalize vContact lineage predictions without changing   │
+│                    column names.                                             │
+│ avger              Predict and curate putative auxiliary viral genes.        │
+│ screen             Screen contigs using protein-family or PUL CAZyme         │
+│                    signatures.                                               │
+│ jack               Iteratively screen contigs from one or more seed protein  │
+│                    markers with                                              │
+│                    pyhmmer.jackhmmer.                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Database Management ────────────────────────────────────────────────────────╮
+│ dbs                Install and check the phu-db database bundle              │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
 
@@ -109,9 +113,17 @@ phu cluster --mode votu --input-contigs viral-genomes.fasta
 
 ### Databases
 
-`screen` and `avger` install their reference databases automatically on first
-use, as one pinned and checksummed bundle. Run `phu dbs prepare` to install
-it ahead of time.
+`screen` and `avger` use Pfam, KOfam, dbCAN and the CheckAMG AVG tables. PHU
+ships them as one pinned and checksummed bundle, `phu-db`, which installs
+automatically on first use and shows its download progress.
+
+**Example:**
+```bash
+phu dbs prepare                              # install ahead of time
+phu dbs prepare --bundle phu-db.tar.gz       # from a pre-downloaded tarball
+```
+
+Set `PHU_DB_FOLDER` to a shared folder so every job reuses one install.
 
 [Learn more about databases and provenance →](databases.md)
 

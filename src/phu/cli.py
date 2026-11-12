@@ -293,7 +293,7 @@ def normalize_lineage(
         raise typer.Exit(1)
 
 
-@app.command("simplify-taxa", rich_help_panel="Workflow")
+@app.command("simplify-taxa", rich_help_panel="Workflow", hidden=True)
 def simplify_taxa(
     input_file: Path = typer.Option(
         ...,
@@ -332,7 +332,10 @@ def simplify_taxa(
     ),
 ):
     """
-    Simplify vContact taxonomy prediction columns into compact lineage codes.
+    Deprecated: simplify vContact taxonomy prediction columns into compact lineage codes.
+
+    This command is deprecated and will be removed in a future release. It is
+    hidden from `phu --help` but still works as before.
 
     Transforms verbose vContact taxonomy strings like 'novel_genus_1_of_novel_family_2_of_Caudoviricetes'
     into compact codes like 'Caudoviricetes:NF2:NG1'.
@@ -340,6 +343,10 @@ def simplify_taxa(
     Example:
         phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
     """
+    typer.echo(
+        "Warning: 'phu simplify-taxa' is deprecated and will be removed in a future release.",
+        err=True,
+    )
     set_verbosity(quiet=quiet, verbose=verbose)
     # Build config
     cfg = TaxaConfig(

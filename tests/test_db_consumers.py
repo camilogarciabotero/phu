@@ -6,7 +6,7 @@ import pyhmmer
 import pytest
 from typer.testing import CliRunner
 
-from phu import avg, db_bundle, dbcan_db, kofam_db, pfam_db
+from phu import avg, db_bundle, dbcan_db, kofam_db, pfam_db, screen
 from phu.avg_reference_db import load_avg_reference
 from phu.cli import app
 
@@ -158,3 +158,87 @@ def test_dbs_prepare_reports_a_wrong_bundle(installed, monkeypatch, tmp_path):
 
     assert result.exit_code == 1
     assert "different or corrupt bundle" in result.stderr
+
+
+@pytest.fixture
+def index_locks(monkeypatch):
+    """Record each directory whose index lock is taken."""
+    taken = []
+    real = db_bundle.derived_files_lock
+
+    def recording(directory, *args, **kwargs):
+        taken.append(Path(directory).name)
+        return real(directory, *args, **kwargs)
+
+    for module in (pfam_db, kofam_db, dbcan_db):
+        monkeypatch.setattr(module, "derived_files_lock", recording)
+    return taken
+
+
+def test_indexes_are_built_under_a_lock_and_only_once(installed, tmp_path, index_locks):
+    pfam_hmm = Path(pfam_db.ensure_pfam_database()["hmm_path"])
+    for _ in range(2):
+        pfam_db.extract_pfam_models(pfam_hmm, ["PF00001"], tmp_path / "pfam")
+        kofam_db.extract_kofam_models(["K00003"], tmp_path / "kofam")
+        dbcan_db.extract_dbcan_models(["CBM48"], tmp_path / "dbcan")
+
+    # The second round finds each index valid and takes no lock.
+    assert index_locks == ["pfam", "kofam", "dbcan"]
+    for name, model in (("pfam", "PF00001"), ("kofam", "K00003"), ("dbcan", "CBM48")):
+        models = installed / name / "models"
+        assert [path.name for path in models.iterdir()] == [f"{model}.hmm"]
+
+
+def test_a_job_that_waited_for_the_index_does_not_clear_the_cache(
+    installed, tmp_path, monkeypatch
+):
+    dbcan_db.extract_dbcan_models(["CBM48"], tmp_path / "first")
+    cached = installed / "dbcan" / "models" / "CBM48.hmm"
+    assert cached.is_file()
+    # This job saw no index; by the time it holds the lock another job has built it.
+    real = dbcan_db._read_offsets
+    answers = iter([None])
+    monkeypatch.setattr(
+        dbcan_db, "_read_offsets", lambda source: next(answers, None) or real(source)
+    )
+    monkeypatch.setattr(
+        dbcan_db,
+        "_clear_sparse_models_cache",
+        lambda: pytest.fail("the cache another job is using was cleared"),
+    )
+
+    paths, missing = dbcan_db.extract_dbcan_models(["GH5"], tmp_path / "second")
+
+    assert missing == [] and _model_names(paths[0]) == ["GH5.hmm"]
+    assert cached.is_file()
+
+
+def test_query_manifest_records_the_bundle_for_every_database_query(installed, tmp_path):
+    _, _, query = screen._resolve_hmm_inputs(
+        [Path("PF00001"), Path("K00003"), Path("CBM48")], tmp_path / "out", return_query=True
+    )
+
+    manifest = screen._query_manifest(query, "any")
+
+    assert query.databases == ("pfam", "kofam", "dbcan")
+    assert manifest["phu_db"] == db_bundle.bundle_provenance()
+    assert manifest["database_hashes"]["pfam/profiles.hmm"] == (
+        db_bundle.database_hashes("pfam")["profiles.hmm"]
+    )
+    assert {key.split("/")[0] for key in manifest["database_hashes"]} == {
+        "pfam",
+        "kofam",
+        "dbcan",
+    }
+
+
+def test_query_manifest_for_local_hmms_needs_no_bundle(monkeypatch):
+    monkeypatch.setattr(
+        screen, "bundle_provenance", lambda: pytest.fail("local HMMs do not use the bundle")
+    )
+    query = screen.ScreenQuery(original_inputs=("fam.hmm",), normalized_models=())
+
+    manifest = screen._query_manifest(query, "any")
+
+    assert manifest["database_hashes"] == {}
+    assert "phu_db" not in manifest

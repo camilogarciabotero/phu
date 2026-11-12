@@ -43,8 +43,8 @@ The bundle always holds all four databases, so database names given to
    never leaves a half-installed database behind.
 
 PHU prints what it downloads, how large it is and where it goes. Later runs
-only check file sizes and line counts, which takes a moment, and do not
-download again.
+only check file sizes, and line counts of the small tables, which takes a
+moment, and do not download again.
 
 If several jobs start at once against the same database folder, the first one
 installs and the others wait for it, then reuse its result.
@@ -71,7 +71,9 @@ phu-db/
 ```
 
 When a new PHU release pins a newer bundle, it installs the new version beside
-the old one and removes the old one only after the new install succeeds.
+the old one. PHU never deletes other versions, because another PHU release
+sharing the folder may still be using them; remove an old `phu-db-<version>/`
+folder yourself once nothing needs it.
 
 ## Environment variables
 
@@ -120,9 +122,12 @@ each upstream download into the installed file.
 
 ## Provenance
 
-Each run writes the database provenance to `.phu/run.json` in its output
+Each run writes the database provenance into the `.phu/` folder of its output
 folder: the bundle version, the tarball SHA-256 and each database's upstream
-release. Keep this file with your results.
+release. `avger`, `screen --all-cazymes` and `screen --all-puls` write it to
+`.phu/run.json`; other `screen` queries that name Pfam, KOfam or dbCAN models
+write it to `.phu/query.json`, with the SHA-256 of each database file used.
+Keep these files with your results.
 
 ## Citation
 

@@ -335,8 +335,11 @@ def _file_problems(path: Path, label: str, item: PreparedFile, deep: bool) -> li
         return [f"{label} is missing"]
     if size != item.bytes:
         return [f"{label} is {size} bytes, expected {item.bytes}"]
-    # Shallow checks count TSV records only; HMMs are large, so they wait for deep.
+    # Shallow checks count TSV records only; HMMs are large, so they wait for deep
+    # and a shallow check never opens them.
     counted = item.format == "tsv" or deep
+    if not counted and not deep:
+        return []
     try:
         sha256, count = _scan_file(path, digest=deep, file_format=item.format if counted else None)
     except OSError as error:
@@ -621,6 +624,46 @@ def install_lock(
         yield
 
 
+def write_atomically(path: Path, content: bytes) -> None:
+    """Write ``content`` to ``path`` through a rename, so readers never see a partial file.
+
+    The file gets ordinary permissions (0666 less the umask), not the
+    owner-only mode of a temporary file, so other users of a shared install
+    can read it.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.urandom(6).hex()}.tmp")
+    try:
+        fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(content)
+        os.replace(temporary, path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+@contextmanager
+def derived_files_lock(directory: Path, log: Callable[[str], None] = _log_stderr) -> Iterator[None]:
+    """Hold the lock that guards the indexes and model caches built in ``directory``.
+
+    Jobs sharing an install rebuild a database's index, and clear its model
+    cache, one at a time; a job that waited must check again whether the
+    rebuild is still needed.
+    """
+    told = False
+
+    def waiting(message: str) -> None:
+        nonlocal told
+        if not told and "waiting" in message:
+            told = True
+            log(f"phu-db: waiting for another job to finish indexing {directory}")
+
+    with install_lock(Path(directory), log=waiting):
+        yield
+
+
 # Install.
 
 
@@ -731,13 +774,6 @@ def _move_into_place(staged: Path, target: Path, db_folder: Path) -> None:
         shutil.rmtree(aside, ignore_errors=True)
 
 
-def _remove_other_versions(target: Path, log: Callable[[str], None]) -> None:
-    for path in sorted(target.parent.iterdir()):
-        if path.name != target.name and path.is_dir() and not path.is_symlink():
-            log(f"phu-db: removing previous install {path}")
-            shutil.rmtree(path, ignore_errors=True)
-
-
 def _same_file(path: Path, other: Path | None) -> bool:
     try:
         return other is not None and os.path.samefile(path, other)
@@ -751,11 +787,11 @@ def _clean_up(
     """Remove what installs leave behind once ``target`` is valid; under the lock.
 
     Run on every install() call, so whatever a run killed after its replace
-    left (older versions, the downloaded tarball, temp directories) is removed
-    by the next one. The user's own tarball is never touched.
+    left (the downloaded tarball, temp directories) is removed by the next one.
+    The user's own tarball is never touched. Other bundle versions are kept:
+    another phu release sharing this folder may be running against them.
     """
     _remove_leftovers(db_folder, log)
-    _remove_other_versions(target, log)
     downloaded = db_folder / DOWNLOADS_DIR / TARBALL_NAME
     for path in (downloaded, downloaded.with_name(downloaded.name + ".part")):
         if path.is_file() and not _same_file(path, bundle_path):
@@ -780,9 +816,10 @@ def install(
     return it. Otherwise check free space, take the tarball (``bundle_path``,
     else $PHU_DB_BUNDLE, else a download to ``db_folder/.downloads``) only after
     its size and sha256 match the pins, extract it, deep validate every file and
-    replace the installed tree in one rename. Older versions and the downloaded
-    tarball are removed after, and again by any later call, so an interrupted
-    clean-up is finished. The user's own tarball is never modified or deleted.
+    replace the installed tree in one rename. The downloaded tarball is removed
+    after, and again by any later call, so an interrupted clean-up is finished.
+    Other bundle versions under ``phu-db/`` are left for the user to delete.
+    The user's own tarball is never modified or deleted.
     Progress goes to ``log`` (stderr by default).
     """
     db_folder = Path(db_folder)

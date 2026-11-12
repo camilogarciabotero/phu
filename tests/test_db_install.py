@@ -260,15 +260,21 @@ def test_failed_deep_check_reinstalls_when_asked(run, db_folder, fetch, fixture_
     _assert_installed(target)
 
 
-def test_older_version_is_removed(run, db_folder, fixture_pins, logs):
+def test_other_versions_are_kept(run, db_folder, fixture_pins, logs):
+    # Another phu release sharing the folder may be running against its own version.
     old = db_folder / "phu-db" / "phu-db-0.1.0"
     (old / "pfam").mkdir(parents=True)
     (old / "pfam" / "profiles.hmm").write_text("old\n")
 
     target = run()
+    run()
 
-    assert sorted(path.name for path in (db_folder / "phu-db").iterdir()) == [target.name]
-    assert any(str(old) in message for message in logs)
+    assert sorted(path.name for path in (db_folder / "phu-db").iterdir()) == [
+        "phu-db-0.1.0",
+        target.name,
+    ]
+    assert (old / "pfam" / "profiles.hmm").read_text() == "old\n"
+    assert not any(str(old) in message for message in logs)
 
 
 def test_stale_invalid_target_is_replaced(run, db_folder, fixture_pins):
@@ -331,23 +337,20 @@ def test_bundle_with_altered_content_is_not_installed(
 def test_interrupted_clean_up_is_finished_by_the_next_install(
     run, monkeypatch, db_folder, fetch, fixture_pins, logs
 ):
-    old = db_folder / "phu-db" / "phu-db-0.1.0"
-    (old / "pfam").mkdir(parents=True)
-    real = db_bundle._remove_other_versions
+    real = db_bundle._clean_up
 
-    def killed(target, log):
-        raise KeyboardInterrupt("job killed while removing the old version")
+    def killed(*args):
+        raise KeyboardInterrupt("job killed while cleaning up")
 
-    monkeypatch.setattr(db_bundle, "_remove_other_versions", killed)
+    monkeypatch.setattr(db_bundle, "_clean_up", killed)
     with pytest.raises(KeyboardInterrupt):
         run()
     downloads = db_folder / ".downloads"
-    assert old.is_dir()
     assert (downloads / "phu-db.tar.gz").is_file()
     # And a later failed download, and a killed extraction.
     (downloads / "phu-db.tar.gz.part").write_bytes(b"partial")
     (db_folder / ".phu-db-tmp-dead").mkdir()
-    monkeypatch.setattr(db_bundle, "_remove_other_versions", real)
+    monkeypatch.setattr(db_bundle, "_clean_up", real)
     fetch.calls.clear()
     fetch.source = None
 
@@ -932,3 +935,33 @@ def test_concurrent_installs_wait_and_install_once(
     assert json.loads((signals / "first.done").read_text()) == [stat.st_ino, stat.st_mtime_ns]
     assert json.loads((signals / "second.done").read_text()) == [stat.st_ino, stat.st_mtime_ns]
     _assert_installed(_target(db_folder, fixture_pins))
+
+
+def test_shallow_validation_never_opens_an_hmm_file(installed, fixture_manifest, monkeypatch):
+    real = db_bundle._scan_file
+    scanned = []
+
+    def recording(path, **kwargs):
+        scanned.append(path.name)
+        return real(path, **kwargs)
+
+    monkeypatch.setattr(db_bundle, "_scan_file", recording)
+
+    assert tree_problems(installed, fixture_manifest, deep=False) == []
+    assert scanned and "profiles.hmm" not in scanned
+    scanned.clear()
+    assert tree_problems(installed, fixture_manifest, deep=True) == []
+    assert scanned.count("profiles.hmm") == 3
+
+
+def test_write_atomically_leaves_one_readable_file(tmp_path):
+    path = tmp_path / "models" / "GH5.hmm"
+
+    db_bundle.write_atomically(path, b"first")
+    db_bundle.write_atomically(path, b"second")
+
+    assert path.read_bytes() == b"second"
+    assert [item.name for item in path.parent.iterdir()] == ["GH5.hmm"]
+    umask = os.umask(0)
+    os.umask(umask)
+    assert path.stat().st_mode & 0o777 == 0o666 & ~umask

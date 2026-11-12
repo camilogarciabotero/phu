@@ -206,3 +206,19 @@ def test_commands_have_quiet_and_verbose(command: str) -> None:
     assert result.exit_code == 0
     assert "--quiet" in output
     assert "--verbose" in output
+
+
+def test_screen_reports_an_os_error_from_the_database_install(tmp_path, monkeypatch):
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c1\nATG\n")
+
+    def full_disk(config):
+        raise OSError(122, "Disk quota exceeded", str(tmp_path / "db"))
+
+    monkeypatch.setattr(cli_module, "_screen", full_disk)
+
+    result = runner.invoke(app, ["screen", "-i", str(contigs), "PF00001"])
+
+    assert result.exit_code == 1
+    assert "Disk quota exceeded" in result.stderr
+    assert "Traceback" not in result.output

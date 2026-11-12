@@ -25,7 +25,11 @@ behavior in the unreleased branch and may change before a release.
   tarball, for offline and HPC nodes) and `PHU_DB_VERIFY=1` (re-hash every
   installed file on this run).
 - `.phu/run.json` now records the bundle version, tarball SHA-256 and each
-  database's upstream release.
+  database's upstream release. `screen` queries by Pfam, KOfam or dbCAN model
+  record the same in `.phu/query.json`, also when no proteins are predicted.
+- Installing a newer bundle keeps other `phu-db-<version>/` folders, so two phu
+  releases can share one `PHU_DB_FOLDER`.
+- Jobs that share an install build each database's index one at a time.
 - Migration: the old `pfam/`, `kofam/`, `dbcan/`, `avg/` and `vscore/` folders
   in `PHU_DB_FOLDER` are no longer read and can be deleted by hand. See
   [Databases and Provenance](docs/databases.md).

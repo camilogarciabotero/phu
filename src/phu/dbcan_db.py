@@ -7,7 +7,13 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from .db_bundle import bundle_provenance, database_hashes, resolve_db
+from .db_bundle import (
+    bundle_provenance,
+    database_hashes,
+    derived_files_lock,
+    resolve_db,
+    write_atomically,
+)
 
 DBCAN_NAME = "dbcan"
 DBCAN_SCHEMA_VERSION = 3
@@ -156,15 +162,8 @@ def parse_pul_rules(path: Path, family_ids: set[str]) -> dict[str, PULRule]:
     return rules
 
 
-def _load_offsets() -> dict[str, list[int]]:
-    """Model name -> byte span in profiles.hmm, from an index kept beside it.
-
-    The index is rebuilt, and the sparse model cache cleared, whenever it does
-    not describe the profiles.hmm that is there now.
-    """
-    hmm_path = _hmm_path()
-    stat = hmm_path.stat()
-    source = {"size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+def _read_offsets(source: dict[str, int]) -> dict[str, list[int]] | None:
+    """The stored index, if it describes the profiles.hmm that is there now."""
     try:
         index = json.loads(_offsets_path().read_text())
         if (
@@ -175,10 +174,30 @@ def _load_offsets() -> dict[str, list[int]]:
             return index["offsets"]
     except (OSError, KeyError, TypeError, ValueError):
         pass
-    _clear_sparse_models_cache()
-    offsets = build_family_offsets(hmm_path)
-    index = {"schema_version": DBCAN_SCHEMA_VERSION, "source": source, "offsets": offsets}
-    _atomic_write(_offsets_path(), (json.dumps(index, indent=2) + "\n").encode())
+    return None
+
+
+def _load_offsets() -> dict[str, list[int]]:
+    """Model name -> byte span in profiles.hmm, from an index kept beside it.
+
+    The index is rebuilt, and the sparse model cache cleared, whenever it does
+    not describe the profiles.hmm that is there now. Jobs sharing the install
+    do that one at a time, and a job that waited uses the index the other built.
+    """
+    hmm_path = _hmm_path()
+    stat = hmm_path.stat()
+    source = {"size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+    offsets = _read_offsets(source)
+    if offsets is not None:
+        return offsets
+    with derived_files_lock(_dbcan_root()):
+        offsets = _read_offsets(source)
+        if offsets is not None:
+            return offsets
+        _clear_sparse_models_cache()
+        offsets = build_family_offsets(hmm_path)
+        index = {"schema_version": DBCAN_SCHEMA_VERSION, "source": source, "offsets": offsets}
+        write_atomically(_offsets_path(), (json.dumps(index, indent=2) + "\n").encode())
     return offsets
 
 
@@ -211,9 +230,12 @@ def extract_dbcan_models(requested_ids: list[str], output_dir: Path) -> tuple[li
                     missing.append(family)
                     continue
                 handle.seek(span[0])
-                cache_path.write_bytes(handle.read(span[1] - span[0]))
+                blob = handle.read(span[1] - span[0])
+                write_atomically(cache_path, blob)
+            else:
+                blob = cache_path.read_bytes()
             output_path = output_dir / cache_path.name
-            output_path.write_bytes(cache_path.read_bytes())
+            output_path.write_bytes(blob)
             paths.append(output_path)
     return paths, missing
 

@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 
 from ._click import run_click_task
-from .db_bundle import resolve_db
+from .db_bundle import derived_files_lock, resolve_db, write_atomically
 
 PFAM_ID_PREFIX = "PF"
 PFAM_NAME = "Pfam-A"
@@ -192,9 +192,13 @@ def _extract_from_split_cache(
     """Resolve requested PFAM IDs via offset index and sparse local model cache."""
     # Validate index against source DB before serving any sparse cached models.
     # If source changed, clear stale per-model cache and rebuild offsets.
+    # Jobs sharing the install do this one at a time; one that waited finds the
+    # index valid and leaves the other's cache alone.
     if not _is_offsets_index_valid(hmm_db_path):
-        _clear_sparse_models_cache(hmm_db_path)
-        _build_offsets_index(hmm_db_path)
+        with derived_files_lock(hmm_db_path.parent):
+            if not _is_offsets_index_valid(hmm_db_path):
+                _clear_sparse_models_cache(hmm_db_path)
+                _build_offsets_index(hmm_db_path)
 
     models_dir = _pfam_models_dir(hmm_db_path)
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -243,7 +247,7 @@ def _extract_from_split_cache(
                 handle.seek(start)
                 model_blob = handle.read(end - start)
                 cache_path = models_dir / f"{pfam_id}.hmm"
-                cache_path.write_bytes(model_blob)
+                write_atomically(cache_path, model_blob)
 
                 out_path = output_dir / f"{pfam_id}.hmm"
                 out_path.write_bytes(model_blob)

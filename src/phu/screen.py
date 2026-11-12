@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import dataclasses
 import gzip
 import json
 import logging
@@ -124,6 +125,8 @@ class ScreenQuery:
     excluded_ancillary_profiles: tuple[str, ...] = ()
     database_version: str | None = None
     database_digest: str | None = None
+    # The phu-db databases the query's models came from; empty for local HMM files.
+    databases: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -149,6 +152,37 @@ def _best_hit_key(hit: Hit) -> tuple[float, float, float, str]:
 def _dbcan_hashes() -> dict[str, str]:
     """The pinned sha256 of each dbCAN file in the phu-db bundle."""
     return database_hashes("dbcan")
+
+
+def _query_manifest(query: ScreenQuery, combine_mode: str) -> dict[str, object]:
+    """What was asked and which databases answered it, for .phu/query.json.
+
+    ``database_hashes`` keeps its dbCAN-only file names for --all-cazymes; any
+    other database-backed query lists ``<database>/<file>`` for each database
+    it used. ``phu_db`` is present whenever a bundled database was used.
+    """
+    if query.all_cazymes:
+        hashes = _dbcan_hashes()
+    else:
+        hashes = {
+            f"{name}/{path}": sha256
+            for name in query.databases
+            for path, sha256 in database_hashes(name).items()
+        }
+    manifest: dict[str, object] = {
+        "original_query": list(query.original_inputs),
+        "normalized_models": list(query.normalized_models),
+        "pul_id": query.pul_id,
+        "pul_substrate": query.pul_substrate,
+        "pul_raw_rule": query.pul_raw_rule,
+        "matching_rule": "threshold"
+        if query.pul_id and combine_mode == "threshold"
+        else query.matching_rule,
+        "database_hashes": hashes,
+    }
+    if query.databases:
+        manifest["phu_db"] = bundle_provenance()
+    return manifest
 
 
 def _write_tsv(
@@ -683,6 +717,7 @@ def _resolve_all_puls_inputs(
         normalized_models=tuple(families),
         matching_rule="any_pul_all_families",
         all_puls=True,
+        databases=("dbcan",),
         total_pul_count=len(rules),
         resolvable_pul_count=len(resolvable),
         skipped_puls=skipped,
@@ -721,6 +756,7 @@ def _resolve_all_cazymes_inputs(
         normalized_models=canonical,
         matching_rule="any",
         all_cazymes=True,
+        databases=("dbcan",),
         total_hmm_profiles=len(canonical) + len(excluded),
         excluded_ancillary_profiles=excluded,
         database_version=database_manifest.get("release"),
@@ -913,6 +949,10 @@ def _resolve_hmm_inputs(
             original_inputs=tuple(str(value) for value in hmm_inputs),
             normalized_models=(*dedup_pfam_ids, *dedup_ko_ids, *dedup_dbcan_ids),
         )
+    used = {"pfam": dedup_pfam_ids, "kofam": dedup_ko_ids, "dbcan": dedup_dbcan_ids}
+    query = dataclasses.replace(
+        query, databases=tuple(name for name, ids in used.items() if ids)
+    )
     if return_query:
         return resolved, ko_metadata, query
     return resolved, ko_metadata
@@ -2036,6 +2076,12 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 )
                 + "\n"
             )
+        if not query.all_puls and not query.all_cazymes:
+            query_path = plan.outdir / QUERY_MANIFEST
+            query_path.parent.mkdir(parents=True, exist_ok=True)
+            query_path.write_text(
+                json.dumps(_query_manifest(query, cfg.combine_mode), indent=2) + "\n"
+            )
         if cache_artifact.temp_dir is not None:
             shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
         return plan
@@ -2219,20 +2265,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             if domtbl_path.exists():
                 domtbl_path.unlink()
 
-    database_hashes = _dbcan_hashes() if query.all_cazymes else {}
-    query_manifest = {
-        "original_query": list(query.original_inputs),
-        "normalized_models": list(query.normalized_models),
-        "pul_id": query.pul_id,
-        "pul_substrate": query.pul_substrate,
-        "pul_raw_rule": query.pul_raw_rule,
-        "matching_rule": "threshold"
-        if query.pul_id and cfg.combine_mode == "threshold"
-        else query.matching_rule,
-        "database_hashes": database_hashes,
-    }
-    if database_hashes:
-        query_manifest["phu_db"] = bundle_provenance()
+    query_manifest = _query_manifest(query, cfg.combine_mode)
+    database_hashes = query_manifest["database_hashes"]
     if query.all_cazymes:
         by_class = defaultdict(int)
         for model in query.normalized_models:

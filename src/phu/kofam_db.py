@@ -13,7 +13,7 @@ from typing import Optional
 import click
 
 from ._click import run_click_task
-from .db_bundle import resolve_db
+from .db_bundle import derived_files_lock, resolve_db, write_atomically
 
 logger = logging.getLogger(__name__)
 
@@ -324,9 +324,13 @@ def extract_kofam_models(
     if not hmm_db_path.exists():
         raise FileNotFoundError(f"KOFam HMM database not found: {hmm_db_path}")
 
+    # Jobs sharing the install do this one at a time; one that waited finds the
+    # index valid and leaves the other's cache alone.
     if not _is_offsets_index_valid(hmm_db_path):
-        _clear_sparse_models_cache()
-        _build_offsets_index(hmm_db_path)
+        with derived_files_lock(hmm_db_path.parent):
+            if not _is_offsets_index_valid(hmm_db_path):
+                _clear_sparse_models_cache()
+                _build_offsets_index(hmm_db_path)
 
     models_dir = _kofam_models_dir()
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -378,7 +382,7 @@ def extract_kofam_models(
                 model_blob = handle.read(end - start)
 
                 cache_path = models_dir / f"{ko_id}.hmm"
-                cache_path.write_bytes(model_blob)
+                write_atomically(cache_path, model_blob)
 
                 out_path = output_dir / f"{ko_id}.hmm"
                 out_path.write_bytes(model_blob)

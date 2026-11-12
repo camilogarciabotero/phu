@@ -870,11 +870,25 @@ binary automatically.</p>
   <code>PHU_DB_FOLDER</code> and reports the exact amount when it stops.</li>
 <li><strong>No internet access</strong> on the node. Download the bundle elsewhere and set
   <code>PHU_DB_BUNDLE</code> to its path.</li>
-<li><strong>Checksum mismatch.</strong> The download or the <code>PHU_DB_BUNDLE</code> file is corrupt or
-  is a different bundle version. Download the version named in the error.</li>
+<li>
+<p><strong>Checksum mismatch.</strong> The download or the <code>PHU_DB_BUNDLE</code> file is corrupt or
+  is a different bundle version. Download the version named in the error.</p>
+</li>
+<li>
+<p><strong>Certificate errors</strong> (<code>CERTIFICATE_VERIFY_FAILED</code>). Some Python installs
+  have no certificate bundle. Point Python at the system one, for example
+  <code>export SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt</code>.</p>
+</li>
+<li><strong>A slow or stalled download.</strong> The download shows its progress and resumes
+  where it stopped when you run the command again.</li>
 </ul>
 <p>An interrupted install leaves nothing half-installed; run the command again.
-If you suspect an installed file was changed, run once with <code>PHU_DB_VERIFY=1</code>.</p>
+If you suspect an installed file was changed, run <code>phu dbs prepare --verify</code>
+(or any command once with <code>PHU_DB_VERIFY=1</code>): it re-hashes every database
+file and reinstalls if a check fails.</p>
+<p>A database folder you cannot write to, such as an install shared by a
+colleague, works as is: PHU keeps the index files it builds in your own cache
+folder. See <a href="../databases/">Databases and Provenance</a>.</p>
 <h2 id="cache-or-permissions-errors">Cache or permissions errors<a class="headerlink" href="#cache-or-permissions-errors" title="Permanent link">&para;</a></h2>
 <p>Set a writable cache location explicitly when the default home cache is not
 available:</p>

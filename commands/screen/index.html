@@ -1032,8 +1032,9 @@ signatures. Only one PUL can be queried per run, and PUL queries cannot be
 mixed with other database or local-HMM inputs.</p>
 <p>This is PUL CAZyme-signature screening. Family co-occurrence alone does not
 identify a biological PUL or predict its substrate. Each run writes
-<code>.phu/query.json</code> with the original query, expansion, matching rule, and
-database hashes.</p>
+<code>.phu/query.json</code> with the original query, expansion and matching rule. When
+the query names Pfam, KOfam or dbCAN models, it also records the <code>phu-db</code>
+bundle version and the SHA-256 of each database file used.</p>
 <p>To screen against every resolvable PUL signature:</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--all-puls
 </code></pre></div>
@@ -1181,7 +1182,7 @@ download). For install location, offline use and disk needs, see
 <tr>
 <td><code>.phu/query.json</code></td>
 <td>always, except <code>--all-cazymes</code> / <code>--all-puls</code></td>
-<td>Original query, expansion, matching rule and database hashes</td>
+<td>Original query, expansion and matching rule; for Pfam, KOfam and dbCAN queries also the <code>phu-db</code> bundle version and database file hashes</td>
 </tr>
 <tr>
 <td><code>.phu/run.json</code></td>

@@ -1113,25 +1113,30 @@ mamba<span class="w"> </span>activate<span class="w"> </span>phu
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>--version
 phu<span class="w"> </span>--help
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...<span class="w">                                                         </span>
+<div class="highlight"><pre><span></span><code>Usage: phu [OPTIONS] COMMAND [ARGS]...
 
-<span class="w"> </span>Phage<span class="w"> </span>utilities<span class="w"> </span>CLI<span class="w">                                                                            </span>
+ Phage utilities CLI
 
-╭─<span class="w"> </span>Options<span class="w"> </span>────────────────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>--version<span class="w">             </span>-v<span class="w">        </span>Show<span class="w"> </span>version<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                       </span>│
-│<span class="w"> </span>--clean-cache<span class="w">                   </span>Remove<span class="w"> </span>cached<span class="w"> </span>protein<span class="w"> </span>predictions<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                  </span>│
-│<span class="w"> </span>--install-completion<span class="w">            </span>Install<span class="w"> </span>completion<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>current<span class="w"> </span>shell.<span class="w">                    </span>│
-│<span class="w"> </span>--show-completion<span class="w">               </span>Show<span class="w"> </span>completion<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>current<span class="w"> </span>shell,<span class="w"> </span>to<span class="w"> </span>copy<span class="w"> </span>it<span class="w"> </span>or<span class="w">         </span>│
-│<span class="w">                                 </span>customize<span class="w"> </span>the<span class="w"> </span>installation.<span class="w">                                  </span>│
-│<span class="w"> </span>--help<span class="w">                </span>-h<span class="w">        </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                  </span>│
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─<span class="w"> </span>Workflow<span class="w"> </span>───────────────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>cluster<span class="w">        </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">'vclust'</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">        </span>│
-│<span class="w"> </span>avger<span class="w">          </span>Predict<span class="w"> </span>and<span class="w"> </span>curate<span class="w"> </span>putative<span class="w"> </span>auxiliary<span class="w"> </span>viral<span class="w"> </span>genes.<span class="w">                            </span>│
-│<span class="w"> </span>screen<span class="w">         </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>protein<span class="w"> </span>families<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">             </span>│
-│<span class="w"> </span>jack<span class="w">           </span>Iteratively<span class="w"> </span>screen<span class="w"> </span>contigs<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>seed<span class="w"> </span>protein<span class="w"> </span>markers<span class="w"> </span>with<span class="w">         </span>│
-│<span class="w">                </span>pyhmmer.jackhmmer.<span class="w">                                                            </span>│
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --version      -v        Show version and exit.                              │
+│ --clean-cache            Remove cached protein predictions and exit.         │
+│ --help         -h        Show this message and exit.                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Workflow ───────────────────────────────────────────────────────────────────╮
+│ cluster            Sequence clustering wrapper around external 'vclust' with │
+│                    three modes.                                              │
+│ normalize-lineage  Normalize vContact lineage predictions without changing   │
+│                    column names.                                             │
+│ avger              Predict and curate putative auxiliary viral genes.        │
+│ screen             Screen contigs using protein-family or PUL CAZyme         │
+│                    signatures.                                               │
+│ jack               Iteratively screen contigs from one or more seed protein  │
+│                    markers with                                              │
+│                    pyhmmer.jackhmmer.                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Database Management ────────────────────────────────────────────────────────╮
+│ dbs                Install and check the phu-db database bundle              │
+╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="available-commands">Available Commands<a class="headerlink" href="#available-commands" title="Permanent link">&para;</a></h2>
 <h3 id="screen-protein-family-screening"><code>screen</code> - Protein Family Screening<a class="headerlink" href="#screen-protein-family-screening" title="Permanent link">&para;</a></h3>
@@ -1160,9 +1165,14 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 </code></pre></div></p>
 <p><a href="commands/cluster/">Learn more about clustering →</a></p>
 <h3 id="databases">Databases<a class="headerlink" href="#databases" title="Permanent link">&para;</a></h3>
-<p><code>screen</code> and <code>avger</code> install their reference databases automatically on first
-use, as one pinned and checksummed bundle. Run <code>phu dbs prepare</code> to install
-it ahead of time.</p>
+<p><code>screen</code> and <code>avger</code> use Pfam, KOfam, dbCAN and the CheckAMG AVG tables. PHU
+ships them as one pinned and checksummed bundle, <code>phu-db</code>, which installs
+automatically on first use and shows its download progress.</p>
+<p><strong>Example:</strong>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w">                              </span><span class="c1"># install ahead of time</span>
+phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>--bundle<span class="w"> </span>phu-db.tar.gz<span class="w">       </span><span class="c1"># from a pre-downloaded tarball</span>
+</code></pre></div></p>
+<p>Set <code>PHU_DB_FOLDER</code> to a shared folder so every job reuses one install.</p>
 <p><a href="databases/">Learn more about databases and provenance →</a></p>
 <h3 id="normalize-lineage-normalize-vcontact-lineage"><code>normalize-lineage</code> - Normalize vContact Lineage<a class="headerlink" href="#normalize-lineage-normalize-vcontact-lineage" title="Permanent link">&para;</a></h3>
 <p>Normalize vContact lineage predictions while preserving the input table schema.</p>

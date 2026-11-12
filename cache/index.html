@@ -635,6 +635,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#database-index-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database index files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#practical-cases" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -789,6 +800,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#database-index-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database index files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#practical-cases" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -860,6 +882,13 @@
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>--clean-cache
 </code></pre></div>
 <p>This removes the full cache directory resolved by <code>PHU_CACHE_DIR</code> (or the default cache path) and exits.</p>
+<h2 id="database-index-files">Database index files<a class="headerlink" href="#database-index-files" title="Permanent link">&para;</a></h2>
+<p>The cache directory can also hold a <code>phu-db-derived/</code> folder. PHU builds a
+small index and per-model files for each reference database the first time it
+is queried. They normally sit beside the database files; when the database
+install is read-only for you, PHU keeps them here instead. <code>phu --clean-cache</code>
+removes them too, and they are rebuilt on the next database query. See
+<a href="../databases/">Databases and Provenance</a>.</p>
 <h2 id="practical-cases">Practical cases<a class="headerlink" href="#practical-cases" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Changing only HMM files in <code>screen</code> reuses the cached proteins.</li>

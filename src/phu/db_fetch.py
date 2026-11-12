@@ -171,6 +171,9 @@ class _Download:
         self.offset = 0
         self.digest = hashlib.sha256()
         self.resumed = 0
+        # The file is empty again: say so now, not when the next chunk arrives.
+        if self.progress is not None:
+            self.progress(0)
 
     def resume_existing(self) -> None:
         """Pick up a .part left by an earlier call, re-hashing what it holds.
@@ -297,8 +300,8 @@ def download_verified(
     """Download ``url`` to ``dest`` and return ``dest`` once size and sha256 match.
 
     ``progress``, if given, is called with the bytes on disk so far: once after
-    an existing ``.part`` is taken over, then after every chunk. The count goes
-    back to zero when a download starts over.
+    an existing ``.part`` is taken over, then after every chunk. The count is
+    reported as zero as soon as a download starts over.
 
     Bytes stream into ``<dest>.part``; an existing ``.part`` is re-hashed and
     resumed with a Range request. If a resumed file fails its sha256, the

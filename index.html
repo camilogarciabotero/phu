@@ -10,7 +10,7 @@
       
       
       
-        <link rel="next" href="commands/dbs/">
+        <link rel="next" href="commands/cluster/">
       
       
         
@@ -426,21 +426,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dbs-database-management" class="md-nav__link">
+  <a href="#databases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        dbs - Database Management
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simplify-taxa-taxonomy-simplification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        simplify-taxa - Taxonomy Simplification
+        Databases
       
     </span>
   </a>
@@ -580,34 +569,6 @@
   
   
     <li class="md-nav__item">
-      <a href="commands/dbs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    dbs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="commands/cluster/" class="md-nav__link">
         
   
@@ -644,34 +605,6 @@
     
   
     avger
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="commands/simplify-taxa/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    simplify-taxa
   
 
     
@@ -1050,21 +983,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dbs-database-management" class="md-nav__link">
+  <a href="#databases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        dbs - Database Management
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simplify-taxa-taxonomy-simplification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        simplify-taxa - Taxonomy Simplification
+        Databases
       
     </span>
   </a>
@@ -1205,14 +1127,10 @@ phu<span class="w"> </span>--help
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─<span class="w"> </span>Workflow<span class="w"> </span>───────────────────────────────────────────────────────────────────────────────────╮
 │<span class="w"> </span>cluster<span class="w">        </span>Sequence<span class="w"> </span>clustering<span class="w"> </span>wrapper<span class="w"> </span>around<span class="w"> </span>external<span class="w"> </span><span class="s1">'vclust'</span><span class="w"> </span>with<span class="w"> </span>three<span class="w"> </span>modes.<span class="w">        </span>│
-│<span class="w"> </span>simplify-taxa<span class="w">  </span>Simplify<span class="w"> </span>vContact<span class="w"> </span>taxonomy<span class="w"> </span>prediction<span class="w"> </span>columns<span class="w"> </span>into<span class="w"> </span>compact<span class="w"> </span>lineage<span class="w"> </span>codes.<span class="w">     </span>│
 │<span class="w"> </span>avger<span class="w">          </span>Predict<span class="w"> </span>and<span class="w"> </span>curate<span class="w"> </span>putative<span class="w"> </span>auxiliary<span class="w"> </span>viral<span class="w"> </span>genes.<span class="w">                            </span>│
 │<span class="w"> </span>screen<span class="w">         </span>Screen<span class="w"> </span>contigs<span class="w"> </span><span class="k">for</span><span class="w"> </span>protein<span class="w"> </span>families<span class="w"> </span>using<span class="w"> </span>HMMER<span class="w"> </span>on<span class="w"> </span>predicted<span class="w"> </span>CDS.<span class="w">             </span>│
 │<span class="w"> </span>jack<span class="w">           </span>Iteratively<span class="w"> </span>screen<span class="w"> </span>contigs<span class="w"> </span>from<span class="w"> </span>one<span class="w"> </span>or<span class="w"> </span>more<span class="w"> </span>seed<span class="w"> </span>protein<span class="w"> </span>markers<span class="w"> </span>with<span class="w">         </span>│
 │<span class="w">                </span>pyhmmer.jackhmmer.<span class="w">                                                            </span>│
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─<span class="w"> </span>Database<span class="w"> </span>Management<span class="w"> </span>────────────────────────────────────────────────────────────────────────╮
-│<span class="w"> </span>dbs<span class="w">            </span>Manage<span class="w"> </span><span class="nb">local</span><span class="w"> </span>phu<span class="w"> </span>databases<span class="w">                                                    </span>│
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <h2 id="available-commands">Available Commands<a class="headerlink" href="#available-commands" title="Permanent link">&para;</a></h2>
@@ -1241,29 +1159,11 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>cluster<span class="w"> </span>--mode<span class="w"> </span>votu<span class="w"> </span>--input-contigs<span class="w"> </span>viral-genomes.fasta
 </code></pre></div></p>
 <p><a href="commands/cluster/">Learn more about clustering →</a></p>
-<h3 id="dbs-database-management"><code>dbs</code> - Database Management<a class="headerlink" href="#dbs-database-management" title="Permanent link">&para;</a></h3>
-<p>Manage local database lifecycle with a command group designed for multiple backends.</p>
-<p>Available operations:</p>
-<ul>
-<li><code>phu dbs list</code></li>
-<li><code>phu dbs status [DB ...]</code></li>
-<li><code>phu dbs prepare [DB ...]</code></li>
-<li><code>phu dbs refresh [DB ...]</code></li>
-<li><code>phu dbs remove [DB ...] --yes</code></li>
-</ul>
-<p><code>pfam</code>, <code>kofam</code>, <code>dbcan</code>, and <code>avg</code> are available in this build.
-Database preparation may download large files; inspect status and available
-metadata before preparing a backend.</p>
-<p><strong>Example:</strong>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>pfam<span class="w"> </span>kofam
-</code></pre></div></p>
-<p><a href="commands/dbs/">Learn more about database management →</a></p>
-<h3 id="simplify-taxa-taxonomy-simplification"><code>simplify-taxa</code> - Taxonomy Simplification<a class="headerlink" href="#simplify-taxa-taxonomy-simplification" title="Permanent link">&para;</a></h3>
-<p>Simplify verbose vContact taxonomy predictions into compact lineage codes for easier analysis and visualization.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>simplify-taxa<span class="w"> </span>-i<span class="w"> </span>final_assignments.csv<span class="w"> </span>-o<span class="w"> </span>simplified_taxonomy.csv
-</code></pre></div></p>
-<p><a href="commands/simplify-taxa/">Learn more about taxonomy simplification →</a></p>
+<h3 id="databases">Databases<a class="headerlink" href="#databases" title="Permanent link">&para;</a></h3>
+<p><code>screen</code> and <code>avger</code> install their reference databases automatically on first
+use, as one pinned and checksummed bundle. Run <code>phu dbs prepare</code> to install
+it ahead of time.</p>
+<p><a href="databases/">Learn more about databases and provenance →</a></p>
 <h3 id="normalize-lineage-normalize-vcontact-lineage"><code>normalize-lineage</code> - Normalize vContact Lineage<a class="headerlink" href="#normalize-lineage-normalize-vcontact-lineage" title="Permanent link">&para;</a></h3>
 <p>Normalize vContact lineage predictions while preserving the input table schema.</p>
 <p><a href="commands/normalize-lineage/">Learn more about lineage normalization →</a></p>

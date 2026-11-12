@@ -330,34 +330,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../commands/dbs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    dbs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../commands/cluster/" class="md-nav__link">
         
   
@@ -394,34 +366,6 @@
     
   
     avger
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../commands/simplify-taxa/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    simplify-taxa
   
 
     
@@ -685,10 +629,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#database-is-not-ready" class="md-nav__link">
+  <a href="#database-install-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database is not ready
+        Database install fails
       
     </span>
   </a>
@@ -823,10 +767,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#database-is-not-ready" class="md-nav__link">
+  <a href="#database-install-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database is not ready
+        Database install fails
       
     </span>
   </a>
@@ -918,16 +862,19 @@ use <code>seqkit</code>. Confirm that required programs are available on <code>P
 <p>Install the missing program using the environment or package manager appropriate
 for your system, then rerun the command. PHU does not install every external
 binary automatically.</p>
-<h2 id="database-is-not-ready">Database is not ready<a class="headerlink" href="#database-is-not-ready" title="Permanent link">&para;</a></h2>
-<p>Inspect local database state before running a database-backed command:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>status
-phu<span class="w"> </span>dbs<span class="w"> </span>list
-</code></pre></div>
-<p>Prepare only the named backend you need. Preparation may download large files:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>pfam
-</code></pre></div>
-<p>An interrupted or incomplete preparation should be reported by <code>status</code>; run
-<code>refresh</code> when supported, or remove and prepare the affected backend again.</p>
+<h2 id="database-install-fails">Database install fails<a class="headerlink" href="#database-install-fails" title="Permanent link">&para;</a></h2>
+<p>Databases install automatically on first use, or with <code>phu dbs prepare</code>; see
+<a href="../databases/">Databases and Provenance</a>. Common causes of a failed install:</p>
+<ul>
+<li><strong>Not enough disk space.</strong> The install needs about 12 GB free in
+  <code>PHU_DB_FOLDER</code> and reports the exact amount when it stops.</li>
+<li><strong>No internet access</strong> on the node. Download the bundle elsewhere and set
+  <code>PHU_DB_BUNDLE</code> to its path.</li>
+<li><strong>Checksum mismatch.</strong> The download or the <code>PHU_DB_BUNDLE</code> file is corrupt or
+  is a different bundle version. Download the version named in the error.</li>
+</ul>
+<p>An interrupted install leaves nothing half-installed; run the command again.
+If you suspect an installed file was changed, run once with <code>PHU_DB_VERIFY=1</code>.</p>
 <h2 id="cache-or-permissions-errors">Cache or permissions errors<a class="headerlink" href="#cache-or-permissions-errors" title="Permanent link">&para;</a></h2>
 <p>Set a writable cache location explicitly when the default home cache is not
 available:</p>

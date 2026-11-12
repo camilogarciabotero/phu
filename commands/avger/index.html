@@ -12,7 +12,7 @@
         <link rel="prev" href="../cluster/">
       
       
-        <link rel="next" href="../simplify-taxa/">
+        <link rel="next" href="../normalize-lineage/">
       
       
         
@@ -332,34 +332,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../dbs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    dbs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../cluster/" class="md-nav__link">
         
   
@@ -645,34 +617,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../simplify-taxa/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    simplify-taxa
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1452,9 +1396,9 @@ filters described below.</p>
 <p>Rows from Pfam and KOfam remain database-specific. Empty scoring fields mean
 that no matching AVG reference record was available; they can prevent a gene
 from becoming a candidate.</p>
-<p>Prepare the required databases before running the workflow:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>pfam<span class="w"> </span>kofam<span class="w"> </span>avg
-phu<span class="w"> </span>avger<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>-o<span class="w"> </span>phu-avger
+<p>The Pfam, KOfam and AVG databases install automatically on the first run (see
+<a href="../../databases/">Databases and Provenance</a>):</p>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>avger<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>-o<span class="w"> </span>phu-avger
 </code></pre></div>
 <p>The AVG reference database supplies the V-score/VL-score tables, positive
 evidence, and class filters used by the run.</p>

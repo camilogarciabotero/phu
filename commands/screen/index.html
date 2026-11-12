@@ -332,34 +332,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../dbs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    dbs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../cluster/" class="md-nav__link">
         
   
@@ -396,34 +368,6 @@
     
   
     avger
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../simplify-taxa/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    simplify-taxa
   
 
     
@@ -1183,19 +1127,13 @@ biological activity or PUL identity.</p>
 </ul>
 <p>When PFAM accessions are used, <code>phu</code> will:</p>
 <ol>
-<li>Ensure a local <code>Pfam-A.hmm</code> database exists (download on first use).</li>
+<li>Use the installed Pfam database, installing the database bundle first if this is the first database-backed run.</li>
 <li>Resolve each accession to the normalized accession (for example, <code>PF00589.17</code> -&gt; <code>PF00589</code>).</li>
 <li>Extract those models and run screening normally.</li>
 </ol>
-<p>Tip: prepare PFAM ahead of time to avoid first-run setup delays:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>pfam
-</code></pre></div>
-<p>Database location:</p>
-<ul>
-<li><code>PHU_DB_FOLDER</code> if set.</li>
-<li>Otherwise <code>$XDG_DATA_HOME/phu/db</code> when <code>XDG_DATA_HOME</code> is set.</li>
-<li>Otherwise <code>~/.local/share/phu/db</code>.</li>
-</ul>
+<p>The first database-backed run installs the database bundle (about 1.9 GB
+download). For install location, offline use and disk needs, see
+<a href="../../databases/">Databases and Provenance</a>.</p>
 <h2 id="using-multiple-hmms">Using Multiple HMMs<a class="headerlink" href="#using-multiple-hmms" title="Permanent link">&para;</a></h2>
 <p>When you provide multiple HMM files, you need to decide how strict you want to be about matches. There are three ways to combine results:</p>
 <p><strong>Any mode</strong> (the default) keeps contigs that match at least one model. Important detail: when a single contig matches multiple models, "any" preserves the best hit per model (rather than selecting only one overall best hit). As a result a contig that matches model A and model B will yield one protein for A and one protein for B (subject to <code>--top-per-contig</code>). This is useful when you want a representative protein per matched model from each contig.</p>

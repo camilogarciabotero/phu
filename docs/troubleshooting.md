@@ -30,7 +30,9 @@ Databases install automatically on first use, or with `phu dbs prepare`; see
   have no certificate bundle. Point Python at the system one, for example
   `export SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt`.
 - **A slow or stalled download.** The download shows its progress and resumes
-  where it stopped when you run the command again.
+  where it stopped when you run the command again. It fetches 8 parts of the
+  bundle at once; if your network or proxy objects to that, set
+  `PHU_DB_CONNECTIONS=1`.
 
 An interrupted install leaves nothing half-installed; run the command again.
 If you suspect an installed file was changed, run `phu dbs prepare --verify`

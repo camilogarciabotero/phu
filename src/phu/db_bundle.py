@@ -42,6 +42,9 @@ from pathlib import Path
 from phu._click import download_progress
 from phu.db_fetch import (
     CHUNK_SIZE,
+    DEFAULT_CONNECTIONS,
+    MAX_CONNECTIONS,
+    SEGMENTS_SUFFIX,
     DatabaseError,
     IntegrityError,
     download_verified,
@@ -89,6 +92,7 @@ DERIVED_CACHE_DIR = "phu-db-derived"
 BUNDLE_ENV = "PHU_DB_BUNDLE"
 FOLDER_ENV = "PHU_DB_FOLDER"
 VERIFY_ENV = "PHU_DB_VERIFY"
+CONNECTIONS_ENV = "PHU_DB_CONNECTIONS"
 
 # flock errors meaning "this filesystem cannot lock", e.g. NFS without lockd.
 _NO_FLOCK = frozenset({errno.ENOLCK, errno.EOPNOTSUPP, errno.ENOTSUP, errno.EINVAL})
@@ -804,6 +808,22 @@ def _local_bundle(bundle_path: Path, pins: BundlePins, log: Callable[[str], None
     return bundle_path
 
 
+def download_connections() -> int:
+    """How many parts of the bundle to download at once: $PHU_DB_CONNECTIONS, else 8."""
+    value = os.environ.get(CONNECTIONS_ENV)
+    if value is None or not value.strip():
+        return DEFAULT_CONNECTIONS
+    try:
+        connections = int(value)
+    except ValueError:
+        connections = 0
+    if not 1 <= connections <= MAX_CONNECTIONS:
+        raise DatabaseError(
+            f"{CONNECTIONS_ENV}={value} is not a whole number from 1 to {MAX_CONNECTIONS}"
+        )
+    return connections
+
+
 def _download_bundle(
     db_folder: Path, pins: BundlePins, fetch: Callable[..., Path], log: Callable[[str], None]
 ) -> Path:
@@ -816,16 +836,25 @@ def _download_bundle(
             return dest
         except TarballMismatch:
             dest.unlink()
+    accepted = inspect.signature(fetch).parameters
+    options: dict[str, object] = {}
+    how = ""
+    if "connections" in accepted:
+        options["connections"] = download_connections()
+        if options["connections"] > 1:
+            how = f", up to {options['connections']} parts at once"
     log(
-        f"phu-db: downloading {pins.bundle_version} ({_human(pins.size)}) "
+        f"phu-db: downloading {pins.bundle_version} ({_human(pins.size)}{how}) "
         f"from {pins.url} to {dest}"
     )
     try:
-        if "progress" in inspect.signature(fetch).parameters:
+        if "progress" in accepted:
             with download_progress(
                 f"phu-db: downloading {pins.bundle_version}", pins.size, log=log
             ) as progress:
-                fetch(pins.url, dest, pins.sha256, pins.size, progress=progress)
+                fetch(pins.url, dest, pins.sha256, pins.size, progress=progress, **options)
+        elif options:
+            fetch(pins.url, dest, pins.sha256, pins.size, **options)
         else:
             # An injected fetch that does not report its progress.
             fetch(pins.url, dest, pins.sha256, pins.size)
@@ -894,7 +923,12 @@ def _clean_up(
     """
     _remove_leftovers(db_folder, log)
     downloaded = db_folder / DOWNLOADS_DIR / TARBALL_NAME
-    for path in (downloaded, downloaded.with_name(downloaded.name + ".part")):
+    leftovers = (
+        downloaded,
+        downloaded.with_name(downloaded.name + ".part"),
+        downloaded.with_name(downloaded.name + ".part" + SEGMENTS_SUFFIX),
+    )
+    for path in leftovers:
         if path.is_file() and not _same_file(path, bundle_path):
             path.unlink(missing_ok=True)
 

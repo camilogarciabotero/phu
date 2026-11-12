@@ -1,4 +1,5 @@
 import hashlib
+import json
 import shutil
 import socket
 from collections import namedtuple
@@ -517,3 +518,154 @@ def test_progress_returns_to_zero_when_a_download_starts_over(server, tmp_path, 
     assert seen[full + 1] == 0
     assert seen[-1] == len(DATA)
     assert seen[full + 1 :] == sorted(seen[full + 1 :])
+
+
+# Ranged downloads: several pieces of the file at once.
+
+RANGED = {"parallel_min_bytes": 0, "segment_bytes": 50_000, "connections": 4}
+
+
+def _segments(dest: Path) -> Path:
+    return dest.with_name(dest.name + ".part.segments")
+
+
+def test_ranged_download_fetches_every_piece_and_verifies(server, tmp_path, sleeps):
+    dest = tmp_path / "bundle.tar.gz"
+    seen = []
+
+    _fetch(server, dest, sleeps, progress=seen.append, **RANGED)
+
+    assert dest.read_bytes() == DATA
+    ranges = sorted(int(r.range.split("=")[1].split("-")[0]) for r in server.requests)
+    assert ranges == list(range(0, len(DATA), 50_000))
+    assert {r.status for r in server.requests} == {206}
+    assert all(r.range.endswith(str(min(start + 50_000, len(DATA)) - 1))
+               for r, start in zip(sorted(server.requests, key=lambda r: len(r.range)), ranges)
+               if r.range.startswith(f"bytes={start}-"))
+    assert seen[0] == 0 and max(seen) == len(DATA)
+    assert not _part(dest).exists() and not _segments(dest).exists()
+    assert sleeps == []
+
+
+def test_ranged_download_retries_a_cut_piece_where_it_stopped(server, tmp_path, sleeps):
+    server.switches.cut_after = 20_000
+    server.switches.cut_times = 2
+    dest = tmp_path / "bundle.tar.gz"
+
+    _fetch(server, dest, sleeps, **RANGED)
+
+    assert dest.read_bytes() == DATA
+    # The two cut pieces were asked for again from byte 20,000 of each, not from their start.
+    starts = [int(r.range.split("=")[1].split("-")[0]) for r in server.requests]
+    assert sum(start % 50_000 == 20_000 for start in starts) == 2
+    assert len(sleeps) == 2
+
+
+def test_ranged_download_resumes_from_the_saved_pieces(server, tmp_path, sleeps):
+    dest = tmp_path / "bundle.tar.gz"
+    server.switches.cut_after = 10_000
+    with pytest.raises(DownloadError, match="giving up"):
+        _fetch(server, dest, sleeps, retries=0, **RANGED)
+    state = json.loads(_segments(dest).read_text())
+    kept = sum(done for _, _, done in state["segments"])
+    assert 0 < kept < len(DATA)
+    assert _part(dest).stat().st_size == len(DATA)
+
+    server.switches.cut_after = None
+    server.requests.clear()
+    seen = []
+    _fetch(server, dest, sleeps, progress=seen.append, **RANGED)
+
+    assert dest.read_bytes() == DATA
+    assert seen[0] == kept
+    fetched = 0
+    for request in server.requests:
+        first, last = request.range.split("=")[1].split("-")
+        fetched += int(last) - int(first) + 1
+    assert fetched == len(DATA) - kept
+    assert not _segments(dest).exists()
+
+
+def test_ranged_download_keeps_a_single_connection_part_as_its_first_piece(
+    server, tmp_path, sleeps
+):
+    dest = tmp_path / "bundle.tar.gz"
+    _part(dest).write_bytes(DATA[:120_000])
+
+    _fetch(server, dest, sleeps, **RANGED)
+
+    assert dest.read_bytes() == DATA
+    assert min(int(r.range.split("=")[1].split("-")[0]) for r in server.requests) == 120_000
+
+
+def test_ranged_download_with_stale_pieces_is_fetched_again_once(server, tmp_path, sleeps):
+    dest = tmp_path / "bundle.tar.gz"
+    _part(dest).write_bytes(b"\0" * 120_000)
+    seen = []
+
+    _fetch(server, dest, sleeps, progress=seen.append, **RANGED)
+
+    assert dest.read_bytes() == DATA
+    assert seen.count(0) == 1 and seen[0] == 120_000
+
+
+def test_ranged_download_of_corrupt_bytes_raises_and_leaves_nothing(server, tmp_path, sleeps):
+    server.switches.corrupt_offset = 123_456
+    dest = tmp_path / "bundle.tar.gz"
+
+    with pytest.raises(IntegrityError, match="sha256"):
+        _fetch(server, dest, sleeps, **RANGED)
+
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_ranged_download_falls_back_when_the_server_ignores_ranges(server, tmp_path, sleeps):
+    server.switches.ignore_range = True
+    dest = tmp_path / "bundle.tar.gz"
+
+    _fetch(server, dest, sleeps, **RANGED)
+
+    assert dest.read_bytes() == DATA
+    assert server.requests[-1].range is None and server.requests[-1].status == 200
+    assert not _part(dest).exists() and not _segments(dest).exists()
+
+
+def test_ranged_download_refuses_a_file_of_another_size(server, tmp_path, sleeps):
+    dest = tmp_path / "bundle.tar.gz"
+
+    with pytest.raises(IntegrityError, match="server reports"):
+        _fetch(server, dest, sleeps, size=len(DATA) + 10, **RANGED)
+
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_ranged_download_gives_up_on_a_dead_server(server, tmp_path, sleeps):
+    server.switches.fail_status = 503
+    server.switches.fail_times = 1000
+    dest = tmp_path / "bundle.tar.gz"
+
+    with pytest.raises(DownloadError, match="giving up after 3 attempts: HTTP 503"):
+        _fetch(server, dest, sleeps, retries=2, **RANGED)
+
+    assert not dest.exists()
+
+
+def test_single_connection_discards_what_a_ranged_download_left(server, tmp_path, sleeps):
+    dest = tmp_path / "bundle.tar.gz"
+    server.switches.cut_after = 10_000
+    with pytest.raises(DownloadError):
+        _fetch(server, dest, sleeps, retries=0, **RANGED)
+    server.switches.cut_after = None
+    server.requests.clear()
+
+    _fetch(server, dest, sleeps, connections=1)
+
+    assert dest.read_bytes() == DATA
+    assert [(r.range, r.status) for r in server.requests] == [(None, 200)]
+    assert not _segments(dest).exists()
+
+
+def test_small_files_use_one_connection_by_default(server, tmp_path, sleeps):
+    _fetch(server, tmp_path / "bundle.tar.gz", sleeps)
+
+    assert [(r.range, r.status) for r in server.requests] == [(None, 200)]

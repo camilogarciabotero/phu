@@ -448,3 +448,45 @@ def test_a_real_download_reports_its_progress(
     progress = [line for line in logs if "% (" in line]
     assert progress[0].startswith(f"phu-db: downloading {fixture_pins.bundle_version}: 0% ")
     assert progress[-1].startswith(f"phu-db: downloading {fixture_pins.bundle_version}: 100% ")
+
+
+@pytest.mark.parametrize(("value", "expected"), [(None, 8), ("", 8), ("1", 1), ("16", 16)])
+def test_download_connections_setting(monkeypatch, value, expected):
+    if value is None:
+        monkeypatch.delenv("PHU_DB_CONNECTIONS", raising=False)
+    else:
+        monkeypatch.setenv("PHU_DB_CONNECTIONS", value)
+
+    assert db_bundle.download_connections() == expected
+
+
+@pytest.mark.parametrize("value", ["0", "17", "many", "2.5"])
+def test_download_connections_setting_is_validated(monkeypatch, value):
+    monkeypatch.setenv("PHU_DB_CONNECTIONS", value)
+
+    with pytest.raises(DatabaseError, match="PHU_DB_CONNECTIONS"):
+        db_bundle.download_connections()
+
+
+def test_the_connections_setting_reaches_the_download(
+    monkeypatch, db_folder, server, fixture_pins, fixture_manifest_bytes
+):
+    monkeypatch.setenv("PHU_DB_CONNECTIONS", "3")
+    asked = []
+
+    def fetch(url, dest, sha256, size, progress=None, connections=1):
+        asked.append(connections)
+        return download_verified(server.url("phu-db.tar.gz"), dest, sha256, size, timeout=5)
+
+    logs = []
+    resolve_db(
+        "avg",
+        pins=fixture_pins,
+        db_folder=db_folder,
+        vendored_manifest_bytes=fixture_manifest_bytes,
+        fetch=fetch,
+        log=logs.append,
+    )
+
+    assert asked == [3]
+    assert any("up to 3 parts at once" in line for line in logs)

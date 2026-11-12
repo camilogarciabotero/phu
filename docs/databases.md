@@ -22,6 +22,7 @@ command only checks it and returns.
 | --- | --- |
 | `--bundle PATH` | Install from a pre-downloaded `phu-db.tar.gz` instead of downloading (same as `PHU_DB_BUNDLE`). |
 | `--verify` | Re-hash every installed file and reinstall if any check fails (same as `PHU_DB_VERIFY=1`). |
+| `--connections N` | Download `N` parts of the bundle at once, from 1 to 16 (default 8; same as `PHU_DB_CONNECTIONS`). |
 
 The bundle always holds all four databases, so database names given to
 `phu dbs prepare` are accepted and ignored.
@@ -42,8 +43,9 @@ The bundle always holds all four databases, so database names given to
 5. Moves the finished tree into place in one step, so an interrupted install
    never leaves a half-installed database behind.
 
-PHU prints what it downloads, how large it is and where it goes. While it
-downloads, a terminal shows a spinner with a progress bar, the speed and the
+PHU prints what it downloads, how large it is and where it goes. The bundle
+is downloaded in several parts at once and an interrupted download continues
+where each part stopped. While it downloads, a terminal shows a spinner with a progress bar, the speed and the
 time left; a log file (for example a SLURM job's) gets one line per 10%. Later runs
 only check file sizes, and line counts of the small tables, which takes a
 moment, and do not download again.
@@ -83,6 +85,7 @@ folder yourself once nothing needs it.
 | --- | --- |
 | `PHU_DB_FOLDER` | Install root (see above). |
 | `PHU_DB_BUNDLE` | Path to a pre-downloaded `phu-db.tar.gz`. It is verified exactly like a download, and PHU never deletes it. |
+| `PHU_DB_CONNECTIONS` | How many parts of the bundle to download at once, from 1 to 16 (default 8). Zenodo limits the speed of each connection, so several parts at once download several times faster. Use `1` for a single connection. |
 | `PHU_DB_VERIFY=1` | Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 9.5 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls. |
 
 ## Offline and HPC use

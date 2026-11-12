@@ -277,3 +277,14 @@ def test_a_read_only_install_keeps_its_indexes_in_the_user_cache(
     derived = sorted(path.name.rsplit("-", 1)[0] for path in (cache / "phu-db-derived").iterdir())
     assert derived == ["dbcan", "kofam", "pfam"]
     assert len(list((cache / "phu-db-derived").rglob("*.hmm"))) == 3
+
+
+def test_dbs_prepare_connections_option_sets_the_download_setting(installed, monkeypatch):
+    monkeypatch.delenv("PHU_DB_CONNECTIONS", raising=False)
+    monkeypatch.setattr(os, "environ", dict(os.environ))
+
+    result = CliRunner().invoke(app, ["dbs", "prepare", "--connections", "2"])
+
+    assert result.exit_code == 0, result.output
+    assert os.environ["PHU_DB_CONNECTIONS"] == "2"
+    assert CliRunner().invoke(app, ["dbs", "prepare", "--connections", "0"]).exit_code == 2

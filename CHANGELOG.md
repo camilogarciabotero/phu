@@ -21,6 +21,10 @@ behavior in the unreleased branch and may change before a release.
 - Removed the per-database downloaders for Pfam, KOfam, dbCAN and the AVG/V-score
   tables. Pfam is now pinned to release 37.0 instead of the floating
   `current_release`.
+- The bundle is downloaded as several parts at once (8 by default; set
+  `PHU_DB_CONNECTIONS` or `phu dbs prepare --connections N`), which is several
+  times faster from Zenodo. An interrupted download continues every part where
+  it stopped; a server without range support falls back to one connection.
 - The bundle download shows its progress: on a terminal, a spinner with a
   bar, size, speed and time left; in a log file, one line per 10%.
 - New environment variables: `PHU_DB_BUNDLE` (install from a pre-downloaded

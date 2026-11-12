@@ -9,7 +9,8 @@ from rich.console import Console
 from typer.testing import CliRunner
 
 from phu import _log
-from phu._click import ProgressReporter, run_click_task
+from phu import _click
+from phu._click import ProgressReporter, download_progress, run_click_task
 from phu._exec import run
 from phu.cli import app
 
@@ -161,3 +162,59 @@ def test_cli_logs_step_and_quiet_silences_it(tmp_path) -> None:
     assert quiet.exit_code == 0, quiet.output
     assert "Simplifying taxonomy" not in quiet.stdout
     assert not _log.is_quiet()  # the flag does not leak into later invocations
+
+
+def test_download_progress_logs_every_tenth_when_not_a_terminal() -> None:
+    lines: list[str] = []
+    console = Console(file=StringIO(), force_terminal=False)
+
+    with download_progress("downloading", 2_000_000_000, log=lines.append, console=console) as update:
+        for done in range(0, 2_000_000_001, 50_000_000):
+            update(done)
+
+    assert len(lines) == 11
+    assert lines[0] == "downloading: 0% (0.0 MB of 2.00 GB)"
+    assert lines[5] == "downloading: 50% (1.00 GB of 2.00 GB)"
+    assert lines[-1] == "downloading: 100% (2.00 GB of 2.00 GB)"
+
+
+def test_download_progress_draws_a_spinner_and_bar_on_a_terminal() -> None:
+    out = StringIO()
+    console = Console(file=out, force_terminal=True, width=100)
+    lines: list[str] = []
+
+    with download_progress("downloading phu-db", 1000, log=lines.append, console=console) as update:
+        update(250)
+        update(1000)
+
+    assert lines == []
+    assert "downloading phu-db" in out.getvalue()
+    assert "1.0/1.0 kB" in out.getvalue()
+    assert "MB/s" in out.getvalue()
+
+
+def test_download_progress_writes_into_the_step_already_on_screen(monkeypatch) -> None:
+    reporter = ProgressReporter(console=Console(file=StringIO(), force_terminal=False))
+    task_id = reporter.start_task("Preparing PFAM database")
+    monkeypatch.setattr(_click, "_LIVE_REPORTERS", [reporter])
+    lines: list[str] = []
+
+    with download_progress("downloading", 2_000_000_000, log=lines.append) as update:
+        update(500_000_000)
+        assert reporter._tasks[task_id].detail == "downloading 500.0 MB of 2.00 GB (25%)"
+
+    assert reporter._tasks[task_id].detail == ""
+    assert lines == []
+
+
+def test_download_progress_is_silent_when_quiet() -> None:
+    _log.set_verbosity(quiet=True)
+    lines: list[str] = []
+    out = StringIO()
+
+    with download_progress(
+        "downloading", 100, log=lines.append, console=Console(file=out, force_terminal=True)
+    ) as update:
+        update(100)
+
+    assert lines == [] and out.getvalue() == ""

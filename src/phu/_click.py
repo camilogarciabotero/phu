@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
@@ -10,7 +11,16 @@ from typing import Any
 from rich.console import Console
 from rich.live import Live
 from rich.markup import escape
-from rich.progress import TaskID
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    SpinnerColumn,
+    TaskID,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
 from rich.spinner import Spinner
 from rich.table import Table
 
@@ -23,6 +33,11 @@ _PLAIN_ENDINGS = {
     "skipped": "skipped after",
     "cancelled": "cancelled after",
 }
+
+
+# Reporters whose live display is on screen now; a nested step writes into the
+# innermost one instead of starting a second live display on the same terminal.
+_LIVE_REPORTERS: list["ProgressReporter"] = []
 
 
 @dataclass
@@ -107,6 +122,7 @@ class ProgressReporter:
                 refresh_per_second=8,
             )
             self._live.start()
+            _LIVE_REPORTERS.append(self)
         elif announce:
             self._plain(label)
 
@@ -128,6 +144,13 @@ class ProgressReporter:
                 task.completed = completed
             if total is not None:
                 task.total = total
+
+    def set_running_detail(self, detail: str) -> None:
+        """Show ``detail`` beside every step that is still running."""
+        with self._lock:
+            for task in self._tasks.values():
+                if task.status == "running":
+                    task.detail = detail
 
     def _finish(self, task_id: TaskID, status: str, detail: str = "") -> None:
         with self._lock:
@@ -165,6 +188,8 @@ class ProgressReporter:
         with self._lock:
             live, self._live = self._live, None
         if live:
+            if self in _LIVE_REPORTERS:
+                _LIVE_REPORTERS.remove(self)
             live.stop()  # renders the final state, with the real durations
         if self.quiet or not summary:
             return
@@ -203,3 +228,75 @@ def run_click_task(
     reporter.succeed_task(task_id)
     reporter.finish(summary=False)
     return result
+
+
+def _megabytes(size: int) -> str:
+    return f"{size / 1e9:.2f} GB" if size >= 1e9 else f"{size / 1e6:.1f} MB"
+
+
+@contextmanager
+def download_progress(
+    label: str,
+    total: int,
+    *,
+    log: Callable[[str], None],
+    console: Console | None = None,
+    step_percent: int = 10,
+) -> Iterator[Callable[[int], None]]:
+    """Show a download of ``total`` bytes; yields ``update(bytes_so_far)``.
+
+    On a terminal: a rich spinner with a bar, size, speed and time left, on
+    stderr, removed when the download ends. Inside a step that already shows a
+    spinner, the percentage is added to that step's line instead. When stderr
+    is not a terminal (a SLURM log, a pipe), one ``log`` line per
+    ``step_percent`` of the file. Nothing is shown with ``--quiet``.
+    """
+    if is_quiet():
+        yield lambda done: None
+        return
+
+    if _LIVE_REPORTERS:
+        reporter = _LIVE_REPORTERS[-1]
+
+        def update(done: int) -> None:
+            percent = 100 * done // total if total else 100
+            reporter.set_running_detail(
+                f"{label} {_megabytes(done)} of {_megabytes(total)} ({percent}%)"
+            )
+
+        try:
+            yield update
+        finally:
+            reporter.set_running_detail("")
+        return
+
+    console = console or Console(stderr=True)
+    if console.is_terminal:
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            DownloadColumn(),
+            TransferSpeedColumn(),
+            TimeRemainingColumn(),
+            console=console,
+            transient=True,
+        )
+        with progress:
+            task_id = progress.add_task(escape(label), total=total)
+            yield lambda done: progress.update(task_id, completed=done)
+        return
+
+    reported = -1
+
+    def update(done: int) -> None:
+        nonlocal reported
+        step = (100 * done // total if total else 100) // step_percent
+        if step != reported:
+            reported = step
+            log(
+                f"{label}: {step * step_percent}% "
+                f"({_megabytes(done)} of {_megabytes(total)})"
+            )
+
+    yield update

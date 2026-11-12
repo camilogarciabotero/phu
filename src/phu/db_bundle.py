@@ -22,6 +22,7 @@ import errno
 import hashlib
 import importlib
 import importlib.resources
+import inspect
 import json
 import os
 import shutil
@@ -38,6 +39,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from phu._click import download_progress
 from phu.db_fetch import (
     CHUNK_SIZE,
     DatabaseError,
@@ -819,7 +821,14 @@ def _download_bundle(
         f"from {pins.url} to {dest}"
     )
     try:
-        fetch(pins.url, dest, pins.sha256, pins.size)
+        if "progress" in inspect.signature(fetch).parameters:
+            with download_progress(
+                f"phu-db: downloading {pins.bundle_version}", pins.size, log=log
+            ) as progress:
+                fetch(pins.url, dest, pins.sha256, pins.size, progress=progress)
+        else:
+            # An injected fetch that does not report its progress.
+            fetch(pins.url, dest, pins.sha256, pins.size)
     except IntegrityError as error:
         raise TarballMismatch(
             f"the download from {pins.url} is a different or corrupt bundle: "

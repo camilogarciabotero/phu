@@ -145,7 +145,16 @@ def ensure_free_space(path: Path, required_bytes: int) -> None:
 class _Download:
     """State of one download_verified call, shared across its attempts."""
 
-    def __init__(self, url: str, part: Path, sha256: str, size: int, timeout: float) -> None:
+    def __init__(
+        self,
+        url: str,
+        part: Path,
+        sha256: str,
+        size: int,
+        timeout: float,
+        progress: Callable[[int], None] | None = None,
+    ) -> None:
+        self.progress = progress
         self.url = url
         self.part = part
         self.sha256 = sha256
@@ -265,6 +274,8 @@ class _Download:
                 handle.write(chunk)
                 self.digest.update(chunk)
                 self.offset += len(chunk)
+                if self.progress is not None:
+                    self.progress(self.offset)
             handle.flush()
             os.fsync(handle.fileno())
         if self.offset < self.size:
@@ -281,8 +292,13 @@ def download_verified(
     retries: int = DEFAULT_RETRIES,
     backoff: float = DEFAULT_BACKOFF,
     sleep: Callable[[float], None] = time.sleep,
+    progress: Callable[[int], None] | None = None,
 ) -> Path:
     """Download ``url`` to ``dest`` and return ``dest`` once size and sha256 match.
+
+    ``progress``, if given, is called with the bytes on disk so far: once after
+    an existing ``.part`` is taken over, then after every chunk. The count goes
+    back to zero when a download starts over.
 
     Bytes stream into ``<dest>.part``; an existing ``.part`` is re-hashed and
     resumed with a Range request. If a resumed file fails its sha256, the
@@ -295,8 +311,10 @@ def download_verified(
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     part = dest.with_name(dest.name + ".part")
-    download = _Download(url, part, sha256, size, timeout)
+    download = _Download(url, part, sha256, size, timeout, progress)
     download.resume_existing()
+    if progress is not None:
+        progress(download.offset)
     ensure_free_space(dest.parent, size - download.offset)
 
     failures = 0

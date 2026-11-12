@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import functools
 import json
 import re
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from .db_bundle import (
     bundle_provenance,
     database_hashes,
+    derived_dir,
     derived_files_lock,
-    resolve_db,
+    resolve_db_cached,
     write_atomically,
 )
 
@@ -67,10 +66,9 @@ def normalize_dbcan_pul_id(token: str) -> str:
     return value
 
 
-@functools.lru_cache(maxsize=1)
 def _dbcan_root() -> Path:
     """dbCAN in the phu-db bundle, installed on first use; checked once per process."""
-    return resolve_db(DBCAN_NAME)
+    return resolve_db_cached(DBCAN_NAME)
 
 
 def _hmm_path() -> Path:
@@ -82,19 +80,11 @@ def _pul_rules_path() -> Path:
 
 
 def _offsets_path() -> Path:
-    return _dbcan_root() / "family_offsets.json"
-
-
-def _atomic_write(path: Path, content: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(delete=False, dir=path.parent) as handle:
-        temporary_path = Path(handle.name)
-        handle.write(content)
-    temporary_path.replace(path)
+    return derived_dir(_dbcan_root()) / "family_offsets.json"
 
 
 def _models_dir() -> Path:
-    return _dbcan_root() / "models"
+    return derived_dir(_dbcan_root()) / "models"
 
 
 def _clear_sparse_models_cache() -> None:
@@ -129,7 +119,7 @@ def build_family_offsets(hmm_path: Path) -> dict[str, list[int]]:
 
 
 def _write_json(path: Path, value: object) -> None:
-    _atomic_write(path, (json.dumps(value, indent=2) + "\n").encode())
+    write_atomically(path, (json.dumps(value, indent=2) + "\n").encode())
 
 
 def parse_pul_rules(path: Path, family_ids: set[str]) -> dict[str, PULRule]:
@@ -190,7 +180,7 @@ def _load_offsets() -> dict[str, list[int]]:
     offsets = _read_offsets(source)
     if offsets is not None:
         return offsets
-    with derived_files_lock(_dbcan_root()):
+    with derived_files_lock(derived_dir(_dbcan_root())):
         offsets = _read_offsets(source)
         if offsets is not None:
             return offsets

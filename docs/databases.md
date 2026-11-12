@@ -81,7 +81,7 @@ folder yourself once nothing needs it.
 | --- | --- |
 | `PHU_DB_FOLDER` | Install root (see above). |
 | `PHU_DB_BUNDLE` | Path to a pre-downloaded `phu-db.tar.gz`. It is verified exactly like a download, and PHU never deletes it. |
-| `PHU_DB_VERIFY=1` | Re-hash every installed file on this run instead of checking sizes only. Reads about 9.5 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls. |
+| `PHU_DB_VERIFY=1` | Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 9.5 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls. |
 
 ## Offline and HPC use
 
@@ -99,7 +99,14 @@ phu screen PF00001 -i contigs.fna                 # every job reuses the install
 Install once on a shared filesystem and every job reuses the same tree. The
 install lock is released as soon as a job exits, even if it is killed. On
 network filesystems without `flock` support, PHU uses a lock directory
-instead, and clears one left by a killed job after six hours.
+instead. A running install re-stamps it every minute, and PHU clears one that
+a killed job left without a stamp for six hours.
+
+PHU builds a small index and per-model files for each database the first time
+it is queried, and keeps them beside the database files. If the install is
+read-only for you (for example one a colleague or an administrator installed),
+PHU keeps them in your own cache folder instead (`PHU_CACHE_DIR`, default
+`~/.cache/phu`), so a shared read-only install works as is.
 
 If the tarball does not match the version this PHU release pins, PHU refuses
 it and says so. Download the version named in the error.

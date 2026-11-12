@@ -1,5 +1,6 @@
 """The database modules, driven through a real install of the fixture bundle."""
 
+import os
 from pathlib import Path
 
 import pyhmmer
@@ -27,11 +28,9 @@ def installed(monkeypatch, tmp_path, fixture_bundle, fixture_pins, fixture_manif
         raise AssertionError("a local bundle needs no download")
 
     monkeypatch.setattr(db_bundle, "download_verified", fetch)
-    kofam_db._kofam_root.cache_clear()
-    dbcan_db._dbcan_root.cache_clear()
-    yield db_folder / "phu-db" / fixture_pins.bundle_version
-    kofam_db._kofam_root.cache_clear()
-    dbcan_db._dbcan_root.cache_clear()
+    monkeypatch.setattr(db_bundle, "_RESOLVED", {})
+    monkeypatch.setattr(db_bundle, "_DEEP_VERIFIED", set())
+    return db_folder / "phu-db" / fixture_pins.bundle_version
 
 
 def _model_names(path):
@@ -221,6 +220,7 @@ def test_query_manifest_records_the_bundle_for_every_database_query(installed, t
     manifest = screen._query_manifest(query, "any")
 
     assert query.databases == ("pfam", "kofam", "dbcan")
+    assert query.normalized_models == ("PF00001", "K00003", "CBM48")
     assert manifest["phu_db"] == db_bundle.bundle_provenance()
     assert manifest["database_hashes"]["pfam/profiles.hmm"] == (
         db_bundle.database_hashes("pfam")["profiles.hmm"]
@@ -242,3 +242,38 @@ def test_query_manifest_for_local_hmms_needs_no_bundle(monkeypatch):
 
     assert manifest["database_hashes"] == {}
     assert "phu_db" not in manifest
+
+
+def test_a_read_only_install_keeps_its_indexes_in_the_user_cache(
+    installed, tmp_path, monkeypatch
+):
+    if os.geteuid() == 0:
+        pytest.skip("root can write to a read-only directory")
+    cache = tmp_path / "cache"
+    monkeypatch.setenv("PHU_CACHE_DIR", str(cache))
+    pfam_hmm = Path(pfam_db.ensure_pfam_database()["hmm_path"])
+    kofam_db.ensure_kofam_database()
+    dbcan_db.ensure_dbcan_database()
+    locked = [installed, *(installed / name for name in ("pfam", "kofam", "dbcan"))]
+    for path in locked:
+        path.chmod(0o555)
+    try:
+        pfam, _ = pfam_db.extract_pfam_models(pfam_hmm, ["PF00001"], tmp_path / "pfam")
+        kofam, _ = kofam_db.extract_kofam_models(["K00003"], tmp_path / "kofam")
+        dbcan, _ = dbcan_db.extract_dbcan_models(["CBM48"], tmp_path / "dbcan")
+        metadata = kofam_db.get_all_kofam_metadata()
+        before = {str(path.relative_to(installed)) for path in installed.rglob("*")}
+    finally:
+        for path in locked:
+            path.chmod(0o755)
+
+    assert [len(paths) for paths in (pfam, kofam, dbcan)] == [1, 1, 1]
+    assert set(metadata) == {"K00001", "K00002", "K00003"}
+    # Nothing was added to the install; the indexes and models are in the cache.
+    assert not {name for name in before if "models" in name or name.endswith(".json")} - {
+        "installed.json",
+        "phu-db.json",
+    }
+    derived = sorted(path.name.rsplit("-", 1)[0] for path in (cache / "phu-db-derived").iterdir())
+    assert derived == ["dbcan", "kofam", "pfam"]
+    assert len(list((cache / "phu-db-derived").rglob("*.hmm"))) == 3

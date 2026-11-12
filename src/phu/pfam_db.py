@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,7 +8,7 @@ from pathlib import Path
 import click
 
 from ._click import run_click_task
-from .db_bundle import derived_files_lock, resolve_db, write_atomically
+from .db_bundle import derived_dir, derived_files_lock, resolve_db, write_atomically
 
 PFAM_ID_PREFIX = "PF"
 PFAM_NAME = "Pfam-A"
@@ -44,11 +43,11 @@ def ensure_pfam_database() -> dict[str, str]:
 
 
 def _pfam_models_dir(hmm_db_path: Path) -> Path:
-    return hmm_db_path.parent / "models"
+    return derived_dir(hmm_db_path.parent) / "models"
 
 
 def _pfam_offsets_index_path(hmm_db_path: Path) -> Path:
-    return hmm_db_path.parent / "offsets.json"
+    return derived_dir(hmm_db_path.parent) / "offsets.json"
 
 
 def _clear_sparse_models_cache(hmm_db_path: Path) -> None:
@@ -64,13 +63,7 @@ def _write_manifest_atomically(
     manifest_path: Path, metadata: dict[str, object]
 ) -> None:
     """Write manifest JSON atomically to avoid corruption on interruption."""
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False, dir=manifest_path.parent, suffix=".json"
-    ) as tmp:
-        tmp_path = Path(tmp.name)
-        json.dump(metadata, tmp, indent=2)
-    tmp_path.replace(manifest_path)
+    write_atomically(manifest_path, json.dumps(metadata, indent=2).encode())
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -195,7 +188,7 @@ def _extract_from_split_cache(
     # Jobs sharing the install do this one at a time; one that waited finds the
     # index valid and leaves the other's cache alone.
     if not _is_offsets_index_valid(hmm_db_path):
-        with derived_files_lock(hmm_db_path.parent):
+        with derived_files_lock(derived_dir(hmm_db_path.parent)):
             if not _is_offsets_index_valid(hmm_db_path):
                 _clear_sparse_models_cache(hmm_db_path)
                 _build_offsets_index(hmm_db_path)

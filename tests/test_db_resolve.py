@@ -40,6 +40,8 @@ def loopback_only(monkeypatch):
 def clean_env(monkeypatch):
     for name in ("PHU_DB_BUNDLE", "PHU_DB_VERIFY", "PHU_DB_FOLDER", "XDG_DATA_HOME"):
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(db_bundle, "_DEEP_VERIFIED", set())
+    monkeypatch.setattr(db_bundle, "_RESOLVED", {})
 
 
 @pytest.fixture
@@ -278,19 +280,82 @@ def test_resolve_db_installs_into_the_default_db_folder(
     assert not (tmp_path / "home").exists()
 
 
-def test_resolve_db_checks_only_the_requested_database(
+def test_phu_db_verify_checks_every_database_once_per_process(
     resolve, monkeypatch, db_folder, fetch, fixture_pins
 ):
     target = resolve("avg").parent
-    _flip_byte(target / "pfam" / "profiles.hmm")
+    hmm = target / "pfam" / "profiles.hmm"
+    original = hmm.read_bytes()
+    _flip_byte(hmm)
     fetch.urls.clear()
     monkeypatch.setenv("PHU_DB_VERIFY", "1")
 
+    # Asking for AVG still finds the corrupt Pfam file and reinstalls.
     resolve("avg")
-    assert fetch.urls == []
+    assert fetch.urls == [fixture_pins.url]
+    assert hmm.read_bytes() == original
+
+    # The tree was hashed once; later calls in this process check sizes only.
+    hashed = []
+    real = db_bundle._scan_file
+    monkeypatch.setattr(
+        db_bundle,
+        "_scan_file",
+        lambda path, **kwargs: hashed.append(kwargs["digest"]) or real(path, **kwargs),
+    )
+    resolve("pfam")
+    resolve("kofam")
+    assert True not in hashed
+
+
+def test_phu_db_verify_removes_indexes_and_cached_models(
+    resolve, monkeypatch, db_folder, fixture_pins, fixture_manifest
+):
+    pfam = resolve("pfam")
+    (pfam / "models").mkdir()
+    (pfam / "models" / "PF00001.hmm").write_text("truncated")
+    (pfam / "offsets.json").write_text("{}")
+    kofam = pfam.parent / "kofam"
+    (kofam / "ko_metadata.json").write_text("{}")
 
     resolve("pfam")
-    assert fetch.urls == [fixture_pins.url]
+    assert (pfam / "offsets.json").is_file()
+
+    monkeypatch.setenv("PHU_DB_VERIFY", "1")
+    resolve("pfam")
+
+    assert not (pfam / "models").exists()
+    assert not (pfam / "offsets.json").exists()
+    assert not (kofam / "ko_metadata.json").exists()
+    assert tree_problems(pfam.parent, fixture_manifest, deep=True) == []
+
+
+def test_resolve_db_cached_follows_the_settings(
+    monkeypatch, tmp_path, fetch, fixture_pins, fixture_manifest_bytes
+):
+    monkeypatch.setattr(
+        db_bundle, "_production_pins", lambda: (fixture_pins, fixture_manifest_bytes)
+    )
+    monkeypatch.setattr(db_bundle, "download_verified", fetch)
+    monkeypatch.setattr(db_bundle, "_log_stderr", lambda message: None)
+    calls = []
+    real = db_bundle.resolve_db
+    monkeypatch.setattr(
+        db_bundle, "resolve_db", lambda name: calls.append(name) or real(name, fetch=fetch)
+    )
+
+    monkeypatch.setenv("PHU_DB_FOLDER", str(tmp_path / "one"))
+    first = db_bundle.resolve_db_cached("pfam")
+    assert db_bundle.resolve_db_cached("pfam") == first
+    assert calls == ["pfam"]
+
+    monkeypatch.setenv("PHU_DB_FOLDER", str(tmp_path / "two"))
+    second = db_bundle.resolve_db_cached("pfam")
+    assert second != first and second.is_relative_to(tmp_path / "two")
+
+    monkeypatch.setenv("PHU_DB_VERIFY", "1")
+    db_bundle.resolve_db_cached("pfam")
+    assert calls == ["pfam", "pfam", "pfam"]
 
 
 def test_vendored_manifest_must_match_its_pin(

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import functools
 import json
 import logging
-import tempfile
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -13,7 +11,7 @@ from typing import Optional
 import click
 
 from ._click import run_click_task
-from .db_bundle import derived_files_lock, resolve_db, write_atomically
+from .db_bundle import derived_dir, derived_files_lock, resolve_db_cached, write_atomically
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +34,9 @@ def normalize_kofam_id(token: str) -> str:
     return token
 
 
-@functools.lru_cache(maxsize=1)
 def _kofam_root() -> Path:
     """KOfam in the phu-db bundle, installed on first use; checked once per process."""
-    return resolve_db("kofam")
+    return resolve_db_cached("kofam")
 
 
 def ensure_kofam_database() -> dict[str, str]:
@@ -60,27 +57,22 @@ def _kofam_hmm_path() -> Path:
 
 
 def _kofam_models_dir() -> Path:
-    return _kofam_root() / "models"
+    return derived_dir(_kofam_root()) / "models"
 
 
 def _kofam_metadata_index_path() -> Path:
-    return _kofam_root() / "ko_metadata.json"
+    return derived_dir(_kofam_root()) / "ko_metadata.json"
 
 
 def _kofam_offsets_index_path() -> Path:
-    return _kofam_root() / "offsets.json"
+    return derived_dir(_kofam_root()) / "offsets.json"
 
 
 def _write_manifest_atomically(
     manifest_path: Path, metadata: dict[str, object]
 ) -> None:
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False, dir=manifest_path.parent, suffix=".json"
-    ) as tmp:
-        tmp_path = Path(tmp.name)
-        json.dump(metadata, tmp, indent=2)
-    tmp_path.replace(manifest_path)
+    """Write manifest JSON atomically to avoid corruption on interruption."""
+    write_atomically(manifest_path, json.dumps(metadata, indent=2).encode())
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -327,7 +319,7 @@ def extract_kofam_models(
     # Jobs sharing the install do this one at a time; one that waited finds the
     # index valid and leaves the other's cache alone.
     if not _is_offsets_index_valid(hmm_db_path):
-        with derived_files_lock(hmm_db_path.parent):
+        with derived_files_lock(derived_dir(hmm_db_path.parent)):
             if not _is_offsets_index_valid(hmm_db_path):
                 _clear_sparse_models_cache()
                 _build_offsets_index(hmm_db_path)

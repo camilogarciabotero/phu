@@ -29,6 +29,7 @@ import socket
 import sys
 import tarfile
 import tempfile
+import threading
 import time
 import zlib
 from collections.abc import Callable, Iterable, Iterator
@@ -79,6 +80,10 @@ LOCK_OWNER_NAME = "owner.json"
 # A lock directory this old was left by a killed install and may be broken.
 STALE_LOCK_SECONDS = 6 * 60 * 60
 LOCK_POLL_SECONDS = 2.0
+# A live holder of a lock directory re-stamps it this often, so it never looks stale.
+LOCK_REFRESH_SECONDS = 60.0
+# Where indexes go when the installed tree is read-only, inside the user's cache.
+DERIVED_CACHE_DIR = "phu-db-derived"
 BUNDLE_ENV = "PHU_DB_BUNDLE"
 FOLDER_ENV = "PHU_DB_FOLDER"
 VERIFY_ENV = "PHU_DB_VERIFY"
@@ -466,16 +471,45 @@ def _read_owner(lock_dir: Path) -> dict:
     return owner if isinstance(owner, dict) else {}
 
 
+def _is_time(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def _lock_age(lock_dir: Path, clock: Callable[[], float]) -> float | None:
-    """Seconds since ``lock_dir`` was taken, or None if it is gone."""
-    created = _read_owner(lock_dir).get("created")
-    if not isinstance(created, (int, float)) or isinstance(created, bool):
+    """Seconds since ``lock_dir`` was taken or last re-stamped, or None if it is gone."""
+    owner = _read_owner(lock_dir)
+    stamps = [owner.get(key) for key in ("created", "refreshed")]
+    stamps = [stamp for stamp in stamps if _is_time(stamp)]
+    if not stamps:
         # Killed between mkdir and writing the owner file: use the directory's age.
         try:
-            created = lock_dir.stat().st_mtime
+            stamps = [lock_dir.stat().st_mtime]
         except FileNotFoundError:
             return None
-    return clock() - created
+    return clock() - max(stamps)
+
+
+def _keep_lock_fresh(
+    lock_dir: Path,
+    token: str,
+    clock: Callable[[], float],
+    interval: float,
+    stop: threading.Event,
+) -> None:
+    """Re-stamp the owner file of the lock this process holds until ``stop`` is set.
+
+    A holder that is alive, however slow, therefore never reaches
+    STALE_LOCK_SECONDS; only a lock whose holder died goes stale.
+    """
+    while not stop.wait(interval):
+        owner = _read_owner(lock_dir)
+        if owner.get("token") != token:
+            return
+        owner["refreshed"] = clock()
+        try:
+            write_atomically(lock_dir / LOCK_OWNER_NAME, json.dumps(owner).encode())
+        except OSError:
+            return
 
 
 def _publish_lock_dir(lock_dir: Path, owner: dict) -> bool:
@@ -545,8 +579,9 @@ def _dir_lock(
     poll: float,
     clock: Callable[[], float],
     sleep: Callable[[float], None],
+    refresh: float = LOCK_REFRESH_SECONDS,
 ) -> Iterator[None]:
-    """Hold the lock directory ``lock_dir`` for the block."""
+    """Hold the lock directory ``lock_dir`` for the block, re-stamping it while held."""
     deadline = None if timeout is None else time.monotonic() + timeout
     waited = False
     token = os.urandom(8).hex()
@@ -571,10 +606,17 @@ def _dir_lock(
             log(f"phu-db: waiting for another install to finish (lock {lock_dir})")
             waited = True
         sleep(poll)
+    stop = threading.Event()
+    keeper = threading.Thread(
+        target=_keep_lock_fresh, args=(lock_dir, token, clock, refresh, stop), daemon=True
+    )
+    keeper.start()
     try:
         yield
     finally:
-        # A holder slower than STALE_LOCK_SECONDS may have lost the lock to a
+        stop.set()
+        keeper.join()
+        # A holder that could not re-stamp its lock may have lost it to a
         # waiter; never remove a lock directory someone else now owns.
         if _read_owner(lock_dir).get("token") == token:
             shutil.rmtree(lock_dir, ignore_errors=True)
@@ -589,13 +631,15 @@ def install_lock(
     poll: float = LOCK_POLL_SECONDS,
     clock: Callable[[], float] = time.time,
     sleep: Callable[[float], None] = time.sleep,
+    refresh: float = LOCK_REFRESH_SECONDS,
 ) -> Iterator[None]:
     """Hold the exclusive install lock on ``db_folder`` for the block.
 
     An flock on ``db_folder/.phu-db.lock``; where the filesystem cannot flock
     (for example NFS without lockd), a lock directory ``.phu-db.lock.d``,
     created atomically with an owner file holding the owner's pid, host and
-    start time, which a waiter breaks once it is more than six hours old. Waiting is logged once.
+    start time. The holder re-stamps it every ``refresh`` seconds, and a waiter
+    breaks it once it has gone six hours without a stamp. Waiting is logged once.
     ``timeout`` (seconds, default forever) raises LockTimeout.
     """
     db_folder = Path(db_folder)
@@ -619,6 +663,7 @@ def install_lock(
                     poll=poll,
                     clock=clock,
                     sleep=sleep,
+                    refresh=refresh,
                 )
             )
         yield
@@ -642,6 +687,53 @@ def write_atomically(path: Path, content: bytes) -> None:
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
+
+
+def _user_cache_dir() -> Path:
+    """$PHU_CACHE_DIR, else $XDG_CACHE_HOME/phu, else ~/.cache/phu."""
+    if cache_env := os.environ.get("PHU_CACHE_DIR"):
+        return Path(cache_env)
+    if xdg_cache_home := os.environ.get("XDG_CACHE_HOME"):
+        return Path(xdg_cache_home) / "phu"
+    return Path.home() / ".cache" / "phu"
+
+
+def derived_dir(database_dir: Path) -> Path:
+    """Where the indexes and model cache built from ``database_dir`` are kept.
+
+    Beside the database files when that directory is writable; for a
+    read-only shared install, a directory of the user's own cache named after
+    the install's path.
+    """
+    database_dir = Path(database_dir)
+    if os.access(database_dir, os.W_OK):
+        return database_dir
+    digest = hashlib.sha256(str(database_dir.resolve()).encode()).hexdigest()[:16]
+    return _user_cache_dir() / DERIVED_CACHE_DIR / f"{database_dir.name}-{digest}"
+
+
+def _remove_derived(target: Path, manifest: Manifest, log: Callable[[str], None]) -> None:
+    """Remove every index and cached model built from the databases under ``target``.
+
+    They are rebuilt from the database files on next use, so after a deep
+    verification nothing a run reads is unverified.
+    """
+    for entry in manifest.databases.values():
+        database_dir = target / entry.layout_dir
+        shipped = {item.path.split("/")[0] for item in entry.prepared_files}
+        for place in dict.fromkeys((database_dir, derived_dir(database_dir))):
+            if not place.is_dir() or not os.access(place, os.W_OK):
+                continue
+            keep = {LOCK_NAME, LOCK_DIR_NAME} | (shipped if place == database_dir else set())
+            with derived_files_lock(place, log):
+                for path in sorted(place.iterdir()):
+                    if path.name in keep:
+                        continue
+                    log(f"phu-db: removing derived {path}; it is rebuilt on next use")
+                    if path.is_dir() and not path.is_symlink():
+                        shutil.rmtree(path, ignore_errors=True)
+                    else:
+                        path.unlink(missing_ok=True)
 
 
 @contextmanager
@@ -886,6 +978,11 @@ def default_db_folder() -> Path:
     return Path.home() / ".local" / "share" / "phu" / "db"
 
 
+# Installed trees deep-verified by this process, so one run hashes them once.
+_DEEP_VERIFIED: set[str] = set()
+# resolve_db_cached() results, by database and the settings that decide them.
+_RESOLVED: dict[tuple[str, str, str | None, str | None], Path] = {}
+
 _NOT_PINNED = (
     "phu-db bundle is not pinned yet: this phu has no phu._bundle pins or vendored "
     "phu/data/phu-db.json, so it cannot install or locate its databases"
@@ -934,8 +1031,10 @@ def resolve_db(
 
     ``name`` is one of pfam, kofam, dbcan, avg. The installed tree under
     ``db_folder`` (default: default_db_folder()) is checked for that database,
-    shallowly, or by sha256 with PHU_DB_VERIFY=1, and install() runs when the
-    check fails.
+    shallowly, and install() runs when the check fails. With PHU_DB_VERIFY=1
+    the first call in a process instead checks every installed file of every
+    database by sha256 and removes the indexes and cached models built from
+    them; later calls in that process check shallowly.
     ``pins`` and ``vendored_manifest_bytes`` default to the ones shipped with
     phu; tests pass both.
     """
@@ -947,8 +1046,10 @@ def resolve_db(
     db_folder = default_db_folder() if db_folder is None else Path(db_folder)
     deep = os.environ.get(VERIFY_ENV) == "1"
     target = install_path(db_folder, pins)
-    # Only the requested database: a run resolving several hashes each one once.
-    if installed_problems(db_folder, pins, manifest, deep=deep, databases=[name]):
+    verify_all = deep and str(target) not in _DEEP_VERIFIED
+    # Shallow: only the requested database. Deep: the whole tree, once per process.
+    scope = None if verify_all else [name]
+    if installed_problems(db_folder, pins, manifest, deep=verify_all, databases=scope):
         target = install(
             db_folder=db_folder,
             pins=pins,
@@ -958,7 +1059,27 @@ def resolve_db(
             log=log,
             deep=deep,
         )
+    if verify_all:
+        _remove_derived(target, manifest, log)
+        _DEEP_VERIFIED.add(str(target))
     return target / manifest.databases[name].layout_dir
+
+
+def resolve_db_cached(name: str) -> Path:
+    """resolve_db(name), checked once per process for the current settings.
+
+    The result is remembered per database folder, PHU_DB_VERIFY and
+    PHU_DB_BUNDLE, so changing any of them in a running process resolves again.
+    """
+    key = (
+        name,
+        str(default_db_folder()),
+        os.environ.get(VERIFY_ENV),
+        os.environ.get(BUNDLE_ENV),
+    )
+    if key not in _RESOLVED:
+        _RESOLVED[key] = resolve_db(name)
+    return _RESOLVED[key]
 
 
 def prepare_bundle(
@@ -980,18 +1101,22 @@ def prepare_bundle(
     pins, manifest, vendored_manifest_bytes = _pinned(pins, vendored_manifest_bytes)
     db_folder = default_db_folder() if db_folder is None else Path(db_folder)
     deep = deep or os.environ.get(VERIFY_ENV) == "1"
-    if not installed_problems(db_folder, pins, manifest, deep=deep):
-        return install_path(db_folder, pins)
-    return install(
-        db_folder=db_folder,
-        pins=pins,
-        manifest=manifest,
-        vendored_manifest_bytes=vendored_manifest_bytes,
-        bundle_path=bundle_path,
-        fetch=fetch,
-        log=log,
-        deep=deep,
-    )
+    target = install_path(db_folder, pins)
+    if installed_problems(db_folder, pins, manifest, deep=deep):
+        target = install(
+            db_folder=db_folder,
+            pins=pins,
+            manifest=manifest,
+            vendored_manifest_bytes=vendored_manifest_bytes,
+            bundle_path=bundle_path,
+            fetch=fetch,
+            log=log,
+            deep=deep,
+        )
+    if deep:
+        _remove_derived(target, manifest, log)
+        _DEEP_VERIFIED.add(str(target))
+    return target
 
 
 def database_hashes(

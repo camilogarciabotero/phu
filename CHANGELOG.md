@@ -30,6 +30,12 @@ behavior in the unreleased branch and may change before a release.
 - Installing a newer bundle keeps other `phu-db-<version>/` folders, so two phu
   releases can share one `PHU_DB_FOLDER`.
 - Jobs that share an install build each database's index one at a time.
+- A read-only shared install works: phu keeps the indexes it builds in the
+  user's cache folder when it cannot write beside the database files.
+- `PHU_DB_VERIFY=1` (and `phu dbs prepare --verify`) checks every database, not
+  only the one a run asks for, and discards the indexes built from them.
+- `screen` queries mixing dbCAN families with Pfam or KOfam models now list
+  every model in `.phu/query.json`, not only the dbCAN ones.
 - Migration: the old `pfam/`, `kofam/`, `dbcan/`, `avg/` and `vscore/` folders
   in `PHU_DB_FOLDER` are no longer read and can be deleted by hand. See
   [Databases and Provenance](docs/databases.md).

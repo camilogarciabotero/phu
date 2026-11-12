@@ -965,3 +965,28 @@ def test_write_atomically_leaves_one_readable_file(tmp_path):
     umask = os.umask(0)
     os.umask(umask)
     assert path.stat().st_mode & 0o777 == 0o666 & ~umask
+
+
+def test_a_live_holder_keeps_its_lock_dir_fresh(monkeypatch, db_folder, logs):
+    _no_flock(monkeypatch)
+    now = [time.time()]
+
+    with install_lock(db_folder, clock=lambda: now[0], refresh=0.01):
+        owner_path = db_folder / ".phu-db.lock.d" / "owner.json"
+        # Seven hours pass; the holder is slow but alive and re-stamps its lock.
+        now[0] += 7 * 3600
+        deadline = time.monotonic() + 5
+        while "refreshed" not in json.loads(owner_path.read_text()):
+            assert time.monotonic() < deadline, "the lock was never re-stamped"
+            time.sleep(0.01)
+
+        with pytest.raises(LockTimeout):
+            with install_lock(
+                db_folder, log=logs.append, timeout=0.2, poll=0.01, clock=lambda: now[0]
+            ):
+                pass
+
+        assert json.loads(owner_path.read_text())["pid"] == os.getpid()
+
+    assert not any("breaking stale install lock" in message for message in logs)
+    assert sorted(path.name for path in db_folder.iterdir()) == [".phu-db.lock"]

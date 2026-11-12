@@ -66,10 +66,8 @@ plugins:
 nav:
   - Home: index.md
   - Commands:
-      - commands/dbs.md
       - commands/cluster.md
       - commands/avger.md
-      - commands/simplify-taxa.md
       - commands/normalize-lineage.md
       - commands/screen.md
       - commands/jack.md

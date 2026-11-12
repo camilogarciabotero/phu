@@ -11,42 +11,19 @@ from ._click import ProgressReporter, run_click_task
 from ._exec import CmdNotFound
 from ._log import set_verbosity
 from .avg import AvgConfig, run_avg
-from .avg_reference_db import (
-    ensure_avg_database,
-    get_avg_database_status,
-    refresh_avg_database,
-    remove_avg_database,
-)
+from .db_bundle import bundle_provenance, prepare_bundle
+from .db_fetch import DatabaseError
 from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
-from .dbcan_db import (
-    get_dbcan_database_status,
-    prepare_dbcan_database,
-    refresh_dbcan_database,
-    remove_dbcan_database,
-)
 from .gene_prediction_core import (
     clean_prediction_cache,
 )
 from .jack import JackConfig, _jack
-from .kofam_db import (
-    get_kofam_database_status,
-    prepare_kofam_database,
-    refresh_kofam_database,
-    remove_kofam_database,
-)
-from .pfam_db import (
-    get_pfam_database_status,
-    prepare_pfam_database,
-    refresh_pfam_database,
-    remove_pfam_database,
-)
 from .screen import ScreenConfig, _screen
 from .normalize_vcontact_lineage import (
     NormalizeLineageConfig,
     normalize_lineage_file,
 )
 from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
-from .vscore_db import remove_vscore_database
 
 app = typer.Typer(
     help="Phage utilities CLI",
@@ -56,257 +33,87 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 dbs_app = typer.Typer(
-    help="Manage local phu databases",
+    help="Install and check the phu-db database bundle",
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
+    no_args_is_help=True,
 )
 app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
 
-SUPPORTED_DBS = ("pfam", "kofam", "dbcan", "avg")
-
-
-def _normalize_db_names(
-    databases: list[str], all_dbs: bool, *, allow_legacy_vscore: bool = False
-) -> list[str]:
-    if all_dbs and databases:
-        raise ValueError("Use either specific database names or --all, not both")
-
-    selected = (
-        list(SUPPORTED_DBS)
-        if all_dbs or not databases
-        else [name.lower() for name in databases]
-    )
-
-    allowed = (*SUPPORTED_DBS, "vscore") if allow_legacy_vscore else SUPPORTED_DBS
-    unknown = [name for name in selected if name not in allowed]
-    if unknown:
-        raise ValueError(f"Unsupported database(s): {', '.join(sorted(set(unknown)))}")
-
-    # Deduplicate while preserving order.
-    return list(dict.fromkeys(selected))
-
-
-def _db_status_payload(db_name: str) -> dict:
-    if db_name == "pfam":
-        return get_pfam_database_status()
-    if db_name == "kofam":
-        return get_kofam_database_status()
-    if db_name == "dbcan":
-        return get_dbcan_database_status()
-    if db_name == "avg":
-        return get_avg_database_status()
-    raise ValueError(f"Unsupported database: {db_name}")
-
-
-@dbs_app.command("list")
-def dbs_list() -> None:
-    """List supported databases and quick readiness state."""
-    for db_name in SUPPORTED_DBS:
-        status = _db_status_payload(db_name)
-        state = (
-            "ready"
-            if (status.get("downloaded") and status.get("indexed"))
-            else "not-ready"
-        )
-        typer.echo(f"{db_name}\t{state}")
-
-
-@dbs_app.command("status")
-def dbs_status(
-    databases: Optional[list[str]] = typer.Argument(
-        None,
-        help="Database names (default: all)",
-    ),
-    all_dbs: bool = typer.Option(
-        False,
-        "--all",
-        help="Show status for all supported databases",
-        rich_help_panel="Selection",
-    ),
-) -> None:
-    """Show detailed status for one or more databases."""
-    try:
-        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
-    except ValueError as exc:
-        typer.secho(str(exc), fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    for db_name in selected:
-        status = _db_status_payload(db_name)
-        typer.echo(f"{db_name}:")
-        typer.echo(f"  downloaded: {status.get('downloaded')}")
-        typer.echo(f"  indexed: {status.get('indexed')}")
-        typer.echo(f"  manifest_exists: {status.get('manifest_exists')}")
-        typer.echo(f"  model_count: {status.get('model_count')}")
-        typer.echo(f"  sparse_cached_count: {status.get('sparse_cached_count')}")
-        typer.echo(f"  root: {status.get('root')}")
+DBS_NOTICE = (
+    "`phu dbs {name}` is no longer available: phu keeps its databases as one pinned "
+    "bundle. Use `phu dbs prepare` to download, verify and install it ahead of time; "
+    "`screen` and `avger` also install it on first use. "
+    "See the Databases page of the documentation."
+)
 
 
 @dbs_app.command("prepare")
 def dbs_prepare(
     databases: Optional[list[str]] = typer.Argument(
         None,
-        help="Database names (default: all)",
+        help="Accepted for compatibility; the bundle always holds every database",
+        hidden=True,
     ),
-    all_dbs: bool = typer.Option(
-        False,
-        "--all",
-        help="Prepare all supported databases",
-        rich_help_panel="Selection",
-    ),
-    force_refresh: bool = typer.Option(
-        False,
-        "--force-refresh",
-        help="Force re-download/rebuild when supported",
+    bundle: Optional[Path] = typer.Option(
+        None,
+        "--bundle",
+        help="Install from this pre-downloaded phu-db.tar.gz instead of downloading "
+        "(same as PHU_DB_BUNDLE)",
         rich_help_panel="Preparation",
     ),
-) -> None:
-    """Prepare databases for use by phu commands."""
-    try:
-        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
-    except ValueError as exc:
-        typer.secho(str(exc), fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    try:
-        for db_name in selected:
-            if db_name == "pfam":
-                result = prepare_pfam_database(
-                    download=True, index=True, force_refresh=force_refresh
-                )
-                typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
-                typer.echo(f"Index ready: {result.get('offsets_path')}")
-            elif db_name == "kofam":
-                result = prepare_kofam_database(force_refresh=force_refresh)
-                typer.echo(f"Prepared {db_name}: {result.get('hmm_path')}")
-                typer.echo(f"Index ready: {result.get('offsets_path')}")
-                typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
-            elif db_name == "dbcan":
-                result = prepare_dbcan_database(force_refresh=force_refresh)
-                files = result.get("files", {})
-                typer.echo(f"Prepared {db_name}: {files.get('hmm', {}).get('path')}")
-                typer.echo(
-                    f"Index ready: {files.get('family_offsets', {}).get('path')}"
-                )
-                typer.echo(f"PUL rules ready: {files.get('pul_rules', {}).get('path')}")
-            elif db_name == "avg":
-                result = ensure_avg_database(force_refresh=force_refresh)
-                typer.echo(f"Prepared {db_name}: {result.get('root')}")
-                typer.echo(f"Release: {result.get('release')}")
-    except FileNotFoundError as exc:
-        typer.secho(str(exc), fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-
-@dbs_app.command("refresh")
-def dbs_refresh(
-    databases: Optional[list[str]] = typer.Argument(
-        None,
-        help="Database names (default: all)",
-    ),
-    all_dbs: bool = typer.Option(
+    verify: bool = typer.Option(
         False,
-        "--all",
-        help="Refresh all supported databases",
-        rich_help_panel="Selection",
+        "--verify",
+        help="Re-hash every installed file, and reinstall if any check fails "
+        "(same as PHU_DB_VERIFY=1)",
+        rich_help_panel="Preparation",
     ),
+    all_dbs: bool = typer.Option(False, "--all", hidden=True),
+    force_refresh: bool = typer.Option(False, "--force-refresh", hidden=True),
 ) -> None:
-    """Refresh database integrity and repair incomplete state."""
-    try:
-        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
-    except ValueError as exc:
-        typer.secho(str(exc), fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
+    """Download, verify and install the pinned phu-db bundle (Pfam, KOfam, dbCAN, AVG).
 
-    try:
-        for db_name in selected:
-            if db_name == "pfam":
-                result = refresh_pfam_database()
-                typer.echo(f"Refreshed {db_name}: {result.get('hmm_path')}")
-                typer.echo(f"Index ready: {result.get('offsets_path')}")
-            elif db_name == "kofam":
-                result = refresh_kofam_database()
-                typer.echo(f"Refreshed {db_name}: {result.get('hmm_path')}")
-                typer.echo(f"Index ready: {result.get('offsets_path')}")
-                typer.echo(f"Metadata ready: {result.get('ko_list_path')}")
-            elif db_name == "dbcan":
-                result = refresh_dbcan_database()
-                files = result.get("files", {})
-                typer.echo(f"Refreshed {db_name}: {files.get('hmm', {}).get('path')}")
-                typer.echo(
-                    f"Index ready: {files.get('family_offsets', {}).get('path')}"
-                )
-                typer.echo(f"PUL rules ready: {files.get('pul_rules', {}).get('path')}")
-            elif db_name == "avg":
-                result = refresh_avg_database()
-                typer.echo(f"Refreshed {db_name}: {result.get('root')}")
-                typer.echo(f"Release: {result.get('release')}")
-    except FileNotFoundError as exc:
-        typer.secho(str(exc), fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-
-@dbs_app.command("remove")
-def dbs_remove(
-    databases: Optional[list[str]] = typer.Argument(
-        None,
-        help="Database names (default: all)",
-    ),
-    all_dbs: bool = typer.Option(
-        False,
-        "--all",
-        help="Remove all supported databases",
-        rich_help_panel="Selection",
-    ),
-    yes: bool = typer.Option(
-        False,
-        "--yes",
-        help="Confirm database removal",
-    ),
-) -> None:
-    """Remove local database data."""
-    if not yes:
-        typer.secho(
-            "Refusing to remove databases without --yes", fg=typer.colors.RED, err=True
+    Optional: `screen` and `avger` install the bundle on first use. Run this
+    first on a login node, or before submitting many jobs at once.
+    """
+    if databases or all_dbs:
+        typer.echo(
+            "Note: phu-db is one bundle; all databases are installed together.", err=True
         )
-        raise typer.Exit(1)
-
+    if force_refresh:
+        typer.echo(
+            "Note: --force-refresh is ignored; the bundle is pinned to this phu release. "
+            "Use --verify to re-check the installed files.",
+            err=True,
+        )
     try:
-        selected = _normalize_db_names(databases or [], all_dbs=all_dbs)
-    except ValueError as exc:
+        root = prepare_bundle(bundle_path=bundle, deep=verify)
+        provenance = bundle_provenance()
+    except (DatabaseError, OSError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
+    typer.echo(f"{provenance['bundle_version']} is ready: {root}")
+    for name, release in provenance["upstream_versions"].items():
+        typer.echo(f"  {name}: {release}")
 
-    for db_name in selected:
-        if db_name == "pfam":
-            removed = remove_pfam_database()
-            if removed:
-                typer.echo(f"Removed {db_name} database")
-            else:
-                typer.echo(f"{db_name} database not present")
-        elif db_name == "kofam":
-            removed = remove_kofam_database()
-            if removed:
-                typer.echo(f"Removed {db_name} database")
-            else:
-                typer.echo(f"{db_name} database not present")
-        elif db_name == "dbcan":
-            removed = remove_dbcan_database()
-            if removed:
-                typer.echo(f"Removed {db_name} database")
-            else:
-                typer.echo(f"{db_name} database not present")
-        elif db_name == "vscore":
-            removed = remove_vscore_database()
-            typer.echo(
-                "Removed vscore database" if removed else "vscore database not present"
-            )
-        elif db_name == "avg":
-            removed = remove_avg_database()
-            if removed:
-                typer.echo(f"Removed {db_name} database")
-            else:
-                typer.echo(f"{db_name} database not present")
+
+def _dbs_removed(name: str) -> None:
+    @dbs_app.command(
+        name,
+        hidden=True,
+        context_settings={
+            "allow_extra_args": True,
+            "ignore_unknown_options": True,
+            "help_option_names": [],
+        },
+    )
+    def removed(ctx: typer.Context) -> None:
+        typer.echo(DBS_NOTICE.format(name=name), err=True)
+
+
+for _name in ("list", "status", "refresh", "remove"):
+    _dbs_removed(_name)
 
 
 @app.callback(invoke_without_command=True)
@@ -486,7 +293,7 @@ def normalize_lineage(
         raise typer.Exit(1)
 
 
-@app.command("simplify-taxa", rich_help_panel="Workflow")
+@app.command("simplify-taxa", rich_help_panel="Workflow", hidden=True)
 def simplify_taxa(
     input_file: Path = typer.Option(
         ...,
@@ -525,7 +332,10 @@ def simplify_taxa(
     ),
 ):
     """
-    Simplify vContact taxonomy prediction columns into compact lineage codes.
+    Deprecated: simplify vContact taxonomy prediction columns into compact lineage codes.
+
+    This command is deprecated and will be removed in a future release. It is
+    hidden from `phu --help` but still works as before.
 
     Transforms verbose vContact taxonomy strings like 'novel_genus_1_of_novel_family_2_of_Caudoviricetes'
     into compact codes like 'Caudoviricetes:NF2:NG1'.
@@ -533,6 +343,10 @@ def simplify_taxa(
     Example:
         phu simplify-taxa -i final_assignments.csv -o simplified.csv --add-lineage
     """
+    typer.echo(
+        "Warning: 'phu simplify-taxa' is deprecated and will be removed in a future release.",
+        err=True,
+    )
     set_verbosity(quiet=quiet, verbose=verbose)
     # Build config
     cfg = TaxaConfig(
@@ -620,7 +434,7 @@ def avger(
             )
         else:
             result = run_avg(config)
-    except (FileNotFoundError, ValueError, OSError) as exc:
+    except (FileNotFoundError, ValueError, OSError, DatabaseError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
 
@@ -878,7 +692,7 @@ def screen(
 
     try:
         _screen(cfg)
-    except FileNotFoundError as e:
+    except (OSError, DatabaseError) as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     except ValueError as e:

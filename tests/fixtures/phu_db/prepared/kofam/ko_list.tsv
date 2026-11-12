@@ -1,0 +1,4 @@
+knum	threshold	score_type	profile_type	F-measure	nseq	nseq_used	alen	mlen	eff_nseq	re/pos	definition
+K00001	120.50	domain	all	0.883405	97	92	560	15	1.26	0.589	fixture dehydrogenase A [EC:1.1.1.1]
+K00002	-	-	-	-	1	1	15	15	0.39	0.593	fixture monooxygenase without threshold
+K00003	80.25	full	all	0.512000	42	40	300	15	2.10	0.601	fixture transferase C

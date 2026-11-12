@@ -1,65 +1,41 @@
-import io
+import json
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
 
-from typer.testing import CliRunner
+import pytest
 
-import phu.cli as cli_module
 from phu import dbcan_db
-from phu.cli import app
 from phu.dbcan_db import (
     build_family_offsets,
     is_dbcan_id,
     normalize_dbcan_id,
-    parse_pul_workbook,
+    parse_pul_rules,
 )
 
-runner = CliRunner()
+FIXTURE_DBCAN = Path(__file__).parent / "fixtures" / "phu_db" / "prepared" / "dbcan"
+HEADER = "pul_id\tsubstrate\tcazymes_predicted_dbcan\n"
 
 
-def test_download_streams_to_atomic_destination(monkeypatch, tmp_path: Path):
-    class StreamingResponse(io.BytesIO):
-        def read(self, size=-1):
-            assert size != -1
-            return super().read(size)
-
-    payload = b"dbCAN" * 1024
-    monkeypatch.setattr(dbcan_db, "urlopen", lambda _: StreamingResponse(payload))
-    destination = tmp_path / "database" / "dbcan.txt"
-
-    dbcan_db._download("https://example.test/dbcan.txt", destination)
-
-    assert destination.read_bytes() == payload
+def _rules(tmp_path: Path, rows: str, family_ids: set[str]):
+    path = tmp_path / "pul_rules.tsv"
+    path.write_text(HEADER + rows)
+    return parse_pul_rules(path, family_ids)
 
 
-def _write_workbook(path: Path, rows: list[list[str]]) -> None:
-    cells = []
-    for row_number, row in enumerate(rows, start=1):
-        row_cells = []
-        for column_number, value in enumerate(row, start=1):
-            column = chr(64 + column_number)
-            row_cells.append(
-                f'<c r="{column}{row_number}" t="inlineStr"><is><t>{value}</t></is></c>'
-            )
-        cells.append(f'<row r="{row_number}">' + "".join(row_cells) + "</row>")
-    sheet = (
-        '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        "<sheetData>" + "".join(cells) + "</sheetData></worksheet>"
+@pytest.fixture
+def dbcan_root(tmp_path, monkeypatch) -> Path:
+    """A dbCAN database directory laid out like the bundle's."""
+    root = tmp_path / "dbcan"
+    root.mkdir()
+    (root / "profiles.hmm").write_text(
+        "HMMER3/f\nNAME  GH5.hmm\n//\n"
+        "HMMER3/f\nNAME  CBM48.hmm\n//\n"
+        "HMMER3/f\nNAME  SLH.hmm\n//\n"
     )
-    workbook = (
-        '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
-        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
-        '<sheet name="PUL" sheetId="1" r:id="rId1"/></sheets></workbook>'
+    (root / "pul_rules.tsv").write_text(
+        HEADER + "PUL0001\txylan\tGH5,CBM48\nPUL0002\tstarch\tGH5|SLH\n"
     )
-    rels = (
-        '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        '<Relationship Id="rId1" Target="worksheets/sheet1.xml" '
-        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"/></Relationships>'
-    )
-    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
-        archive.writestr("xl/workbook.xml", workbook)
-        archive.writestr("xl/_rels/workbook.xml.rels", rels)
-        archive.writestr("xl/worksheets/sheet1.xml", sheet)
+    monkeypatch.setattr(dbcan_db, "_dbcan_root", lambda: root)
+    return root
 
 
 def test_dbcan_family_names_normalize_hmm_suffix():
@@ -67,7 +43,7 @@ def test_dbcan_family_names_normalize_hmm_suffix():
     assert normalize_dbcan_id("gh128.hmm") == "GH128"
 
 
-def test_pul0621_rule_is_header_selected_and_ordered(tmp_path: Path):
+def test_pul0621_rule_keeps_token_order(tmp_path: Path):
     hmm = tmp_path / "dbcan.txt"
     hmm.write_text(
         "HMMER3/f\nNAME GH133.hmm\n//\n"
@@ -75,16 +51,10 @@ def test_pul0621_rule_is_header_selected_and_ordered(tmp_path: Path):
         "HMMER3/f\nNAME GH57.hmm\n//\n"
         "HMMER3/f\nNAME GT4.hmm\n//\n"
     )
-    workbook = tmp_path / "pul.xlsx"
-    _write_workbook(
-        workbook,
-        [
-            ["substrate_final", "cazymes_predicted_dbcan", "ID"],
-            ["starch", "GH133|GH3,GH57|GT4", "PUL0621"],
-        ],
-    )
 
-    rules = parse_pul_workbook(workbook, set(build_family_offsets(hmm)))
+    rules = _rules(
+        tmp_path, "PUL0621\tstarch\tGH133|GH3,GH57|GT4\n", set(build_family_offsets(hmm))
+    )
 
     assert rules["PUL0621"].families == ("GH133", "GH3", "GH57", "GT4")
     assert rules["PUL0621"].raw_rule == "GH133|GH3,GH57|GT4"
@@ -92,13 +62,7 @@ def test_pul0621_rule_is_header_selected_and_ordered(tmp_path: Path):
 
 
 def test_pul_rule_preserves_unsupported_tokens(tmp_path: Path):
-    workbook = tmp_path / "pul.xlsx"
-    _write_workbook(
-        workbook,
-        [["PUL", "cazymes_predicted_dbcan"], ["PUL0001", "PL6_3,CBM35inCE17"]],
-    )
-
-    rule = parse_pul_workbook(workbook, set())["PUL0001"]
+    rule = _rules(tmp_path, "PUL0001\t\tPL6_3,CBM35inCE17\n", set())["PUL0001"]
 
     assert rule.families == ()
     assert rule.unresolved_tokens == ("PL6_3", "CBM35INCE17")
@@ -106,42 +70,76 @@ def test_pul_rule_preserves_unsupported_tokens(tmp_path: Path):
 
 
 def test_pul_rule_marks_ancillary_profiles_unresolved(tmp_path: Path):
-    workbook = tmp_path / "pul.xlsx"
-    _write_workbook(
-        workbook,
-        [["ID", "cazymes_predicted_dbcan"], ["PUL0187", "GH16_21,SLH|CBM54"]],
-    )
-
-    rule = parse_pul_workbook(workbook, {"GH16_21", "CBM54"})["PUL0187"]
+    rule = _rules(tmp_path, "PUL0187\t\tGH16_21,SLH|CBM54\n", {"GH16_21", "CBM54"})["PUL0187"]
 
     assert rule.families == ("GH16_21", "CBM54")
     assert rule.unresolved_tokens == ("SLH",)
     assert not rule.resolved
 
 
-def test_dbcan_cli_lifecycle_dispatch(monkeypatch):
-    manifest = {
-        "files": {
-            "hmm": {"path": "/tmp/hmm"},
-            "family_offsets": {"path": "/tmp/family_offsets"},
-            "pul_rules": {"path": "/tmp/pul_rules"},
-        }
-    }
-    monkeypatch.setattr(cli_module, "get_dbcan_database_status", lambda: {
-        "downloaded": True,
-        "indexed": True,
-        "manifest_exists": True,
-        "model_count": 4,
-        "sparse_cached_count": 0,
-        "root": "/tmp/dbcan",
-    })
-    monkeypatch.setattr(cli_module, "prepare_dbcan_database", lambda **_: manifest)
-    monkeypatch.setattr(cli_module, "refresh_dbcan_database", lambda: manifest)
-    monkeypatch.setattr(cli_module, "remove_dbcan_database", lambda: True)
+def test_pul_listed_twice_keeps_first_position_and_last_rule(tmp_path: Path):
+    rules = _rules(
+        tmp_path, "PUL0001\ta\tGH5\nPUL0002\tb\tGH5\nPUL0001\tc\tCBM48\n", {"GH5", "CBM48"}
+    )
 
-    assert runner.invoke(app, ["dbs", "list"]).exit_code == 0
-    assert "dbcan\tready" in runner.invoke(app, ["dbs", "list"]).stdout
-    assert runner.invoke(app, ["dbs", "status", "dbcan"]).exit_code == 0
-    assert runner.invoke(app, ["dbs", "prepare", "dbcan"]).exit_code == 0
-    assert runner.invoke(app, ["dbs", "refresh", "dbcan"]).exit_code == 0
-    assert runner.invoke(app, ["dbs", "remove", "dbcan", "--yes"]).exit_code == 0
+    assert list(rules) == ["PUL0001", "PUL0002"]
+    assert rules["PUL0001"].substrate == "c"
+    assert rules["PUL0001"].families == ("CBM48",)
+
+
+def test_pul_rule_with_empty_rule_is_unresolved(tmp_path: Path):
+    rule = _rules(tmp_path, "PUL0009\tpectin\t\n", {"GH5"})["PUL0009"]
+
+    assert rule.raw_rule == ""
+    assert not rule.resolved
+
+
+def test_unexpected_pul_rules_header_is_refused(tmp_path: Path):
+    path = tmp_path / "pul_rules.tsv"
+    path.write_text("id\tsubstrate\trule\n")
+
+    with pytest.raises(ValueError, match="unexpected PUL rules header"):
+        parse_pul_rules(path, set())
+
+
+def test_fixture_bundle_pul_rules_parse():
+    rules = parse_pul_rules(FIXTURE_DBCAN / "pul_rules.tsv", {"GH5", "CBM48"})
+
+    assert list(rules) == ["PUL0001", "PUL0002", "PUL0003"]
+    assert rules["PUL0002"].substrate == "starch glycogen"
+    assert rules["PUL0003"].unresolved_tokens == ("GH999",)
+
+
+def test_inventory_and_rules_use_canonical_models_only(dbcan_root):
+    canonical, excluded = dbcan_db.get_dbcan_model_inventory()
+
+    assert canonical == ("GH5", "CBM48")
+    assert excluded == ("SLH",)
+    assert dbcan_db.get_dbcan_pul("pul0001").resolved
+    assert dbcan_db.get_dbcan_pul("PUL0002").unresolved_tokens == ("SLH",)
+    assert dbcan_db.get_dbcan_pul("PUL9999") is None
+    assert list(dbcan_db.get_dbcan_pul_rules()) == ["PUL0001", "PUL0002"]
+
+
+def test_extract_writes_models_and_reports_missing(dbcan_root, tmp_path):
+    paths, missing = dbcan_db.extract_dbcan_models(["gh5", "GH999"], tmp_path / "out")
+
+    assert [path.name for path in paths] == ["GH5.hmm"]
+    assert paths[0].read_text() == "HMMER3/f\nNAME  GH5.hmm\n//\n"
+    assert missing == ["GH999"]
+
+
+def test_offset_index_is_rebuilt_when_profiles_change(dbcan_root, tmp_path):
+    dbcan_db.extract_dbcan_models(["GH5"], tmp_path / "out")
+    index = json.loads((dbcan_root / "family_offsets.json").read_text())
+    assert set(index["offsets"]) == {"GH5", "CBM48", "SLH"}
+
+    # A different profiles.hmm: the index and the cached GH5 model are stale.
+    (dbcan_root / "profiles.hmm").write_text(
+        "HMMER3/f\nNAME  GH5.hmm\nDESC  changed\n//\nHMMER3/f\nNAME  GH9.hmm\n//\n"
+    )
+    paths, missing = dbcan_db.extract_dbcan_models(["GH5", "GH9", "CBM48"], tmp_path / "out2")
+
+    assert "changed" in paths[0].read_text()
+    assert [path.name for path in paths] == ["GH5.hmm", "GH9.hmm"]
+    assert missing == ["CBM48"]

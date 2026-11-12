@@ -68,17 +68,12 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 │                    three modes.                                              │
 │ normalize-lineage  Normalize vContact lineage predictions without changing   │
 │                    column names.                                             │
-│ simplify-taxa      Simplify vContact taxonomy prediction columns into        │
-│                    compact lineage codes.                                    │
 │ avger              Predict and curate putative auxiliary viral genes.        │
 │ screen             Screen contigs using protein-family or PUL CAZyme         │
 │                    signatures.                                               │
 │ jack               Iteratively screen contigs from one or more seed protein  │
 │                    markers with                                              │
 │                    pyhmmer.jackhmmer.                                        │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Database Management ────────────────────────────────────────────────────────╮
-│ dbs                Manage local phu databases                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -88,17 +83,14 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 - [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine seeds hits.
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
-- [`simplify-taxa`](https://camilogarciabotero.github.io/phu/commands/simplify-taxa/): Simplify vContact taxonomy prediction columns into compact lineage codes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
 
 Each command page includes the current CLI help menu, input/output behavior,
 examples, and workflow guidance.
 
-## Database Management
+## Databases
 
-A special command group, `dbs`, is available to manage local databases used by `phu`. Each database can define its own preparation logic while sharing a common user interface. Built-in backends currently include `pfam`, `kofam`, `dbcan`, and `avg`.
-
-- [`dbs`](https://camilogarciabotero.github.io/phu/commands/dbs/): Manage local databases (list, status, prepare, refresh, remove) for `pfam`, `kofam`, `dbcan`, and `avg`.
+`screen` and `avger` install their reference databases (Pfam, KOfam, dbCAN and the CheckAMG AVG tables) automatically on first use, as one pinned and checksummed bundle. Run `phu dbs prepare` to install it ahead of time. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for disk needs, offline use and citation.
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 

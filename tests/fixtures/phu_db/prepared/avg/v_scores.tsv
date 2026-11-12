@@ -1,0 +1,6 @@
+id	name	V-score	VL-score	db
+K00001	fixture dehydrogenase A	10.0	4.890951685	KEGG
+K00002	fixture monooxygenase	3.5	2.104233101	KEGG
+PF00001.1	phu fixture domain A	1.25	1.502991400	Pfam
+PF00002.1	phu fixture domain B	0.5	0.811402377	Pfam
+K00003	fixture transferase C			KEGG

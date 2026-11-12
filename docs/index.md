@@ -54,14 +54,10 @@ phu --help
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Workflow ───────────────────────────────────────────────────────────────────────────────────╮
 │ cluster        Sequence clustering wrapper around external 'vclust' with three modes.        │
-│ simplify-taxa  Simplify vContact taxonomy prediction columns into compact lineage codes.     │
 │ avger          Predict and curate putative auxiliary viral genes.                            │
 │ screen         Screen contigs for protein families using HMMER on predicted CDS.             │
 │ jack           Iteratively screen contigs from one or more seed protein markers with         │
 │                pyhmmer.jackhmmer.                                                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Database Management ────────────────────────────────────────────────────────────────────────╮
-│ dbs            Manage local phu databases                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
@@ -111,39 +107,14 @@ phu cluster --mode votu --input-contigs viral-genomes.fasta
 [Learn more about clustering →](commands/cluster.md)
 
 
-### `dbs` - Database Management
+### Databases
 
-Manage local database lifecycle with a command group designed for multiple backends.
+`screen` and `avger` install their reference databases automatically on first
+use, as one pinned and checksummed bundle. Run `phu dbs prepare` to install
+it ahead of time.
 
-Available operations:
+[Learn more about databases and provenance →](databases.md)
 
-- `phu dbs list`
-- `phu dbs status [DB ...]`
-- `phu dbs prepare [DB ...]`
-- `phu dbs refresh [DB ...]`
-- `phu dbs remove [DB ...] --yes`
-
-`pfam`, `kofam`, `dbcan`, and `avg` are available in this build.
-Database preparation may download large files; inspect status and available
-metadata before preparing a backend.
-
-**Example:**
-```bash
-phu dbs prepare pfam kofam
-```
-
-[Learn more about database management →](commands/dbs.md)
-
-
-### `simplify-taxa` - Taxonomy Simplification
-
-Simplify verbose vContact taxonomy predictions into compact lineage codes for easier analysis and visualization.
-**Example:**
-```bash
-phu simplify-taxa -i final_assignments.csv -o simplified_taxonomy.csv
-```
-
-[Learn more about taxonomy simplification →](commands/simplify-taxa.md)
 
 ### `normalize-lineage` - Normalize vContact Lineage
 

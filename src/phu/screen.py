@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import dataclasses
 import gzip
 import json
 import logging
@@ -24,11 +25,11 @@ import typer
 from . import __version__
 from ._click import run_click_task
 from ._exec import _executable
+from .db_bundle import bundle_provenance, database_hashes
 from ._log import log_call, log_command
 from .dbcan_db import (
     ensure_dbcan_database,
     extract_dbcan_models,
-    get_dbcan_database_status,
     get_dbcan_model_inventory,
     get_dbcan_pul,
     get_dbcan_pul_rules,
@@ -124,6 +125,8 @@ class ScreenQuery:
     excluded_ancillary_profiles: tuple[str, ...] = ()
     database_version: str | None = None
     database_digest: str | None = None
+    # The phu-db databases the query's models came from; empty for local HMM files.
+    databases: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -147,18 +150,39 @@ def _best_hit_key(hit: Hit) -> tuple[float, float, float, str]:
 
 
 def _dbcan_hashes() -> dict[str, str]:
-    manifest_path = Path(str(get_dbcan_database_status()["manifest_path"]))
-    if not manifest_path.exists():
-        return {}
-    try:
-        manifest = json.loads(manifest_path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return {
-        name: item["sha256"]
-        for name, item in manifest.get("files", {}).items()
-        if isinstance(item, dict) and item.get("sha256")
+    """The pinned sha256 of each dbCAN file in the phu-db bundle."""
+    return database_hashes("dbcan")
+
+
+def _query_manifest(query: ScreenQuery, combine_mode: str) -> dict[str, object]:
+    """What was asked and which databases answered it, for .phu/query.json.
+
+    ``database_hashes`` keeps its dbCAN-only file names for --all-cazymes; any
+    other database-backed query lists ``<database>/<file>`` for each database
+    it used. ``phu_db`` is present whenever a bundled database was used.
+    """
+    if query.all_cazymes:
+        hashes = _dbcan_hashes()
+    else:
+        hashes = {
+            f"{name}/{path}": sha256
+            for name in query.databases
+            for path, sha256 in database_hashes(name).items()
+        }
+    manifest: dict[str, object] = {
+        "original_query": list(query.original_inputs),
+        "normalized_models": list(query.normalized_models),
+        "pul_id": query.pul_id,
+        "pul_substrate": query.pul_substrate,
+        "pul_raw_rule": query.pul_raw_rule,
+        "matching_rule": "threshold"
+        if query.pul_id and combine_mode == "threshold"
+        else query.matching_rule,
+        "database_hashes": hashes,
     }
+    if query.databases:
+        manifest["phu_db"] = bundle_provenance()
+    return manifest
 
 
 def _write_tsv(
@@ -693,6 +717,7 @@ def _resolve_all_puls_inputs(
         normalized_models=tuple(families),
         matching_rule="any_pul_all_families",
         all_puls=True,
+        databases=("dbcan",),
         total_pul_count=len(rules),
         resolvable_pul_count=len(resolvable),
         skipped_puls=skipped,
@@ -731,10 +756,11 @@ def _resolve_all_cazymes_inputs(
         normalized_models=canonical,
         matching_rule="any",
         all_cazymes=True,
+        databases=("dbcan",),
         total_hmm_profiles=len(canonical) + len(excluded),
         excluded_ancillary_profiles=excluded,
         database_version=database_manifest.get("release"),
-        database_digest=database_manifest.get("files", {}).get("hmm", {}).get("sha256"),
+        database_digest=database_manifest.get("hmm_sha256"),
     )
     print(
         f"Resolved {len(dbcan_hmms)} canonical dbCAN CAZyme profile(s); "
@@ -847,8 +873,7 @@ def _resolve_hmm_inputs(
         if missing:
             missing_msg = ", ".join(missing)
             raise FileNotFoundError(
-                f"KO identifier(s) not found in local KOFam database: {missing_msg}. "
-                "Run `phu dbs refresh kofam` and try again."
+                f"KO identifier(s) not found in the KOfam database: {missing_msg}."
             )
 
         ko_metadata = get_kofam_metadata_map(dedup_ko_ids)
@@ -907,12 +932,11 @@ def _resolve_hmm_inputs(
         )
         if missing:
             raise FileNotFoundError(
-                "dbCAN family model(s) not found in local database: "
-                f"{', '.join(missing)}. Run `phu dbs refresh dbcan` and try again."
+                f"dbCAN family model(s) not found in the dbCAN database: {', '.join(missing)}."
             )
         query = ScreenQuery(
             original_inputs=tuple(str(value) for value in hmm_inputs),
-            normalized_models=tuple(dedup_dbcan_ids),
+            normalized_models=(*dedup_pfam_ids, *dedup_ko_ids, *dedup_dbcan_ids),
         )
         print(
             f"Resolved {len(dbcan_hmms)} dbCAN model(s) from local database: "
@@ -925,6 +949,10 @@ def _resolve_hmm_inputs(
             original_inputs=tuple(str(value) for value in hmm_inputs),
             normalized_models=(*dedup_pfam_ids, *dedup_ko_ids, *dedup_dbcan_ids),
         )
+    used = {"pfam": dedup_pfam_ids, "kofam": dedup_ko_ids, "dbcan": dedup_dbcan_ids}
+    query = dataclasses.replace(
+        query, databases=tuple(name for name, ids in used.items() if ids)
+    )
     if return_query:
         return resolved, ko_metadata, query
     return resolved, ko_metadata
@@ -1995,6 +2023,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "input": str(plan.input_contigs),
                         "database_name": "dbcan",
                         "database_hashes": _dbcan_hashes(),
+                        "phu_db": bundle_provenance(),
                         "searched_family_count": len(query.normalized_models),
                         "raw_hmm_hit_count": 0,
                         "qualifying_hmm_hit_count": 0,
@@ -2023,6 +2052,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "database_version": query.database_version,
                         "database_digest": query.database_digest,
                         "database_hashes": _dbcan_hashes(),
+                        "phu_db": bundle_provenance(),
                         "thresholds": {
                             "max_evalue": plan.max_evalue,
                             "min_bitscore": plan.min_bitscore,
@@ -2045,6 +2075,12 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                     indent=2,
                 )
                 + "\n"
+            )
+        if not query.all_puls and not query.all_cazymes:
+            query_path = plan.outdir / QUERY_MANIFEST
+            query_path.parent.mkdir(parents=True, exist_ok=True)
+            query_path.write_text(
+                json.dumps(_query_manifest(query, cfg.combine_mode), indent=2) + "\n"
             )
         if cache_artifact.temp_dir is not None:
             shutil.rmtree(cache_artifact.temp_dir, ignore_errors=True)
@@ -2229,18 +2265,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             if domtbl_path.exists():
                 domtbl_path.unlink()
 
-    database_hashes = _dbcan_hashes() if query.all_cazymes else {}
-    query_manifest = {
-        "original_query": list(query.original_inputs),
-        "normalized_models": list(query.normalized_models),
-        "pul_id": query.pul_id,
-        "pul_substrate": query.pul_substrate,
-        "pul_raw_rule": query.pul_raw_rule,
-        "matching_rule": "threshold"
-        if query.pul_id and cfg.combine_mode == "threshold"
-        else query.matching_rule,
-        "database_hashes": database_hashes,
-    }
+    query_manifest = _query_manifest(query, cfg.combine_mode)
+    database_hashes = query_manifest["database_hashes"]
     if query.all_cazymes:
         by_class = defaultdict(int)
         for model in query.normalized_models:
@@ -2311,6 +2337,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             "input": str(plan.input_contigs),
             "database_name": "dbcan",
             "database_hashes": _dbcan_hashes(),
+            "phu_db": bundle_provenance(),
             "searched_family_count": len(query.normalized_models),
             "raw_hmm_hit_count": len(all_hits),
             "qualifying_hmm_hit_count": len(qualifying_cazyme_hits),

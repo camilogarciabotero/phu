@@ -14,23 +14,20 @@ Install the missing program using the environment or package manager appropriate
 for your system, then rerun the command. PHU does not install every external
 binary automatically.
 
-## Database is not ready
+## Database install fails
 
-Inspect local database state before running a database-backed command:
+Databases install automatically on first use, or with `phu dbs prepare`; see
+[Databases and Provenance](databases.md). Common causes of a failed install:
 
-```bash
-phu dbs status
-phu dbs list
-```
+- **Not enough disk space.** The install needs about 12 GB free in
+  `PHU_DB_FOLDER` and reports the exact amount when it stops.
+- **No internet access** on the node. Download the bundle elsewhere and set
+  `PHU_DB_BUNDLE` to its path.
+- **Checksum mismatch.** The download or the `PHU_DB_BUNDLE` file is corrupt or
+  is a different bundle version. Download the version named in the error.
 
-Prepare only the named backend you need. Preparation may download large files:
-
-```bash
-phu dbs prepare pfam
-```
-
-An interrupted or incomplete preparation should be reported by `status`; run
-`refresh` when supported, or remove and prepare the affected backend again.
+An interrupted install leaves nothing half-installed; run the command again.
+If you suspect an installed file was changed, run once with `PHU_DB_VERIFY=1`.
 
 ## Cache or permissions errors
 

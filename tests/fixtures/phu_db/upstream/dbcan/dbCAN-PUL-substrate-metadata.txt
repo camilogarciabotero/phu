@@ -1,0 +1,3 @@
+PUL0001	xylan
+PUL0002	starch
+PUL0003	beta-glucan

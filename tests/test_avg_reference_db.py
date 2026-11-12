@@ -1,93 +1,116 @@
-import json
 from pathlib import Path
 
 import pytest
 
-import phu.avg_reference_db as reference
+from phu.avg_reference_db import AvgReference, load_avg_reference
 
+FIXTURE_AVG = Path(__file__).parent / "fixtures" / "phu_db" / "prepared" / "avg"
 
-SOURCE_CONTENT = {
-    "AMGs.tsv": "id\tdb\tname\tmetabolic_paths\ttotal_paths\tpath_source\tmetabolic_ratio\tVL-score\tAMG_weight\tamg_level\nPF00123.17\tPfam\tenergy enzyme\t1\t2\tPfam\t0.5\t2.0\t0.8\tvery high\nK00001\tKEGG\tko enzyme\t1\t1\tKEGG\t1\t1.0\t0.7\thigh\n",
-    "APGs.tsv": "id\tdb\tname\nPF00123\tPfam\tenergy enzyme\n",
-    "AReGs.tsv": "id\tdb\tname\nK00002\tKEGG\tregulator\n",
-    "AMG_filters.tsv": "id\tdb\tname\tfilter_essential\tfilter_glucan\tfilter_lipid\tfilter_methyl\tfilter_nucleotide\nPF00123\tPfam\tenergy enzyme\tTrue\tFalse\tFalse\tFalse\tFalse\n",
-    "APG_filters.tsv": "id\tdb\tname\tfilter_essential\tfilter_glucan\tfilter_lipid\tfilter_methyl\tfilter_nucleotide\nK00001\tKEGG\tko enzyme\tFalse\tTrue\tFalse\tFalse\tFalse\n",
-    "AReG_filters.tsv": "id\tdb\tname\tfilter_essential\tfilter_glucan\tfilter_lipid\tfilter_methyl\tfilter_nucleotide\nK00002\tKEGG\tregulator\tFalse\tFalse\tFalse\tFalse\tTrue\n",
-    "vscores.tsv": "id\tname\tV-score\tVL-score\tdb\nPF00123.17\tenergy enzyme\t9.0\t2.0\tPfam\nK00001\tko enzyme\t8.0\t4.0\tKEGG\n",
+FILTER_HEADER = (
+    "id\tdb\tname\tfilter_essential\tfilter_glucan\tfilter_lipid\tfilter_methyl\tfilter_nucleotide\n"
+)
+CONTENT = {
+    "positive_amg.tsv": "id\tdb\tname\tmetabolic_paths\ttotal_paths\tpath_source\tmetabolic_ratio\tVL-score\tAMG_weight\tamg_level\nPF00123.17\tPfam\tenergy enzyme\t1\t2\tPfam\t0.5\t2.0\t0.8\tvery high\nK00001\tKEGG\tko enzyme\t1\t1\tKEGG\t1\t1.0\t0.7\thigh\n",
+    "positive_apg.tsv": "id\tdb\tname\nPF00123\tPfam\tenergy enzyme\n",
+    "positive_areg.tsv": "id\tdb\tname\nK00002\tKEGG\tregulator\n",
+    "filters_amg.tsv": FILTER_HEADER + "PF00123\tPfam\tenergy enzyme\tTrue\tFalse\tFalse\tFalse\tFalse\n",
+    "filters_apg.tsv": FILTER_HEADER + "K00001\tKEGG\tko enzyme\tFalse\tTrue\tFalse\tFalse\tFalse\n",
+    "filters_areg.tsv": FILTER_HEADER + "K00002\tKEGG\tregulator\tFalse\tFalse\tFalse\tFalse\tTrue\n",
+    "v_scores.tsv": "id\tname\tV-score\tVL-score\tdb\nPF00123.17\tenergy enzyme\t9.0\t2.0\tPfam\nK00001\tko enzyme\t8.0\t4.0\tKEGG\n",
 }
 
 
-def install_fixture(monkeypatch, tmp_path: Path) -> Path:
-    root = tmp_path / "avg"
-    root.mkdir()
-    monkeypatch.setattr(reference, "_avg_root", lambda: root)
-    for name, content in SOURCE_CONTENT.items():
-        (root / name).write_text(content)
-    return root
+@pytest.fixture
+def root(tmp_path: Path) -> Path:
+    for name, content in CONTENT.items():
+        (tmp_path / name).write_text(content)
+    return tmp_path
 
 
-def test_prepare_compiles_normalized_tables_and_manifest(monkeypatch, tmp_path):
-    root = install_fixture(monkeypatch, tmp_path)
+def test_load_normalises_and_sorts_every_table(root):
+    reference = load_avg_reference(root)
 
-    manifest = reference.prepare_avg_database()
+    assert reference.scores == [
+        {
+            "database": "kofam",
+            "accession": "K00001",
+            "original_accession": "K00001",
+            "name": "ko enzyme",
+            "v_score": "8.0",
+            "vl_score": "4.0",
+        },
+        {
+            "database": "pfam",
+            "accession": "PF00123",
+            "original_accession": "PF00123.17",
+            "name": "energy enzyme",
+            "v_score": "9.0",
+            "vl_score": "2.0",
+        },
+    ]
+    assert [
+        (row["database"], row["accession"], row["proposed_class"]) for row in reference.positive
+    ] == [
+        ("kofam", "K00001", "putative_amg"),
+        ("kofam", "K00002", "putative_areg"),
+        ("pfam", "PF00123", "putative_amg"),
+        ("pfam", "PF00123", "putative_apg"),
+    ]
+    amg = reference.positive[2]
+    assert amg["amg_weight"] == "0.8"
+    assert amg["amg_level"] == "very high"
+    assert [
+        (row["database"], row["accession"], row["proposed_class"], row["filter_category"])
+        for row in reference.filters
+    ] == [
+        ("kofam", "K00001", "putative_apg", "filter_glucan"),
+        ("kofam", "K00002", "putative_areg", "filter_nucleotide"),
+        ("pfam", "PF00123", "putative_amg", "filter_essential"),
+    ]
 
-    scores = (root / "v_scores.tsv").read_text()
-    positive = (root / "avg_positive.tsv").read_text()
-    filters = (root / "avg_filters.tsv").read_text()
-    assert "pfam\tPF00123\tPF00123.17" in scores
-    assert "kofam\tK00001" in scores
-    assert "putative_amg" in positive
-    assert "filter_essential" in filters
-    assert manifest["release"] == "v1.1.1"
-    assert manifest["normalized_row_counts"] == {"positive": 4, "filters": 3, "scores": 2}
-    assert json.loads((root / "manifest.json").read_text())["files"]["v_scores.tsv"]["sha256"]
 
-
-def test_prepare_skips_other_database_rows(monkeypatch, tmp_path):
-    root = install_fixture(monkeypatch, tmp_path)
-    (root / "vscores.tsv").write_text(
-        SOURCE_CONTENT["vscores.tsv"] + "X1\tother\t1\t1\tCAMPER\n"
+def test_filter_class_comes_from_the_file_it_is_in(root):
+    # The three filter tables share a schema and carry no class column.
+    (root / "filters_apg.tsv").write_text(
+        FILTER_HEADER + "PF00123\tPfam\tenergy enzyme\tTrue\tFalse\tFalse\tFalse\tFalse\n"
     )
 
-    manifest = reference.prepare_avg_database()
+    classes = {row["proposed_class"] for row in load_avg_reference(root).filters}
 
-    assert manifest["normalized_row_counts"]["scores"] == 2
+    assert classes == {"putative_amg", "putative_apg", "putative_areg"}
 
 
-def test_conflicting_duplicate_scores_fail(monkeypatch, tmp_path):
-    root = install_fixture(monkeypatch, tmp_path)
-    (root / "vscores.tsv").write_text(
+def test_rows_from_other_databases_are_skipped(root):
+    (root / "v_scores.tsv").write_text(CONTENT["v_scores.tsv"] + "X1\tother\t1\t1\tCAMPER\n")
+
+    assert len(load_avg_reference(root).scores) == 2
+
+
+def test_conflicting_duplicate_scores_fail(root):
+    (root / "v_scores.tsv").write_text(
         "id\tname\tV-score\tVL-score\tdb\n"
         "PF00123\tfirst\t9\t2\tPfam\n"
         "PF00123\tsecond\t9\t2\tPfam\n"
     )
 
     with pytest.raises(ValueError, match="Conflicting AVG score rows"):
-        reference.prepare_avg_database()
+        load_avg_reference(root)
 
 
-def test_status_reports_ready_reference(monkeypatch, tmp_path):
-    install_fixture(monkeypatch, tmp_path)
-    reference.prepare_avg_database()
+def test_missing_required_column_fails(root):
+    (root / "positive_apg.tsv").write_text("id\tname\nPF00123\tenergy enzyme\n")
 
-    status = reference.get_avg_database_status()
-
-    assert status["ready"] is True
-    assert status["release"] == "v1.1.1"
-    assert status["normalized_row_counts"]["scores"] == 2
+    with pytest.raises(ValueError, match="missing columns: db"):
+        load_avg_reference(root)
 
 
-def test_ensure_repairs_hash_invalid_file(monkeypatch, tmp_path):
-    root = install_fixture(monkeypatch, tmp_path)
-    monkeypatch.setattr(
-        reference,
-        "_download",
-        lambda _url, destination: destination.write_text(SOURCE_CONTENT[destination.name]),
-    )
-    reference.prepare_avg_database()
-    (root / "v_scores.tsv").write_text("corrupt\n")
+def test_fixture_bundle_avg_database_loads():
+    reference = load_avg_reference(FIXTURE_AVG)
 
-    repaired = reference.ensure_avg_database()
-
-    assert repaired["files"]["v_scores.tsv"]["size"] == (root / "v_scores.tsv").stat().st_size
-    assert "PF00123" in (root / "v_scores.tsv").read_text()
+    assert isinstance(reference, AvgReference)
+    assert reference.scores
+    assert {row["proposed_class"] for row in reference.positive} == {
+        "putative_amg",
+        "putative_apg",
+        "putative_areg",
+    }

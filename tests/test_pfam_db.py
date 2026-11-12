@@ -185,14 +185,3 @@ def test_extract_pfam_models_invalidates_stale_sparse_cache_when_source_changes(
     contents = (out_second / "PF00001.hmm").read_text()
     assert "NAME  NewModel" in contents
     assert "DESC  updated" in contents
-
-
-def test_prepare_pfam_database_missing_hmm_message_points_to_dbs_command(
-    tmp_path: Path, monkeypatch
-):
-    missing_hmm = tmp_path / "pfam" / "Pfam-A.hmm"
-
-    monkeypatch.setattr(pfam_db, "_pfam_hmm_path", lambda: missing_hmm)
-
-    with pytest.raises(FileNotFoundError, match="phu dbs prepare pfam"):
-        pfam_db.prepare_pfam_database(download=False, index=False, force_refresh=False)

@@ -11,7 +11,7 @@ from io import StringIO
 from pathlib import Path
 
 from . import __version__
-from .avg_reference_db import get_avg_database_status
+from .avg_reference_db import load_avg_reference
 from .avg_annotation import AvgAnnotationResults, annotate_avg_tracks
 from .avg_decisions import (
     AvgEvidence,
@@ -29,8 +29,7 @@ from .gene_prediction_core import (
     PredictionInputs,
     get_or_predict_proteins,
 )
-from .kofam_db import get_kofam_database_status
-from .pfam_db import get_pfam_database_status
+from .db_bundle import bundle_provenance, resolve_db
 from ._click import ProgressReporter
 
 
@@ -89,33 +88,10 @@ class AvgRunResult:
     outputs: tuple[Path, ...] = ()
 
 
-def database_readiness() -> dict[str, bool]:
-    """Return readiness for the three databases required by AVG."""
-    statuses = {
-        "pfam": get_pfam_database_status(),
-        "kofam": get_kofam_database_status(),
-        "avg": get_avg_database_status(),
-    }
-    return {
-        name: bool(status.get("downloaded") and status.get("indexed"))
-        for name, status in statuses.items()
-    }
-
-
-def missing_databases() -> list[str]:
-    """Return required database names that are not ready."""
-    return [name for name, ready in database_readiness().items() if not ready]
-
-
 def require_databases() -> None:
-    """Raise an actionable error when AVG databases are not ready."""
-    missing = missing_databases()
-    if missing:
-        names = ", ".join(missing)
-        raise FileNotFoundError(
-            f"Required databases are not ready: {names}. "
-            "Run: phu dbs prepare pfam kofam avg"
-        )
+    """Install the phu-db bundle unless Pfam, KOfam and the AVG tables are in place."""
+    for name in ("pfam", "kofam", "avg"):
+        resolve_db(name)
 
 
 def run_avg(
@@ -171,11 +147,6 @@ def run_avg(
         reporter.finish()
 
 
-def _reference_rows(path: Path) -> list[dict[str, str]]:
-    with path.open(encoding="utf-8", newline="") as handle:
-        return list(csv.DictReader(handle, delimiter="\t"))
-
-
 def _float(value: str | None) -> float | None:
     if value in {None, ""}:
         return None
@@ -209,13 +180,10 @@ def write_avg_outputs(
 ) -> tuple[Path, ...]:
     """Write the initial deterministic AVG tables and run manifest."""
     config.output_folder.mkdir(parents=True, exist_ok=True)
-    root = get_avg_database_status()["root"]
-    reference_root = Path(str(root))
-    scores = {}
-    for row in _reference_rows(reference_root / "v_scores.tsv"):
-        scores[(row["database"], row["accession"])] = row
-    positive_rows = _reference_rows(reference_root / "avg_positive.tsv")
-    filter_rows = _reference_rows(reference_root / "avg_filters.tsv")
+    reference = load_avg_reference(resolve_db("avg"))
+    scores = {(row["database"], row["accession"]): row for row in reference.scores}
+    positive_rows = reference.positive
+    filter_rows = reference.filters
 
     relaxed_hits = list(annotations.relaxed.best_pfam_by_protein.values()) + list(
         annotations.relaxed.best_kofam_by_protein.values()
@@ -494,9 +462,6 @@ def write_avg_outputs(
 
     manifest_path = config.output_folder / ".phu" / "run.json"
     completed_at = datetime.now(timezone.utc).isoformat()
-    avg_status = get_avg_database_status()
-    reference_manifest_path = reference_root / "manifest.json"
-    reference_manifest = json.loads(reference_manifest_path.read_text())
     run_manifest = {
         "phu_version": __version__,
         "command": "phu avger",
@@ -523,12 +488,7 @@ def write_avg_outputs(
             "gene_v_cutoff": config.gene_v_cutoff,
             "scoring_evalue": config.scoring_evalue,
         },
-        "databases": {
-            "pfam": get_pfam_database_status(),
-            "kofam": get_kofam_database_status(),
-            "avg": avg_status,
-        },
-        "avg_reference": reference_manifest,
+        "phu_db": bundle_provenance(),
         "output_schema_version": 1,
         "output_counts": output_counts,
         "run_started_at": run_started_at or completed_at,

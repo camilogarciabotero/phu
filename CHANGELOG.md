@@ -5,6 +5,41 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Databases
+
+- Databases now install automatically. The first `screen` or `avger` run that
+  needs a database downloads one pinned, checksummed bundle, `phu-db-0.1.1`
+  (about 1.9 GB, about 12 GB free disk needed while installing), verifies it
+  and installs it under `PHU_DB_FOLDER`. Later runs reuse it.
+- `phu dbs prepare` now downloads, verifies and installs that single bundle
+  ahead of time. New options: `--bundle PATH` (pre-downloaded tarball) and
+  `--verify` (re-hash every installed file). Database names, `--all` and
+  `--force-refresh` are accepted and ignored.
+- Removed `phu dbs list`, `status`, `refresh` and `remove`. They now print a
+  notice pointing to `phu dbs prepare` and exit 0; they will be removed in a
+  later release.
+- Removed the per-database downloaders for Pfam, KOfam, dbCAN and the AVG/V-score
+  tables. Pfam is now pinned to release 37.0 instead of the floating
+  `current_release`.
+- New environment variables: `PHU_DB_BUNDLE` (install from a pre-downloaded
+  tarball, for offline and HPC nodes) and `PHU_DB_VERIFY=1` (re-hash every
+  installed file on this run).
+- `.phu/run.json` now records the bundle version, tarball SHA-256 and each
+  database's upstream release. `screen` queries by Pfam, KOfam or dbCAN model
+  record the same in `.phu/query.json`, also when no proteins are predicted.
+- Installing a newer bundle keeps other `phu-db-<version>/` folders, so two phu
+  releases can share one `PHU_DB_FOLDER`.
+- Jobs that share an install build each database's index one at a time.
+- A read-only shared install works: phu keeps the indexes it builds in the
+  user's cache folder when it cannot write beside the database files.
+- `PHU_DB_VERIFY=1` (and `phu dbs prepare --verify`) checks every database, not
+  only the one a run asks for, and discards the indexes built from them.
+- `screen` queries mixing dbCAN families with Pfam or KOfam models now list
+  every model in `.phu/query.json`, not only the dbCAN ones.
+- Migration: the old `pfam/`, `kofam/`, `dbcan/`, `avg/` and `vscore/` folders
+  in `PHU_DB_FOLDER` are no longer read and can be deleted by hand. See
+  [Databases and Provenance](docs/databases.md).
+
 ### Fixed
 
 - `screen --hmm-mode mixed`: the domain table of an HMM file holding several
@@ -55,6 +90,12 @@ behavior in the unreleased branch and may change before a release.
   missing number), instead of treating that remainder as a taxon name.
 - With `--verbose`, a `screen` search that is retried without gathering
   cutoffs logs a second `[cmd]` line with the parameters actually used.
+
+### Deprecated
+
+- `simplify-taxa` is deprecated. It no longer appears in `phu --help` and
+  prints a one-line deprecation notice to stderr when run; its behavior and
+  output are otherwise unchanged, and `phu simplify-taxa --help` still works.
 
 ### Renamed output files
 

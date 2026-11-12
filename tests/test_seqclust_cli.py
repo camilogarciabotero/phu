@@ -18,14 +18,34 @@ def test_root_help_runs():
     output = plain_output(result)
     assert result.exit_code == 0
     assert "Workflow" in output
-    assert "Database Management" in output
     assert "cluster" in output
     assert "screen" in output
     assert "avger" in output
     assert "jack" in output
     assert "dbs" in output
-    assert "simplify-taxa" in output
+    assert "simplify-taxa" not in output  # deprecated: hidden from the listing
     assert "--clean-cache" in output
+
+
+def test_deprecated_simplify_taxa_help_still_runs():
+    result = runner.invoke(app, ["simplify-taxa", "--help"])
+    output = plain_output(result)
+    assert result.exit_code == 0
+    assert "Usage:" in output
+    assert "simplify-taxa" in output
+    assert "Deprecated" in output
+
+
+def test_simplify_taxa_prints_deprecation_notice_on_stderr(tmp_path):
+    table = tmp_path / "in.tsv"
+    table.write_text("genome\tfamily\ng1\tnovel_family_2_of_Caudoviricetes\n")
+    out = tmp_path / "out.tsv"
+
+    result = runner.invoke(app, ["simplify-taxa", "-i", str(table), "-o", str(out)])
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert "deprecated" in result.stderr
+    assert "deprecated" not in result.stdout
 
 
 def test_clean_cache_removes_prediction_cache(tmp_path, monkeypatch):
@@ -56,8 +76,7 @@ def test_avg_fails_before_prediction_when_databases_are_missing(tmp_path, monkey
     contigs.write_text(">c1\nATG\n")
     monkeypatch.setattr(cli_module, "run_avg", lambda config: (_ for _ in ()).throw(
         FileNotFoundError(
-            "Required databases are not ready: pfam, avg. "
-            "Run: phu dbs prepare pfam kofam avg"
+            "Required databases are not ready: pfam, avg."
         )
     ))
 
@@ -65,140 +84,27 @@ def test_avg_fails_before_prediction_when_databases_are_missing(tmp_path, monkey
 
     assert result.exit_code == 1
     assert "Required databases are not ready: pfam, avg" in result.stderr
-    assert "phu dbs prepare pfam kofam avg" in result.stderr
 
 
-def test_dbs_help_runs():
+@pytest.mark.parametrize(
+    "args",
+    [["list"], ["status", "pfam"], ["refresh", "--all"], ["remove", "--all", "--yes"]],
+)
+def test_removed_dbs_commands_point_to_prepare(args):
+    result = runner.invoke(app, ["dbs", *args])
+
+    assert result.exit_code == 0
+    assert result.stdout == ""
+    assert "phu dbs prepare" in result.stderr
+
+
+def test_dbs_help_lists_only_prepare():
     result = runner.invoke(app, ["dbs", "--help"])
     output = plain_output(result)
+
     assert result.exit_code == 0
-    assert "list" in output
-    assert "status" in output
     assert "prepare" in output
-    assert "refresh" in output
-    assert "remove" in output
-
-
-def test_dbs_list_includes_avg(monkeypatch):
-    monkeypatch.setattr(
-        cli_module,
-        "get_avg_database_status",
-        lambda: {"downloaded": True, "indexed": True},
-    )
-
-    result = runner.invoke(app, ["dbs", "list"])
-
-    assert result.exit_code == 0
-    assert "avg\tready" in result.stdout
-
-
-def test_dbs_prepare_calls_avg_prepare(monkeypatch):
-    called = {}
-
-    def fake_prepare(*, force_refresh):
-        called["force_refresh"] = force_refresh
-        return {"root": "/tmp/avg", "release": "v1.1.1"}
-
-    monkeypatch.setattr(cli_module, "ensure_avg_database", fake_prepare)
-
-    result = runner.invoke(app, ["dbs", "prepare", "avg"])
-
-    assert result.exit_code == 0
-    assert called["force_refresh"] is False
-    assert "Prepared avg" in result.stdout
-
-
-def test_dbs_remove_calls_avg_remove(monkeypatch):
-    monkeypatch.setattr(cli_module, "remove_avg_database", lambda: True)
-
-    result = runner.invoke(app, ["dbs", "remove", "avg", "--yes"])
-
-    assert result.exit_code == 0
-    assert "Removed avg database" in result.stdout
-
-
-def test_dbs_prepare_calls_pfam_prepare(monkeypatch, tmp_path):
-    hmm_path = tmp_path / "Pfam-A.hmm"
-    offsets_path = tmp_path / "offsets.json"
-
-    def fake_prepare_pfam_database(*, download, index, force_refresh):
-        assert download is True
-        assert index is True
-        assert force_refresh is False
-        hmm_path.write_text("dummy")
-        return {
-            "hmm_path": str(hmm_path),
-            "offsets_path": str(offsets_path),
-            "downloaded": True,
-            "indexed": True,
-        }
-
-    monkeypatch.setattr(cli_module, "prepare_pfam_database", fake_prepare_pfam_database)
-
-    result = runner.invoke(app, ["dbs", "prepare", "pfam"])
-
-    assert result.exit_code == 0
-    assert "Prepared pfam" in result.stdout
-    assert "Index ready" in result.stdout
-
-
-def test_dbs_refresh_calls_pfam_refresh(monkeypatch, tmp_path):
-    hmm_path = tmp_path / "Pfam-A.hmm"
-    hmm_path.write_text("dummy")
-    offsets_path = tmp_path / "offsets.json"
-
-    def fake_refresh_pfam_database():
-        offsets_path.write_text("{}")
-        return {
-            "hmm_path": str(hmm_path),
-            "offsets_path": str(offsets_path),
-            "downloaded": True,
-            "indexed": True,
-        }
-
-    monkeypatch.setattr(cli_module, "refresh_pfam_database", fake_refresh_pfam_database)
-
-    result = runner.invoke(app, ["dbs", "refresh", "pfam"])
-
-    assert result.exit_code == 0
-    assert "Refreshed pfam" in result.stdout
-    assert "Index ready" in result.stdout
-
-
-def test_dbs_status_shows_pfam_state(monkeypatch):
-    def fake_status():
-        return {
-            "name": "pfam",
-            "downloaded": True,
-            "indexed": True,
-            "manifest_exists": True,
-            "model_count": 100,
-            "sparse_cached_count": 5,
-            "root": "/tmp/pfam",
-        }
-
-    monkeypatch.setattr(cli_module, "get_pfam_database_status", fake_status)
-
-    result = runner.invoke(app, ["dbs", "status", "pfam"])
-
-    assert result.exit_code == 0
-    assert "pfam:" in result.stdout
-    assert "downloaded: True" in result.stdout
-    assert "indexed: True" in result.stdout
-
-
-def test_dbs_remove_requires_yes():
-    result = runner.invoke(app, ["dbs", "remove", "pfam"])
-    assert result.exit_code == 1
-
-
-def test_dbs_remove_calls_pfam_remove(monkeypatch):
-    monkeypatch.setattr(cli_module, "remove_pfam_database", lambda: True)
-
-    result = runner.invoke(app, ["dbs", "remove", "pfam", "--yes"])
-
-    assert result.exit_code == 0
-    assert "Removed pfam database" in result.stdout
+    assert "refresh" not in output and "remove" not in output
 
 
 def test_cluster_short_options_present_in_help():
@@ -291,6 +197,26 @@ def test_simplify_taxa_short_options_present_in_help():
     assert "-s" in output
 
 
+@pytest.mark.parametrize("command", [["avger"], ["screen", "PF00001"]])
+def test_database_errors_are_reported_without_a_traceback(tmp_path, monkeypatch, command):
+    from phu.db_fetch import DatabaseError
+
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c1\nATG\n")
+
+    def fail(*args, **kwargs):
+        raise DatabaseError("phu-db could not be installed: no space")
+
+    monkeypatch.setattr(cli_module, "run_avg", fail)
+    monkeypatch.setattr(cli_module, "_screen", fail)
+
+    result = runner.invoke(app, [*command, "-i", str(contigs), "-o", str(tmp_path / "out")])
+
+    assert result.exit_code == 1
+    assert "phu-db could not be installed: no space" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
 @pytest.mark.parametrize(
     "command",
     ["screen", "jack", "cluster", "avger", "normalize-lineage", "simplify-taxa"],
@@ -301,3 +227,19 @@ def test_commands_have_quiet_and_verbose(command: str) -> None:
     assert result.exit_code == 0
     assert "--quiet" in output
     assert "--verbose" in output
+
+
+def test_screen_reports_an_os_error_from_the_database_install(tmp_path, monkeypatch):
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c1\nATG\n")
+
+    def full_disk(config):
+        raise OSError(122, "Disk quota exceeded", str(tmp_path / "db"))
+
+    monkeypatch.setattr(cli_module, "_screen", full_disk)
+
+    result = runner.invoke(app, ["screen", "-i", str(contigs), "PF00001"])
+
+    assert result.exit_code == 1
+    assert "Disk quota exceeded" in result.stderr
+    assert "Traceback" not in result.output

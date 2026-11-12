@@ -1,0 +1,6 @@
+id	db	name	filter_essential	filter_glucan	filter_lipid	filter_methyl	filter_nucleotide
+K00001	KEGG	fixture dehydrogenase A	False	False	True	False	False
+K00002	KEGG	fixture monooxygenase	False	True	False	False	False
+K00003	KEGG	fixture transferase C	True	False	False	False	False
+PF00001.1	Pfam	phu fixture domain A	True	False	False	False	False
+PF00002.1	Pfam	phu fixture domain B	False	False	False	True	False

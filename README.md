@@ -106,6 +106,7 @@ The download is about 1.9 GB and shows its progress; the install needs about 12 
 | --- | --- |
 | `PHU_DB_FOLDER` | Where the databases are installed (default `~/.local/share/phu/db`). Point it at a shared folder so every job reuses one install. |
 | `PHU_DB_BUNDLE` or `phu dbs prepare --bundle PATH` | Install from a pre-downloaded `phu-db.tar.gz`, for nodes without internet access. |
+| `PHU_DB_CONNECTIONS` or `phu dbs prepare --connections N` | Parts of the bundle downloaded at once (default 8). |
 | `PHU_DB_VERIFY=1` or `phu dbs prepare --verify` | Re-hash every installed file and reinstall if any check fails. |
 
 Each run records the bundle version and database releases it used in the `.phu/` folder of its output. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for offline and HPC use, what the bundle contains, and citation.

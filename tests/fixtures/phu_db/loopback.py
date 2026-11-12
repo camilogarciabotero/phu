@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-_RANGE_RE = re.compile(r"bytes=(\d+)-")
+_RANGE_RE = re.compile(r"bytes=(\d+)-(\d*)")
 
 
 @dataclass
@@ -131,21 +131,22 @@ def _handler_for(server: LoopbackServer) -> type[BaseHTTPRequestHandler]:
             if switches.corrupt_offset is not None and switches.corrupt_offset < len(data):
                 data[switches.corrupt_offset] ^= 0xFF
             start = 0
+            end = len(data)
             match = _RANGE_RE.fullmatch(range_header or "")
             if match and not switches.ignore_range:
                 start = int(match.group(1))
                 if start >= len(data):
                     self._reply_empty(record, 416, {"Content-Range": f"bytes */{len(data)}"})
                     return
+                if match.group(2):
+                    end = min(int(match.group(2)) + 1, len(data))
                 record.status = 206
                 self.send_response(206)
-                self.send_header(
-                    "Content-Range", f"bytes {start}-{len(data) - 1}/{len(data)}"
-                )
+                self.send_header("Content-Range", f"bytes {start}-{end - 1}/{len(data)}")
             else:
                 record.status = 200
                 self.send_response(200)
-            body = bytes(data[start:])
+            body = bytes(data[start:end])
             if not switches.omit_length:
                 self.send_header("Content-Length", str(len(body)))
             self.end_headers()

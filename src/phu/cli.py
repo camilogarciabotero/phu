@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -69,6 +70,15 @@ def dbs_prepare(
         "(same as PHU_DB_VERIFY=1)",
         rich_help_panel="Preparation",
     ),
+    connections: Optional[int] = typer.Option(
+        None,
+        "--connections",
+        min=1,
+        max=16,
+        help="Parts of the bundle to download at once (default 8; same as "
+        "PHU_DB_CONNECTIONS). Use 1 for a single connection",
+        rich_help_panel="Preparation",
+    ),
     all_dbs: bool = typer.Option(False, "--all", hidden=True),
     force_refresh: bool = typer.Option(False, "--force-refresh", hidden=True),
 ) -> None:
@@ -87,6 +97,8 @@ def dbs_prepare(
             "Use --verify to re-check the installed files.",
             err=True,
         )
+    if connections is not None:
+        os.environ["PHU_DB_CONNECTIONS"] = str(connections)
     try:
         root = prepare_bundle(bundle_path=bundle, deep=verify)
         provenance = bundle_provenance()

@@ -880,7 +880,9 @@ binary automatically.</p>
   <code>export SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt</code>.</p>
 </li>
 <li><strong>A slow or stalled download.</strong> The download shows its progress and resumes
-  where it stopped when you run the command again.</li>
+  where it stopped when you run the command again. It fetches 8 parts of the
+  bundle at once; if your network or proxy objects to that, set
+  <code>PHU_DB_CONNECTIONS=1</code>.</li>
 </ul>
 <p>An interrupted install leaves nothing half-installed; run the command again.
 If you suspect an installed file was changed, run <code>phu dbs prepare --verify</code>

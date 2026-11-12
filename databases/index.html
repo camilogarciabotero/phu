@@ -926,6 +926,10 @@ command only checks it and returns.</p>
 <td><code>--verify</code></td>
 <td>Re-hash every installed file and reinstall if any check fails (same as <code>PHU_DB_VERIFY=1</code>).</td>
 </tr>
+<tr>
+<td><code>--connections N</code></td>
+<td>Download <code>N</code> parts of the bundle at once, from 1 to 16 (default 8; same as <code>PHU_DB_CONNECTIONS</code>).</td>
+</tr>
 </tbody>
 </table>
 <p>The bundle always holds all four databases, so database names given to
@@ -945,8 +949,9 @@ command only checks it and returns.</p>
 <li>Moves the finished tree into place in one step, so an interrupted install
    never leaves a half-installed database behind.</li>
 </ol>
-<p>PHU prints what it downloads, how large it is and where it goes. While it
-downloads, a terminal shows a spinner with a progress bar, the speed and the
+<p>PHU prints what it downloads, how large it is and where it goes. The bundle
+is downloaded in several parts at once and an interrupted download continues
+where each part stopped. While it downloads, a terminal shows a spinner with a progress bar, the speed and the
 time left; a log file (for example a SLURM job's) gets one line per 10%. Later runs
 only check file sizes, and line counts of the small tables, which takes a
 moment, and do not download again.</p>
@@ -1005,6 +1010,10 @@ folder yourself once nothing needs it.</p>
 <tr>
 <td><code>PHU_DB_BUNDLE</code></td>
 <td>Path to a pre-downloaded <code>phu-db.tar.gz</code>. It is verified exactly like a download, and PHU never deletes it.</td>
+</tr>
+<tr>
+<td><code>PHU_DB_CONNECTIONS</code></td>
+<td>How many parts of the bundle to download at once, from 1 to 16 (default 8). Zenodo limits the speed of each connection, so several parts at once download several times faster. Use <code>1</code> for a single connection.</td>
 </tr>
 <tr>
 <td><code>PHU_DB_VERIFY=1</code></td>

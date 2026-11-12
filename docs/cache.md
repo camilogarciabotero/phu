@@ -40,6 +40,15 @@ phu --clean-cache
 
 This removes the full cache directory resolved by `PHU_CACHE_DIR` (or the default cache path) and exits.
 
+## Database index files
+
+The cache directory can also hold a `phu-db-derived/` folder. PHU builds a
+small index and per-model files for each reference database the first time it
+is queried. They normally sit beside the database files; when the database
+install is read-only for you, PHU keeps them here instead. `phu --clean-cache`
+removes them too, and they are rebuilt on the next database query. See
+[Databases and Provenance](databases.md).
+
 ## Practical cases
 
 - Changing only HMM files in `screen` reuses the cached proteins.

@@ -43,9 +43,7 @@ phu-jack/
 ├── matched-contigs.fna
 ├── matched-contig-ids.txt
 ├── jackhmmer-hits.tsv
-├── jackhmmer-iterations.tsv
-└── .phu/
-    └── run.json
+└── jackhmmer-iterations.tsv
 ```
 
 `jackhmmer-hits.tsv` contains final hit records and filtering metadata. `jackhmmer-iterations.tsv` records the per-iteration search summary. With `--save-hmm`, the final model is written as `final-iteration.hmm` for a single seed or under `final-iteration-hmms/` for multiple seeds.

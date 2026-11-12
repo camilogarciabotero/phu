@@ -75,6 +75,9 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 │                    markers with                                              │
 │                    pyhmmer.jackhmmer.                                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Database Management ────────────────────────────────────────────────────────╮
+│ dbs                Install and check the phu-db database bundle              │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Commands
@@ -84,13 +87,28 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
+- [`dbs prepare`](https://camilogarciabotero.github.io/phu/databases/#installing-ahead-of-time): Download, verify and install the reference database bundle ahead of time.
 
 Each command page includes the current CLI help menu, input/output behavior,
 examples, and workflow guidance.
 
 ## Databases
 
-`screen` and `avger` install their reference databases (Pfam, KOfam, dbCAN and the CheckAMG AVG tables) automatically on first use, as one pinned and checksummed bundle. Run `phu dbs prepare` to install it ahead of time. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for disk needs, offline use and citation.
+`screen` and `avger` use reference databases: Pfam, KOfam, dbCAN and the CheckAMG AVG tables. `phu` ships them as one pinned and checksummed bundle, [`phu-db`](https://doi.org/10.5281/zenodo.19503347), hosted on Zenodo. The bundle installs automatically the first time a command needs it, or ahead of time with:
+
+```bash
+phu dbs prepare
+```
+
+The download is about 1.9 GB and shows its progress; the install needs about 12 GB of free disk while it runs and keeps about 9.5 GB. Useful settings:
+
+| Setting | Effect |
+| --- | --- |
+| `PHU_DB_FOLDER` | Where the databases are installed (default `~/.local/share/phu/db`). Point it at a shared folder so every job reuses one install. |
+| `PHU_DB_BUNDLE` or `phu dbs prepare --bundle PATH` | Install from a pre-downloaded `phu-db.tar.gz`, for nodes without internet access. |
+| `PHU_DB_VERIFY=1` or `phu dbs prepare --verify` | Re-hash every installed file and reinstall if any check fails. |
+
+Each run records the bundle version and database releases it used in the `.phu/` folder of its output. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for offline and HPC use, what the bundle contains, and citation.
 
 For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
 
@@ -107,9 +125,8 @@ See the full [Cache Handling guide](https://camilogarciabotero.github.io/phu/cac
 ## Contributing
 
 We welcome contributions to phu. See [CONTRIBUTING.md](CONTRIBUTING.md) for
-testing and documentation requirements.
-
-tracked in [CHANGELOG.md](CHANGELOG.md).
+testing and documentation requirements. Notable changes are tracked in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Developers
 

@@ -36,8 +36,9 @@ mixed with other database or local-HMM inputs.
 
 This is PUL CAZyme-signature screening. Family co-occurrence alone does not
 identify a biological PUL or predict its substrate. Each run writes
-`.phu/query.json` with the original query, expansion, matching rule, and
-database hashes.
+`.phu/query.json` with the original query, expansion and matching rule. When
+the query names Pfam, KOfam or dbCAN models, it also records the `phu-db`
+bundle version and the SHA-256 of each database file used.
 
 To screen against every resolvable PUL signature:
 
@@ -211,7 +212,7 @@ All saved protein FASTA files contain only proteins that come from contigs that 
 | `matched-contigs.fna` | always | Nucleotide FASTA of the contigs that passed the screen |
 | `matched-contig-ids.txt` | always | IDs of those contigs, one per line |
 | `{hmm}-hmmsearch-domains.tbl` | `--keep-domtbl` (default) | hmmsearch per-domain table, one per input HMM file |
-| `.phu/query.json` | always, except `--all-cazymes` / `--all-puls` | Original query, expansion, matching rule and database hashes |
+| `.phu/query.json` | always, except `--all-cazymes` / `--all-puls` | Original query, expansion and matching rule; for Pfam, KOfam and dbCAN queries also the `phu-db` bundle version and database file hashes |
 | `.phu/run.json` | `--all-cazymes` / `--all-puls` | Run manifest with counts, thresholds and `generated_files` |
 | `query-hmms/pfam/`, `query-hmms/kofam/`, `query-hmms/dbcan/` | Pfam, KO, dbCAN-family or PUL queries | The HMM files resolved from the local databases |
 | `predicted-proteins.faa` | `--keep-proteins` | Protein FASTA of all predicted proteins |

@@ -425,3 +425,26 @@ def test_database_hashes_come_from_the_pinned_manifest(
     assert set(hashes) == {"profiles.hmm", "family_substrate.tsv", "pul_rules.tsv"}
     # Nothing was installed to answer.
     assert not db_folder.exists()
+
+
+def test_a_real_download_reports_its_progress(
+    monkeypatch, db_folder, server, fixture_pins, fixture_manifest_bytes
+):
+    def fetch(url, dest, sha256, size, progress=None):
+        return download_verified(
+            server.url("phu-db.tar.gz"), dest, sha256, size, timeout=5, progress=progress
+        )
+
+    logs = []
+    resolve_db(
+        "avg",
+        pins=fixture_pins,
+        db_folder=db_folder,
+        vendored_manifest_bytes=fixture_manifest_bytes,
+        fetch=fetch,
+        log=logs.append,
+    )
+
+    progress = [line for line in logs if "% (" in line]
+    assert progress[0].startswith(f"phu-db: downloading {fixture_pins.bundle_version}: 0% ")
+    assert progress[-1].startswith(f"phu-db: downloading {fixture_pins.bundle_version}: 100% ")

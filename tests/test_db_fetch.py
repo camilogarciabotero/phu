@@ -480,3 +480,24 @@ def test_untrusted_certificate_fails_at_once_and_names_the_fix(tmp_path, monkeyp
             "https://example.org/a", tmp_path / "a", "0" * 64, 10, sleep=lambda seconds: None
         )
     assert len(calls) == 1
+
+
+def test_progress_reports_the_bytes_on_disk(server, tmp_path, sleeps):
+    seen = []
+
+    _fetch(server, tmp_path / "bundle.tar.gz", sleeps, progress=seen.append)
+
+    assert seen[0] == 0
+    assert seen[-1] == len(DATA)
+    assert seen == sorted(seen)
+
+
+def test_progress_starts_from_a_resumed_part(server, tmp_path, sleeps):
+    dest = tmp_path / "bundle.tar.gz"
+    _part(dest).write_bytes(DATA[:1000])
+    seen = []
+
+    _fetch(server, dest, sleeps, progress=seen.append)
+
+    assert seen[0] == 1000
+    assert seen[-1] == len(DATA)

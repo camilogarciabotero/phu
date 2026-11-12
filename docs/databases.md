@@ -42,7 +42,9 @@ The bundle always holds all four databases, so database names given to
 5. Moves the finished tree into place in one step, so an interrupted install
    never leaves a half-installed database behind.
 
-PHU prints what it downloads, how large it is and where it goes. Later runs
+PHU prints what it downloads, how large it is and where it goes. While it
+downloads, a terminal shows a spinner with a progress bar, the speed and the
+time left; a log file (for example a SLURM job's) gets one line per 10%. Later runs
 only check file sizes, and line counts of the small tables, which takes a
 moment, and do not download again.
 

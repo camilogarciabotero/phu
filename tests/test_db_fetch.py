@@ -501,3 +501,19 @@ def test_progress_starts_from_a_resumed_part(server, tmp_path, sleeps):
 
     assert seen[0] == 1000
     assert seen[-1] == len(DATA)
+
+
+def test_progress_returns_to_zero_when_a_download_starts_over(server, tmp_path, sleeps):
+    # The resumed tail completes the file, the checksum fails, and it is fetched whole.
+    dest = tmp_path / "phu-db.tar.gz"
+    _part(dest).write_bytes(b"\0" * 300_000)
+    seen = []
+
+    _fetch(server, dest, sleeps, progress=seen.append)
+
+    assert seen[0] == 300_000
+    full = seen.index(len(DATA))
+    # Zero is reported right after the first pass reaches 100%, before any new chunk.
+    assert seen[full + 1] == 0
+    assert seen[-1] == len(DATA)
+    assert seen[full + 1 :] == sorted(seen[full + 1 :])

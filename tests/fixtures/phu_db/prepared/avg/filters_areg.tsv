@@ -4,3 +4,4 @@ K00002	KEGG	fixture monooxygenase	False	False	False	False	False
 K00003	KEGG	fixture transferase C	False	True	False	False	False
 PF00001.1	Pfam	phu fixture domain A	False	False	False	False	True
 PF00002.1	Pfam	phu fixture domain B	False	False	True	False	False
+phrog_1	PHROG	fixture integrase	True	False	False	False	False

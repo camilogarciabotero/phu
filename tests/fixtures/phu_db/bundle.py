@@ -20,7 +20,7 @@ URL = "https://phu-db-fixture.invalid/phu-db.tar.gz"
 
 
 def bundle_files() -> dict[str, bytes]:
-    """Member name -> bytes of the full fixture bundle (14 members)."""
+    """Member name -> bytes of the full fixture bundle (16 members)."""
     files = {f"{BUNDLE_ROOT}/phu-db.json": (FIXTURE_DIR / "phu-db.json").read_bytes()}
     prepared = FIXTURE_DIR / "prepared"
     for path in sorted(prepared.rglob("*")):

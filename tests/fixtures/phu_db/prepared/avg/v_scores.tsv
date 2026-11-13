@@ -4,3 +4,6 @@ K00002	fixture monooxygenase	3.5	2.104233101	KEGG
 PF00001.1	phu fixture domain A	1.25	1.502991400	Pfam
 PF00002.1	phu fixture domain B	0.5	0.811402377	Pfam
 K00003	fixture transferase C			KEGG
+phrog_1	fixture integrase	10.0	4.618738233	PHROG
+phrog_2	fixture anti-restriction protein	0.84	1.924279286	PHROG
+phrog_3	fixture HTH DNA binding protein	0.28	1.447158031	PHROG

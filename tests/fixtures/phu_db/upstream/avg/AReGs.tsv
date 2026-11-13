@@ -4,3 +4,4 @@ K00002			KEGG	fixture monooxygenase
 K00003	0.01	0.120000000	KEGG	fixture transferase C
 PF00001.1	1.0	1.000000000	Pfam	phu fixture domain A
 PF00002.1			Pfam	phu fixture domain B
+phrog_3	0.28	1.447158031	PHROG	fixture HTH DNA binding protein

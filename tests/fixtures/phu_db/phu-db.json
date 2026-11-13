@@ -1,9 +1,9 @@
 {
-  "bundle_version": "phu-db-0.1.1-fixture",
+  "bundle_version": "phu-db-0.2.0-fixture",
   "layout_version": 1,
   "generator": {
     "name": "phu-db-prep",
-    "version": "0.1.1-fixture"
+    "version": "0.2.0-fixture"
   },
   "bundle": {
     "name": "phu-db.tar.gz",
@@ -175,38 +175,38 @@
         {
           "name": "APGs.tsv",
           "url": "https://phu-db-fixture.invalid/avg/APGs.tsv",
-          "sha256": "c3ddd10c389aa260393a78765a7fe229ea9812d61dcd53eac83000fe1d91d528",
-          "bytes": 259
+          "sha256": "8b2fd54ab4d43102f5e976e62eade36f2a9e9de4e1d35c2cdb6e9e5bbf6f7dd2",
+          "bytes": 323
         },
         {
           "name": "AReGs.tsv",
           "url": "https://phu-db-fixture.invalid/avg/AReGs.tsv",
-          "sha256": "f493f05d1d93671611c8fd5e3f52bd371f905a32b9566b4cf6ce7a980c655a21",
-          "bytes": 258
+          "sha256": "5171ef151e61e158e838ad09832c99743642c4617a28a94c4808b91f0aa33162",
+          "bytes": 321
         },
         {
           "name": "AMG_filters.tsv",
           "url": "https://phu-db-fixture.invalid/avg/AMG_filters.tsv",
-          "sha256": "92e0d35cb4330d4b9a2ffc81d89aac0e8c4859a0d041791f54c0540db8a87354",
-          "bytes": 408
+          "sha256": "297cc02959d13377c9d84b7db2942f34aca5547518cf8fc549ace59836764912",
+          "bytes": 469
         },
         {
           "name": "APG_filters.tsv",
           "url": "https://phu-db-fixture.invalid/avg/APG_filters.tsv",
-          "sha256": "46c0d7a4b95c61a5283b9d7d5ce12247459520cdc03a19bff719f25c4a927319",
-          "bytes": 408
+          "sha256": "159dbe274bd3da7c4919ea4079687aca381b928d0bcade7c45edae512a2cb18e",
+          "bytes": 469
         },
         {
           "name": "AReG_filters.tsv",
           "url": "https://phu-db-fixture.invalid/avg/AReG_filters.tsv",
-          "sha256": "26c3ce90f542a3b7826e8ac6f93b01130bcbcb6fb301c3d72dea80e1b84f4eb9",
-          "bytes": 409
+          "sha256": "976cc3eec513727fb4f2d6d9f3e9c4c01cc9382a15fdb77260b82cf4e8468f6f",
+          "bytes": 470
         },
         {
           "name": "vscores.tsv",
           "url": "https://phu-db-fixture.invalid/avg/vscores.tsv",
-          "sha256": "2718822724ed48b0f71e7f580357656dca23c5ba104ec097dd85d9c4622a01cb",
-          "bytes": 272
+          "sha256": "64278f190c07bf748741bf4939af55d085474af344a9213ea4eba9f8e0d4f03f",
+          "bytes": 448
         }
       ],
       "steps": [
@@ -222,9 +222,9 @@
         {
           "path": "v_scores.tsv",
           "format": "tsv",
-          "bytes": 272,
-          "sha256": "2718822724ed48b0f71e7f580357656dca23c5ba104ec097dd85d9c4622a01cb",
-          "count": 6
+          "bytes": 448,
+          "sha256": "64278f190c07bf748741bf4939af55d085474af344a9213ea4eba9f8e0d4f03f",
+          "count": 9
         },
         {
           "path": "positive_amg.tsv",
@@ -236,37 +236,37 @@
         {
           "path": "positive_apg.tsv",
           "format": "tsv",
-          "bytes": 259,
-          "sha256": "c3ddd10c389aa260393a78765a7fe229ea9812d61dcd53eac83000fe1d91d528",
-          "count": 6
+          "bytes": 323,
+          "sha256": "8b2fd54ab4d43102f5e976e62eade36f2a9e9de4e1d35c2cdb6e9e5bbf6f7dd2",
+          "count": 7
         },
         {
           "path": "positive_areg.tsv",
           "format": "tsv",
-          "bytes": 258,
-          "sha256": "f493f05d1d93671611c8fd5e3f52bd371f905a32b9566b4cf6ce7a980c655a21",
-          "count": 6
+          "bytes": 321,
+          "sha256": "5171ef151e61e158e838ad09832c99743642c4617a28a94c4808b91f0aa33162",
+          "count": 7
         },
         {
           "path": "filters_amg.tsv",
           "format": "tsv",
-          "bytes": 408,
-          "sha256": "92e0d35cb4330d4b9a2ffc81d89aac0e8c4859a0d041791f54c0540db8a87354",
-          "count": 6
+          "bytes": 469,
+          "sha256": "297cc02959d13377c9d84b7db2942f34aca5547518cf8fc549ace59836764912",
+          "count": 7
         },
         {
           "path": "filters_apg.tsv",
           "format": "tsv",
-          "bytes": 408,
-          "sha256": "46c0d7a4b95c61a5283b9d7d5ce12247459520cdc03a19bff719f25c4a927319",
-          "count": 6
+          "bytes": 469,
+          "sha256": "159dbe274bd3da7c4919ea4079687aca381b928d0bcade7c45edae512a2cb18e",
+          "count": 7
         },
         {
           "path": "filters_areg.tsv",
           "format": "tsv",
-          "bytes": 409,
-          "sha256": "26c3ce90f542a3b7826e8ac6f93b01130bcbcb6fb301c3d72dea80e1b84f4eb9",
-          "count": 6
+          "bytes": 470,
+          "sha256": "976cc3eec513727fb4f2d6d9f3e9c4c01cc9382a15fdb77260b82cf4e8468f6f",
+          "count": 7
         }
       ],
       "validation": {
@@ -277,6 +277,58 @@
         "source_repo": "https://github.com/AnantharamanLab/CheckAMG",
         "source_tag": "v1.1.1",
         "tool_version_key": "phu.avg_reference_db"
+      }
+    },
+    "phrog": {
+      "provenance": "build",
+      "redistribution": "pin-only",
+      "upstream_version": "v4",
+      "license": "CC-BY-4.0",
+      "citation": "Terzian P, et al. NAR Genom Bioinform. 2021;3(3):lqab067.",
+      "layout_dir": "phrog",
+      "sources": [
+        {
+          "name": "MSA_phrogs.tar.gz",
+          "url": "https://phu-db-fixture.invalid/phrog/MSA_phrogs.tar.gz",
+          "sha256": "6d7cad68b97711ddb27092cf1984a0b08516733fd8ab6bb1ce84190ac3b88632",
+          "bytes": 10263
+        },
+        {
+          "name": "phrog_annot_v4.tsv",
+          "url": "https://phu-db-fixture.invalid/phrog/phrog_annot_v4.tsv",
+          "sha256": "619abe2d25c6c8703b10c7cf5b53bf58278eff3f4bc9027f7fed2f3caf211bc3",
+          "bytes": 270
+        }
+      ],
+      "steps": [
+        "extract:MSA_phrogs.tar.gz -> MSA_Phrogs_M50_FASTA/",
+        "build-hmm:MSA_Phrogs_M50_FASTA/*.fma -> profiles.hmm",
+        "rename:phrog_annot_v4.tsv -> annotations.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 23952,
+          "sha256": "a23b8d71a0c390e3ba6585331cc74dc8eb828762038931da075ba7977b6ab376",
+          "count": 3
+        },
+        {
+          "path": "annotations.tsv",
+          "format": "tsv",
+          "bytes": 270,
+          "sha256": "619abe2d25c6c8703b10c7cf5b53bf58278eff3f4bc9027f7fed2f3caf211bc3",
+          "count": 5
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": {
+        "source_repo": "https://doi.org/10.5281/zenodo.23342382",
+        "source_tag": "PHROGs v4 (annotations of 2022-06-15)",
+        "tool_version_key": "pyhmmer"
       }
     }
   }

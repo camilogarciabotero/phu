@@ -951,7 +951,7 @@ def test_shallow_validation_never_opens_an_hmm_file(installed, fixture_manifest,
     assert scanned and "profiles.hmm" not in scanned
     scanned.clear()
     assert tree_problems(installed, fixture_manifest, deep=True) == []
-    assert scanned.count("profiles.hmm") == 3
+    assert scanned.count("profiles.hmm") == 4
 
 
 def test_write_atomically_leaves_one_readable_file(tmp_path):

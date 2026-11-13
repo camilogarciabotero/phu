@@ -2,7 +2,7 @@
 
 The manifest is trusted only after load_manifest has checked it: every path it
 names is a safe relative POSIX path, every digest is well formed, and every
-prepared file is produced by a step that the phu-db 0.1.1 contract allows.
+prepared file is produced by a step that the phu-db contract allows.
 """
 
 from __future__ import annotations
@@ -17,13 +17,17 @@ from types import MappingProxyType
 from typing import Any
 
 LAYOUT_VERSION = 1
-DATABASE_NAMES = frozenset({"pfam", "kofam", "dbcan", "avg"})
+DATABASE_NAMES = frozenset({"pfam", "kofam", "dbcan", "avg", "phrog"})
 BUNDLE_ROOT = "phu-db"
 MANIFEST_NAME = "phu-db.json"
 MANIFEST_MEMBER = f"{BUNDLE_ROOT}/{MANIFEST_NAME}"
 PREPARED_FORMATS = frozenset({"hmm", "tsv"})
 
-STEP_RE = re.compile(r"(gunzip|extract|concatenate|rename|pul-table):(\S+) -> (\S+)")
+STEP_RE = re.compile(
+    r"(gunzip|extract|concatenate|build-hmm|rename|pul-table):(\S+) -> (\S+)"
+)
+# Verbs whose source may be a glob over earlier targets.
+_GLOB_VERBS = frozenset({"concatenate", "build-hmm"})
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 _GLOB_CHARS = frozenset("*?[")
 
@@ -63,7 +67,7 @@ class Step:
 
     @property
     def is_glob(self) -> bool:
-        return self.verb == "concatenate" and bool(_GLOB_CHARS & set(self.source))
+        return self.verb in _GLOB_VERBS and bool(_GLOB_CHARS & set(self.source))
 
 
 @dataclass(frozen=True)

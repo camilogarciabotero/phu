@@ -160,6 +160,7 @@ def _phrog_outputs(monkeypatch, tmp_path, strict_ids):
             model_name=model_id,
             model_description=description,
             model_coverage=0.5,
+            protein_coverage=0.75,
         )
 
     relaxed = {genes[0].gene_id: hit(genes[0], "phrog_2"), genes[1].gene_id: hit(genes[1], "phrog_1")}
@@ -213,11 +214,8 @@ def test_phrog_alone_can_make_and_classify_a_candidate(monkeypatch, tmp_path):
     assert gene1["zhou_avg_candidate"] == "true"
     assert gene1["phrog_scaffold_avl"] == "3.5"
     assert gene1["phrog_scored_gene_count"] == "2"
-    assert (gene1["phrog_id"], gene1["phrog_category"], gene1["phrog_coverage"]) == (
-        "phrog_2",
-        "moron",
-        "0.5",
-    )
+    assert (gene1["phrog_id"], gene1["phrog_category"]) == ("phrog_2", "moron")
+    assert (gene1["phrog_model_coverage"], gene1["phrog_protein_coverage"]) == ("0.5", "0.75")
     assert (gene1["classification_status"], gene1["avg_class"]) == ("classified", "putative_apg")
     assert gene2["zhou_phrog_candidate"] == "false"
     assert gene2["phrog_id"] == ""
@@ -244,3 +242,80 @@ def test_phrog_columns_stay_in_the_tables_when_phrog_is_off(monkeypatch, tmp_pat
 
     header = (tmp_path / "out" / "gene-annotations.tsv").read_text().splitlines()[0].split("\t")
     assert {"phrog_id", "phrog_v_score", "phrog_scaffold_avl", "zhou_phrog_candidate"} <= set(header)
+
+
+@pytest.mark.parametrize(
+    ("phrog_hit", "status", "avg_class"),
+    [(None, "classified", "putative_apg"), ("phrog_1", "filtered", "")],
+)
+def test_a_phrog_filter_hit_vetoes_a_class_another_database_supports(
+    monkeypatch, tmp_path, phrog_hit, status, avg_class
+):
+    """Pfam alone makes the gene an APG; a PHROG hit on the filter list blocks it."""
+    input_contigs = tmp_path / "contigs.fna"
+    input_contigs.write_text(">contig-1\nATG\n")
+    gene = PredictedGene("contig-1", "contig-1|gene1", 1, 30, 1, 1, "ATG", "M")
+
+    def hit(database, model_id):
+        return AnnotationHit(
+            protein_id=gene.gene_id,
+            contig_id=gene.contig_id,
+            database=database,
+            model_id=model_id,
+            model_accession=model_id,
+            score_type="full",
+            effective_score=80,
+            full_score=80,
+            domain_score=80,
+            evalue=1e-20,
+            hmm_from=1,
+            hmm_to=50,
+            target_from=1,
+            target_to=50,
+            threshold_source="test",
+            threshold_value=1,
+        )
+
+    pfam = {gene.gene_id: hit("pfam", "PF00001")}
+    phrog = {} if phrog_hit is None else {gene.gene_id: hit("phrog", phrog_hit)}
+    annotations = AvgAnnotationResults(
+        AnnotationResults(dict(pfam), {}, 1, 1, 0),
+        AnnotationResults(dict(pfam), {}, 1, 1, 0, best_phrog_by_protein=phrog),
+    )
+    (tmp_path / "phrog").mkdir()
+    (tmp_path / "phrog" / "annotations.tsv").write_text(
+        "phrog\tcolor\tannot\tcategory\n1\t#f\tmajor head protein\thead and packaging\n"
+    )
+    monkeypatch.setattr(avg, "resolve_db", lambda name: tmp_path / name)
+    monkeypatch.setattr(avg, "bundle_provenance", lambda: {})
+    monkeypatch.setattr(
+        avg,
+        "load_avg_reference",
+        lambda root: AvgReference(
+            scores=[{"database": "pfam", "accession": "PF00001", "v_score": "1", "vl_score": "1"}],
+            positive=[
+                {"database": "pfam", "accession": "PF00001", "proposed_class": "putative_apg", "name": "x"}
+            ],
+            filters=[
+                {
+                    "database": "phrog",
+                    "accession": "phrog_1",
+                    "proposed_class": "putative_apg",
+                    "filter_category": "filter_essential",
+                }
+            ],
+        ),
+    )
+    out = tmp_path / "out"
+    avg.write_avg_outputs(
+        # A lone scored gene has AVL equal to its own VL, so lower the contig cutoff.
+        avg.AvgConfig(input_contigs=input_contigs, output_folder=out, scaffold_avl_cutoff=0.5),
+        CacheArtifact(tmp_path / "proteins.faa", 1, True, "key", genes=[gene]),
+        annotations,
+    )
+
+    header, row = (line.split("\t") for line in (out / "gene-annotations.tsv").read_text().splitlines())
+    result = dict(zip(header, row))
+    assert result["zhou_avg_candidate"] == "true"
+    assert (result["classification_status"], result["avg_class"]) == (status, avg_class)
+    assert len((out / "avg-predictions.tsv").read_text().splitlines()) == (2 if avg_class else 1)

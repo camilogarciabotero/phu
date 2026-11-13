@@ -119,6 +119,7 @@ def test_avger_searches_phrog_from_the_installed_bundle(installed, tmp_path):
     assert hit.model_id == "phrog_2"
     assert hit.model_description == "fixture anti-restriction protein"
     assert hit.model_coverage == pytest.approx(1.0)
+    assert hit.protein_coverage == pytest.approx(1.0)
     assert "ctg|gene2" not in with_phrog.best_phrog_by_protein
     assert without.best_phrog_by_protein == {}
     annotations = phrog_db.get_all_phrog_annotations()

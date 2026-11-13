@@ -375,9 +375,12 @@ def write_avg_outputs(
             else phrog.category,
             "phrog_bitscore": "" if hit is None else hit.full_score,
             "phrog_evalue": "" if hit is None else hit.evalue,
-            "phrog_coverage": ""
+            "phrog_model_coverage": ""
             if hit is None or hit.model_coverage is None
             else round(hit.model_coverage, 4),
+            "phrog_protein_coverage": ""
+            if hit is None or hit.protein_coverage is None
+            else round(hit.protein_coverage, 4),
             "pfam_scoring_id": ""
             if (record := scoring_by_database.get("pfam")) is None
             else record.accession,

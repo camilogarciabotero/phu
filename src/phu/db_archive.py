@@ -89,7 +89,7 @@ def extract_member(
 
     The check runs here too, so both write paths refuse the same members whatever
     the caller checked before. Uses tarfile's ``data`` filter where this Python
-    has it; older 3.10 and 3.11 patch releases get an equivalent manual write.
+    has it; older 3.11 patch releases get an equivalent manual write.
     Either way files get the current time and default permissions, not the
     archive's: an epoch mtime is the first thing scratch-filesystem purges delete.
     """

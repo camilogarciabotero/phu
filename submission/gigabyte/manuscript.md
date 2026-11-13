@@ -81,14 +81,14 @@ that match profile hidden Markov models (HMMs), given as files or named from
 Pfam, KOfam and dbCAN, including dbCAN polysaccharide utilisation loci. Hits
 are combined per contig with a stated rule (any model, all models, or a
 minimum number). Optionally it writes the matched proteins per model and
-builds a new HMM from them. `phu jack` performs the same contig-level
-screening starting from seed protein sequences by iterative search.
+builds a new HMM from them (Figure 1). `phu jack` performs the same contig-level
+screening starting from seed protein sequences by iterative search (Figure 2).
 `phu cluster` groups genomes into species- and genus-level clusters using
 vclust [10]. `phu avger` ranks candidate auxiliary viral genes on trusted
 viral contigs from Pfam and KOfam annotations, V- and VL-scores [8] and the
 reference tables curated by the CheckAMG project; it keeps annotation
 evidence, virus-association evidence and class assignment in separate tables
-and reports candidates for prioritisation, not confirmed auxiliary genes. Figure 1 summarises this workflow.
+and reports candidates for prioritisation, not confirmed auxiliary genes. Figure 3 summarises this workflow.
 `phu normalize-lineage` standardises lineage strings produced by
 gene-sharing-network classifiers.
 
@@ -116,11 +116,29 @@ contains JSON manifests with the query, the parameters that determine the
 result, the database version and file hashes, and the software version. A
 verbose mode prints one line per tool invocation.
 
-<!-- Figure 1: figures/avger-workflow.pdf (source: figures/avger-workflow.svg,
-drawn by figures/make_avger_figure.py). TODO: it shows PHROG as a third
+<!-- Figures are in figures/ as PDF, with the SVG source and the script that
+draws each one (make_screen_figure.py, make_jack_figure.py,
+make_avger_figure.py; shared helpers in figure_kit.py).
+Figure 1: screen-workflow.pdf. Figure 2: jack-workflow.pdf.
+Figure 3: avger-workflow.pdf. TODO: Figure 3 shows PHROG as a third
 database, which is planned and not yet in a release; revise when it lands. -->
 
-**Figure 1. The `phu avger` workflow.** (A) Genes are predicted on trusted
+**Figure 1. The `phu screen` workflow.** (A) The query can mix HMM files with
+Pfam, KOfam and dbCAN names, which are resolved from the pinned database
+archive; genes are predicted on the contigs. (B) Each model is searched
+against the predicted proteins. (C) The models that hit a contig decide
+whether it is kept, under the chosen combination rule. (D) Optionally, the
+proteins hit by each model are aligned, trimmed and built into a new model.
+Contigs, genes and hits are illustrative.
+
+**Figure 2. The `phu jack` workflow.** (A) Seed proteins replace profile
+models as the query. (B) Each seed is searched iteratively; hits included in
+one round extend the profile searched in the next. (C) Final hits are
+filtered and combined per contig. (D) Optionally, the final profile is saved
+for use as a query in `phu screen`. Contigs, proteins and hits are
+illustrative.
+
+**Figure 3. The `phu avger` workflow.** (A) Genes are predicted on trusted
 viral contigs. (B) Proteins are searched against Pfam, KOfam and PHROG in a
 relaxed track used for scoring and a strict track used for functional calls.
 (C) Each hit is given the V- and VL-score of its family, and VL-scores are
@@ -185,8 +203,9 @@ Anthropic's Claude models used through the Claude Code agent [20] assisted
 with writing and refactoring source code, writing tests, and drafting
 documentation; commits made with such assistance carry co-author trailers in
 the public repository history. A first draft of this manuscript was produced
-with Claude and revised by the authors. Figure 1 was redrawn as a vector graphic by a
-script written with Claude, from a diagram designed by the authors. <!-- TODO:
+with Claude and revised by the authors. Figures 1 to 3 are vector schematics drawn by
+scripts written with Claude; Figure 3 follows a diagram designed by the
+authors. <!-- TODO:
 GigaByte restricts AI-made figures; confirm with the journal that a schematic
 drawn this way is acceptable, or redraw it by hand from the SVG. --> The authors defined the scope of the software, made its design
 decisions, reviewed and tested all AI-assisted contributions, and are fully

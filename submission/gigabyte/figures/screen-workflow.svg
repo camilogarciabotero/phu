@@ -1,0 +1,387 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" width="1400" height="1000" font-family="Liberation Sans, Arial, Helvetica, DejaVu Sans, sans-serif">
+<defs>
+<marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#52606d"/></marker>
+<marker id="head-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d35400"/></marker>
+<marker id="head-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/></marker>
+</defs>
+<rect x="0" y="0" width="1400" height="1000" rx="0" fill="#ffffff" stroke="none" stroke-width="0"/>
+<text x="700.0" y="40" font-size="21" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">phu screen: selecting contigs that carry chosen protein families</text>
+<rect x="30" y="64" width="655" height="330" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="54" cy="90" r="13" fill="#1f2933" stroke="none" stroke-width="1.2"/>
+<text x="54" y="95" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">A</text>
+<text x="76" y="95" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Query models and gene prediction</text>
+<text x="58" y="130" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Query: any mix of</text>
+<rect x="58" y="140" width="144" height="44" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="130" y="158" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">HMM files</text>
+<text x="130" y="175" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">capsid.hmm</text>
+<rect x="210" y="140" width="144" height="44" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="282" y="158" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">Pfam accessions</text>
+<text x="282" y="175" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">PF00589</text>
+<rect x="362" y="140" width="144" height="44" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="434" y="158" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">KOfam orthologs</text>
+<text x="434" y="175" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">K07497</text>
+<rect x="514" y="140" width="144" height="44" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="586" y="158" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">dbCAN, PULs</text>
+<text x="586" y="175" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">GH13, PUL0001</text>
+<text x="58" y="206" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Database names are resolved from the pinned phu-db archive into models:</text>
+<rect x="530" y="192" width="40" height="20" rx="10.0" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="550.0" y="206.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M1</text>
+<rect x="576" y="192" width="40" height="20" rx="10.0" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="596.0" y="206.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M2</text>
+<rect x="622" y="192" width="40" height="20" rx="10.0" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="642.0" y="206.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M3</text>
+<line x1="58" y1="253" x2="308" y2="253" stroke="#9aa5b1" stroke-width="3"/>
+<polygon points="70,242 131,242 140,253.0 131,264 70,264" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<polygon points="148,242 197,242 206,253.0 197,264 148,264" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<polygon points="214,242 281,242 290,253.0 281,264 214,264" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="58" y="232" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Contigs (FASTA)</text>
+<line x1="320" y1="253" x2="368" y2="253" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="372" y="230" width="286" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="515.0" y="250.0" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">pyrodigal / pyrodigal-gv</text>
+<text x="515.0" y="267.0" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">meta mode by default; --mode, --ttable</text>
+<line x1="515" y1="278" x2="515" y2="304" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="378" y="308" width="50" height="24" rx="12.0" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="403.0" y="324.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p1</text>
+<rect x="434" y="308" width="50" height="24" rx="12.0" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="459.0" y="324.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p2</text>
+<rect x="490" y="308" width="50" height="24" rx="12.0" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="515.0" y="324.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p3</text>
+<rect x="546" y="308" width="50" height="24" rx="12.0" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="571.0" y="324.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p4</text>
+<rect x="602" y="308" width="50" height="24" rx="12.0" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="627.0" y="324.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p5</text>
+<text x="58" y="326" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">Predicted proteins (≥ 30 aa)</text>
+<text x="358" y="368" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">Predictions are cached: a new screen of the same contigs with other models skips this step</text>
+<rect x="715" y="64" width="655" height="330" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="739" cy="90" r="13" fill="#1f2933" stroke="none" stroke-width="1.2"/>
+<text x="739" y="95" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">B</text>
+<text x="761" y="95" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Profile search (PyHMMER hmmsearch)</text>
+<rect x="1205" y="80" width="40" height="20" rx="10.0" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="1225.0" y="94.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M1</text>
+<rect x="1251" y="80" width="40" height="20" rx="10.0" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="1271.0" y="94.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M2</text>
+<rect x="1297" y="80" width="40" height="20" rx="10.0" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1317.0" y="94.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M3</text>
+<text x="743" y="151" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">c1</text>
+<line x1="771" y1="147" x2="1181" y2="147" stroke="#9aa5b1" stroke-width="3"/>
+<rect x="785" y="121" width="24" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="797.0" y="131" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M1</text>
+<polygon points="781,136 842,136 851,147.0 842,158 781,158" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="813.75" y="151.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g1</text>
+<polygon points="859,136 908,136 917,147.0 908,158 859,158" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="885.75" y="151.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g2</text>
+<rect x="929" y="121" width="24" height="13" rx="3" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="941.0" y="131" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M2</text>
+<polygon points="925,136 992,136 1001,147.0 992,158 925,158" fill="#2e8b57" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="960.75" y="151.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g3</text>
+<polygon points="1009,136 1064,136 1073,147.0 1064,158 1009,158" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1038.75" y="151.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g4</text>
+<rect x="1085" y="121" width="24" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1097.0" y="131" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M3</text>
+<polygon points="1081,136 1144,136 1153,147.0 1144,158 1081,158" fill="#8e44ad" stroke="#8e44ad" stroke-width="1.2"/>
+<text x="1114.75" y="151.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g5</text>
+<text x="743" y="197" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">c2</text>
+<line x1="771" y1="193" x2="1107" y2="193" stroke="#9aa5b1" stroke-width="3"/>
+<polygon points="781,182 836,182 845,193.0 836,204 781,204" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="810.75" y="197.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g1</text>
+<rect x="857" y="167" width="24" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="869.0" y="177" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M1</text>
+<polygon points="853,182 924,182 933,193.0 924,204 853,204" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="890.75" y="197.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g2</text>
+<polygon points="941,182 992,182 1001,193.0 992,204 941,204" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="968.75" y="197.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g3</text>
+<polygon points="1009,182 1070,182 1079,193.0 1070,204 1009,204" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1041.75" y="197.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g4</text>
+<text x="743" y="243" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">c3</text>
+<line x1="771" y1="239" x2="1029" y2="239" stroke="#9aa5b1" stroke-width="3"/>
+<polygon points="781,228 846,228 855,239.0 846,250 781,250" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="815.75" y="243.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g1</text>
+<polygon points="863,228 916,228 925,239.0 916,250 863,250" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="891.75" y="243.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g2</text>
+<polygon points="933,228 992,228 1001,239.0 992,250 933,250" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="964.75" y="243.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g3</text>
+<text x="743" y="289" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">c4</text>
+<line x1="771" y1="285" x2="1109" y2="285" stroke="#9aa5b1" stroke-width="3"/>
+<polygon points="781,274 832,274 841,285.0 832,296 781,296" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="808.75" y="289.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g1</text>
+<rect x="853" y="259" width="24" height="13" rx="3" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="865.0" y="269" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M2</text>
+<polygon points="849,274 912,274 921,285.0 912,296 849,296" fill="#2e8b57" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="882.75" y="289.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g2</text>
+<polygon points="929,274 986,274 995,285.0 986,296 929,296" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="959.75" y="289.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g3</text>
+<rect x="1007" y="259" width="24" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1019.0" y="269" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M3</text>
+<polygon points="1003,274 1072,274 1081,285.0 1072,296 1003,296" fill="#8e44ad" stroke="#8e44ad" stroke-width="1.2"/>
+<text x="1039.75" y="289.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g4</text>
+<text x="743" y="334" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">A hit counts when it passes the model's gathering cutoff (--cut-ga, KOfam thresholds)</text>
+<text x="743" y="352" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">or, for models without one, E-value ≤ 1e-5 (--max-evalue) and --min-bitscore if given.</text>
+<text x="743" y="370" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">The best hit per model is kept on each contig (--top-per-contig 1).</text>
+<rect x="30" y="414" width="655" height="440" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="54" cy="440" r="13" fill="#1f2933" stroke="none" stroke-width="1.2"/>
+<text x="54" y="445" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">C</text>
+<text x="76" y="445" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Combine hits per contig (--combine-mode)</text>
+<text x="58" y="480" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Which models hit each contig decides whether the contig is kept</text>
+<rect x="150" y="502" width="46" height="18" rx="9.0" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="173.0" y="515.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M1</text>
+<rect x="208" y="502" width="46" height="18" rx="9.0" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="231.0" y="515.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M2</text>
+<rect x="266" y="502" width="46" height="18" rx="9.0" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="289.0" y="515.0" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">M3</text>
+<text x="410.0" y="515" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">any (default)</text>
+<text x="514.0" y="515" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">all</text>
+<text x="618.0" y="515" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">threshold ≥ 2</text>
+<rect x="58" y="532" width="74" height="22" rx="4" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="95.0" y="547" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">c1</text>
+<circle cx="173.0" cy="543" r="7" fill="#2f6fb0" stroke="none" stroke-width="1.2"/>
+<circle cx="231.0" cy="543" r="7" fill="#2e8b57" stroke="none" stroke-width="1.2"/>
+<circle cx="289.0" cy="543" r="7" fill="#8e44ad" stroke="none" stroke-width="1.2"/>
+<rect x="374.0" y="533" width="72" height="20" rx="10" fill="#e8f5ee" stroke="#2e8b57" stroke-width="1"/>
+<text x="410.0" y="547" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#2e8b57">kept</text>
+<rect x="478.0" y="533" width="72" height="20" rx="10" fill="#e8f5ee" stroke="#2e8b57" stroke-width="1"/>
+<text x="514.0" y="547" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#2e8b57">kept</text>
+<rect x="582.0" y="533" width="72" height="20" rx="10" fill="#e8f5ee" stroke="#2e8b57" stroke-width="1"/>
+<text x="618.0" y="547" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#2e8b57">kept</text>
+<rect x="58" y="562" width="74" height="22" rx="4" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="95.0" y="577" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">c2</text>
+<circle cx="173.0" cy="573" r="7" fill="#2f6fb0" stroke="none" stroke-width="1.2"/>
+<circle cx="231.0" cy="573" r="7" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="289.0" cy="573" r="7" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<rect x="374.0" y="563" width="72" height="20" rx="10" fill="#e8f5ee" stroke="#2e8b57" stroke-width="1"/>
+<text x="410.0" y="577" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#2e8b57">kept</text>
+<rect x="478.0" y="563" width="72" height="20" rx="10" fill="#fbeceb" stroke="#c0392b" stroke-width="1"/>
+<text x="514.0" y="577" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#c0392b">dropped</text>
+<rect x="582.0" y="563" width="72" height="20" rx="10" fill="#fbeceb" stroke="#c0392b" stroke-width="1"/>
+<text x="618.0" y="577" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#c0392b">dropped</text>
+<rect x="58" y="592" width="74" height="22" rx="4" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="95.0" y="607" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">c3</text>
+<circle cx="173.0" cy="603" r="7" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="231.0" cy="603" r="7" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="289.0" cy="603" r="7" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<rect x="374.0" y="593" width="72" height="20" rx="10" fill="#fbeceb" stroke="#c0392b" stroke-width="1"/>
+<text x="410.0" y="607" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#c0392b">dropped</text>
+<rect x="478.0" y="593" width="72" height="20" rx="10" fill="#fbeceb" stroke="#c0392b" stroke-width="1"/>
+<text x="514.0" y="607" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#c0392b">dropped</text>
+<rect x="582.0" y="593" width="72" height="20" rx="10" fill="#fbeceb" stroke="#c0392b" stroke-width="1"/>
+<text x="618.0" y="607" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#c0392b">dropped</text>
+<rect x="58" y="622" width="74" height="22" rx="4" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="95.0" y="637" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">c4</text>
+<circle cx="173.0" cy="633" r="7" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="231.0" cy="633" r="7" fill="#2e8b57" stroke="none" stroke-width="1.2"/>
+<circle cx="289.0" cy="633" r="7" fill="#8e44ad" stroke="none" stroke-width="1.2"/>
+<rect x="374.0" y="623" width="72" height="20" rx="10" fill="#e8f5ee" stroke="#2e8b57" stroke-width="1"/>
+<text x="410.0" y="637" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#2e8b57">kept</text>
+<rect x="478.0" y="623" width="72" height="20" rx="10" fill="#fbeceb" stroke="#c0392b" stroke-width="1"/>
+<text x="514.0" y="637" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#c0392b">dropped</text>
+<rect x="582.0" y="623" width="72" height="20" rx="10" fill="#e8f5ee" stroke="#2e8b57" stroke-width="1"/>
+<text x="618.0" y="637" font-size="10.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#2e8b57">kept</text>
+<text x="58" y="686" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">any</text>
+<text x="140" y="686" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">at least one model hits the contig</text>
+<text x="58" y="712" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">all</text>
+<text x="140" y="712" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">every queried model hits the contig</text>
+<text x="58" y="738" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">threshold</text>
+<text x="140" y="738" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">at least --min-hmm-hits models hit the contig</text>
+<line x1="358" y1="760" x2="358" y2="784" stroke="#d35400" stroke-width="1.6" marker-end="url(#head-o)"/>
+<rect x="258" y="788" width="200" height="28" rx="14.0" fill="#d35400" stroke="#d35400" stroke-width="0"/>
+<text x="358.0" y="806.0" font-size="13" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">matched contigs</text>
+<text x="358" y="836" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">The query and the rule used are written to .phu/query.json</text>
+<rect x="715" y="414" width="655" height="440" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="739" cy="440" r="13" fill="#1f2933" stroke="none" stroke-width="1.2"/>
+<text x="739" y="445" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">D</text>
+<text x="761" y="445" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Optional: turn the hits into new models</text>
+<text x="743" y="480" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Proteins that hit each model, from kept contigs only, can seed a model of your own data</text>
+<rect x="743" y="498" width="280" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="883.0" y="518.0" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">target-proteins/{model}.faa</text>
+<text x="883.0" y="535.0" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">--save-target-proteins</text>
+<line x1="883" y1="546" x2="883" y2="570" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="743" y="574" width="280" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="883.0" y="594.0" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">Align with FAMSA</text>
+<text x="883.0" y="611.0" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">in-process (pyfamsa); no aligner to install</text>
+<line x1="883" y1="622" x2="883" y2="646" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="743" y="650" width="280" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2" stroke-dasharray="5,3"/>
+<text x="883" y="670" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">Trim with trimAl (optional)</text>
+<text x="883" y="687" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">--trim-target-msa gappyout | strict | strictplus</text>
+<line x1="883" y1="698" x2="883" y2="722" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="743" y="726" width="280" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="883.0" y="746.0" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">Build the HMM (PyHMMER)</text>
+<text x="883.0" y="763.0" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">--save-target-hmms</text>
+<line x1="883" y1="774" x2="883" y2="798" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="773" y="802" width="220" height="28" rx="14.0" fill="#1f2933" stroke="#1f2933" stroke-width="0"/>
+<text x="883.0" y="820.0" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">target-hmms/{model}.hmm</text>
+<text x="1087" y="550" font-size="11" font-weight="bold" font-style="normal" text-anchor="start" fill="#52606d">alignment</text>
+<rect x="1087" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="564" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1171" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="564" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="564" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1283" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1297" y="564" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1171" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="578" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1213" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="578" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="578" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1283" y="578" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1297" y="578" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="592" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1101" y="592" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1115" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="592" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1171" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="592" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1283" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1297" y="592" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="606" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1171" y="606" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1185" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1269" y="606" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1283" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1297" y="606" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="620" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1129" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1171" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="620" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1255" y="620" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="620" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1283" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1297" y="620" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1268" y="557" width="29" height="1.6" rx="0" fill="#d35400" stroke="none" stroke-width="0"/>
+<text x="1283" y="552" font-size="10" font-weight="normal" font-style="normal" text-anchor="middle" fill="#d35400">gappy</text>
+<text x="1087" y="660" font-size="11" font-weight="bold" font-style="normal" text-anchor="start" fill="#52606d">trimmed</text>
+<rect x="1087" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="672" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1171" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="672" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="672" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1171" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="686" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1213" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="686" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="686" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="700" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1101" y="700" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1115" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="700" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1171" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="700" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="700" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1129" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="714" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1171" y="714" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1185" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1255" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1269" y="714" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1087" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1101" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1115" y="728" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1129" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1143" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1157" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1171" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1185" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1199" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1213" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1227" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<rect x="1241" y="728" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1255" y="728" width="12" height="11" rx="2" fill="#ffffff" stroke="#9aa5b1" stroke-width="0.6"/>
+<rect x="1269" y="728" width="12" height="11" rx="2" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0.6"/>
+<text x="1087" y="768" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Trimming shortens the model and</text>
+<text x="1087" y="784" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">lowers bit scores; off by default.</text>
+<text x="1015" y="814" font-size="11" font-weight="normal" font-style="italic" text-anchor="start" fill="#52606d">reusable as a query in</text>
+<text x="1015" y="830" font-size="11" font-weight="normal" font-style="italic" text-anchor="start" fill="#52606d">a later phu screen</text>
+<text x="30" y="904" font-size="14" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Outputs</text>
+<rect x="120.0" y="876" width="240.0" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="240.0" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">matched-contigs.fna</text>
+<text x="240.0" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">contigs that passed</text>
+<rect x="372.0" y="876" width="240.0" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="492.0" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">matched-contig-ids.txt</text>
+<text x="492.0" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">their names</text>
+<rect x="624.0" y="876" width="240.0" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="744.0" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">{hmm}-hmmsearch-domains.tbl</text>
+<text x="744.0" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">per-domain hits, one per HMM file</text>
+<rect x="876.0" y="876" width="240.0" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="996.0" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">.phu/query.json</text>
+<text x="996.0" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">query, rule, database versions</text>
+<rect x="1128.0" y="876" width="240.0" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="1248.0" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">target-proteins/, target-hmms/</text>
+<text x="1248.0" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">optional</text>
+<text x="700.0" y="956" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">A matched contig carries sequence similarity to the queried families; it is not a functional or taxonomic assignment.</text>
+<text x="700.0" y="976" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">Contigs, genes and hits shown are illustrative</text>
+</svg>

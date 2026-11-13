@@ -9,6 +9,7 @@ import typer
 from phu import __version__
 
 from phu.core.progress import ProgressReporter, run_click_task
+from phu.db.binary import SEARCHED_DATABASES, build_binary_models, has_binary_models
 from phu.core.exec import CmdNotFound
 from phu.core.log import set_verbosity
 from phu.commands.avger import AvgConfig, run_avg
@@ -105,6 +106,20 @@ def dbs_prepare(
     except (DatabaseError, OSError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
+    # avger reads binary copies of the model files; build them now, so the
+    # first run does not have to and jobs sharing the install find them ready.
+    for name in SEARCHED_DATABASES:
+        if has_binary_models(name):
+            continue
+        path = run_click_task(
+            f"Building fast-loading models for {name}", build_binary_models, name
+        )
+        if path.suffix != ".h3m":
+            typer.echo(
+                f"Note: could not write fast-loading models for {name}; "
+                "phu will read the text file instead.",
+                err=True,
+            )
     typer.echo(f"{provenance['bundle_version']} is ready: {root}")
     for name, release in provenance["upstream_versions"].items():
         typer.echo(f"  {name}: {release}")

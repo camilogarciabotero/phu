@@ -7,6 +7,18 @@ behavior in the unreleased branch and may change before a release.
 
 ### Avger
 
+- `phu avger` now reads binary copies of the HMM files (about 5 GB), which
+  load in seconds instead of minutes. `phu dbs prepare` builds them and shows
+  the step; otherwise the first `phu avger` run does, as a visible one-time
+  step.
+- Writing the avger tables no longer slows down with the size of the
+  reference lists: positive and filter references are looked up through an
+  index instead of being scanned for every gene.
+- Fixed: on inputs with more than 10,000 proteins, `phu avger` searched the
+  proteins in batches and each batch computed E-values as if it were the whole
+  input, so hits near the E-value cutoff could pass or fail depending on the
+  batch they fell in. E-values now always refer to the whole input. Results
+  for inputs of up to 10,000 proteins are unchanged.
 - `phu avger` searches each database once instead of twice, which roughly
   halves its run time. The relaxed and strict tracks used to run the same
   search separately and differ only in the thresholds applied to the hits;

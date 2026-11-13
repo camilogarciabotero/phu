@@ -22,6 +22,7 @@ from phu.avger.decisions import (
     calculate_scaffold_averages,
     collect_positive_evidence,
     evaluate_candidates,
+    index_positive_evidence,
     resolve_final_class,
 )
 from phu.core.gene_prediction import (
@@ -29,6 +30,7 @@ from phu.core.gene_prediction import (
     PredictionInputs,
     get_or_predict_proteins,
 )
+from phu.db.binary import build_binary_models, has_binary_models
 from phu.db.bundle import bundle_provenance, resolve_db
 from phu.db.phrog import ANNOTATIONS_FILE, read_phrog_annotations
 from phu.core.progress import ProgressReporter
@@ -107,6 +109,14 @@ def run_avg(
     try:
         require_databases(config.phrog)
         reporter.succeed_task(database_task)
+        # Normally done by `phu dbs prepare`; a first run without it does it
+        # here, as a step of its own so the wait is explained.
+        searched = ("pfam", "kofam") + (("phrog",) if config.phrog else ())
+        if not all(has_binary_models(name) for name in searched):
+            binary_task = reporter.start_task("Building fast-loading models (one time)")
+            for name in searched:
+                build_binary_models(name)
+            reporter.succeed_task(binary_task)
         prediction_task = reporter.start_task("Predicting proteins")
         prediction = get_or_predict_proteins(
             PredictionInputs(
@@ -270,6 +280,15 @@ def write_avg_outputs(
         for row in filter_rows
     ]
 
+    # Looked up once per gene: index them instead of scanning the full lists,
+    # which hold tens of thousands of rows once PHROG is included.
+    positive_index = index_positive_evidence(positive_evidence)
+    filters_by_key: dict[tuple[str, str], list[tuple[int, FilterEvidence]]] = {}
+    for position, item in enumerate(filter_evidence):
+        filters_by_key.setdefault((item.database, item.accession), []).append(
+            (position, item)
+        )
+
     rows = []
     candidates = []
     predictions = []
@@ -301,7 +320,7 @@ def write_avg_outputs(
         is_candidate = any(decision.candidate for decision in gene_decisions)
         gene_strict_evidence = strict_evidence_by_protein.get(gene.gene_id, [])
         matched_positive = (
-            collect_positive_evidence(gene_strict_evidence, positive_evidence)
+            collect_positive_evidence(gene_strict_evidence, positive_index)
             if is_candidate
             else ()
         )
@@ -310,8 +329,10 @@ def write_avg_outputs(
         }
         gene_filter_evidence = [
             item
-            for item in filter_evidence
-            if (item.database, item.accession) in strict_keys
+            for _, item in sorted(
+                (entry for key in strict_keys for entry in filters_by_key.get(key, ())),
+                key=lambda entry: entry[0],
+            )
         ]
         for item in matched_positive:
             audit_rows.append(

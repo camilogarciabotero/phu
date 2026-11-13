@@ -10,6 +10,7 @@ from typing import Optional
 import pyhmmer
 
 from phu.core.log import log_call
+from phu.db.binary import binary_hmm_path
 from phu.db.kofam import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
 from phu.db.pfam import ensure_pfam_database, normalize_pfam_id
 from phu.db.phrog import (
@@ -293,6 +294,7 @@ def _search_tracks(
     kofam_meta_by_model: Optional[dict[str, KOFamMetadata]] = None,
     phrog_annotations: Optional[dict[str, PhrogAnnotation]] = None,
     all_hits_writers: Optional[Sequence] = None,
+    total_proteins: Optional[int] = None,
 ) -> list[tuple[dict[str, AnnotationHit], int, int, int]]:
     """Search one database once and collect the hits of every track in ``cfgs``.
 
@@ -301,6 +303,11 @@ def _search_tracks(
     serves them all. Returns, per track and in the order of ``cfgs``: best hit
     per protein, passing hit count, models seen, Pfam models skipped for
     lacking GA cutoffs.
+
+    Proteins are searched in batches to bound memory. An E-value scales with
+    the number of sequences searched (HMMER's Z), so ``total_proteins`` must
+    be the size of the whole input: every batch then reports the E-values one
+    search of all proteins would, whatever the batch size.
     """
     if not cfgs:
         raise ValueError("at least one annotation track is required")
@@ -331,10 +338,12 @@ def _search_tracks(
         cpus=first.threads,
         parallel="queries",
         bit_cutoffs="none",
+        Z=total_proteins if total_proteins is not None else "per batch",
         max_evalue="+".join(str(cfg.max_evalue) for cfg in cfgs),
         score_thresholds="+".join(_score_thresholds(database, cfg) for cfg in cfgs),
     )
 
+    search_options = {} if total_proteins is None else {"Z": total_proteins}
     with pyhmmer.easel.SequenceFile(proteins_path, digital=True) as seq_file:
         while True:
             proteins = seq_file.read_block(sequences=first.protein_batch_size)
@@ -349,6 +358,7 @@ def _search_tracks(
                     proteins,
                     cpus=first.threads,
                     parallel="queries",
+                    **search_options,
                 )
                 for top_hits in hit_batches:
                     hmm = top_hits.query
@@ -539,6 +549,12 @@ def _write_hit(writer, record: AnnotationHit) -> None:
     )
 
 
+def count_proteins(proteins_faa: Path) -> int:
+    """Number of records in a protein FASTA file."""
+    with Path(proteins_faa).open("rb") as handle:
+        return sum(1 for line in handle if line.startswith(b">"))
+
+
 def annotate_proteins_complete_databases(
     proteins_faa: Path,
     cfg: AnnotationConfig,
@@ -566,8 +582,10 @@ def annotate_proteins_tracks(
     pfam_meta = ensure_pfam_database()
     kofam_meta = ensure_kofam_database()
 
-    pfam_hmm_path = Path(pfam_meta["hmm_path"])
-    kofam_hmm_path = Path(kofam_meta["hmm_path"])
+    # Binary copies load in seconds where the text files take minutes.
+    pfam_hmm_path = binary_hmm_path(Path(pfam_meta["hmm_path"]))
+    kofam_hmm_path = binary_hmm_path(Path(kofam_meta["hmm_path"]))
+    total_proteins = count_proteins(proteins_faa)
     all_kofam_meta = get_all_kofam_metadata()
 
     handles = []
@@ -587,6 +605,7 @@ def annotate_proteins_tracks(
             proteins_path=proteins_faa,
             cfgs=cfgs,
             all_hits_writers=writers,
+            total_proteins=total_proteins,
         )
         kofam = _search_tracks(
             database="kofam",
@@ -595,17 +614,19 @@ def annotate_proteins_tracks(
             cfgs=cfgs,
             kofam_meta_by_model=all_kofam_meta,
             all_hits_writers=writers,
+            total_proteins=total_proteins,
         )
         phrog_results = None
         if phrog:
             phrog_meta = ensure_phrog_database()
             phrog_results = _search_tracks(
                 database="phrog",
-                hmm_path=Path(phrog_meta["hmm_path"]),
+                hmm_path=binary_hmm_path(Path(phrog_meta["hmm_path"])),
                 proteins_path=proteins_faa,
                 cfgs=cfgs,
                 phrog_annotations=get_all_phrog_annotations(),
                 all_hits_writers=writers,
+                total_proteins=total_proteins,
             )
     finally:
         for handle in handles:

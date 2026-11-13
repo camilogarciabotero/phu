@@ -100,7 +100,7 @@ examples, and workflow guidance.
 phu dbs prepare
 ```
 
-The download is about 1.9 GB and shows its progress; the install needs about 12 GB of free disk while it runs and keeps about 9.5 GB. Useful settings:
+The download is about 2.2 GB and shows its progress; the install needs about 16 GB of free disk while it runs and keeps about 13 GB. Useful settings:
 
 | Setting | Effect |
 | --- | --- |

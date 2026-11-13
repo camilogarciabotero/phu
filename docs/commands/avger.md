@@ -1,7 +1,7 @@
 # avger
 
 `phu avger` predicts proteins from trusted viral contigs and annotates them
-against the complete Pfam and KOfam databases, then applies the provisional AVG
+against the complete Pfam, KOfam and PHROG databases, then applies the provisional AVG
 candidate and curation workflow. It writes deterministic TSV tables for all
 genes, candidates, predictions, and supporting evidence.
 
@@ -81,10 +81,43 @@ Predict and curate putative auxiliary viral genes.
 The exact spacing and formatting may vary slightly with the Typer/Rich version
 installed locally.
 
-The command requires prepared Pfam, KOfam, and AVG reference databases. It
-reuses the shared prediction cache. KOfam hits use the thresholds and score
-types from `ko_list`; Pfam hits use model GA cutoffs. Candidate scoring uses
+The command requires prepared Pfam, KOfam, PHROG and AVG reference databases.
+It reuses the shared prediction cache. KOfam hits use the thresholds and score
+types from `ko_list`; Pfam hits use model GA cutoffs; PHROG hits need a bit
+score of at least 60 over at least 40% of the model. Candidate scoring uses
 the AVG reference database's V-score and VL-score tables.
+
+## PHROG
+
+PHROG (Terzian et al., 2021) groups the proteins of prokaryotic viruses into
+families. Many phage proteins have no Pfam or KOfam match, so PHROG gives
+`avger` evidence for genes the other two databases leave blank. It is searched
+by default; `--no-phrog` skips it, which saves the largest of the three
+searches.
+
+PHROG takes part in every step, the same way Pfam and KOfam do:
+
+- **Scoring.** The best PHROG hit of each protein at E-value `1e-5` supplies
+    its V-score and VL-score, and the contig's PHROG AVL is their average.
+- **Candidates.** A gene is a candidate when the candidate rule holds in at
+    least one of the three databases.
+- **Annotation.** PHROG has no curated per-model cutoffs. A PHROG annotation
+    is reported, and used for classification, when the hit scores at least 60
+    bits and its best domain covers at least 40% of the model. These are the
+    fixed cutoffs CheckAMG uses for PHROG.
+- **Classification.** The reference tables list PHROGs that support the
+    physiology (`putative_apg`) and regulatory (`putative_areg`) classes. They
+    list none for `putative_amg`, so PHROG alone never makes an AMG call.
+- **Filters.** The filter lists name PHROGs of core viral functions, such as
+    integrases and major head proteins. A strict PHROG hit to one of them
+    blocks the class, exactly as a Pfam or KOfam filter match does. A gene that
+    Pfam or KOfam would classify can therefore be filtered because its PHROG
+    hit says it is a structural or replication protein.
+
+The PHROG models are HMMER models built for the phu database bundle from the
+official PHROG alignments (see [Databases and Provenance](../databases.md)).
+The `phrog_coverage` column is the fraction of the model covered by the best
+domain alignment.
 
 ## Scientific interpretation
 
@@ -134,8 +167,8 @@ decision layer:
     selected `--mode`, `--ttable`, and length filters affect which proteins enter
     downstream annotation.
 - **Profile annotation:** HMMER, accessed through PyHMMER, supplies profile-HMM
-    searches. Pfam model cutoffs and KOfam's KO-specific thresholds are used as
-    annotation criteria; a passing profile match is not, by itself, evidence of
+    searches. Pfam model cutoffs, KOfam's KO-specific thresholds and fixed PHROG
+    score and coverage cutoffs are used as annotation criteria; a passing profile match is not, by itself, evidence of
     an AVG.
 - **Viral-family evidence:** V-Score-Search motivates the use of family-level
     V and VL scores and genome/scaffold averages. Its AV/AVL thresholds are
@@ -182,7 +215,7 @@ experimental or ecological validation (Iuchi et al., 2023).
 
 `avger` separates three kinds of evidence:
 
-1. **Annotation evidence:** a predicted protein has a Pfam or KOfam profile
+1. **Annotation evidence:** a predicted protein has a Pfam, KOfam or PHROG profile
     match that passes the database-specific score threshold and independent
     E-value cutoff (`1e-5` by default).
 2. **Viral-family evidence:** the matched protein family has a V-score in the
@@ -250,8 +283,8 @@ AVL_{db} = \frac{\sum VL\text{-scores of proteins with significant best hits in 
 $$
 
 The denominator is the number of scored significant hits in that database, not
-the total number of predicted proteins. Pfam evidence is never combined with a
-KOfam contig score, and vice versa.
+the total number of predicted proteins. Evidence from one database is never
+combined with the contig score of another.
 
 A database-specific candidate requires all three strict inequalities:
 
@@ -259,16 +292,16 @@ A database-specific candidate requires all three strict inequalities:
 - gene V-score `< 10`;
 - same-database contig AVL-score `> 3`.
 
-`pfam_candidate` and `kofam_candidate` are evaluated independently. The
-combined `zhou_avg_candidate` is true when either database-specific candidate
-is true. The cutoffs are configurable with `--scaffold-avl-cutoff`,
+`zhou_pfam_candidate`, `zhou_kofam_candidate` and `zhou_phrog_candidate` are
+evaluated independently. The combined `zhou_avg_candidate` is true when any
+database-specific candidate is true. The cutoffs are configurable with `--scaffold-avl-cutoff`,
 `--gene-vl-cutoff`, and `--gene-v-cutoff`; their defaults are `3`, `3`, and
 `10`. Boundary values are excluded.
 
 ```mermaid
 flowchart TD
     A[Trusted viral contigs] --> B[Predict proteins]
-    B --> C[Annotate against Pfam and KOfam]
+    B --> C[Annotate against Pfam, KOfam and PHROG]
     C --> D[Relaxed and strict annotation tracks]
     D --> E[Average relaxed VL-scores per contig and database]
     E --> F{AVL > cutoff and gene VL < cutoff and gene V < cutoff?}
@@ -286,8 +319,8 @@ flowchart TD
     O --> Q[Metadata: .phu/run.json]
 ```
 
-The Pfam and KOfam branches represented by this flow are independent; their
-AVL values are never mixed. AVL is therefore an active candidate-selection
+The Pfam, KOfam and PHROG branches represented by this flow are independent;
+their AVL values are never mixed. AVL is therefore an active candidate-selection
 criterion, not merely a reported summary value.
 
 ## Flank evidence
@@ -311,11 +344,13 @@ filters described below.
 - `hmm-hits-relaxed.tsv.gz` and `hmm-hits-strict.tsv.gz`: all annotation hits when
     `--keep-hits` is supplied.
 
-Rows from Pfam and KOfam remain database-specific. Empty scoring fields mean
+Each database has its own group of columns (`pfam_*`, `kofam_*`, `phrog_*`).
+The `phrog_*` columns are always present and are empty when PHROG was not
+searched. Empty scoring fields mean
 that no matching AVG reference record was available; they can prevent a gene
 from becoming a candidate.
 
-The Pfam, KOfam and AVG databases install automatically on the first run (see
+The Pfam, KOfam, PHROG and AVG databases install automatically on the first run (see
 [Databases and Provenance](../databases.md)):
 
 ```bash

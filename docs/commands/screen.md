@@ -168,7 +168,7 @@ When PFAM accessions are used, `phu` will:
 2. Resolve each accession to the normalized accession (for example, `PF00589.17` -> `PF00589`).
 3. Extract those models and run screening normally.
 
-The first database-backed run installs the database bundle (about 1.9 GB
+The first database-backed run installs the database bundle (about 2.2 GB
 download). For install location, offline use and disk needs, see
 [Databases and Provenance](../databases.md).
 

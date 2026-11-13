@@ -11,6 +11,18 @@ behavior in the unreleased branch and may change before a release.
   halves its run time. The relaxed and strict tracks used to run the same
   search separately and differ only in the thresholds applied to the hits;
   one search now feeds both. Results are unchanged.
+- `phu avger` now searches PHROG as a third database, beside Pfam and KOfam.
+  PHROG scores can make a gene a candidate, PHROG entries support the
+  physiology and regulatory classes, and the PHROG filter lists can block a
+  class when a gene's PHROG hit is a core viral function. A PHROG annotation
+  needs a bit score of at least 60 over at least 40% of the model. Use
+  `--no-phrog` to skip it. Expect longer runs with PHROG on: it has more
+  models than Pfam and KOfam.
+- New columns in the avger tables: `phrog_id`, `phrog_annotation`,
+  `phrog_category`, `phrog_bitscore`, `phrog_evalue`, `phrog_coverage`,
+  `phrog_scoring_id`, `phrog_v_score`, `phrog_vl_score`, `phrog_scaffold_avl`,
+  `phrog_scored_gene_count` and `zhou_phrog_candidate`. The output schema
+  version in `.phu/run.json` is now 2.
 
 ### Internal
 
@@ -42,9 +54,11 @@ behavior in the unreleased branch and may change before a release.
 ### Databases
 
 - Databases now install automatically. The first `screen` or `avger` run that
-  needs a database downloads one pinned, checksummed bundle, `phu-db-0.1.1`
-  (about 1.9 GB, about 12 GB free disk needed while installing), verifies it
+  needs a database downloads one pinned, checksummed bundle, `phu-db-0.2.0`
+  (about 2.2 GB, about 16 GB free disk needed while installing), verifies it
   and installs it under `PHU_DB_FOLDER`. Later runs reuse it.
+- The bundle includes PHROG: HMMER models for the 38,880 PHROGs, built from
+  the official alignments, and the PHROG annotation table.
 - `phu dbs prepare` now downloads, verifies and installs that single bundle
   ahead of time. New options: `--bundle PATH` (pre-downloaded tarball) and
   `--verify` (re-hash every installed file). Database names, `--all` and

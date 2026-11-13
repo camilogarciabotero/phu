@@ -285,7 +285,9 @@ def write_avg_outputs(
     positive_index = index_positive_evidence(positive_evidence)
     filters_by_key: dict[tuple[str, str], list[tuple[int, FilterEvidence]]] = {}
     for position, item in enumerate(filter_evidence):
-        filters_by_key.setdefault((item.database, item.accession), []).append((position, item))
+        filters_by_key.setdefault((item.database, item.accession), []).append(
+            (position, item)
+        )
 
     rows = []
     candidates = []
@@ -328,11 +330,7 @@ def write_avg_outputs(
         gene_filter_evidence = [
             item
             for _, item in sorted(
-                (
-                    entry
-                    for key in strict_keys
-                    for entry in filters_by_key.get(key, ())
-                ),
+                (entry for key in strict_keys for entry in filters_by_key.get(key, ())),
                 key=lambda entry: entry[0],
             )
         ]

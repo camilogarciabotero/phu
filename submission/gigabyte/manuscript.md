@@ -111,8 +111,10 @@ hits. A relaxed track (E-value at most 1e-5) is used only for scoring: the
 best hit of each protein in each database is given the V- and VL-score of its
 family, and VL-scores are averaged per contig and per database (AVL). A strict
 track is used for functional calls: Pfam gathering thresholds, KOfam adaptive
-thresholds, and for PHROG a bit score of at least 60 with at least 0.4 of the
-model covered, the thresholds CheckAMG applies to PHROG. Each database is
+thresholds, and for PHROG a bit score of at least 60 with at least half of
+both the model and the protein aligned. Coverage is computed as in CheckAMG,
+over all reported domains of a hit; the cutoff is stricter than CheckAMG's
+default of 0.4. Each database is
 searched once and each hit is tested against the thresholds of both tracks;
 earlier versions ran one search per track, and removing the second search
 halved the run time on a test set of 21 viral contigs (5.9 Mb; 485 s to 245 s
@@ -127,6 +129,51 @@ classes but not an auxiliary metabolic gene call, which still requires Pfam or
 KOfam evidence and a minimum AMG weight (0.6 by default). A strict hit to a
 family on the CheckAMG filter lists, in any of the three databases, removes
 the corresponding class. PHROG is used by default and can be switched off.
+
+**Relationship to CheckAMG.** `phu avger` takes its scores, positive lists,
+AMG weights and exclusion lists from CheckAMG [23], and CheckAMG is the
+inspiration for the command. The two are nevertheless different methods and
+should not be expected to give the same predictions (Table 2). `phu avger` is
+a rule-based screen for contigs already known to be viral: a gene must first
+pass a fixed rule on V- and VL-scores, computed over the whole contig and
+separately for each database, and only then is its annotation matched to the
+reference lists. CheckAMG is a broader prediction framework. It annotates
+with more databases, judges viral origin from the local neighbourhood of each
+gene (flanking viral and mobile-element genes and delineated viral regions)
+with a trained classifier, and offers a separate annotation-independent
+module based on a protein language model. Neither tool is uniformly the more
+stringent: `phu avger` is stricter on candidate eligibility and on KOfam
+score thresholds, whereas CheckAMG is stricter on alignment coverage for Pfam
+and KEGG hits and on genomic context. The main limitation of `phu avger`
+follows from its rule: a whole-contig average can hide a locally atypical
+region, and a convincing local viral neighbourhood can sit on a contig whose
+average fails. `phu avger` is therefore best described as integrating
+V/VL-score-based candidate selection with CheckAMG-derived reference tables,
+weights and exclusion rules in a reproducible annotation workflow, and not as
+a lightweight implementation of CheckAMG.
+
+<!-- TODO: Table 2 is a source-code comparison of phu (with PHROG support,
+pull request 32) and CheckAMG main at commit 66339f9. Before submission:
+(1) fix the CheckAMG version compared and state it; phu's tables come from
+v1.1.1; (2) re-verify the rows marked [verify] against that version's code;
+(3) replace or complement this paragraph with the matched-input benchmark
+planned for Results. -->
+
+**Table 2. `phu avger` and CheckAMG compared from their source code.** This
+is a comparison of methods, not of performance.
+
+| Aspect | `phu avger` | CheckAMG |
+|---|---|---|
+| Intended input | Contigs already identified as viral | Nucleotide or protein input; single contigs or multi-contig viral genomes; also broader metagenomic input |
+| Functional evidence | Pfam, KOfam and PHROG | Pfam, KEGG, PHROG, FOAM, dbCAN, METABOLIC and CAMPER |
+| Candidate logic | Mandatory rule on contig-average VL and gene V and VL, before any classification | Reference-supported functional candidates combined with contextual assessment and curation |
+| Viral context | Whole-contig mean VL-score, per database | Local windows, flanking viral signals, hallmark and mobile-element genes, viral-region delineation |
+| Confidence | Rule outcomes with audit reasons | Viral-origin probability from a gradient-boosted classifier, reported as low, medium or high [verify] |
+| Contextual filters | None | Optional exclusion outside strict viral regions; runs of three or more consecutive candidates excluded by default [verify] |
+| Annotation thresholds | Pfam gathering thresholds; KOfam adaptive thresholds; PHROG bit score and coverage | Coverage of at least 0.4 of model and protein for all hits; database thresholds, with a heuristic that can keep some sub-threshold KEGG hits |
+| Proteins without annotation | Kept as unclassified candidates when the score rule holds; no annotation-independent predictor | Separate de novo module using protein language model embeddings |
+| Conflicting classes | Reported as a class conflict | Resolved by priority: metabolic, then physiological, then regulatory [verify] |
+| Software stack | One Python package; no machine-learning inference | Snakemake workflow with machine-learning dependencies; the de novo module benefits from a GPU |
 
 **Pinned reference databases.** All reference data are distributed as one
 archive, phu-db, built by a separate preparation tool and deposited on Zenodo
@@ -220,8 +267,13 @@ data. Suggested content, to be produced and archived on Zenodo with scripts:
 2. Agreement with the conventional chain: same contigs kept by `phu screen`
    and by a gene caller + hmmsearch + manual parsing, with run time and the
    number of installed programs for each.
-3. `phu avger` candidates compared with CheckAMG calls on the same public
-   genomes, with run time and database size.
+3. `phu avger` candidates compared with CheckAMG `annotate` calls on the same
+   public genomes, with run time and database size. CheckAMG ships example
+   inputs (113 single-contig viruses and 5 multi-contig viral genomes) with
+   expected outputs, which allow a first comparison without installing it.
+   Report agreement per class with CheckAMG as the reference, not as ground
+   truth, and attribute each disagreement to a cause from Table 2. Compare
+   with the de novo module separately, if at all.
 4. Effect of building HMMs from hits with FAMSA, with and without trimming,
    on public protein families.
 
@@ -332,5 +384,7 @@ Entries marked (verify) were written from memory. URLs need an access date. -->
 21. Zheng J, Ge Q, Yan Y, Zhang X, Huang L, Yin Y. dbCAN3: automated carbohydrate-active enzyme and substrate annotation. Nucleic Acids Res. 2023;51:W115-21. doi:10.1093/nar/gkad328. (verify)
 22. Terzian P, Olo Ndela E, Galiez C, Lossouarn J, Pérez Bucio RE, Mom R, et al. PHROG: families of prokaryotic virus proteins clustered using remote homology. NAR Genom Bioinform. 2021;3:lqab067. doi:10.1093/nargab/lqab067. (verify)
 
-<!-- TODO: references 21 and 22 were added after the first numbering; renumber
+23. Anantharaman Lab. CheckAMG: automated discovery and curation of auxiliary metabolic, regulatory and physiology genes encoded by viral genomes. GitHub. https://github.com/AnantharamanLab/CheckAMG. <!-- TODO: the CheckAMG README says a manuscript is in preparation and asks to cite the repository and its Zenodo database record (https://zenodo.org/records/18407279) until then; cite the version compared, and check whether reference 8 was meant to cover CheckAMG where it is cited beside "CheckAMG tables". -->
+
+<!-- TODO: references 21 to 23 were added after the first numbering; renumber
 all references in order of first citation when converting to Word or LaTeX. -->

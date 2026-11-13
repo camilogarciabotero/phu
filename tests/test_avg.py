@@ -49,6 +49,7 @@ def test_run_avg_reuses_prediction_cache_and_passes_track_paths(monkeypatch, tmp
     )
     calls = {}
     monkeypatch.setattr(avg, "require_databases", lambda phrog: None)
+    monkeypatch.setattr(avg, "has_binary_models", lambda name: True)
     monkeypatch.setattr(avg, "get_or_predict_proteins", lambda *args, **kwargs: prediction)
     monkeypatch.setattr(avg, "write_avg_outputs", lambda *args, **kwargs: ())
     monkeypatch.setattr(
@@ -319,3 +320,32 @@ def test_a_phrog_filter_hit_vetoes_a_class_another_database_supports(
     assert result["zhou_avg_candidate"] == "true"
     assert (result["classification_status"], result["avg_class"]) == (status, avg_class)
     assert len((out / "avg-predictions.tsv").read_text().splitlines()) == (2 if avg_class else 1)
+
+
+@pytest.mark.parametrize(("ready", "phrog", "built"), [
+    (True, True, []),
+    (False, True, ["pfam", "kofam", "phrog"]),
+    (False, False, ["pfam", "kofam"]),
+])
+def test_run_avg_builds_missing_binary_models_as_a_visible_step(
+    monkeypatch, tmp_path, capsys, ready, phrog, built
+):
+    input_contigs = tmp_path / "contigs.fna"
+    input_contigs.write_text(">contig-1\nATG\n")
+    prediction = CacheArtifact(tmp_path / "proteins.faa", 1, True, "key")
+    empty = AnnotationResults({}, {}, 0, 0, 0)
+    calls = []
+    monkeypatch.setattr(avg, "require_databases", lambda phrog: None)
+    monkeypatch.setattr(avg, "has_binary_models", lambda name: ready)
+    monkeypatch.setattr(avg, "build_binary_models", calls.append)
+    monkeypatch.setattr(avg, "get_or_predict_proteins", lambda *args, **kwargs: prediction)
+    monkeypatch.setattr(avg, "write_avg_outputs", lambda *args, **kwargs: ())
+    monkeypatch.setattr(
+        avg, "annotate_avg_tracks", lambda *args, **kwargs: AvgAnnotationResults(empty, empty)
+    )
+
+    avg.run_avg(avg.AvgConfig(input_contigs=input_contigs, phrog=phrog))
+
+    assert calls == built
+    output = capsys.readouterr()
+    assert ("Building fast-loading models" in output.out + output.err) == bool(built)

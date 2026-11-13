@@ -183,6 +183,15 @@ def test_dbs_prepare_installs_the_whole_bundle(installed, fixture_pins):
     for name in ("pfam", "kofam", "dbcan", "avg"):
         assert (installed / name).is_dir()
         assert f"  {name}: " in result.stdout
+    # The model files avger searches get their binary copies; dbCAN does not.
+    for name in ("pfam", "kofam", "phrog"):
+        assert f"Building fast-loading models for {name}" in result.output
+        assert (installed / name / "profiles.h3m").is_file()
+    assert not (installed / "dbcan" / "profiles.h3m").exists()
+
+    again = CliRunner().invoke(app, ["dbs", "prepare"])
+    assert again.exit_code == 0, again.output
+    assert "Building fast-loading models" not in again.output
 
 
 def test_dbs_prepare_takes_a_bundle_path_and_old_arguments(

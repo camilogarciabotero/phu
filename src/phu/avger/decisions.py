@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from collections.abc import Mapping
 from typing import Iterable, Literal
 
 Database = Literal["pfam", "kofam", "phrog"]
@@ -233,21 +234,35 @@ def curate_candidate(
     )
 
 
+def index_positive_evidence(
+    references: Iterable[PositiveEvidence],
+) -> dict[DatabaseKey, tuple[PositiveEvidence, ...]]:
+    """Group positive references by database key, for repeated lookups."""
+    index: dict[DatabaseKey, list[PositiveEvidence]] = defaultdict(list)
+    for reference in references:
+        if reference.proposed_class in SUPPORTED_CLASSES:
+            index[database_key(reference.database, reference.accession)].append(reference)
+    return {key: tuple(values) for key, values in index.items()}
+
+
 def collect_positive_evidence(
     evidence: Iterable[AvgEvidence],
-    references: Iterable[PositiveEvidence],
+    references: Iterable[PositiveEvidence] | Mapping[DatabaseKey, tuple[PositiveEvidence, ...]],
 ) -> tuple[PositiveEvidence, ...]:
-    """Match positive references against strict evidence using composite keys."""
+    """Match positive references against strict evidence using composite keys.
+
+    ``references`` is a list of references or, when many genes are matched
+    against the same list, the index built by index_positive_evidence.
+    """
     strict_keys = {
         database_key(record.database, record.accession)
         for record in evidence
         if record.track == "strict"
     }
+    if not isinstance(references, Mapping):
+        references = index_positive_evidence(references)
     matches = [
-        reference
-        for reference in references
-        if reference.proposed_class in SUPPORTED_CLASSES
-        and database_key(reference.database, reference.accession) in strict_keys
+        reference for key in strict_keys for reference in references.get(key, ())
     ]
     return tuple(
         sorted(

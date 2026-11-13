@@ -109,10 +109,13 @@ instead. A running install re-stamps it every minute, and PHU clears one that
 a killed job left without a stamp for six hours.
 
 PHU builds a small index and per-model files for each database the first time
-it is queried, and keeps them beside the database files. The first `phu avger`
-run also writes a binary copy of each model file it searches
+it is queried, and keeps them beside the database files. `phu dbs
+prepare` also writes a binary copy of each model file `phu avger` searches
 (`profiles.h3m`, about 5 GB for Pfam, KOfam and PHROG together), which loads
-in seconds where the text file takes minutes. The copies are rebuilt
+in seconds where the text file takes minutes. Building them takes a few
+minutes and is shown as its own step. If you skip `phu dbs prepare`, the first
+`phu avger` run builds them, as a step named "Building fast-loading models
+(one time)". The copies are rebuilt
 automatically if the database or pyhmmer changes; if they cannot be written,
 PHU reads the text files instead. If the install is
 read-only for you (for example one a colleague or an administrator installed),

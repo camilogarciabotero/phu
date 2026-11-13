@@ -2164,8 +2164,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "thresholds": {
                             "max_evalue": plan.max_evalue,
                             "min_bitscore": plan.min_bitscore,
-                "user_model_min_hmm_coverage": plan.min_hmm_coverage,
-                "min_protein_coverage": plan.min_protein_coverage,
+                            "user_model_min_hmm_coverage": plan.min_hmm_coverage,
+                            "min_protein_coverage": plan.min_protein_coverage,
                             "dbcan_independent_evalue": "<1e-15",
                             "dbcan_hmm_coverage": ">0.35",
                         },

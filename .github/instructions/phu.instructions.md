@@ -158,7 +158,7 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.g
 
 - Keep runtime dependencies under `[project.dependencies]` in `pyproject.toml`.
 - Keep tooling dependencies under `[dependency-groups]` (for example `dev`, `lint`).
-- Preserve Python compatibility (`requires-python = ">=3.10"`) unless a deliberate project-wide bump is requested.
+- Preserve Python compatibility (`requires-python = ">=3.11"`) unless a deliberate project-wide bump is requested.
 - Keep CLI entry point under `[project.scripts]` as `phu = "phu.cli:main"` unless the command surface is intentionally redesigned.
 - Prefer the standard library and existing project dependencies. Add a runtime
 	dependency only when it removes substantial complexity and its packaging,

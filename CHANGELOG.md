@@ -5,6 +5,12 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Requirements
+
+- PHU now needs Python 3.11 or later. Python 3.10 reached end of life in
+  October 2026 and is no longer supported or tested; create a new environment
+  with a newer Python to upgrade.
+
 ### Databases
 
 - Databases now install automatically. The first `screen` or `avger` run that

@@ -29,6 +29,14 @@ models, which keep their curated thresholds.
 its best domain aligns to at least the fraction `F` of the protein. It applies
 to every model, in addition to the rules of that model's kind.
 
+## PHROG behavior
+
+For PHROG models queried by identifier (`phrog_216`), a hit passes only when
+its bit score is at least `60` and its best domain aligns to at least `0.5` of
+the model and at least `0.5` of the protein. `--no-use-phrog-thresholds` turns
+this off. An HMM file of your own is treated as a user-supplied model even if
+it is named like a PHROG.
+
 ## dbCAN behavior
 
 For resolved dbCAN models, a hit passes the dbCAN-specific filter only when

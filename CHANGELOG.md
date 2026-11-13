@@ -5,6 +5,13 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Avger
+
+- `phu avger` searches each database once instead of twice, which roughly
+  halves its run time. The relaxed and strict tracks used to run the same
+  search separately and differ only in the thresholds applied to the hits;
+  one search now feeds both. Results are unchanged.
+
 ### Internal
 
 - The Python modules are grouped into packages: `phu.commands` (one module per

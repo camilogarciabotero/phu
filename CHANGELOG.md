@@ -27,6 +27,12 @@ behavior in the unreleased branch and may change before a release.
 
 ### Screen
 
+- The default `--max-evalue` of `phu screen` is now `1e-6` (was `1e-5`), for
+  every kind of model. Pass `--max-evalue 1e-5` for the previous behaviour.
+- Hits to your own HMMs must now cover more than 35% of the model. The new
+  `--min-hmm-coverage` option sets the fraction; `0` turns the filter off.
+  Pfam, KOfam and dbCAN models are unaffected.
+
 - `phu screen --save-target-hmms` no longer needs `mafft`. Target proteins are
   aligned inside PHU with FAMSA through the `pyfamsa` package, which is now a
   dependency installed with PHU. Models built from several proteins can differ

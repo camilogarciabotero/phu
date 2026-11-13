@@ -15,6 +15,14 @@ and curated scientific rules; see the
 
 These rules apply to the screening workflow in `phu screen` after protein prediction and HMM search.
 
+## User-supplied models
+
+A hit to one of your own HMMs passes only when the best domain aligns to more
+than `0.35` of the model (`--min-hmm-coverage`; `0` turns the filter off) and
+its E-value is at most `1e-6` (`--max-evalue`). Hits without a usable HMM
+alignment do not pass. The coverage filter is not applied to Pfam or KOfam
+models, which keep their curated thresholds.
+
 ## dbCAN behavior
 
 For resolved dbCAN models, a hit passes the dbCAN-specific filter only when
@@ -125,4 +133,4 @@ If KO metadata says:
 
 Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in the domain table.
 
-If `--max-evalue` remains default (`1e-5`), many such hits also fail the E-value filter.
+If `--max-evalue` remains default (`1e-6`), many such hits also fail the E-value filter.

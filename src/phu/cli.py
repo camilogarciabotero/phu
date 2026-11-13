@@ -500,10 +500,18 @@ def screen(
         rich_help_panel="Search thresholds",
     ),
     max_evalue: Optional[float] = typer.Option(
-        1e-5,
+        1e-6,
         "--max-evalue",
         "-e",
         help="Maximum independent E-value to keep a domain hit",
+        rich_help_panel="Search thresholds",
+    ),
+    min_hmm_coverage: float = typer.Option(
+        0.35,
+        "--min-hmm-coverage",
+        min=0.0,
+        max=1.0,
+        help="Fraction of the model a hit must exceed, for your own HMMs only (0 turns it off)",
         rich_help_panel="Search thresholds",
     ),
     cut_ga: bool = typer.Option(
@@ -713,6 +721,7 @@ def screen(
         threads=threads,
         min_bitscore=min_bitscore,
         max_evalue=max_evalue,
+        min_hmm_coverage=min_hmm_coverage or None,
         cut_ga=cut_ga,
         use_kofam_thresholds=use_kofam_thresholds,
         top_per_contig=top_per_contig,

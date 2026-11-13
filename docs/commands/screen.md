@@ -434,7 +434,9 @@ Use `--threads` to speed things up if you have multiple CPU cores available. Thi
 
 Use `--min-protein-len-aa` to keep only proteins at or above a given amino-acid length before running HMM searches.
 
-Use `--max-evalue` to make your searches more or less strict. The default is 1e-5, which is reasonably stringent. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.
+Use `--max-evalue` to make your searches more or less strict. The default is 1e-6, which is reasonably stringent, and it applies to every kind of model: your own HMMs, Pfam, KOfam and dbCAN. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.
+
+Use `--min-hmm-coverage` to control how much of one of your own HMMs a hit must cover. The default is 0.35: a hit is kept only when its best domain aligns to more than 35% of the model, which removes matches to a small fragment of the family. It applies only to HMMs you supply; Pfam and KOfam models keep their curated score thresholds, and dbCAN models always use the same 0.35 rule. Set it to 0 to turn it off. The coverage of every hit is written to the result tables as `hmm_coverage`.
 
 `--cut-ga` is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).
 

@@ -15,11 +15,13 @@ behavior in the unreleased branch and may change before a release.
   PHROG scores can make a gene a candidate, PHROG entries support the
   physiology and regulatory classes, and the PHROG filter lists can block a
   class when a gene's PHROG hit is a core viral function. A PHROG annotation
-  needs a bit score of at least 60 over at least 40% of the model. Use
+  needs a bit score of at least 60, with at least 40% of the model and 40% of
+  the protein aligned. Use
   `--no-phrog` to skip it. Expect longer runs with PHROG on: it has more
   models than Pfam and KOfam.
 - New columns in the avger tables: `phrog_id`, `phrog_annotation`,
-  `phrog_category`, `phrog_bitscore`, `phrog_evalue`, `phrog_coverage`,
+  `phrog_category`, `phrog_bitscore`, `phrog_evalue`, `phrog_model_coverage`,
+  `phrog_protein_coverage`,
   `phrog_scoring_id`, `phrog_v_score`, `phrog_vl_score`, `phrog_scaffold_avl`,
   `phrog_scored_gene_count` and `zhou_phrog_candidate`. The output schema
   version in `.phu/run.json` is now 2.

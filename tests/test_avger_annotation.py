@@ -502,40 +502,51 @@ def _phrog_search(monkeypatch, hits, **strict):
     )
 
 
-def _phrog_hit(name, score, hmm_from, hmm_to, evalue=1e-20):
-    return FakeHit(
-        name, score=score, evalue=evalue, domains=[FakeDomain(score, alignment=FakeAlignment(hmm_from, hmm_to))]
+def _phrog_hit(name, score, *pieces, evalue=1e-20, length=100):
+    """A hit whose domains align (hmm_from, hmm_to, target_from, target_to)."""
+    hit = FakeHit(
+        name,
+        score=score,
+        evalue=evalue,
+        domains=[FakeDomain(score, alignment=FakeAlignment(*piece)) for piece in pieces],
     )
+    hit.length = length
+    return hit
 
 
-def test_phrog_strict_track_needs_bit_score_and_model_coverage(monkeypatch):
+def test_phrog_strict_track_needs_bit_score_and_both_coverages(monkeypatch):
     relaxed, strict = _phrog_search(
         monkeypatch,
         [
-            _phrog_hit("c|gene1", 60.0, 1, 40),  # exactly at both limits
-            _phrog_hit("c|gene2", 59.9, 1, 100),  # score too low
-            _phrog_hit("c|gene3", 300.0, 1, 39),  # covers 39% of the model
-            _phrog_hit("c|gene4", 300.0, 1, 100, evalue=1e-3),  # fails the E-value
+            _phrog_hit("c|gene1", 60.0, (1, 40, 1, 40)),  # exactly at every limit
+            _phrog_hit("c|gene2", 59.9, (1, 100, 1, 100)),  # score too low
+            _phrog_hit("c|gene3", 300.0, (1, 39, 1, 100)),  # 39% of the model
+            _phrog_hit("c|gene4", 300.0, (1, 100, 1, 100), length=251),  # 39.8% of the protein
+            _phrog_hit("c|gene5", 300.0, (1, 100, 1, 100), evalue=1e-3),  # fails the E-value
+            # Two domains: 25% + 25% of the model, overlapping pieces of the protein.
+            _phrog_hit("c|gene6", 300.0, (1, 25, 1, 30), (61, 85, 21, 50)),
         ],
     )
 
-    assert set(relaxed[0]) == {"c|gene1", "c|gene2", "c|gene3"}
-    assert set(strict[0]) == {"c|gene1"}
+    assert set(relaxed[0]) == {"c|gene1", "c|gene2", "c|gene3", "c|gene4", "c|gene6"}
+    assert set(strict[0]) == {"c|gene1", "c|gene6"}
     hit = strict[0]["c|gene1"]
     assert (hit.database, hit.model_id, hit.model_description) == (
         "phrog",
         "phrog_7",
         "anti-restriction",
     )
-    assert hit.model_coverage == pytest.approx(0.4)
+    assert (hit.model_coverage, hit.protein_coverage) == (pytest.approx(0.4), pytest.approx(0.4))
     assert (hit.threshold_source, hit.threshold_value) == ("phrog_score_coverage", 60.0)
     assert relaxed[0]["c|gene1"].threshold_value is None
+    split = strict[0]["c|gene6"]
+    assert (split.model_coverage, split.protein_coverage) == (pytest.approx(0.5), pytest.approx(0.5))
 
 
 def test_phrog_thresholds_are_configurable(monkeypatch):
     _, strict = _phrog_search(
         monkeypatch,
-        [_phrog_hit("c|gene1", 30.0, 1, 20)],
+        [_phrog_hit("c|gene1", 30.0, (1, 20, 1, 20))],
         phrog_min_score=25.0,
         phrog_min_coverage=0.2,
     )

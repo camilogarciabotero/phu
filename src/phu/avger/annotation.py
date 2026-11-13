@@ -44,8 +44,10 @@ class AnnotationHit:
     model_name: Optional[str] = None
     model_description: Optional[str] = None
     track: str = "strict"
-    # Fraction of the model covered by the best domain alignment.
+    # Fractions of the model and of the protein covered by the reported
+    # domain alignments together (see _coverage).
     model_coverage: Optional[float] = None
+    protein_coverage: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -59,7 +61,7 @@ class AnnotationConfig:
     pfam_missing_ga_policy: str = "skip_model"  # skip_model | include_without_ga
     kofam_require_thresholds: bool = True
     # PHROG has no curated per-model cutoffs. The strict track uses CheckAMG's
-    # fixed ones: sequence bit score and model coverage of the best domain.
+    # fixed ones: sequence bit score, and coverage of both model and protein.
     phrog_require_thresholds: bool = True
     phrog_min_score: float = 60.0
     phrog_min_coverage: float = 0.4
@@ -124,6 +126,41 @@ def _domain_metrics(hit) -> tuple[Optional[float], Optional[int], Optional[int],
                 target_to = int(alignment.target_to)
 
     return best_score, hmm_from, hmm_to, target_from, target_to
+
+
+def _covered(intervals: list[tuple[int, int]]) -> int:
+    """Positions covered by 1-based inclusive intervals, overlaps counted once."""
+    total = 0
+    end = 0
+    for start, stop in sorted(intervals):
+        if stop > end:
+            total += stop - max(start, end + 1) + 1
+            end = stop
+    return total
+
+
+def _coverage(hit, model_length: int) -> tuple[Optional[float], Optional[float]]:
+    """Model and protein fractions covered by the reported domains of a hit.
+
+    This is CheckAMG's definition: every reported domain counts, not only the
+    best one, so a protein matched in two pieces is credited for both.
+    """
+    domains = getattr(hit, "domains", [])
+    model: list[tuple[int, int]] = []
+    protein: list[tuple[int, int]] = []
+    for domain in getattr(domains, "reported", domains):
+        alignment = getattr(domain, "alignment", None)
+        if alignment is None:
+            continue
+        model.append((int(alignment.hmm_from), int(alignment.hmm_to)))
+        protein.append((int(alignment.target_from), int(alignment.target_to)))
+    if not model:
+        return None, None
+    protein_length = getattr(hit, "length", None)
+    return (
+        _covered(model) / model_length if model_length else None,
+        _covered(protein) / protein_length if protein_length else None,
+    )
 
 
 def _better_hit(candidate: AnnotationHit, current: Optional[AnnotationHit]) -> bool:
@@ -381,14 +418,13 @@ def _search_tracks(
 
                         full_score = float(hit.score)
                         domain_score, hmm_from, hmm_to, target_from, target_to = _domain_metrics(hit)
-                        model_coverage = None
+                        model_coverage = protein_coverage = None
 
                         if database == "phrog":
                             threshold_source = "phrog_score_coverage"
                             score_type = "full"
                             effective_score = full_score
-                            if hmm_from is not None and hmm_to is not None and model_length:
-                                model_coverage = (hmm_to - hmm_from + 1) / model_length
+                            model_coverage, protein_coverage = _coverage(hit, model_length)
                             threshold_value = None
                             strict_tracks = []
                             for i in tracks:
@@ -397,6 +433,8 @@ def _search_tracks(
                                     full_score < cfg.phrog_min_score
                                     or model_coverage is None
                                     or model_coverage < cfg.phrog_min_coverage
+                                    or protein_coverage is None
+                                    or protein_coverage < cfg.phrog_min_coverage
                                 ):
                                     continue
                                 strict_tracks.append(i)
@@ -460,6 +498,7 @@ def _search_tracks(
                                 model_description=model_description,
                                 track=cfgs[index].track,
                                 model_coverage=model_coverage,
+                                protein_coverage=protein_coverage,
                             )
 
                             passing[index] += 1

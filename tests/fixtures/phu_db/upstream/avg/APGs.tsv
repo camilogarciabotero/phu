@@ -4,3 +4,4 @@ K00002	1.49	2.173186268	KEGG	fixture monooxygenase
 K00003			KEGG	fixture transferase C
 PF00001.1			Pfam	phu fixture domain A
 PF00002.1	0.02	0.410000000	Pfam	phu fixture domain B
+phrog_2	0.84	1.924279286	PHROG	fixture anti-restriction protein

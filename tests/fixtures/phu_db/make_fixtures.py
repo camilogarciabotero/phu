@@ -12,12 +12,13 @@ zip members carry fixed metadata in sorted order.
 
 Only the stdlib and pyhmmer are used. The prepared files are produced by running
 each database's ``steps`` over the upstream bytes with the verb semantics of the
-phu-db 0.1.1 contract, so they double as the expected output of phu's verbs.
+phu-db contract, so they double as the expected output of phu's verbs.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import fnmatch
 import gzip
 import hashlib
@@ -32,11 +33,11 @@ import zlib
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree
 
-from pyhmmer.easel import Alphabet, TextMSA, TextSequence
+from pyhmmer.easel import Alphabet, MSAFile, TextMSA, TextSequence
 from pyhmmer.plan7 import Background, Builder
 
 HERE = Path(__file__).resolve().parent
-BUNDLE_VERSION = "phu-db-0.1.1-fixture"
+BUNDLE_VERSION = "phu-db-0.2.0-fixture"
 # The committed HMMs embed this pyhmmer/HMMER build's version line and numbers;
 # another pyhmmer writes different bytes, so the reproducibility test skips.
 PYHMMER_VERSION = "0.12.3"
@@ -73,6 +74,23 @@ DBCAN_MODELS = (
     ("CBM48.hmm", None, None, ("KVYLTGSFNNWEPIA", "KVYLAGSFNDWQPIA", "RVHLTGSFNNWEPLS")),
 )
 
+# PHROG ships alignments, not models: (PHROG number, aligned sequences).
+PHROG_ALIGNMENTS = (
+    (1, ("HCDYRKTWNAVEFIL", "HCDYRKSWNAVEFIL", "HCEYRKTWNAIEFIL")),
+    (2, ("DMPQIFEWGYSHTNR", "DMPQIFEWGYSHSNR", "DMPQVFEWGYAHTNR")),
+    (3, ("YNCQSLWDHRFMEKT", "YNCQSLWDHRFLEKT", "YNCQTLWEHRFMEKT")),
+)
+PHROG_ANNOTATION_HEADER = "phrog\tcolor\tannot\tcategory"
+# PHROG 4 has an annotation row and no alignment, like the singleton PHROGs.
+PHROG_ANNOTATION_ROWS = (
+    "1\t#fea328\tfixture integrase\tintegration and excision",
+    "2\t#838383\tfixture anti-restriction protein\tmoron, auxiliary metabolic gene and host takeover",
+    "3\t#a861e3\tfixture HTH DNA binding protein\ttranscription regulation",
+    "4\t#c9c9c9\tNA\tunknown function",
+)
+# HMMER writes the build time into each model; the bundle pins it to this date.
+PHROG_BUILD_DATE = datetime.datetime(2000, 1, 1)  # noqa: DTZ001
+
 KO_LIST_ROWS = (
     "K00001\t120.50\tdomain\tall\t0.883405\t97\t92\t560\t15\t1.26\t0.589\tfixture dehydrogenase A [EC:1.1.1.1]",
     "K00002\t-\t-\t-\t-\t1\t1\t15\t15\t0.39\t0.593\tfixture monooxygenase without threshold",
@@ -95,6 +113,9 @@ VSCORES_ROWS = (
     "PF00001.1\tphu fixture domain A\t1.25\t1.502991400\tPfam",
     "PF00002.1\tphu fixture domain B\t0.5\t0.811402377\tPfam",
     "K00003\tfixture transferase C\t\t\tKEGG",
+    "phrog_1\tfixture integrase\t10.0\t4.618738233\tPHROG",
+    "phrog_2\tfixture anti-restriction protein\t0.84\t1.924279286\tPHROG",
+    "phrog_3\tfixture HTH DNA binding protein\t0.28\t1.447158031\tPHROG",
 )
 AMG_ROWS = (
     "K00001\tKEGG\tfixture dehydrogenase A [EC:1.1.1.1]\t5.0\t5.0\tKEGG\t1.0\t\t1.0\tvery high",
@@ -109,6 +130,7 @@ APG_ROWS = (
     "K00003\t\t\tKEGG\tfixture transferase C",
     "PF00001.1\t\t\tPfam\tphu fixture domain A",
     "PF00002.1\t0.02\t0.410000000\tPfam\tphu fixture domain B",
+    "phrog_2\t0.84\t1.924279286\tPHROG\tfixture anti-restriction protein",
 )
 AREG_ROWS = (
     "K00001\t10.0\t3.148910993\tKEGG\tfixture dehydrogenase A",
@@ -116,6 +138,7 @@ AREG_ROWS = (
     "K00003\t0.01\t0.120000000\tKEGG\tfixture transferase C",
     "PF00001.1\t1.0\t1.000000000\tPfam\tphu fixture domain A",
     "PF00002.1\t\t\tPfam\tphu fixture domain B",
+    "phrog_3\t0.28\t1.447158031\tPHROG\tfixture HTH DNA binding protein",
 )
 FILTER_ROWS = {
     "AMG_filters.tsv": (
@@ -123,21 +146,21 @@ FILTER_ROWS = {
         "K00002\tKEGG\tfixture monooxygenase\tFalse\tTrue\tFalse\tFalse\tFalse",
         "K00003\tKEGG\tfixture transferase C\tTrue\tFalse\tFalse\tFalse\tFalse",
         "PF00001.1\tPfam\tphu fixture domain A\tTrue\tFalse\tFalse\tFalse\tFalse",
-        "PF00002.1\tPfam\tphu fixture domain B\tFalse\tFalse\tFalse\tTrue\tFalse",
+        "PF00002.1\tPfam\tphu fixture domain B\tFalse\tFalse\tFalse\tTrue\tFalse",        "phrog_1\tPHROG\tfixture integrase\tTrue\tFalse\tFalse\tFalse\tFalse",
     ),
     "APG_filters.tsv": (
         "K00001\tKEGG\tfixture dehydrogenase A\tFalse\tFalse\tFalse\tFalse\tTrue",
         "K00002\tKEGG\tfixture monooxygenase\tTrue\tFalse\tFalse\tFalse\tFalse",
         "K00003\tKEGG\tfixture transferase C\tFalse\tFalse\tFalse\tTrue\tFalse",
         "PF00001.1\tPfam\tphu fixture domain A\tFalse\tTrue\tFalse\tFalse\tFalse",
-        "PF00002.1\tPfam\tphu fixture domain B\tFalse\tFalse\tTrue\tFalse\tFalse",
+        "PF00002.1\tPfam\tphu fixture domain B\tFalse\tFalse\tTrue\tFalse\tFalse",        "phrog_1\tPHROG\tfixture integrase\tTrue\tFalse\tFalse\tFalse\tFalse",
     ),
     "AReG_filters.tsv": (
         "K00001\tKEGG\tfixture dehydrogenase A\tTrue\tFalse\tFalse\tFalse\tFalse",
         "K00002\tKEGG\tfixture monooxygenase\tFalse\tFalse\tFalse\tFalse\tFalse",
         "K00003\tKEGG\tfixture transferase C\tFalse\tTrue\tFalse\tFalse\tFalse",
         "PF00001.1\tPfam\tphu fixture domain A\tFalse\tFalse\tFalse\tFalse\tTrue",
-        "PF00002.1\tPfam\tphu fixture domain B\tFalse\tFalse\tTrue\tFalse\tFalse",
+        "PF00002.1\tPfam\tphu fixture domain B\tFalse\tFalse\tTrue\tFalse\tFalse",        "phrog_1\tPHROG\tfixture integrase\tTrue\tFalse\tFalse\tFalse\tFalse",
     ),
 }
 
@@ -227,6 +250,25 @@ DATABASES = {
             "tool_version_key": "phu.avg_reference_db",
         },
     },
+    "phrog": {
+        "provenance": "build",
+        "redistribution": "pin-only",
+        "upstream_version": "v4",
+        "license": "CC-BY-4.0",
+        "citation": "Terzian P, et al. NAR Genom Bioinform. 2021;3(3):lqab067.",
+        "sources": ("MSA_phrogs.tar.gz", "phrog_annot_v4.tsv"),
+        "steps": (
+            "extract:MSA_phrogs.tar.gz -> MSA_Phrogs_M50_FASTA/",
+            "build-hmm:MSA_Phrogs_M50_FASTA/*.fma -> profiles.hmm",
+            "rename:phrog_annot_v4.tsv -> annotations.tsv",
+        ),
+        "prepared_files": (("profiles.hmm", "hmm"), ("annotations.tsv", "tsv")),
+        "build": {
+            "source_repo": "https://doi.org/10.5281/zenodo.23342382",
+            "source_tag": "PHROGs v4 (annotations of 2022-06-15)",
+            "tool_version_key": "pyhmmer",
+        },
+    },
 }
 
 _XLSX_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -260,6 +302,26 @@ def _hmms(models: tuple) -> bytes:
         hmm.creation_time = None
         hmm.command_line = None
         hmm.write(output)
+    return output.getvalue()
+
+
+def _aligned_fasta(sequences: tuple[str, ...]) -> bytes:
+    return "".join(
+        f">seq{index}\n{sequence}\n" for index, sequence in enumerate(sequences, start=1)
+    ).encode()
+
+
+def _build_hmm(name: str, data: bytes) -> bytes:
+    """The build-hmm verb: one aligned FASTA -> one HMM named after its file."""
+    alphabet = Alphabet.amino()
+    with MSAFile(io.BytesIO(data), format="afa", digital=True, alphabet=alphabet) as stream:
+        msa = stream.read()
+    msa.name = name if isinstance(msa.name, str) else name.encode()
+    hmm, _, _ = Builder(alphabet).build_msa(msa, Background(alphabet))
+    hmm.command_line = None
+    hmm.creation_time = PHROG_BUILD_DATE
+    output = io.BytesIO()
+    hmm.write(output)
     return output.getvalue()
 
 
@@ -409,6 +471,16 @@ def upstream_files() -> dict[str, dict[str, bytes]]:
             **filters,
             "vscores.tsv": _table(VSCORES_HEADER, VSCORES_ROWS),
         },
+        "phrog": {
+            "MSA_phrogs.tar.gz": _tar_gz(
+                ("MSA_Phrogs_M50_FASTA",),
+                {
+                    f"MSA_Phrogs_M50_FASTA/phrog_{number}.fma": _aligned_fasta(sequences)
+                    for number, sequences in PHROG_ALIGNMENTS
+                },
+            ),
+            "phrog_annot_v4.tsv": _table(PHROG_ANNOTATION_HEADER, PHROG_ANNOTATION_ROWS),
+        },
     }
 
 
@@ -475,7 +547,7 @@ def run_steps(steps: tuple[str, ...], downloads: dict[str, bytes]) -> dict[str, 
     workdir: dict[str, bytes] = {}
     for step in steps:
         verb, source, target = re.fullmatch(
-            r"(gunzip|extract|concatenate|rename|pul-table):(\S+) -> (\S+)", step
+            r"(gunzip|extract|concatenate|build-hmm|rename|pul-table):(\S+) -> (\S+)", step
         ).groups()
         data = workdir.get(source, downloads.get(source))
         if verb == "gunzip":
@@ -485,14 +557,19 @@ def run_steps(steps: tuple[str, ...], downloads: dict[str, bytes]) -> dict[str, 
                 for member in archive.getmembers():
                     if member.isfile():
                         workdir[member.name] = archive.extractfile(member).read()
-        elif verb == "concatenate":
+        elif verb in ("concatenate", "build-hmm"):
             depth = len(PurePosixPath(source).parts)
             matches = sorted(
                 name
                 for name in workdir
                 if len(PurePosixPath(name).parts) == depth and fnmatch.fnmatchcase(name, source)
             )
-            workdir[target] = b"".join(workdir[name] for name in matches)
+            if verb == "concatenate":
+                workdir[target] = b"".join(workdir[name] for name in matches)
+            else:
+                workdir[target] = b"".join(
+                    _build_hmm(PurePosixPath(name).stem, workdir[name]) for name in matches
+                )
         elif verb == "rename":
             workdir[target] = data
         else:

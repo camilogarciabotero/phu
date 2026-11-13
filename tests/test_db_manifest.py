@@ -39,10 +39,12 @@ CONTRACT_MEMBERS = frozenset(
         "phu-db/avg/filters_amg.tsv",
         "phu-db/avg/filters_apg.tsv",
         "phu-db/avg/filters_areg.tsv",
+        "phu-db/phrog/profiles.hmm",
+        "phu-db/phrog/annotations.tsv",
     }
 )
 
-# Contract section 4: every step of the 0.1.1 bundle.
+# Contract section 4: every step of the 0.2.0 bundle.
 CONTRACT_STEPS = (
     "gunzip:Pfam-A.hmm.gz -> profiles.hmm",
     "extract:profiles.tar.gz -> profiles/",
@@ -58,6 +60,9 @@ CONTRACT_STEPS = (
     "rename:AMG_filters.tsv -> filters_amg.tsv",
     "rename:APG_filters.tsv -> filters_apg.tsv",
     "rename:AReG_filters.tsv -> filters_areg.tsv",
+    "extract:MSA_phrogs.tar.gz -> MSA_Phrogs_M50_FASTA/",
+    "build-hmm:MSA_Phrogs_M50_FASTA/*.fma -> profiles.hmm",
+    "rename:phrog_annot_v4.tsv -> annotations.tsv",
 )
 
 # First lines of the published 0.1.0 bundle (Zenodo 22928399). The three
@@ -100,9 +105,9 @@ def _loads(raw: dict):
 def test_fixture_manifest_loads():
     manifest = load_manifest(FIXTURE_MANIFEST)
 
-    assert manifest.bundle_version == "phu-db-0.1.1-fixture"
+    assert manifest.bundle_version == "phu-db-0.2.0-fixture"
     assert manifest.layout_version == 1
-    assert list(manifest.databases) == ["pfam", "kofam", "dbcan", "avg"]
+    assert list(manifest.databases) == ["pfam", "kofam", "dbcan", "avg", "phrog"]
     assert manifest.expected_members() == CONTRACT_MEMBERS
     assert MANIFEST_MEMBER in manifest.expected_members()
     assert manifest.member_path("kofam", "ko_list.tsv") == "phu-db/kofam/ko_list.tsv"
@@ -473,7 +478,11 @@ def test_fixture_counts_follow_contract_semantics():
     assert counts["dbcan/pul_rules.tsv"] == 1 + 3
     for path in REAL_HEADERS:
         if path.startswith("avg/"):
-            assert counts[path] == 1 + 5
+            rows = {"avg/v_scores.tsv": 8, "avg/positive_amg.tsv": 5}.get(path, 6)
+            assert counts[path] == 1 + rows
+    assert counts["phrog/profiles.hmm"] == 3
+    # One annotation row has no model, like the singleton PHROGs upstream.
+    assert counts["phrog/annotations.tsv"] == 1 + 4
 
 
 @pytest.mark.parametrize("path", sorted(REAL_HEADERS))

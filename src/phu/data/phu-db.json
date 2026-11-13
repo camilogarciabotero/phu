@@ -1,9 +1,9 @@
 {
-  "bundle_version": "phu-db-0.1.1",
+  "bundle_version": "phu-db-0.2.0",
   "layout_version": 1,
   "generator": {
     "name": "phu-db-prep",
-    "version": "0.1.1"
+    "version": "0.2.0"
   },
   "bundle": {
     "name": "phu-db.tar.gz",
@@ -277,6 +277,58 @@
         "source_repo": "https://github.com/AnantharamanLab/CheckAMG",
         "source_tag": "v1.1.1",
         "tool_version_key": "phu.avg_reference_db"
+      }
+    },
+    "phrog": {
+      "provenance": "build",
+      "redistribution": "pin-only",
+      "upstream_version": "v4",
+      "license": "CC-BY-4.0",
+      "citation": "Terzian P, et al. NAR Genom Bioinform. 2021;3(3):lqab067.",
+      "layout_dir": "phrog",
+      "sources": [
+        {
+          "name": "MSA_phrogs.tar.gz",
+          "url": "https://zenodo.org/records/23342382/files/MSA_phrogs.tar.gz",
+          "sha256": "1ca216aa830ebb94c925d2733c14d5870d3922bbe7a6eddffc66122cfc945923",
+          "bytes": 54225574
+        },
+        {
+          "name": "phrog_annot_v4.tsv",
+          "url": "https://zenodo.org/records/23342382/files/phrog_annot_v4.tsv",
+          "sha256": "502f96101597c21133bcce5711803e0b95e0c162cd4e86425c352549bd95e8c2",
+          "bytes": 3831481
+        }
+      ],
+      "steps": [
+        "extract:MSA_phrogs.tar.gz -> MSA_Phrogs_M50_FASTA/",
+        "build-hmm:MSA_Phrogs_M50_FASTA/*.fma -> profiles.hmm",
+        "rename:phrog_annot_v4.tsv -> annotations.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 3291465588,
+          "sha256": "71c08168d8fc987027febfb5994dfbcaef6b76f0edae07c3318bcfe9cc5d54f4",
+          "count": 38880
+        },
+        {
+          "path": "annotations.tsv",
+          "format": "tsv",
+          "bytes": 3831481,
+          "sha256": "502f96101597c21133bcce5711803e0b95e0c162cd4e86425c352549bd95e8c2",
+          "count": 109405
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": {
+        "source_repo": "https://doi.org/10.5281/zenodo.23342382",
+        "source_tag": "PHROGs v4 (annotations of 2022-06-15)",
+        "tool_version_key": "pyhmmer"
       }
     }
   }

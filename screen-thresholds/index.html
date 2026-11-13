@@ -597,6 +597,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phrog-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PHROG behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#dbcan-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -855,6 +866,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phrog-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PHROG behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#dbcan-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1005,6 +1027,12 @@ models, which keep their curated thresholds.</p>
 <p><code>--min-protein-coverage F</code> is off by default. When set, a hit passes only if
 its best domain aligns to at least the fraction <code>F</code> of the protein. It applies
 to every model, in addition to the rules of that model's kind.</p>
+<h2 id="phrog-behavior">PHROG behavior<a class="headerlink" href="#phrog-behavior" title="Permanent link">&para;</a></h2>
+<p>For PHROG models queried by identifier (<code>phrog_216</code>), a hit passes only when
+its bit score is at least <code>60</code> and its best domain aligns to at least <code>0.5</code> of
+the model and at least <code>0.5</code> of the protein. <code>--no-use-phrog-thresholds</code> turns
+this off. An HMM file of your own is treated as a user-supplied model even if
+it is named like a PHROG.</p>
 <h2 id="dbcan-behavior">dbCAN behavior<a class="headerlink" href="#dbcan-behavior" title="Permanent link">&para;</a></h2>
 <p>For resolved dbCAN models, a hit passes the dbCAN-specific filter only when
 the independent E-value is strictly less than <code>1e-15</code> and the aligned HMM

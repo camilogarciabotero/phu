@@ -1016,7 +1016,7 @@
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>HMMS...<span class="o">]</span>
 </code></pre></div>
-<p><code>[HMMS...]</code> accepts local HMM paths, PFAM/KOfam identifiers, dbCAN families
+<p><code>[HMMS...]</code> accepts local HMM paths, PFAM/KOfam/PHROG identifiers, dbCAN families
 (for example <code>GH128</code> or <code>CBM89</code>), and one dbCAN PUL identifier such as
 <code>PUL0621</code>.</p>
 <p><strong>Example:</strong>
@@ -1182,7 +1182,7 @@ download). For install location, offline use and disk needs, see
 <tr>
 <td><code>.phu/query.json</code></td>
 <td>always, except <code>--all-cazymes</code> / <code>--all-puls</code></td>
-<td>Original query, expansion and matching rule; for Pfam, KOfam and dbCAN queries also the <code>phu-db</code> bundle version and database file hashes</td>
+<td>Original query, expansion and matching rule; for Pfam, KOfam, PHROG and dbCAN queries also the <code>phu-db</code> bundle version (and for PHROG the function and category of each family) and database file hashes</td>
 </tr>
 <tr>
 <td><code>.phu/run.json</code></td>
@@ -1448,6 +1448,7 @@ a warning is printed.</p>
 <p>Use <code>--max-evalue</code> to make your searches more or less strict. The default is 1e-6, which is reasonably stringent, and it applies to every kind of model: your own HMMs, Pfam, KOfam and dbCAN. Lower values (like 1e-10) are more strict, while higher values (like 1e-3) are more permissive.</p>
 <p>Use <code>--min-hmm-coverage</code> to control how much of one of your own HMMs a hit must cover. The default is 0.35: a hit is kept only when its best domain aligns to more than 35% of the model, which removes matches to a small fragment of the family. It applies only to HMMs you supply; Pfam and KOfam models keep their curated score thresholds, and dbCAN models always use the same 0.35 rule. Set it to 0 to turn it off. The coverage of every hit is written to the result tables as <code>hmm_coverage</code>.</p>
 <p>Use <code>--min-protein-coverage</code> to control how much of the protein a hit must cover. It is off by default. With <code>--min-protein-coverage 0.5</code>, a hit is kept only when its best domain aligns to at least half of the protein, which rejects a small domain found inside a long protein. Unlike <code>--min-hmm-coverage</code>, it applies to every kind of model, including Pfam, KOfam and dbCAN, so expect it to remove single-domain matches in multi-domain proteins.</p>
+<p>PHROG families are queried by identifier, for example <code>phu screen phrog_216 -i contigs.fna</code>, and can be mixed with other identifiers and your own HMMs. Models exist for <code>phrog_1</code> to <code>phrog_38880</code>. PHROG has no curated per-model cutoffs, so a PHROG hit must score at least 60 bits and align to at least half of both the model and the protein, the rule <code>phu avger</code> uses (here measured on the best domain). <code>--no-use-phrog-thresholds</code> drops that rule and leaves only <code>--max-evalue</code> and <code>--min-bitscore</code>. The function and category of each queried PHROG are printed and recorded in <code>.phu/query.json</code>.</p>
 <p><code>--cut-ga</code> is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).</p>
 <p>Use <code>--no-cut-ga</code> if you want to disable GA filtering and rely only on explicit score/E-value filters.</p>
 <p>Use <code>--save-target-proteins</code> if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).</p>

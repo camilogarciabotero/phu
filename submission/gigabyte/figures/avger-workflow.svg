@@ -1,0 +1,261 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" width="1400" height="1000" font-family="Liberation Sans, Arial, Helvetica, DejaVu Sans, sans-serif">
+<defs>
+<marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#52606d"/></marker>
+<marker id="head-cand" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d35400"/></marker>
+<marker id="head-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/></marker>
+</defs>
+<rect x="0" y="0" width="1400" height="1000" rx="0" fill="#ffffff" stroke="none" stroke-width="0"/>
+<text x="700.0" y="40" font-size="21" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">phu avger: finding auxiliary viral gene (AVG) candidates in viral contigs</text>
+<rect x="30" y="64" width="655" height="330" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="54" cy="90" r="13" fill="#1f2933"/>
+<text x="54" y="95" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">A</text>
+<text x="76" y="95" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Gene prediction</text>
+<text x="58" y="130" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Trusted viral contig (FASTA)</text>
+<line x1="58" y1="163" x2="658" y2="163" stroke="#9aa5b1" stroke-width="3"/>
+<polygon points="70,150 138,150 148,163.0 138,176 70,176" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="106.5" y="167.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g1</text>
+<polygon points="156,150 216,150 226,163.0 216,176 156,176" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="188.5" y="167.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g2</text>
+<polygon points="234,150 310,150 320,163.0 310,176 234,176" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="274.5" y="167.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g3</text>
+<polygon points="328,150 392,150 402,163.0 392,176 328,176" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="362.5" y="167.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g4</text>
+<polygon points="410,150 482,150 492,163.0 482,176 410,176" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="448.5" y="167.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g5</text>
+<polygon points="500,150 558,150 568,163.0 558,176 500,176" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="531.5" y="167.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g6</text>
+<polygon points="576,150 646,150 656,163.0 646,176 576,176" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="613.5" y="167.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g7</text>
+<line x1="358" y1="188" x2="358" y2="220" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="148" y="224" width="420" height="44" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="358" y="243" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">pyrodigal-gv, meta mode</text>
+<text x="358" y="260" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">translation table chosen for each contig</text>
+<line x1="358" y1="270" x2="358" y2="302" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="70" y="306" width="78" height="24" rx="12" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="109.0" y="322" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p1</text>
+<rect x="156" y="306" width="70" height="24" rx="12" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="191.0" y="322" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p2</text>
+<rect x="234" y="306" width="86" height="24" rx="12" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="277.0" y="322" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p3</text>
+<rect x="328" y="306" width="74" height="24" rx="12" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="365.0" y="322" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p4</text>
+<rect x="410" y="306" width="82" height="24" rx="12" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="451.0" y="322" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p5</text>
+<rect x="500" y="306" width="68" height="24" rx="12" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="534.0" y="322" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p6</text>
+<rect x="576" y="306" width="80" height="24" rx="12" fill="#ffffff" stroke="#52606d" stroke-width="1.2"/>
+<text x="616.0" y="322" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">p7</text>
+<text x="358" y="356" font-size="12" font-weight="normal" font-style="normal" text-anchor="middle" fill="#1f2933">Translated proteins (at least 30 aa by default)</text>
+<text x="358" y="374" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">Predictions are cached and shared with phu screen and phu jack</text>
+<rect x="715" y="64" width="655" height="330" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="739" cy="90" r="13" fill="#1f2933"/>
+<text x="739" y="95" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">B</text>
+<text x="761" y="95" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Two HMM annotation tracks (PyHMMER)</text>
+<rect x="1115" y="80" width="62" height="20" rx="10" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="1146.0" y="94.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pfam</text>
+<rect x="1183" y="80" width="68" height="20" rx="10" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="1217.0" y="94.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">KOfam</text>
+<rect x="1257" y="80" width="72" height="20" rx="10" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1293.0" y="94.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PHROG</text>
+<text x="743" y="132" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Relaxed track</text>
+<text x="853" y="132" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">E-value ≤ 1e-5; best hit per protein in each database</text>
+<line x1="743" y1="175" x2="1343" y2="175" stroke="#9aa5b1" stroke-width="3"/>
+<rect x="757" y="144" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="768" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
+<rect x="781" y="144" width="22" height="13" rx="3" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="792" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">KO</text>
+<rect x="805" y="144" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="816" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="755,162 823,162 833,175.0 823,188 755,188" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="791.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g1</text>
+<rect x="843" y="144" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="854" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="841,162 901,162 911,175.0 901,188 841,188" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="873.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g2</text>
+<rect x="921" y="144" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="932" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
+<rect x="945" y="144" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="956" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="919,162 995,162 1005,175.0 995,188 919,188" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="959.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g3</text>
+<rect x="1015" y="144" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="1026" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
+<rect x="1039" y="144" width="22" height="13" rx="3" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="1050" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">KO</text>
+<polygon points="1013,162 1077,162 1087,175.0 1077,188 1013,188" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1047.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g4</text>
+<rect x="1097" y="144" width="22" height="13" rx="3" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="1108" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">KO</text>
+<rect x="1121" y="144" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1132" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="1095,162 1167,162 1177,175.0 1167,188 1095,188" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1133.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g5</text>
+<polygon points="1185,162 1243,162 1253,175.0 1243,188 1185,188" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1216.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g6</text>
+<rect x="1263" y="144" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="1274" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
+<rect x="1287" y="144" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1298" y="154" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="1261,162 1331,162 1341,175.0 1331,188 1261,188" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1298.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g7</text>
+<text x="743" y="210" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#52606d">→ feeds V / VL scoring (panel C)</text>
+<text x="743" y="244" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Strict track</text>
+<text x="835" y="244" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Pfam GA cutoffs · KOfam KO thresholds · PHROG bit score ≥ 60, coverage ≥ 0.4</text>
+<line x1="743" y1="287" x2="1343" y2="287" stroke="#9aa5b1" stroke-width="3"/>
+<rect x="757" y="256" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="768" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
+<rect x="781" y="256" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="792" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="755,274 823,274 833,287.0 823,300 755,300" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="791.5" y="291.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g1</text>
+<rect x="843" y="256" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="854" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="841,274 901,274 911,287.0 901,300 841,300" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="873.5" y="291.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g2</text>
+<rect x="921" y="256" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="932" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
+<polygon points="919,274 995,274 1005,287.0 995,300 919,300" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="959.5" y="291.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g3</text>
+<rect x="1015" y="256" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="1026" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
+<rect x="1039" y="256" width="22" height="13" rx="3" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="1050" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">KO</text>
+<polygon points="1013,274 1077,274 1087,287.0 1077,300 1013,300" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1047.5" y="291.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g4</text>
+<rect x="1097" y="256" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1108" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="1095,274 1167,274 1177,287.0 1167,300 1095,300" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1133.5" y="291.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g5</text>
+<polygon points="1185,274 1243,274 1253,287.0 1243,300 1185,300" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1216.5" y="291.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g6</text>
+<rect x="1263" y="256" width="22" height="13" rx="3" fill="#8e44ad" stroke="#8e44ad" stroke-width="0"/>
+<text x="1274" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">PH</text>
+<polygon points="1261,274 1331,274 1341,287.0 1331,300 1261,300" fill="#cbd5e0" stroke="#52606d" stroke-width="1.2"/>
+<text x="1298.5" y="291.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g7</text>
+<text x="743" y="322" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#52606d">→ feeds functional calls and reference matching (panel D)</text>
+<text x="1043" y="366" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">Pfam, KOfam and PHROG are scored and averaged independently; values are never mixed</text>
+<rect x="30" y="414" width="655" height="440" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="54" cy="440" r="13" fill="#1f2933"/>
+<text x="54" y="445" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">C</text>
+<text x="76" y="445" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Viral-likeness scores (V-Score-Search tables)</text>
+<text x="58" y="480" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Relaxed-track hits are looked up in the V / VL table, separately for each database</text>
+<text x="58" y="510" font-size="11" font-weight="bold" font-style="normal" text-anchor="start" fill="#52606d">VL</text>
+<text x="58" y="572" font-size="11" font-weight="bold" font-style="normal" text-anchor="start" fill="#52606d">V</text>
+<line x1="78" y1="535" x2="658" y2="535" stroke="#9aa5b1" stroke-width="3"/>
+<text x="126.0" y="510" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">4.6</text>
+<polygon points="90,522 158,522 168,535.0 158,548 90,548" fill="#8a66bd" stroke="#52606d" stroke-width="1.2"/>
+<text x="126.5" y="539.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g1</text>
+<text x="126.0" y="572" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">10</text>
+<text x="208.0" y="510" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">5.0</text>
+<polygon points="176,522 236,522 246,535.0 236,548 176,548" fill="#6b44a8" stroke="#52606d" stroke-width="1.2"/>
+<text x="208.5" y="539.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g2</text>
+<text x="208.0" y="572" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">10</text>
+<text x="294.0" y="510" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">4.2</text>
+<polygon points="254,522 330,522 340,535.0 330,548 254,548" fill="#a88bcd" stroke="#52606d" stroke-width="1.2"/>
+<text x="294.5" y="539.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g3</text>
+<text x="294.0" y="572" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">9.6</text>
+<text x="382.0" y="510" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#d35400">1.1</text>
+<polygon points="348,522 412,522 422,535.0 412,548 348,548" fill="#fdf2e9" stroke="#d35400" stroke-width="2.6"/>
+<text x="382.5" y="539.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g4</text>
+<text x="382.0" y="572" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#d35400">0.4</text>
+<text x="468.0" y="510" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">4.8</text>
+<polygon points="430,522 502,522 512,535.0 502,548 430,548" fill="#7b55b3" stroke="#52606d" stroke-width="1.2"/>
+<text x="468.5" y="539.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g5</text>
+<text x="468.0" y="572" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">10</text>
+<text x="551.0" y="510" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">3.9</text>
+<polygon points="520,522 578,522 588,535.0 578,548 520,548" fill="#b9a3d6" stroke="#52606d" stroke-width="1.2"/>
+<text x="551.5" y="539.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g6</text>
+<text x="551.0" y="572" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">8.7</text>
+<text x="633.0" y="510" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">4.4</text>
+<polygon points="596,522 666,522 676,535.0 666,548 596,548" fill="#9a79c6" stroke="#52606d" stroke-width="1.2"/>
+<text x="633.5" y="539.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">g7</text>
+<text x="633.0" y="572" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">10</text>
+<path d="M90,586 v8 H330 v-8" fill="none" stroke="#8e44ad" stroke-width="1.4"/>
+<text x="210.0" y="610" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#8e44ad">virus-like neighbours</text>
+<path d="M440,586 v8 H676 v-8" fill="none" stroke="#8e44ad" stroke-width="1.4"/>
+<text x="558.0" y="610" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#8e44ad">virus-like neighbours</text>
+<text x="382.0" y="596" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#d35400">low V, low VL</text>
+<text x="382.0" y="610" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#d35400">in a viral context</text>
+<rect x="58" y="632" width="600" height="62" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="358" y="656" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">contig AVL (per database) = mean VL of the contig's scored genes</text>
+<text x="358" y="678" font-size="12" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">here: (4.6 + 5.0 + 4.2 + 1.1 + 4.8 + 3.9 + 4.4) / 7 = 4.0</text>
+<text x="58" y="726" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">V-score</text>
+<text x="130" y="726" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">how exclusively a protein family occurs in viruses (10 = virus only)</text>
+<text x="58" y="752" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">VL-score</text>
+<text x="130" y="752" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">V-score weighted by how often the family is found in viruses</text>
+<text x="58" y="778" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">AVL</text>
+<text x="130" y="778" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">average VL across a contig, per database: the viral context of a gene</text>
+<text x="58" y="818" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">VL shading:</text>
+<rect x="130" y="806" width="24" height="14" rx="2" fill="#b9a3d6" stroke="none" stroke-width="0"/>
+<rect x="156" y="806" width="24" height="14" rx="2" fill="#a88bcd" stroke="none" stroke-width="0"/>
+<rect x="182" y="806" width="24" height="14" rx="2" fill="#9a79c6" stroke="none" stroke-width="0"/>
+<rect x="208" y="806" width="24" height="14" rx="2" fill="#8a66bd" stroke="none" stroke-width="0"/>
+<rect x="234" y="806" width="24" height="14" rx="2" fill="#7b55b3" stroke="none" stroke-width="0"/>
+<rect x="260" y="806" width="24" height="14" rx="2" fill="#6b44a8" stroke="none" stroke-width="0"/>
+<text x="130" y="834" font-size="10" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">lower</text>
+<text x="284" y="834" font-size="10" font-weight="normal" font-style="normal" text-anchor="end" fill="#52606d">higher</text>
+<rect x="330" y="806" width="24" height="14" rx="2" fill="#fdf2e9" stroke="#d35400" stroke-width="1.6"/>
+<text x="362" y="818" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">below the gene cutoff</text>
+<rect x="715" y="414" width="655" height="440" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="739" cy="440" r="13" fill="#1f2933"/>
+<text x="739" y="445" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">D</text>
+<text x="761" y="445" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Candidate test and curation</text>
+<rect x="743" y="468" width="330" height="106" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="757" y="490" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Candidate test, per database</text>
+<text x="757" y="514" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">contig AVL</text>
+<text x="845" y="514" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">&gt; 3</text>
+<text x="757" y="534" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">gene VL</text>
+<text x="845" y="534" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">&lt; 3</text>
+<text x="757" y="554" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">gene V</text>
+<text x="845" y="554" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">&lt; 10</text>
+<text x="911" y="514" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Pfam, KOfam and</text>
+<text x="911" y="530" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">PHROG are each</text>
+<text x="911" y="546" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">tested on their own</text>
+<line x1="1075" y1="520" x2="1183" y2="520" stroke="#c0392b" stroke-width="1.6" marker-end="url(#head-warn)"/>
+<text x="1129" y="512" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#c0392b">fails in all</text>
+<rect x="1187" y="506" width="150" height="28" rx="14" fill="#ffffff" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="5,3"/>
+<text x="1262" y="525" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#c0392b">not_candidate</text>
+<line x1="825" y1="576" x2="825" y2="600" stroke="#d35400" stroke-width="1.6" marker-end="url(#head-cand)"/>
+<text x="837" y="593" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#d35400">passes in at least one database</text>
+<rect x="743" y="604" width="164" height="28" rx="10" fill="#d35400" stroke="#d35400" stroke-width="0"/>
+<text x="825.0" y="622.0" font-size="13" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">AVG candidate</text>
+<line x1="825" y1="634" x2="825" y2="650" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="743" y="654" width="600" height="42" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="763" cy="675" r="11" fill="#1f2933"/>
+<text x="763" y="679" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">1</text>
+<text x="783" y="672" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Match strict hits to the CheckAMG positive lists</text>
+<text x="783" y="688" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#8e44ad">AMG: Pfam, KOfam · APG and AReG: Pfam, KOfam, PHROG</text>
+<rect x="743" y="704" width="600" height="42" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="763" cy="725" r="11" fill="#1f2933"/>
+<text x="763" y="729" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">2</text>
+<text x="783" y="722" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">AMG weight ≥ 0.6 (--min-amg-weight)</text>
+<text x="783" y="738" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">applies to AMG evidence only</text>
+<rect x="743" y="754" width="600" height="42" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="763" cy="775" r="11" fill="#1f2933"/>
+<text x="763" y="779" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">3</text>
+<text x="783" y="772" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Class filters (--filter-mode standard | strict | none)</text>
+<text x="783" y="788" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#8e44ad">an essential or structural hit in any database, PHROG included, removes the class</text>
+<rect x="743" y="804" width="600" height="40" rx="6" fill="#ffffff" stroke="#1f2933" stroke-width="1.4"/>
+<text x="755" y="821" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Final status</text>
+<text x="755" y="837" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#2e8b57">classified: putative_amg · putative_apg · putative_areg</text>
+<text x="1071" y="821" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">class_conflict · filtered · below_amg_weight</text>
+<text x="1071" y="837" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">unclassified_candidate · not_candidate</text>
+<text x="30" y="904" font-size="14" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Outputs</text>
+<rect x="120" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="240" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">gene-annotations.tsv</text>
+<text x="240" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">every predicted gene</text>
+<rect x="372" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="492" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-candidates.tsv</text>
+<text x="492" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">genes passing the test</text>
+<rect x="624" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="744" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-predictions.tsv</text>
+<text x="744" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">one final named class</text>
+<rect x="876" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="996" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-evidence.tsv</text>
+<text x="996" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">hits and reference matches</text>
+<rect x="1128" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="1248" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">.phu/run.json</text>
+<text x="1248" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">parameters and database versions</text>
+<text x="700.0" y="956" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">All calls are computational candidates for prioritisation, not confirmed auxiliary genes.</text>
+<text x="700.0" y="976" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">Scores: Zhou et al. 2026 · reference tables: CheckAMG · terminology: Martin et al. 2025 · gene values shown are illustrative</text>
+</svg>

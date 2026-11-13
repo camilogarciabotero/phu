@@ -88,7 +88,7 @@ vclust [10]. `phu avger` ranks candidate auxiliary viral genes on trusted
 viral contigs from Pfam and KOfam annotations, V- and VL-scores [8] and the
 reference tables curated by the CheckAMG project; it keeps annotation
 evidence, virus-association evidence and class assignment in separate tables
-and reports candidates for prioritisation, not confirmed auxiliary genes.
+and reports candidates for prioritisation, not confirmed auxiliary genes. Figure 1 summarises this workflow.
 `phu normalize-lineage` standardises lineage strings produced by
 gene-sharing-network classifiers.
 
@@ -115,6 +115,19 @@ same contigs with different models are the common pattern. Each output folder
 contains JSON manifests with the query, the parameters that determine the
 result, the database version and file hashes, and the software version. A
 verbose mode prints one line per tool invocation.
+
+<!-- Figure 1: figures/avger-workflow.pdf (source: figures/avger-workflow.svg,
+drawn by figures/make_avger_figure.py). TODO: it shows PHROG as a third
+database, which is planned and not yet in a release; revise when it lands. -->
+
+**Figure 1. The `phu avger` workflow.** (A) Genes are predicted on trusted
+viral contigs. (B) Proteins are searched against Pfam, KOfam and PHROG in a
+relaxed track used for scoring and a strict track used for functional calls.
+(C) Each hit is given the V- and VL-score of its family, and VL-scores are
+averaged per contig and per database (AVL). (D) A gene with low V and VL on a
+contig with high AVL is a candidate; candidates are matched to curated
+positive lists, filtered, and given a final status. Gene values are
+illustrative.
 
 **Testing.** An automated test suite (more than 700 tests) runs on Python
 3.11, 3.12 and 3.13 in continuous integration, which also builds the package
@@ -172,8 +185,10 @@ Anthropic's Claude models used through the Claude Code agent [20] assisted
 with writing and refactoring source code, writing tests, and drafting
 documentation; commits made with such assistance carry co-author trailers in
 the public repository history. A first draft of this manuscript was produced
-with Claude and revised by the authors. No figure was created or modified
-with AI tools. The authors defined the scope of the software, made its design
+with Claude and revised by the authors. Figure 1 was redrawn as a vector graphic by a
+script written with Claude, from a diagram designed by the authors. <!-- TODO:
+GigaByte restricts AI-made figures; confirm with the journal that a schematic
+drawn this way is acceptable, or redraw it by hand from the SVG. --> The authors defined the scope of the software, made its design
 decisions, reviewed and tested all AI-assisted contributions, and are fully
 accountable for the software and the manuscript. <!-- TODO: confirm. -->
 

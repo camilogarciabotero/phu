@@ -32,6 +32,10 @@ behavior in the unreleased branch and may change before a release.
 - Hits to your own HMMs must now cover more than 35% of the model. The new
   `--min-hmm-coverage` option sets the fraction; `0` turns the filter off.
   Pfam, KOfam and dbCAN models are unaffected.
+- New `phu screen --min-protein-coverage F` option, off by default: keep a
+  hit only when it aligns to at least the fraction `F` of the protein. It
+  applies to every kind of model. The CAZyme hit tables gain a
+  `protein_coverage` column.
 
 - `phu screen --save-target-hmms` no longer needs `mafft`. Target proteins are
   aligned inside PHU with FAMSA through the `pyfamsa` package, which is now a

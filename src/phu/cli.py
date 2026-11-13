@@ -514,6 +514,14 @@ def screen(
         help="Fraction of the model a hit must exceed, for your own HMMs only (0 turns it off)",
         rich_help_panel="Search thresholds",
     ),
+    min_protein_coverage: Optional[float] = typer.Option(
+        None,
+        "--min-protein-coverage",
+        min=0.0,
+        max=1.0,
+        help="Minimum fraction of the protein a hit must align, for every model (off by default)",
+        rich_help_panel="Search thresholds",
+    ),
     cut_ga: bool = typer.Option(
         True,
         "--cut-ga/--no-cut-ga",
@@ -722,6 +730,7 @@ def screen(
         min_bitscore=min_bitscore,
         max_evalue=max_evalue,
         min_hmm_coverage=min_hmm_coverage or None,
+        min_protein_coverage=min_protein_coverage or None,
         cut_ga=cut_ga,
         use_kofam_thresholds=use_kofam_thresholds,
         top_per_contig=top_per_contig,

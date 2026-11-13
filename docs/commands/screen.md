@@ -438,6 +438,8 @@ Use `--max-evalue` to make your searches more or less strict. The default is 1e-
 
 Use `--min-hmm-coverage` to control how much of one of your own HMMs a hit must cover. The default is 0.35: a hit is kept only when its best domain aligns to more than 35% of the model, which removes matches to a small fragment of the family. It applies only to HMMs you supply; Pfam and KOfam models keep their curated score thresholds, and dbCAN models always use the same 0.35 rule. Set it to 0 to turn it off. The coverage of every hit is written to the result tables as `hmm_coverage`.
 
+Use `--min-protein-coverage` to control how much of the protein a hit must cover. It is off by default. With `--min-protein-coverage 0.5`, a hit is kept only when its best domain aligns to at least half of the protein, which rejects a small domain found inside a long protein. Unlike `--min-hmm-coverage`, it applies to every kind of model, including Pfam, KOfam and dbCAN, so expect it to remove single-domain matches in multi-domain proteins.
+
 `--cut-ga` is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).
 
 Use `--no-cut-ga` if you want to disable GA filtering and rely only on explicit score/E-value filters.

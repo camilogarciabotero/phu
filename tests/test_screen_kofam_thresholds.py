@@ -312,3 +312,51 @@ def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
     assert len(retry_lines) == 1
     assert "pyhmmer.hmmsearch" in retry_lines[0]
     assert "bit_cutoffs=none" in retry_lines[0]
+
+
+def _coverage_hit(model, coverage, evalue=1e-20):
+    return screen.Hit(
+        contig=f"{model}-{coverage}",
+        prot_id=f"{model}-{coverage}|gene1",
+        model=model,
+        bitscore=100.0,
+        domain_bitscore=100.0,
+        evalue=evalue,
+        domain_i_evalue=1e-30,
+        hmm_coverage=coverage,
+    )
+
+
+def test_user_models_need_more_than_the_minimum_hmm_coverage():
+    hits = [
+        _coverage_hit("my_family", 0.36),
+        _coverage_hit("my_family", 0.35),  # the boundary is excluded
+        _coverage_hit("my_family", None),  # no usable alignment
+        _coverage_hit("PF00001", 0.10),  # Pfam keeps its own thresholds
+        _coverage_hit("K00001", 0.10),  # so does KOfam
+    ]
+    ko = {"K00001": KOFamMetadata("K00001", 50.0, "full", "trim", "demo")}
+
+    def kept(**kwargs):
+        return [
+            (hit.model, hit.hmm_coverage)
+            for hit in screen._filter_qualifying_hits(
+                hits, None, 1e-6, ko, True, database_model_ids=("PF00001", "K00001"), **kwargs
+            )
+        ]
+
+    assert kept(min_hmm_coverage=0.35) == [("my_family", 0.36), ("PF00001", 0.1), ("K00001", 0.1)]
+    assert len(kept(min_hmm_coverage=None)) == 5
+
+
+def test_screen_defaults_to_evalue_1e6_and_user_coverage_035(tmp_path: Path):
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c\nATG\n")
+    hmm = tmp_path / "my_family.hmm"
+    hmm.write_text("")
+
+    cfg = screen.ScreenConfig(input_contigs=contigs, hmms=[hmm])
+
+    assert (cfg.max_evalue, cfg.min_hmm_coverage) == (1e-6, 0.35)
+    plan = cfg.plan()
+    assert (plan.max_evalue, plan.min_hmm_coverage) == (1e-6, 0.35)

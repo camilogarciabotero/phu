@@ -975,7 +975,9 @@ class ScreenConfig:
     mode: str = "meta"  # pyrodigal mode: meta|single
     threads: int = 1
     min_bitscore: Optional[float] = None
-    max_evalue: Optional[float] = 1e-5
+    max_evalue: Optional[float] = 1e-6
+    # Model coverage a hit to a user-supplied model must exceed (None: no filter).
+    min_hmm_coverage: Optional[float] = 0.35
     cut_ga: bool = True
     use_kofam_thresholds: bool = True
     top_per_contig: int = 1
@@ -1043,6 +1045,7 @@ class ScreenConfig:
             threads=effective_threads,
             min_bitscore=self.min_bitscore,
             max_evalue=self.max_evalue,
+            min_hmm_coverage=self.min_hmm_coverage,
             cut_ga=self.cut_ga,
             use_kofam_thresholds=self.use_kofam_thresholds,
             top_per_contig=self.top_per_contig,
@@ -1076,6 +1079,7 @@ class ScreenPlan:
     threads: int
     min_bitscore: Optional[float]
     max_evalue: Optional[float]
+    min_hmm_coverage: Optional[float]
     cut_ga: bool
     use_kofam_thresholds: bool
     top_per_contig: int
@@ -1546,9 +1550,18 @@ def _filter_qualifying_hits(
     kofam_metadata_by_model: Optional[dict[str, KOFamMetadata]] = None,
     use_kofam_thresholds: bool = True,
     dbcan_model_ids: Optional[Iterable[str]] = None,
+    min_hmm_coverage: Optional[float] = None,
+    database_model_ids: Optional[Iterable[str]] = None,
 ) -> list[Hit]:
+    """Keep the hits that pass the thresholds of their model's kind.
+
+    ``min_hmm_coverage`` applies to user-supplied models only, that is to
+    models not in ``database_model_ids``: Pfam and KOfam have curated score
+    thresholds and dbCAN has its own coverage rule.
+    """
     kofam_metadata_by_model = kofam_metadata_by_model or {}
     dbcan_models = set(dbcan_model_ids or ())
+    database_models = set(database_model_ids or ()) | dbcan_models
     qualifying: list[Hit] = []
     for hit in hits:
         score_type = "full"
@@ -1563,6 +1576,13 @@ def _filter_qualifying_hits(
             or hit.domain_i_evalue >= 1e-15
             or hit.hmm_coverage is None
             or hit.hmm_coverage <= 0.35
+        ):
+            continue
+        if (
+            min_hmm_coverage is not None
+            and hit.model not in database_models
+            and ko_meta is None
+            and (hit.hmm_coverage is None or hit.hmm_coverage <= min_hmm_coverage)
         ):
             continue
         effective_min_bitscore = min_bitscore
@@ -1595,6 +1615,8 @@ def _choose_best_contigs(
     kofam_metadata_by_model: Optional[dict[str, KOFamMetadata]] = None,
     use_kofam_thresholds: bool = True,
     dbcan_model_ids: Optional[Iterable[str]] = None,
+    min_hmm_coverage: Optional[float] = None,
+    database_model_ids: Optional[Iterable[str]] = None,
 ) -> tuple[list[Hit], list[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
@@ -1615,6 +1637,8 @@ def _choose_best_contigs(
         kofam_metadata_by_model,
         use_kofam_thresholds,
         dbcan_model_ids,
+        min_hmm_coverage=min_hmm_coverage,
+        database_model_ids=database_model_ids,
     ):
         per_contig[hit.contig].append(hit)
 
@@ -2111,6 +2135,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                         "thresholds": {
                             "max_evalue": plan.max_evalue,
                             "min_bitscore": plan.min_bitscore,
+                "user_model_min_hmm_coverage": plan.min_hmm_coverage,
                             "dbcan_independent_evalue": "<1e-15",
                             "dbcan_hmm_coverage": ">0.35",
                         },
@@ -2157,6 +2182,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         keep_domtbl=plan.keep_domtbl,
         min_bitscore=plan.min_bitscore,
         max_evalue=plan.max_evalue,
+        min_hmm_coverage=plan.min_hmm_coverage,
         use_kofam_thresholds=plan.use_kofam_thresholds,
         combine_mode=plan.combine_mode,
         top_per_contig=plan.top_per_contig,
@@ -2202,6 +2228,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             kofam_metadata_by_model,
             plan.use_kofam_thresholds,
             dbcan_model_ids,
+            min_hmm_coverage=plan.min_hmm_coverage,
+            database_model_ids=query.normalized_models,
         )
         filtered_hits, _ = _choose_best_contigs(
             all_hits,
@@ -2215,6 +2243,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
             dbcan_model_ids=dbcan_model_ids,
+            min_hmm_coverage=plan.min_hmm_coverage,
+            database_model_ids=query.normalized_models,
         )
         pul_matches, contig_ids = evaluate_pul_signatures(filtered_hits, pul_rules)
         kept_contig_set = set(contig_ids)
@@ -2227,6 +2257,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             kofam_metadata_by_model,
             plan.use_kofam_thresholds,
             dbcan_model_ids,
+            min_hmm_coverage=plan.min_hmm_coverage,
+            database_model_ids=query.normalized_models,
         )
         kept_hits = qualifying_cazyme_hits
         contig_ids = list(dict.fromkeys(hit.contig for hit in kept_hits))
@@ -2243,6 +2275,8 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
             dbcan_model_ids=dbcan_model_ids,
+            min_hmm_coverage=plan.min_hmm_coverage,
+            database_model_ids=query.normalized_models,
         )
 
     if query.all_puls:
@@ -2365,6 +2399,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             "thresholds": {
                 "max_evalue": plan.max_evalue,
                 "min_bitscore": plan.min_bitscore,
+                "user_model_min_hmm_coverage": plan.min_hmm_coverage,
                 "dbcan_independent_evalue": "<1e-15",
                 "dbcan_hmm_coverage": ">0.35",
             },

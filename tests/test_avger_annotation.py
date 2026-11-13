@@ -518,10 +518,10 @@ def test_phrog_strict_track_needs_bit_score_and_both_coverages(monkeypatch):
     relaxed, strict = _phrog_search(
         monkeypatch,
         [
-            _phrog_hit("c|gene1", 60.0, (1, 40, 1, 40)),  # exactly at every limit
+            _phrog_hit("c|gene1", 60.0, (1, 50, 1, 50)),  # exactly at every limit
             _phrog_hit("c|gene2", 59.9, (1, 100, 1, 100)),  # score too low
-            _phrog_hit("c|gene3", 300.0, (1, 39, 1, 100)),  # 39% of the model
-            _phrog_hit("c|gene4", 300.0, (1, 100, 1, 100), length=251),  # 39.8% of the protein
+            _phrog_hit("c|gene3", 300.0, (1, 49, 1, 100)),  # 49% of the model
+            _phrog_hit("c|gene4", 300.0, (1, 100, 1, 100), length=201),  # 49.8% of the protein
             _phrog_hit("c|gene5", 300.0, (1, 100, 1, 100), evalue=1e-3),  # fails the E-value
             # Two domains: 25% + 25% of the model, overlapping pieces of the protein.
             _phrog_hit("c|gene6", 300.0, (1, 25, 1, 30), (61, 85, 21, 50)),
@@ -536,7 +536,7 @@ def test_phrog_strict_track_needs_bit_score_and_both_coverages(monkeypatch):
         "phrog_7",
         "anti-restriction",
     )
-    assert (hit.model_coverage, hit.protein_coverage) == (pytest.approx(0.4), pytest.approx(0.4))
+    assert (hit.model_coverage, hit.protein_coverage) == (pytest.approx(0.5), pytest.approx(0.5))
     assert (hit.threshold_source, hit.threshold_value) == ("phrog_score_coverage", 60.0)
     assert relaxed[0]["c|gene1"].threshold_value is None
     split = strict[0]["c|gene6"]

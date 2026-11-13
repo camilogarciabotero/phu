@@ -15,7 +15,7 @@ behavior in the unreleased branch and may change before a release.
   PHROG scores can make a gene a candidate, PHROG entries support the
   physiology and regulatory classes, and the PHROG filter lists can block a
   class when a gene's PHROG hit is a core viral function. A PHROG annotation
-  needs a bit score of at least 60, with at least 40% of the model and 40% of
+  needs a bit score of at least 60, with at least 50% of the model and 50% of
   the protein aligned. Use
   `--no-phrog` to skip it. Expect longer runs with PHROG on: it has more
   models than Pfam and KOfam.

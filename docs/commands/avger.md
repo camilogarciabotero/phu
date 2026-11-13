@@ -84,7 +84,7 @@ installed locally.
 The command requires prepared Pfam, KOfam, PHROG and AVG reference databases.
 It reuses the shared prediction cache. KOfam hits use the thresholds and score
 types from `ko_list`; Pfam hits use model GA cutoffs; PHROG hits need a bit
-score of at least 60 with at least 40% of both the model and the protein
+score of at least 60 with at least 50% of both the model and the protein
 aligned. Candidate scoring uses
 the AVG reference database's V-score and VL-score tables.
 
@@ -104,10 +104,11 @@ PHROG takes part in every step, the same way Pfam and KOfam do:
     least one of the three databases.
 - **Annotation.** PHROG has no curated per-model cutoffs. A PHROG annotation
     is reported, and used for classification, when the hit scores at least 60
-    bits and its alignment covers at least 40% of the model and at least 40% of
-    the protein. These are the cutoffs CheckAMG applies to PHROG, with coverage
-    computed the same way: every reported domain of the hit counts, and
-    overlapping domains are counted once.
+    bits and its alignment covers at least 50% of the model and at least 50% of
+    the protein. Coverage is computed as CheckAMG computes it: every reported
+    domain of the hit counts, and overlapping domains are counted once. The
+    bit score cutoff is CheckAMG's; the coverage cutoff is stricter than
+    CheckAMG's default of 40%.
 - **Classification.** The reference tables list PHROGs that support the
     physiology (`putative_apg`) and regulatory (`putative_areg`) classes. They
     list none for `putative_amg`, so PHROG alone never makes an AMG call.

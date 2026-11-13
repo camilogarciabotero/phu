@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-import phu.pfam_db as pfam_db
-from phu.pfam_db import extract_pfam_models, is_pfam_id, normalize_pfam_id
+import phu.db.pfam as pfam_db
+from phu.db.pfam import extract_pfam_models, is_pfam_id, normalize_pfam_id
 
 
 def test_is_pfam_id_accepts_basic_and_versioned_ids():

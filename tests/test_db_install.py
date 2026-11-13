@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from phu import db_bundle
-from phu.db_bundle import (
+from phu.db import bundle as db_bundle
+from phu.db.bundle import (
     LockTimeout,
     BundleMismatch,
     TarballMismatch,
@@ -26,12 +26,12 @@ from phu.db_bundle import (
     tree_problems,
     validate_tree,
 )
-from phu.db_fetch import (
+from phu.db.fetch import (
     InsufficientSpace,
     download_verified,
     required_install_bytes,
 )
-from phu.db_manifest import DATABASE_NAMES, loads_manifest
+from phu.db.manifest import DATABASE_NAMES, loads_manifest
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "phu_db"
 PREPARED = FIXTURE_DIR / "prepared"

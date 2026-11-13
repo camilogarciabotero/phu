@@ -24,7 +24,7 @@ from rich.progress import (
 from rich.spinner import Spinner
 from rich.table import Table
 
-from ._log import format_duration, is_quiet, is_verbose
+from phu.core.log import format_duration, is_quiet, is_verbose
 
 _SYMBOLS = {"success": "✓", "failed": "✗", "skipped": "○", "cancelled": "!"}
 _PLAIN_ENDINGS = {
@@ -62,7 +62,7 @@ class ProgressReporter:
         [14:04:25] Predicting proteins done in 2m14s
 
     ``quiet`` and ``verbose`` default to the process-wide setting made by the
-    CLI (see ``phu._log``). ``clock`` (monotonic seconds) and ``now``
+    CLI (see ``phu.core.log``). ``clock`` (monotonic seconds) and ``now``
     (wall-clock ``datetime``) can be replaced in tests.
     """
 

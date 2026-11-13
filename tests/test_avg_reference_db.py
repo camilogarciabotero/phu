@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from phu.avg_reference_db import AvgReference, load_avg_reference
+from phu.avger.reference import AvgReference, load_avg_reference
 
 FIXTURE_AVG = Path(__file__).parent / "fixtures" / "phu_db" / "prepared" / "avg"
 

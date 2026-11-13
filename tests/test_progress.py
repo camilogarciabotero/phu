@@ -6,7 +6,7 @@ from io import StringIO
 
 from rich.console import Console
 
-from phu._click import ProgressReporter
+from phu.core.progress import ProgressReporter
 
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 

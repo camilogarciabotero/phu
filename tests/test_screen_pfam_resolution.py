@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-import phu.screen as screen
-from phu.kofam_db import KOFamMetadata
+import phu.commands.screen as screen
+from phu.db.kofam import KOFamMetadata
 
 
 def test_resolve_hmm_inputs_keeps_existing_local_files(tmp_path: Path):

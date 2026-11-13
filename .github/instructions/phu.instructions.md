@@ -75,11 +75,11 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.g
 
 - Preserve separation of concerns:
 - CLI entry points and argument parsing in `src/phu/cli.py`.
-- Per-command orchestration and config dataclasses in command modules (`screen.py`, `jack.py`, `cluster.py`, `simplify_vcontact_taxa.py`).
+- Per-command orchestration and config dataclasses in command modules under `src/phu/commands/` (`screen.py`, `jack.py`, `cluster.py`, `avger.py`, `normalize_lineage.py`, `simplify_taxa.py`); the annotation, decision rules and reference tables behind `avger` live in `src/phu/avger/`.
 - Database lifecycle commands live under the `dbs` Typer command group in `src/phu/cli.py`; keep backend routing there and avoid scattering DB setup logic into feature commands.
-- Database backend operations should be implemented as explicit helpers in `src/phu/pfam_db.py` or backend-specific modules with a common contract: `list`, `status`, `prepare`, `refresh`, and `remove`.
-- External command discovery/execution helpers in `_exec.py`.
-- Shared protein-prediction cache lifecycle in `gene_prediction_core.py`.
+- Database backend operations should be implemented as explicit helpers in `src/phu/db/` (`bundle.py` for the phu-db bundle, `pfam.py`, `kofam.py`, `dbcan.py` per database) with a common contract: `list`, `status`, `prepare`, `refresh`, and `remove`.
+- External command discovery/execution helpers in `src/phu/core/exec.py`; logging in `core/log.py`, progress display in `core/progress.py`.
+- Shared protein-prediction cache lifecycle in `src/phu/core/gene_prediction.py`.
 - Use `from __future__ import annotations` in Python source files.
 - Keep imports, parsing, and configuration side effects out of module import
 	time when a command can defer them until execution.
@@ -108,7 +108,7 @@ applyTo: "src/phu/**/*.py,tests/**/*.py,docs/**/*.md,README.md,pyproject.toml,.g
 
 ## Prediction Cache and Reuse Semantics
 
-- `screen` and `jack` both rely on shared prediction caching in `gene_prediction_core.py`; keep them aligned.
+- `screen` and `jack` both rely on shared prediction caching in `core/gene_prediction.py`; keep them aligned.
 - Cache keys must remain deterministic and depend only on prediction inputs (contigs identity + prediction parameters), not search-only parameters.
 - Preserve support for `PHU_CACHE_DIR`, `XDG_CACHE_HOME`, and `PHU_CACHE` behavior.
 - Validate cached artifact schemas and required metadata before reuse. Treat

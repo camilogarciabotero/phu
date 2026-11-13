@@ -49,7 +49,7 @@ def fixture_manifest_bytes() -> bytes:
 
 @pytest.fixture(scope="session")
 def fixture_manifest(fixture_manifest_bytes):
-    from phu.db_manifest import loads_manifest
+    from phu.db.manifest import loads_manifest
 
     return loads_manifest(fixture_manifest_bytes)
 
@@ -64,7 +64,7 @@ def fixture_bundle(tmp_path_factory) -> Path:
 @pytest.fixture(scope="session")
 def fixture_pins(fixture_bundle, fixture_manifest, fixture_manifest_bytes):
     """BundlePins for the fixture bundle; the only place tests get pins from."""
-    from phu.db_bundle import BundlePins
+    from phu.db.bundle import BundlePins
 
     data = fixture_bundle.read_bytes()
     return BundlePins(

@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-import phu.screen as screen
-from phu.kofam_db import KOFamMetadata
+import phu.commands.screen as screen
+from phu.db.kofam import KOFamMetadata
 
 
 def test_choose_best_contigs_uses_kofam_full_thresholds():
@@ -288,7 +288,7 @@ def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
     monkeypatch.setattr(screen.pyhmmer.plan7, "MissingCutoffs", _FakeMissingCutoffs)
     monkeypatch.setattr(screen.pyhmmer, "hmmsearch", _fake_hmmsearch)
 
-    from phu import _log
+    from phu.core import log as _log
 
     monkeypatch.setattr(_log, "_verbose", True)
     hits = list(

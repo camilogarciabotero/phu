@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from phu import avger_annotation as ann
-from phu.kofam_db import KOFamMetadata
+from phu.avger import annotation as ann
+from phu.db.kofam import KOFamMetadata
 
 
 class FakeAlignment:

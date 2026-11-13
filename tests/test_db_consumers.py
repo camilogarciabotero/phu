@@ -7,8 +7,13 @@ import pyhmmer
 import pytest
 from typer.testing import CliRunner
 
-from phu import avg, db_bundle, dbcan_db, kofam_db, pfam_db, screen
-from phu.avg_reference_db import load_avg_reference
+from phu.commands import avger as avg
+from phu.db import bundle as db_bundle
+from phu.db import dbcan as dbcan_db
+from phu.db import kofam as kofam_db
+from phu.db import pfam as pfam_db
+from phu.commands import screen
+from phu.avger.reference import load_avg_reference
 from phu.cli import app
 
 

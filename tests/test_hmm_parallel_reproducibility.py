@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pyhmmer
 
-from phu.screen import Hit, _hmmsearch
+from phu.commands.screen import Hit, _hmmsearch
 
 
 def _write_fixture_hmm(path: Path) -> None:

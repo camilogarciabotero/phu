@@ -199,7 +199,7 @@ def test_simplify_taxa_short_options_present_in_help():
 
 @pytest.mark.parametrize("command", [["avger"], ["screen", "PF00001"]])
 def test_database_errors_are_reported_without_a_traceback(tmp_path, monkeypatch, command):
-    from phu.db_fetch import DatabaseError
+    from phu.db.fetch import DatabaseError
 
     contigs = tmp_path / "contigs.fna"
     contigs.write_text(">c1\nATG\n")

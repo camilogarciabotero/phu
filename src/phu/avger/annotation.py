@@ -8,9 +8,9 @@ from typing import Optional
 
 import pyhmmer
 
-from ._log import log_call
-from .kofam_db import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
-from .pfam_db import ensure_pfam_database, normalize_pfam_id
+from phu.core.log import log_call
+from phu.db.kofam import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
+from phu.db.pfam import ensure_pfam_database, normalize_pfam_id
 
 
 @dataclass(frozen=True)

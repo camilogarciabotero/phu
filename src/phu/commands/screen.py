@@ -25,12 +25,12 @@ import pyhmmer.plan7
 import pytrimal
 import typer
 
-from . import __version__
-from ._click import run_click_task
-from ._exec import _executable
-from .db_bundle import bundle_provenance, database_hashes
-from ._log import log_call, log_command
-from .dbcan_db import (
+from phu import __version__
+from phu.core.progress import run_click_task
+from phu.core.exec import _executable
+from phu.db.bundle import bundle_provenance, database_hashes
+from phu.core.log import log_call, log_command
+from phu.db.dbcan import (
     ensure_dbcan_database,
     extract_dbcan_models,
     get_dbcan_model_inventory,
@@ -42,14 +42,14 @@ from .dbcan_db import (
     normalize_dbcan_id,
     normalize_dbcan_pul_id,
 )
-from .gene_prediction_core import (
+from phu.core.gene_prediction import (
     PredictionInputs,
     get_or_predict_proteins,
     predict_genes_pyrodigal,
     write_predicted_proteins_fasta,
     write_prediction_metadata,
 )
-from .kofam_db import (
+from phu.db.kofam import (
     KOFamMetadata,
     ensure_kofam_database,
     extract_kofam_models,
@@ -57,7 +57,7 @@ from .kofam_db import (
     is_kofam_id,
     normalize_kofam_id,
 )
-from .pfam_db import (
+from phu.db.pfam import (
     ensure_pfam_database,
     extract_pfam_models,
     is_pfam_id,

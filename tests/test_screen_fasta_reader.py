@@ -1,7 +1,7 @@
 import gzip
 
-import phu.screen as screen
-from phu.screen import _read_fasta
+import phu.commands.screen as screen
+from phu.commands.screen import _read_fasta
 
 
 def test_read_fasta_plain(tmp_path):

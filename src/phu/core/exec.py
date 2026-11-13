@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from shutil import which
 
-from ._log import log_command
+from phu.core.log import log_command
 
 
 class CmdNotFound(RuntimeError):
@@ -32,7 +32,7 @@ def run(
     """
     Run a command in a subprocess.
 
-    With ``--verbose`` the exact argv is printed first (see ``phu._log``).
+    With ``--verbose`` the exact argv is printed first (see ``phu.core.log``).
     """
     command = list(map(str, argv))
     log_command(command, cwd=cwd)

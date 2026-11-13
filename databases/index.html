@@ -937,9 +937,9 @@ command only checks it and returns.</p>
 <h2 id="what-happens-on-first-use">What happens on first use<a class="headerlink" href="#what-happens-on-first-use" title="Permanent link">&para;</a></h2>
 <p><code>phu dbs prepare</code>, or the first database-backed command if you skipped it:</p>
 <ol>
-<li>Checks free disk space. The install needs about <strong>12 GB</strong> free while it
-   runs and keeps about <strong>9.5 GB</strong> afterwards.</li>
-<li>Downloads <code>phu-db.tar.gz</code> (about 1.9 GB) from Zenodo, or uses a local copy
+<li>Checks free disk space. The install needs about <strong>16 GB</strong> free while it
+   runs and keeps about <strong>13 GB</strong> afterwards.</li>
+<li>Downloads <code>phu-db.tar.gz</code> (about 2.2 GB) from Zenodo, or uses a local copy
    if <a href="#offline-and-hpc-use"><code>PHU_DB_BUNDLE</code></a> is set.</li>
 <li>Verifies the tarball's exact size and SHA-256 against the values pinned in
    this PHU release. A mismatch stops the install; nothing is used.</li>
@@ -982,13 +982,14 @@ installs and the others wait for it, then reuse its result.</p>
 </table>
 <p>Inside that folder:</p>
 <div class="highlight"><pre><span></span><code>phu-db/
-  phu-db-0.1.1/
+  phu-db-0.2.0/
     installed.json        # source, tarball SHA-256, install time
     phu-db.json           # the bundle manifest: upstream URLs, digests, steps
     pfam/  profiles.hmm
     kofam/ profiles.hmm, ko_list.tsv
     dbcan/ profiles.hmm, family_substrate.tsv, pul_rules.tsv
     avg/   v_scores.tsv, positive_{amg,apg,areg}.tsv, filters_{amg,apg,areg}.tsv
+    phrog/ profiles.hmm, annotations.tsv
 </code></pre></div>
 <p>When a new PHU release pins a newer bundle, it installs the new version beside
 the old one. PHU never deletes other versions, because another PHU release
@@ -1017,14 +1018,14 @@ folder yourself once nothing needs it.</p>
 </tr>
 <tr>
 <td><code>PHU_DB_VERIFY=1</code></td>
-<td>Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 9.5 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls.</td>
+<td>Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 13 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="offline-and-hpc-use">Offline and HPC use<a class="headerlink" href="#offline-and-hpc-use" title="Permanent link">&para;</a></h2>
 <p>Compute nodes often have no internet access, or many jobs would download the
 same bundle at once. Download it once and point PHU at it:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># On a node with internet access: get phu-db.tar.gz for phu-db-0.1.1 from</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># On a node with internet access: get phu-db.tar.gz for phu-db-0.2.0 from</span>
 <span class="c1"># https://doi.org/10.5281/zenodo.19503347 (the page lists every version).</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PHU_DB_FOLDER</span><span class="o">=</span>/shared/project/phu-db<span class="w">      </span><span class="c1"># on a shared filesystem</span>
 phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>--bundle<span class="w"> </span>/shared/project/phu-db.tar.gz<span class="w">   </span><span class="c1"># installs once</span>
@@ -1043,7 +1044,7 @@ PHU keeps them in your own cache folder instead (<code>PHU_CACHE_DIR</code>, def
 <p>If the tarball does not match the version this PHU release pins, PHU refuses
 it and says so. Download the version named in the error.</p>
 <h2 id="what-the-bundle-contains">What the bundle contains<a class="headerlink" href="#what-the-bundle-contains" title="Permanent link">&para;</a></h2>
-<p><code>phu-db-0.1.1</code> contains these pinned upstream releases. PHU records them in
+<p><code>phu-db-0.2.0</code> contains these pinned upstream releases. PHU records them in
 each run's provenance.</p>
 <table>
 <thead>
@@ -1079,8 +1080,18 @@ each run's provenance.</p>
 <td>CheckAMG v1.1.1 reference tables</td>
 <td>V-scores, AMG/APG/AReG positive tables and filter tables</td>
 </tr>
+<tr>
+<td><code>phrog</code></td>
+<td><code>avger</code></td>
+<td>PHROGs v4 (CC-BY-4.0)</td>
+<td><code>profiles.hmm</code> (38,880 models), <code>annotations.tsv</code></td>
+</tr>
 </tbody>
 </table>
+<p>PHROGs is published as HH-suite profiles and MMseqs2 databases, which HMMER
+cannot search. The PHROG models in the bundle were built from the official
+per-PHROG alignments with pyhmmer, using the default <code>hmmbuild</code> settings, one
+model per PHROG, named <code>phrog_1</code> to <code>phrog_38880</code>.</p>
 <p>The bundle's own manifest, <code>phu-db.json</code>, lists every upstream URL, SHA-256,
 byte size, license and record count, and the exact preparation steps that turn
 each upstream download into the installed file.</p>
@@ -1094,7 +1105,7 @@ Keep these files with your results.</p>
 <h2 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">&para;</a></h2>
 <p>Cite the bundle version you used:</p>
 <blockquote>
-<p>García-Botero C. <em>Phu Databases</em>, version phu-db-0.1.1. Zenodo.
+<p>García-Botero C. <em>Phu Databases</em>, version phu-db-0.2.0. Zenodo.
 <a href="https://doi.org/10.5281/zenodo.19503347">https://doi.org/10.5281/zenodo.19503347</a></p>
 </blockquote>
 <p>Also cite the upstream databases your analysis relied on, following each

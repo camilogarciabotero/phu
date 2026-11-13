@@ -448,6 +448,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phrog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PHROG
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scientific-interpretation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -903,6 +914,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phrog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PHROG
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scientific-interpretation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1090,7 +1112,7 @@
 
 <h1 id="avger">avger<a class="headerlink" href="#avger" title="Permanent link">&para;</a></h1>
 <p><code>phu avger</code> predicts proteins from trusted viral contigs and annotates them
-against the complete Pfam and KOfam databases, then applies the provisional AVG
+against the complete Pfam, KOfam and PHROG databases, then applies the provisional AVG
 candidate and curation workflow. It writes deterministic TSV tables for all
 genes, candidates, predictions, and supporting evidence.</p>
 <p>This is the supported annotation/evidence workflow. The repository also
@@ -1158,10 +1180,47 @@ Predict and curate putative auxiliary viral genes.
 </code></pre></div>
 <p>The exact spacing and formatting may vary slightly with the Typer/Rich version
 installed locally.</p>
-<p>The command requires prepared Pfam, KOfam, and AVG reference databases. It
-reuses the shared prediction cache. KOfam hits use the thresholds and score
-types from <code>ko_list</code>; Pfam hits use model GA cutoffs. Candidate scoring uses
+<p>The command requires prepared Pfam, KOfam, PHROG and AVG reference databases.
+It reuses the shared prediction cache. KOfam hits use the thresholds and score
+types from <code>ko_list</code>; Pfam hits use model GA cutoffs; PHROG hits need a bit
+score of at least 60 with at least 50% of both the model and the protein
+aligned. Candidate scoring uses
 the AVG reference database's V-score and VL-score tables.</p>
+<h2 id="phrog">PHROG<a class="headerlink" href="#phrog" title="Permanent link">&para;</a></h2>
+<p>PHROG (Terzian et al., 2021) groups the proteins of prokaryotic viruses into
+families. Many phage proteins have no Pfam or KOfam match, so PHROG gives
+<code>avger</code> evidence for genes the other two databases leave blank. It is searched
+by default; <code>--no-phrog</code> skips it, which saves the largest of the three
+searches.</p>
+<p>PHROG takes part in every step, the same way Pfam and KOfam do:</p>
+<ul>
+<li><strong>Scoring.</strong> The best PHROG hit of each protein at E-value <code>1e-5</code> supplies
+    its V-score and VL-score, and the contig's PHROG AVL is their average.</li>
+<li><strong>Candidates.</strong> A gene is a candidate when the candidate rule holds in at
+    least one of the three databases.</li>
+<li><strong>Annotation.</strong> PHROG has no curated per-model cutoffs. A PHROG annotation
+    is reported, and used for classification, when the hit scores at least 60
+    bits and its alignment covers at least 50% of the model and at least 50% of
+    the protein. Coverage is computed as CheckAMG computes it: every reported
+    domain of the hit counts, and overlapping domains are counted once. The
+    bit score cutoff is CheckAMG's; the coverage cutoff is stricter than
+    CheckAMG's default of 40%.</li>
+<li><strong>Classification.</strong> The reference tables list PHROGs that support the
+    physiology (<code>putative_apg</code>) and regulatory (<code>putative_areg</code>) classes. They
+    list none for <code>putative_amg</code>, so PHROG alone never makes an AMG call.</li>
+<li><strong>Filters.</strong> The filter lists name PHROGs of core viral functions, such as
+    integrases and major head proteins. A strict PHROG hit to one of them
+    blocks the class, exactly as a Pfam or KOfam filter match does. A gene that
+    Pfam or KOfam would classify can therefore be filtered because its PHROG
+    hit says it is a structural or replication protein.</li>
+</ul>
+<p>The PHROG models are HMMER models built for the phu database bundle from the
+official PHROG alignments (see <a href="../../databases/">Databases and Provenance</a>).
+The <code>phrog_model_coverage</code> and <code>phrog_protein_coverage</code> columns are the
+fractions of the model and of the protein that the hit's domains cover.</p>
+<p><code>avger</code> applies these coverage cutoffs to PHROG only. CheckAMG also applies
+them to Pfam and KOfam hits; <code>avger</code> keeps the Pfam GA and KOfam thresholds
+alone for those two databases.</p>
 <h2 id="scientific-interpretation">Scientific interpretation<a class="headerlink" href="#scientific-interpretation" title="Permanent link">&para;</a></h2>
 <h3 id="what-avg-means">What AVG means<a class="headerlink" href="#what-avg-means" title="Permanent link">&para;</a></h3>
 <p>AVG means <strong>auxiliary viral gene</strong>: a viral gene that is auxiliary to core viral
@@ -1204,8 +1263,8 @@ decision layer:</p>
     selected <code>--mode</code>, <code>--ttable</code>, and length filters affect which proteins enter
     downstream annotation.</li>
 <li><strong>Profile annotation:</strong> HMMER, accessed through PyHMMER, supplies profile-HMM
-    searches. Pfam model cutoffs and KOfam's KO-specific thresholds are used as
-    annotation criteria; a passing profile match is not, by itself, evidence of
+    searches. Pfam model cutoffs, KOfam's KO-specific thresholds and fixed PHROG
+    score and coverage cutoffs are used as annotation criteria; a passing profile match is not, by itself, evidence of
     an AVG.</li>
 <li><strong>Viral-family evidence:</strong> V-Score-Search motivates the use of family-level
     V and VL scores and genome/scaffold averages. Its AV/AVL thresholds are
@@ -1262,7 +1321,7 @@ not demonstrate a host benefit or a physical virus-host interaction without
 experimental or ecological validation (Iuchi et al., 2023).</p>
 <p><code>avger</code> separates three kinds of evidence:</p>
 <ol>
-<li><strong>Annotation evidence:</strong> a predicted protein has a Pfam or KOfam profile
+<li><strong>Annotation evidence:</strong> a predicted protein has a Pfam, KOfam or PHROG profile
     match that passes the database-specific score threshold and independent
     E-value cutoff (<code>1e-5</code> by default).</li>
 <li><strong>Viral-family evidence:</strong> the matched protein family has a V-score in the
@@ -1340,22 +1399,22 @@ AVL_{db} = \frac{\sum VL\text{-scores of proteins with significant best hits in 
 {\text{number of proteins with significant best hits in } db}
 $$</p>
 <p>The denominator is the number of scored significant hits in that database, not
-the total number of predicted proteins. Pfam evidence is never combined with a
-KOfam contig score, and vice versa.</p>
+the total number of predicted proteins. Evidence from one database is never
+combined with the contig score of another.</p>
 <p>A database-specific candidate requires all three strict inequalities:</p>
 <ul>
 <li>gene Vᴸ-score <code>&lt; 3</code>;</li>
 <li>gene V-score <code>&lt; 10</code>;</li>
 <li>same-database contig AVL-score <code>&gt; 3</code>.</li>
 </ul>
-<p><code>pfam_candidate</code> and <code>kofam_candidate</code> are evaluated independently. The
-combined <code>zhou_avg_candidate</code> is true when either database-specific candidate
-is true. The cutoffs are configurable with <code>--scaffold-avl-cutoff</code>,
+<p><code>zhou_pfam_candidate</code>, <code>zhou_kofam_candidate</code> and <code>zhou_phrog_candidate</code> are
+evaluated independently. The combined <code>zhou_avg_candidate</code> is true when any
+database-specific candidate is true. The cutoffs are configurable with <code>--scaffold-avl-cutoff</code>,
 <code>--gene-vl-cutoff</code>, and <code>--gene-v-cutoff</code>; their defaults are <code>3</code>, <code>3</code>, and
 <code>10</code>. Boundary values are excluded.</p>
 <pre class="mermaid"><code>flowchart TD
     A[Trusted viral contigs] --&gt; B[Predict proteins]
-    B --&gt; C[Annotate against Pfam and KOfam]
+    B --&gt; C[Annotate against Pfam, KOfam and PHROG]
     C --&gt; D[Relaxed and strict annotation tracks]
     D --&gt; E[Average relaxed VL-scores per contig and database]
     E --&gt; F{AVL &gt; cutoff and gene VL &lt; cutoff and gene V &lt; cutoff?}
@@ -1371,8 +1430,8 @@ is true. The cutoffs are configurable with <code>--scaffold-avl-cutoff</code>,
     M --&gt; O
     O --&gt; P[avg-evidence.tsv]
     O --&gt; Q[Metadata: .phu/run.json]</code></pre>
-<p>The Pfam and KOfam branches represented by this flow are independent; their
-AVL values are never mixed. AVL is therefore an active candidate-selection
+<p>The Pfam, KOfam and PHROG branches represented by this flow are independent;
+their AVL values are never mixed. AVL is therefore an active candidate-selection
 criterion, not merely a reported summary value.</p>
 <h2 id="flank-evidence">Flank evidence<a class="headerlink" href="#flank-evidence" title="Permanent link">&para;</a></h2>
 <p>The current registered <code>avger</code> command does not apply flank-support criteria.
@@ -1393,10 +1452,12 @@ filters described below.</p>
 <li><code>hmm-hits-relaxed.tsv.gz</code> and <code>hmm-hits-strict.tsv.gz</code>: all annotation hits when
     <code>--keep-hits</code> is supplied.</li>
 </ul>
-<p>Rows from Pfam and KOfam remain database-specific. Empty scoring fields mean
+<p>Each database has its own group of columns (<code>pfam_*</code>, <code>kofam_*</code>, <code>phrog_*</code>).
+The <code>phrog_*</code> columns are always present and are empty when PHROG was not
+searched. Empty scoring fields mean
 that no matching AVG reference record was available; they can prevent a gene
 from becoming a candidate.</p>
-<p>The Pfam, KOfam and AVG databases install automatically on the first run (see
+<p>The Pfam, KOfam, PHROG and AVG databases install automatically on the first run (see
 <a href="../../databases/">Databases and Provenance</a>):</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>avger<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>-o<span class="w"> </span>phu-avger
 </code></pre></div>

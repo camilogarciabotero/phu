@@ -20,7 +20,8 @@ def test_annotation_config_validates_track():
 def test_avg_annotation_searches_once_for_both_tracks(monkeypatch, tmp_path: Path):
     calls = []
 
-    def fake_annotate(proteins_path, configs):
+    def fake_annotate(proteins_path, configs, *, phrog):
+        assert phrog is True
         calls.append((proteins_path, list(configs)))
         return [empty_results() for _ in configs]
 

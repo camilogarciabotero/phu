@@ -102,6 +102,31 @@ def test_avg_reference_comes_from_the_installed_bundle(installed):
     assert db_bundle.bundle_provenance()["source"] == "local"
 
 
+def test_avger_searches_phrog_from_the_installed_bundle(installed, tmp_path):
+    from phu.avger.annotation import AnnotationConfig, annotate_proteins_tracks
+    from phu.db import phrog as phrog_db
+
+    proteins = tmp_path / "proteins.faa"
+    # The consensus of fixture PHROG 2, and a protein that matches nothing.
+    proteins.write_text(">ctg|gene1\nDMPQIFEWGYSHTNR\n>ctg|gene2\nAAAAAAAAAAAAAAA\n")
+    # The fixture models are 15 residues long, far too short to reach 60 bits.
+    cfg = AnnotationConfig(max_evalue=10.0, phrog_min_score=5.0)
+
+    with_phrog = annotate_proteins_tracks(proteins, [cfg], phrog=True)[0]
+    without = annotate_proteins_tracks(proteins, [cfg])[0]
+
+    hit = with_phrog.best_phrog_by_protein["ctg|gene1"]
+    assert hit.model_id == "phrog_2"
+    assert hit.model_description == "fixture anti-restriction protein"
+    assert hit.model_coverage == pytest.approx(1.0)
+    assert "ctg|gene2" not in with_phrog.best_phrog_by_protein
+    assert without.best_phrog_by_protein == {}
+    annotations = phrog_db.get_all_phrog_annotations()
+    assert annotations["phrog_4"].annotation == ""
+    assert annotations["phrog_4"].category == "unknown function"
+    assert phrog_db.normalize_phrog_id("PHROG_007") == "phrog_7"
+
+
 def test_index_files_beside_the_databases_do_not_invalidate_the_install(installed, tmp_path):
     hmm_path = pfam_db.ensure_pfam_database()["hmm_path"]
     pfam_db.extract_pfam_models(Path(hmm_path), ["PF00001"], tmp_path / "pfam-out")

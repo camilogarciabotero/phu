@@ -114,3 +114,25 @@ def test_fixture_bundle_avg_database_loads():
         "putative_apg",
         "putative_areg",
     }
+
+
+def test_phrog_rows_are_kept_with_their_own_identifiers():
+    reference = load_avg_reference(FIXTURE_AVG)
+
+    scores = {(row["database"], row["accession"]): row for row in reference.scores}
+    assert scores[("phrog", "phrog_1")]["v_score"] == "10.0"
+    positive = {
+        (row["database"], row["accession"], row["proposed_class"]) for row in reference.positive
+    }
+    assert ("phrog", "phrog_2", "putative_apg") in positive
+    assert ("phrog", "phrog_3", "putative_areg") in positive
+    assert not any(key[0] == "phrog" and key[2] == "putative_amg" for key in positive)
+    assert {
+        (row["accession"], row["proposed_class"], row["filter_category"])
+        for row in reference.filters
+        if row["database"] == "phrog"
+    } == {
+        ("phrog_1", "putative_amg", "filter_essential"),
+        ("phrog_1", "putative_apg", "filter_essential"),
+        ("phrog_1", "putative_areg", "filter_essential"),
+    }

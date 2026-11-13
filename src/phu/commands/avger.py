@@ -30,6 +30,7 @@ from phu.core.gene_prediction import (
     get_or_predict_proteins,
 )
 from phu.db.bundle import bundle_provenance, resolve_db
+from phu.db.phrog import ANNOTATIONS_FILE, read_phrog_annotations
 from phu.core.progress import ProgressReporter
 
 
@@ -51,6 +52,7 @@ class AvgConfig:
     gene_vl_cutoff: float = 3.0
     gene_v_cutoff: float = 10.0
     scoring_evalue: float = 1e-5
+    phrog: bool = True
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "input_contigs", Path(self.input_contigs))
@@ -88,9 +90,9 @@ class AvgRunResult:
     outputs: tuple[Path, ...] = ()
 
 
-def require_databases() -> None:
-    """Install the phu-db bundle unless Pfam, KOfam and the AVG tables are in place."""
-    for name in ("pfam", "kofam", "avg"):
+def require_databases(phrog: bool = True) -> None:
+    """Install the phu-db bundle unless the databases avger reads are in place."""
+    for name in ("pfam", "kofam", "avg") + (("phrog",) if phrog else ()):
         resolve_db(name)
 
 
@@ -103,7 +105,7 @@ def run_avg(
     database_task = reporter.start_task("Checking AVG databases")
     run_started_at = datetime.now(timezone.utc).isoformat()
     try:
-        require_databases()
+        require_databases(config.phrog)
         reporter.succeed_task(database_task)
         prediction_task = reporter.start_task("Predicting proteins")
         prediction = get_or_predict_proteins(
@@ -130,6 +132,7 @@ def run_avg(
             strict_all_hits_path=(config.output_folder / "hmm-hits-strict.tsv.gz")
             if config.keep_hits
             else None,
+            phrog=config.phrog,
         )
         reporter.succeed_task(annotation_task)
         output_task = reporter.start_task("Writing AVG results")
@@ -185,11 +188,21 @@ def write_avg_outputs(
     positive_rows = reference.positive
     filter_rows = reference.filters
 
-    relaxed_hits = list(annotations.relaxed.best_pfam_by_protein.values()) + list(
-        annotations.relaxed.best_kofam_by_protein.values()
+    relaxed_hits = (
+        list(annotations.relaxed.best_pfam_by_protein.values())
+        + list(annotations.relaxed.best_kofam_by_protein.values())
+        + list(annotations.relaxed.best_phrog_by_protein.values())
     )
-    strict_hits = list(annotations.strict.best_pfam_by_protein.values()) + list(
-        annotations.strict.best_kofam_by_protein.values()
+    strict_hits = (
+        list(annotations.strict.best_pfam_by_protein.values())
+        + list(annotations.strict.best_kofam_by_protein.values())
+        + list(annotations.strict.best_phrog_by_protein.values())
+    )
+    # Only the category column needs the annotation table.
+    phrog_annotations = (
+        read_phrog_annotations(resolve_db("phrog") / ANNOTATIONS_FILE)
+        if annotations.strict.best_phrog_by_protein
+        else {}
     )
     scoring_evidence: list[AvgEvidence] = []
     for hit in relaxed_hits:
@@ -284,6 +297,7 @@ def write_avg_outputs(
         }
         pfam_decision = database_decisions.get("pfam")
         kofam_decision = database_decisions.get("kofam")
+        phrog_decision = database_decisions.get("phrog")
         is_candidate = any(decision.candidate for decision in gene_decisions)
         gene_strict_evidence = strict_evidence_by_protein.get(gene.gene_id, [])
         matched_positive = (
@@ -352,6 +366,18 @@ def write_avg_outputs(
             "kofam_evalue": "" if hit is None else hit.evalue,
             "kofam_threshold": "" if hit is None else hit.threshold_value,
             "kofam_score_type": "" if hit is None else hit.score_type,
+            "phrog_id": ""
+            if (hit := strict_by_database.get("phrog")) is None
+            else hit.model_id,
+            "phrog_annotation": "" if hit is None else hit.model_description or "",
+            "phrog_category": ""
+            if hit is None or (phrog := phrog_annotations.get(hit.model_id)) is None
+            else phrog.category,
+            "phrog_bitscore": "" if hit is None else hit.full_score,
+            "phrog_evalue": "" if hit is None else hit.evalue,
+            "phrog_coverage": ""
+            if hit is None or hit.model_coverage is None
+            else round(hit.model_coverage, 4),
             "pfam_scoring_id": ""
             if (record := scoring_by_database.get("pfam")) is None
             else record.accession,
@@ -362,6 +388,11 @@ def write_avg_outputs(
             else record.accession,
             "kofam_v_score": "" if record is None else record.v_score,
             "kofam_vl_score": "" if record is None else record.vl_score,
+            "phrog_scoring_id": ""
+            if (record := scoring_by_database.get("phrog")) is None
+            else record.accession,
+            "phrog_v_score": "" if record is None else record.v_score,
+            "phrog_vl_score": "" if record is None else record.vl_score,
             "pfam_scaffold_avl": ""
             if pfam_decision is None
             else pfam_decision.scaffold_avl,
@@ -376,12 +407,22 @@ def write_avg_outputs(
             if kofam_decision is None
             or (average := scaffold_averages.get((gene.contig_id, "kofam"))) is None
             else average.denominator,
+            "phrog_scaffold_avl": ""
+            if phrog_decision is None
+            else phrog_decision.scaffold_avl,
+            "phrog_scored_gene_count": ""
+            if phrog_decision is None
+            or (average := scaffold_averages.get((gene.contig_id, "phrog"))) is None
+            else average.denominator,
             "zhou_pfam_candidate": ""
             if pfam_decision is None
             else str(pfam_decision.candidate).lower(),
             "zhou_kofam_candidate": ""
             if kofam_decision is None
             else str(kofam_decision.candidate).lower(),
+            "zhou_phrog_candidate": ""
+            if phrog_decision is None
+            else str(phrog_decision.candidate).lower(),
             "zhou_avg_candidate": str(is_candidate).lower(),
             "proposed_classes": ";".join(sorted(weighted.supported_classes)),
             "amg_weight": ""
@@ -487,9 +528,10 @@ def write_avg_outputs(
             "gene_vl_cutoff": config.gene_vl_cutoff,
             "gene_v_cutoff": config.gene_v_cutoff,
             "scoring_evalue": config.scoring_evalue,
+            "phrog": config.phrog,
         },
         "phu_db": bundle_provenance(),
-        "output_schema_version": 1,
+        "output_schema_version": 2,
         "output_counts": output_counts,
         "run_started_at": run_started_at or completed_at,
         "run_completed_at": completed_at,

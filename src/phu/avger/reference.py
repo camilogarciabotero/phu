@@ -2,7 +2,7 @@
 
 The bundle's ``avg`` database holds the upstream CheckAMG tables under stable
 names. load_avg_reference() turns them into the rows the AVG workflow uses:
-Pfam and KOfam entries only, accessions normalised, one row per identity.
+Pfam, KOfam and PHROG entries, accessions normalised, one row per identity.
 """
 
 from __future__ import annotations
@@ -11,6 +11,8 @@ import csv
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+
+from phu.db.phrog import normalize_phrog_id
 
 SCORES_FILE = "v_scores.tsv"
 _POSITIVE_SOURCES = {
@@ -47,10 +49,14 @@ def _normalize_database(value: str) -> str | None:
         return "pfam"
     if database in {"kegg", "ko", "kofam"}:
         return "kofam"
+    if database in {"phrog", "phrogs"}:
+        return "phrog"
     return None
 
 
 def normalize_accession(database: str, value: str) -> str:
+    if database == "phrog":
+        return normalize_phrog_id(value)
     accession = value.strip().upper()
     if database == "pfam":
         accession = accession.split(".", 1)[0]

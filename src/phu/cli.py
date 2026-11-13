@@ -414,6 +414,7 @@ def avger(
     gene_vl_cutoff: float = typer.Option(3.0, "--gene-vl-cutoff", min=0.0, help="Maximum gene VL-score (exclusive)", rich_help_panel="Scoring"),
     gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0, help="Maximum gene V-score (exclusive)", rich_help_panel="Scoring"),
     scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0, help="E-value cutoff for scoring searches", rich_help_panel="Scoring"),
+    phrog: bool = typer.Option(True, "--phrog/--no-phrog", help="Search PHROG as a third database, beside Pfam and KOfam", rich_help_panel="Scoring"),
     quiet: bool = typer.Option(
         False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
     ),
@@ -439,6 +440,7 @@ def avger(
             gene_vl_cutoff=gene_vl_cutoff,
             gene_v_cutoff=gene_v_cutoff,
             scoring_evalue=scoring_evalue,
+            phrog=phrog,
         )
         if quiet or verbose:
             result = run_avg(

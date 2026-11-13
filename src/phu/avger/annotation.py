@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import gzip
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -12,6 +12,13 @@ import pyhmmer
 from phu.core.log import log_call
 from phu.db.kofam import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
 from phu.db.pfam import ensure_pfam_database, normalize_pfam_id
+from phu.db.phrog import (
+    PhrogAnnotation,
+    ensure_phrog_database,
+    get_all_phrog_annotations,
+    is_phrog_id,
+    normalize_phrog_id,
+)
 
 
 @dataclass(frozen=True)
@@ -37,6 +44,8 @@ class AnnotationHit:
     model_name: Optional[str] = None
     model_description: Optional[str] = None
     track: str = "strict"
+    # Fraction of the model covered by the best domain alignment.
+    model_coverage: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -49,6 +58,11 @@ class AnnotationConfig:
     pfam_require_ga: bool = True
     pfam_missing_ga_policy: str = "skip_model"  # skip_model | include_without_ga
     kofam_require_thresholds: bool = True
+    # PHROG has no curated per-model cutoffs. The strict track uses CheckAMG's
+    # fixed ones: sequence bit score and model coverage of the best domain.
+    phrog_require_thresholds: bool = True
+    phrog_min_score: float = 60.0
+    phrog_min_coverage: float = 0.4
     track: str = "strict"
 
     def __post_init__(self) -> None:
@@ -62,6 +76,8 @@ class AnnotationConfig:
             raise ValueError(
                 "pfam_missing_ga_policy must be 'skip_model' or 'include_without_ga'"
             )
+        if not 0.0 <= self.phrog_min_coverage <= 1.0:
+            raise ValueError("phrog_min_coverage must be between 0 and 1")
         if self.track not in {"relaxed", "strict"}:
             raise ValueError("track must be 'relaxed' or 'strict'")
 
@@ -73,6 +89,7 @@ class AnnotationResults:
     passing_hit_count: int
     scanned_model_count: int
     skipped_pfam_models_missing_ga: int
+    best_phrog_by_protein: dict[str, AnnotationHit] = field(default_factory=dict)
 
 def parse_contig_id_from_protein_id(protein_id: str) -> str:
     marker = "|gene"
@@ -217,7 +234,16 @@ def _search_and_collect(
 def _score_thresholds(database: str, cfg: AnnotationConfig) -> str:
     if database == "pfam":
         return "pfam_ga" if cfg.pfam_require_ga else "none"
+    if database == "phrog":
+        return "phrog_score_coverage" if cfg.phrog_require_thresholds else "none"
     return "kofam_ko_list" if cfg.kofam_require_thresholds else "none"
+
+
+def _phrog_model_id(hmm) -> Optional[str]:
+    name = _hmm_text(getattr(hmm, "name", None))
+    if name is None or not is_phrog_id(name):
+        return None
+    return normalize_phrog_id(name)
 
 
 def _search_tracks(
@@ -227,12 +253,13 @@ def _search_tracks(
     proteins_path: Path,
     cfgs: Sequence[AnnotationConfig],
     kofam_meta_by_model: Optional[dict[str, KOFamMetadata]] = None,
+    phrog_annotations: Optional[dict[str, PhrogAnnotation]] = None,
     all_hits_writers: Optional[Sequence] = None,
 ) -> list[tuple[dict[str, AnnotationHit], int, int, int]]:
     """Search one database once and collect the hits of every track in ``cfgs``.
 
     The tracks differ only in how hits are filtered afterwards (E-value limit,
-    Pfam GA, KOfam thresholds), never in how the search is run, so one search
+    Pfam GA, KOfam thresholds, PHROG score and coverage), never in how the search is run, so one search
     serves them all. Returns, per track and in the order of ``cfgs``: best hit
     per protein, passing hit count, models seen, Pfam models skipped for
     lacking GA cutoffs.
@@ -255,6 +282,7 @@ def _search_tracks(
     models = 0
     seen_models: set[str] = set()
     kofam_meta_by_model = kofam_meta_by_model or {}
+    phrog_annotations = phrog_annotations or {}
     log_call(
         "pyhmmer.hmmsearch",
         database=database,
@@ -321,6 +349,16 @@ def _search_tracks(
                                 continue
                         else:
                             seq_ga, dom_ga = ga_pair
+                    elif database == "phrog":
+                        model_id = _phrog_model_id(hmm)
+                        if model_id is None:
+                            continue
+                        model_accession = model_id
+                        model_name = model_id
+                        phrog = phrog_annotations.get(model_id)
+                        # Most PHROGs have no known function: keep the hit anyway.
+                        model_description = phrog.annotation if phrog else ""
+                        model_length = int(hmm.M)
                     else:
                         model_id = _kofam_model_id(hmm)
                         if model_id is None:
@@ -343,8 +381,27 @@ def _search_tracks(
 
                         full_score = float(hit.score)
                         domain_score, hmm_from, hmm_to, target_from, target_to = _domain_metrics(hit)
+                        model_coverage = None
 
-                        if database == "pfam":
+                        if database == "phrog":
+                            threshold_source = "phrog_score_coverage"
+                            score_type = "full"
+                            effective_score = full_score
+                            if hmm_from is not None and hmm_to is not None and model_length:
+                                model_coverage = (hmm_to - hmm_from + 1) / model_length
+                            threshold_value = None
+                            strict_tracks = []
+                            for i in tracks:
+                                cfg = cfgs[i]
+                                if cfg.phrog_require_thresholds and (
+                                    full_score < cfg.phrog_min_score
+                                    or model_coverage is None
+                                    or model_coverage < cfg.phrog_min_coverage
+                                ):
+                                    continue
+                                strict_tracks.append(i)
+                            tracks = strict_tracks
+                        elif database == "pfam":
                             threshold_source = "pfam_ga"
                             threshold_value = seq_ga
                             score_type = "full"
@@ -393,10 +450,16 @@ def _search_tracks(
                                 target_from=target_from,
                                 target_to=target_to,
                                 threshold_source=threshold_source,
-                                threshold_value=threshold_value,
+                                threshold_value=(
+                                    cfgs[index].phrog_min_score
+                                    if database == "phrog"
+                                    and cfgs[index].phrog_require_thresholds
+                                    else threshold_value
+                                ),
                                 model_name=model_name,
                                 model_description=model_description,
                                 track=cfgs[index].track,
+                                model_coverage=model_coverage,
                             )
 
                             passing[index] += 1
@@ -439,16 +502,23 @@ def _write_hit(writer, record: AnnotationHit) -> None:
 def annotate_proteins_complete_databases(
     proteins_faa: Path,
     cfg: AnnotationConfig,
+    *,
+    phrog: bool = False,
 ) -> AnnotationResults:
-    """Annotate against the complete Pfam and KOfam databases for one track."""
-    return annotate_proteins_tracks(proteins_faa, [cfg])[0]
+    """Annotate against the complete databases for one track."""
+    return annotate_proteins_tracks(proteins_faa, [cfg], phrog=phrog)[0]
 
 
 def annotate_proteins_tracks(
     proteins_faa: Path,
     cfgs: Sequence[AnnotationConfig],
+    *,
+    phrog: bool = False,
 ) -> list[AnnotationResults]:
-    """Annotate for several tracks with one search of each database."""
+    """Annotate for several tracks with one search of each database.
+
+    Pfam and KOfam are always searched; PHROG only when ``phrog`` is true.
+    """
     for cfg in cfgs:
         if cfg.keep_all_hits and cfg.all_hits_path is None:
             raise ValueError("all_hits_path is required when keep_all_hits is True")
@@ -486,6 +556,17 @@ def annotate_proteins_tracks(
             kofam_meta_by_model=all_kofam_meta,
             all_hits_writers=writers,
         )
+        phrog_results = None
+        if phrog:
+            phrog_meta = ensure_phrog_database()
+            phrog_results = _search_tracks(
+                database="phrog",
+                hmm_path=Path(phrog_meta["hmm_path"]),
+                proteins_path=proteins_faa,
+                cfgs=cfgs,
+                phrog_annotations=get_all_phrog_annotations(),
+                all_hits_writers=writers,
+            )
     finally:
         for handle in handles:
             handle.close()
@@ -494,9 +575,14 @@ def annotate_proteins_tracks(
         AnnotationResults(
             best_pfam_by_protein=pfam[index][0],
             best_kofam_by_protein=kofam[index][0],
-            passing_hit_count=pfam[index][1] + kofam[index][1],
-            scanned_model_count=pfam[index][2] + kofam[index][2],
+            passing_hit_count=pfam[index][1]
+            + kofam[index][1]
+            + (phrog_results[index][1] if phrog_results else 0),
+            scanned_model_count=pfam[index][2]
+            + kofam[index][2]
+            + (phrog_results[index][2] if phrog_results else 0),
             skipped_pfam_models_missing_ga=pfam[index][3],
+            best_phrog_by_protein=phrog_results[index][0] if phrog_results else {},
         )
         for index in range(len(cfgs))
     ]

@@ -474,3 +474,70 @@ def test_tracks_searched_together_must_share_search_settings():
         ann._search_tracks(
             database="pfam", hmm_path=Path("db.hmm"), proteins_path=Path("p.faa"), cfgs=cfgs
         )
+
+
+class FakePhrogHMM:
+    def __init__(self, name: str, length: int):
+        self.name = name.encode()
+        self.accession = None
+        self.description = None
+        self.M = length
+
+
+def _phrog_search(monkeypatch, hits, **strict):
+    from phu.db.phrog import PhrogAnnotation
+
+    _patch_hmmfile(monkeypatch)
+    _patch_sequencefile(monkeypatch)
+    _patch_hmmsearch(monkeypatch, [FakeTopHits(FakePhrogHMM("phrog_7", 100), hits)])
+    return ann._search_tracks(
+        database="phrog",
+        hmm_path=Path("phrog.hmm"),
+        proteins_path=Path("proteins.faa"),
+        cfgs=[
+            ann.AnnotationConfig(phrog_require_thresholds=False, track="relaxed"),
+            ann.AnnotationConfig(track="strict", **strict),
+        ],
+        phrog_annotations={"phrog_7": PhrogAnnotation("phrog_7", "anti-restriction", "moron")},
+    )
+
+
+def _phrog_hit(name, score, hmm_from, hmm_to, evalue=1e-20):
+    return FakeHit(
+        name, score=score, evalue=evalue, domains=[FakeDomain(score, alignment=FakeAlignment(hmm_from, hmm_to))]
+    )
+
+
+def test_phrog_strict_track_needs_bit_score_and_model_coverage(monkeypatch):
+    relaxed, strict = _phrog_search(
+        monkeypatch,
+        [
+            _phrog_hit("c|gene1", 60.0, 1, 40),  # exactly at both limits
+            _phrog_hit("c|gene2", 59.9, 1, 100),  # score too low
+            _phrog_hit("c|gene3", 300.0, 1, 39),  # covers 39% of the model
+            _phrog_hit("c|gene4", 300.0, 1, 100, evalue=1e-3),  # fails the E-value
+        ],
+    )
+
+    assert set(relaxed[0]) == {"c|gene1", "c|gene2", "c|gene3"}
+    assert set(strict[0]) == {"c|gene1"}
+    hit = strict[0]["c|gene1"]
+    assert (hit.database, hit.model_id, hit.model_description) == (
+        "phrog",
+        "phrog_7",
+        "anti-restriction",
+    )
+    assert hit.model_coverage == pytest.approx(0.4)
+    assert (hit.threshold_source, hit.threshold_value) == ("phrog_score_coverage", 60.0)
+    assert relaxed[0]["c|gene1"].threshold_value is None
+
+
+def test_phrog_thresholds_are_configurable(monkeypatch):
+    _, strict = _phrog_search(
+        monkeypatch,
+        [_phrog_hit("c|gene1", 30.0, 1, 20)],
+        phrog_min_score=25.0,
+        phrog_min_coverage=0.2,
+    )
+
+    assert set(strict[0]) == {"c|gene1"}

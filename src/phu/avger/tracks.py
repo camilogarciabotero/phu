@@ -26,11 +26,13 @@ def annotate_avg_tracks(
     keep_all_hits: bool = False,
     relaxed_all_hits_path: Path | None = None,
     strict_all_hits_path: Path | None = None,
+    phrog: bool = True,
 ) -> AvgAnnotationResults:
-    """Annotate complete Pfam and KOfam databases for both AVG tracks.
+    """Annotate complete Pfam, KOfam and (unless ``phrog`` is false) PHROG.
 
     The relaxed track uses only the independent E-value cutoff. The strict
-    track retains Pfam GA and KOfam adaptive thresholds for functional calls.
+    track retains Pfam GA and KOfam adaptive thresholds, and for PHROG a bit
+    score of at least 60 over at least 40% of the model, for functional calls.
     """
     if keep_all_hits and (
         relaxed_all_hits_path is None or strict_all_hits_path is None
@@ -51,6 +53,7 @@ def annotate_avg_tracks(
                 all_hits_path=relaxed_all_hits_path,
                 pfam_require_ga=False,
                 kofam_require_thresholds=False,
+                phrog_require_thresholds=False,
                 track="relaxed",
             ),
             AnnotationConfig(
@@ -61,5 +64,6 @@ def annotate_avg_tracks(
                 track="strict",
             ),
         ],
+        phrog=phrog,
     )
     return AvgAnnotationResults(relaxed=relaxed, strict=strict)

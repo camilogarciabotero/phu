@@ -33,8 +33,9 @@ def test_require_databases_resolves_every_database_avger_uses(monkeypatch):
     monkeypatch.setattr(avg, "resolve_db", resolved.append)
 
     avg.require_databases()
+    avg.require_databases(phrog=False)
 
-    assert resolved == ["pfam", "kofam", "avg"]
+    assert resolved == ["pfam", "kofam", "avg", "phrog", "pfam", "kofam", "avg"]
 
 
 def test_run_avg_reuses_prediction_cache_and_passes_track_paths(monkeypatch, tmp_path):
@@ -47,7 +48,7 @@ def test_run_avg_reuses_prediction_cache_and_passes_track_paths(monkeypatch, tmp
         cache_key="cache-key",
     )
     calls = {}
-    monkeypatch.setattr(avg, "require_databases", lambda: None)
+    monkeypatch.setattr(avg, "require_databases", lambda phrog: None)
     monkeypatch.setattr(avg, "get_or_predict_proteins", lambda *args, **kwargs: prediction)
     monkeypatch.setattr(avg, "write_avg_outputs", lambda *args, **kwargs: ())
     monkeypatch.setattr(
@@ -128,3 +129,118 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
     run = json.loads((tmp_path / "out" / ".phu" / "run.json").read_text())
     assert run["phu_db"] == provenance
     assert "avg_reference" not in run
+
+
+def _phrog_outputs(monkeypatch, tmp_path, strict_ids):
+    """One contig, two genes; gene1 is a candidate through its PHROG scores."""
+    input_contigs = tmp_path / "contigs.fna"
+    input_contigs.write_text(">contig-1\nATG\n")
+    genes = [
+        PredictedGene("contig-1", f"contig-1|gene{n}", 1, 30, 1, n, "ATG", "M") for n in (1, 2)
+    ]
+
+    def hit(gene, model_id, description=""):
+        return AnnotationHit(
+            protein_id=gene.gene_id,
+            contig_id=gene.contig_id,
+            database="phrog",
+            model_id=model_id,
+            model_accession=model_id,
+            score_type="full",
+            effective_score=80,
+            full_score=80,
+            domain_score=80,
+            evalue=1e-20,
+            hmm_from=1,
+            hmm_to=50,
+            target_from=1,
+            target_to=50,
+            threshold_source="phrog_score_coverage",
+            threshold_value=60,
+            model_name=model_id,
+            model_description=description,
+            model_coverage=0.5,
+        )
+
+    relaxed = {genes[0].gene_id: hit(genes[0], "phrog_2"), genes[1].gene_id: hit(genes[1], "phrog_1")}
+    strict = {genes[0].gene_id: hit(genes[0], strict_ids, "anti-restriction protein")}
+    annotations = AvgAnnotationResults(
+        AnnotationResults({}, {}, 2, 2, 0, best_phrog_by_protein=relaxed),
+        AnnotationResults({}, {}, 1, 1, 0, best_phrog_by_protein=strict),
+    )
+    (tmp_path / "phrog").mkdir()
+    (tmp_path / "phrog" / "annotations.tsv").write_text(
+        "phrog\tcolor\tannot\tcategory\n1\t#f\tintegrase\tintegration and excision\n"
+        "2\t#f\tanti-restriction protein\tmoron\n"
+    )
+    monkeypatch.setattr(avg, "resolve_db", lambda name: tmp_path / name)
+    monkeypatch.setattr(avg, "bundle_provenance", lambda: {})
+    monkeypatch.setattr(
+        avg,
+        "load_avg_reference",
+        lambda root: AvgReference(
+            # Contig AVL = (1.0 + 6.0) / 2 = 3.5; gene1 has VL 1.0 and V 0.8.
+            scores=[
+                {"database": "phrog", "accession": "phrog_2", "v_score": "0.8", "vl_score": "1.0"},
+                {"database": "phrog", "accession": "phrog_1", "v_score": "10", "vl_score": "6.0"},
+            ],
+            positive=[
+                {"database": "phrog", "accession": "phrog_2", "proposed_class": "putative_apg", "name": "x"}
+            ],
+            filters=[
+                {
+                    "database": "phrog",
+                    "accession": "phrog_1",
+                    "proposed_class": "putative_apg",
+                    "filter_category": "filter_essential",
+                }
+            ],
+        ),
+    )
+    prediction = CacheArtifact(tmp_path / "proteins.faa", 2, True, "key", genes=genes)
+    out = tmp_path / "out"
+    avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=out), prediction, annotations)
+    lines = (out / "gene-annotations.tsv").read_text().splitlines()
+    header = lines[0].split("\t")
+    return [dict(zip(header, line.split("\t"))) for line in lines[1:]], out
+
+
+def test_phrog_alone_can_make_and_classify_a_candidate(monkeypatch, tmp_path):
+    rows, out = _phrog_outputs(monkeypatch, tmp_path, "phrog_2")
+
+    gene1, gene2 = rows
+    assert gene1["zhou_phrog_candidate"] == "true"
+    assert gene1["zhou_avg_candidate"] == "true"
+    assert gene1["phrog_scaffold_avl"] == "3.5"
+    assert gene1["phrog_scored_gene_count"] == "2"
+    assert (gene1["phrog_id"], gene1["phrog_category"], gene1["phrog_coverage"]) == (
+        "phrog_2",
+        "moron",
+        "0.5",
+    )
+    assert (gene1["classification_status"], gene1["avg_class"]) == ("classified", "putative_apg")
+    assert gene2["zhou_phrog_candidate"] == "false"
+    assert gene2["phrog_id"] == ""
+    assert len((out / "avg-predictions.tsv").read_text().splitlines()) == 2
+    run = json.loads((out / ".phu" / "run.json").read_text())
+    assert run["parameters"]["phrog"] is True
+    assert run["output_schema_version"] == 2
+
+
+def test_phrog_columns_stay_in_the_tables_when_phrog_is_off(monkeypatch, tmp_path):
+    input_contigs = tmp_path / "contigs.fna"
+    input_contigs.write_text(">contig-1\nATG\n")
+    gene = PredictedGene("contig-1", "contig-1|gene1", 1, 30, 1, 1, "ATG", "M")
+    monkeypatch.setattr(avg, "resolve_db", lambda name: tmp_path / name)
+    monkeypatch.setattr(avg, "bundle_provenance", lambda: {})
+    monkeypatch.setattr(avg, "load_avg_reference", lambda root: AvgReference([], [], []))
+    empty = AnnotationResults({}, {}, 0, 0, 0)
+
+    avg.write_avg_outputs(
+        avg.AvgConfig(input_contigs=input_contigs, output_folder=tmp_path / "out", phrog=False),
+        CacheArtifact(tmp_path / "proteins.faa", 1, True, "key", genes=[gene]),
+        AvgAnnotationResults(empty, empty),
+    )
+
+    header = (tmp_path / "out" / "gene-annotations.tsv").read_text().splitlines()[0].split("\t")
+    assert {"phrog_id", "phrog_v_score", "phrog_scaffold_avl", "zhou_phrog_candidate"} <= set(header)

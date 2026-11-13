@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Iterable, Literal
 
-Database = Literal["pfam", "kofam"]
+Database = Literal["pfam", "kofam", "phrog"]
 Track = Literal["relaxed", "strict"]
 FilterMode = Literal["standard", "strict", "none"]
 DatabaseKey = tuple[Database, str]
@@ -109,7 +109,7 @@ def database_key(database: str, accession: str) -> DatabaseKey:
     normalized_database = database.strip().lower()
     if normalized_database in {"kegg", "ko", "kofam"}:
         normalized_database = "kofam"
-    if normalized_database not in {"pfam", "kofam"}:
+    if normalized_database not in {"pfam", "kofam", "phrog"}:
         raise ValueError(f"Unsupported AVG database: {database}")
     normalized_accession = accession.strip().upper()
     if not normalized_accession:

@@ -7,6 +7,14 @@ behavior in the unreleased branch and may change before a release.
 
 ### Avger
 
+- `phu avger` now reads binary copies of the HMM files, built beside the
+  databases on the first run (about 5 GB). Loading Pfam, KOfam and PHROG
+  takes seconds instead of minutes.
+- Fixed: on inputs with more than 10,000 proteins, `phu avger` searched the
+  proteins in batches and each batch computed E-values as if it were the whole
+  input, so hits near the E-value cutoff could pass or fail depending on the
+  batch they fell in. E-values now always refer to the whole input. Results
+  for inputs of up to 10,000 proteins are unchanged.
 - `phu avger` searches each database once instead of twice, which roughly
   halves its run time. The relaxed and strict tracks used to run the same
   search separately and differ only in the thresholds applied to the hits;

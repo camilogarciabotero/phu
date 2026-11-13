@@ -109,7 +109,12 @@ instead. A running install re-stamps it every minute, and PHU clears one that
 a killed job left without a stamp for six hours.
 
 PHU builds a small index and per-model files for each database the first time
-it is queried, and keeps them beside the database files. If the install is
+it is queried, and keeps them beside the database files. The first `phu avger`
+run also writes a binary copy of each model file it searches
+(`profiles.h3m`, about 5 GB for Pfam, KOfam and PHROG together), which loads
+in seconds where the text file takes minutes. The copies are rebuilt
+automatically if the database or pyhmmer changes; if they cannot be written,
+PHU reads the text files instead. If the install is
 read-only for you (for example one a colleague or an administrator installed),
 PHU keeps them in your own cache folder instead (`PHU_CACHE_DIR`, default
 `~/.cache/phu`), so a shared read-only install works as is.

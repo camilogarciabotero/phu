@@ -575,6 +575,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#user-supplied-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User-supplied models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protein-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protein coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#dbcan-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -811,6 +833,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#user-supplied-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User-supplied models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protein-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protein coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#dbcan-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -951,6 +995,16 @@ and curated scientific rules; see the
 <a href="../commands/avger/#scientific-interpretation">avger scientific interpretation</a>.</p>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>These rules apply to the screening workflow in <code>phu screen</code> after protein prediction and HMM search.</p>
+<h2 id="user-supplied-models">User-supplied models<a class="headerlink" href="#user-supplied-models" title="Permanent link">&para;</a></h2>
+<p>A hit to one of your own HMMs passes only when the best domain aligns to more
+than <code>0.35</code> of the model (<code>--min-hmm-coverage</code>; <code>0</code> turns the filter off) and
+its E-value is at most <code>1e-6</code> (<code>--max-evalue</code>). Hits without a usable HMM
+alignment do not pass. The coverage filter is not applied to Pfam or KOfam
+models, which keep their curated thresholds.</p>
+<h2 id="protein-coverage">Protein coverage<a class="headerlink" href="#protein-coverage" title="Permanent link">&para;</a></h2>
+<p><code>--min-protein-coverage F</code> is off by default. When set, a hit passes only if
+its best domain aligns to at least the fraction <code>F</code> of the protein. It applies
+to every model, in addition to the rules of that model's kind.</p>
 <h2 id="dbcan-behavior">dbCAN behavior<a class="headerlink" href="#dbcan-behavior" title="Permanent link">&para;</a></h2>
 <p>For resolved dbCAN models, a hit passes the dbCAN-specific filter only when
 the independent E-value is strictly less than <code>1e-15</code> and the aligned HMM
@@ -1036,7 +1090,7 @@ and the query manifest to audit the selected inventory and retained hits.</p>
 <li><code>score_type = full</code></li>
 </ul>
 <p>Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in the domain table.</p>
-<p>If <code>--max-evalue</code> remains default (<code>1e-5</code>), many such hits also fail the E-value filter.</p>
+<p>If <code>--max-evalue</code> remains default (<code>1e-6</code>), many such hits also fail the E-value filter.</p>
 
 
 

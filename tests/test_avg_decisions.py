@@ -158,3 +158,36 @@ def test_final_class_resolution_preserves_candidate_statuses():
         zhou_candidate=True,
         weighted_classes=["putative_amg", "putative_apg"],
     ).status == "class_conflict"
+
+
+def test_positive_evidence_index_gives_the_same_matches_as_the_list():
+    from phu.avger.decisions import (
+        AvgEvidence,
+        PositiveEvidence,
+        collect_positive_evidence,
+        index_positive_evidence,
+    )
+
+    references = [
+        PositiveEvidence("kofam", "K00002", "putative_areg"),
+        PositiveEvidence("pfam", "PF00001", "putative_amg", amg_weight=0.9),
+        PositiveEvidence("pfam", "PF00001", "putative_apg"),
+        PositiveEvidence("phrog", "phrog_7", "putative_apg"),
+        PositiveEvidence("pfam", "PF00009", "unsupported_class"),
+    ]
+    evidence = [
+        AvgEvidence("p", "c", "pfam", "PF00001", "strict", 0.0, 0.0),
+        AvgEvidence("p", "c", "phrog", "phrog_7", "strict", 0.0, 0.0),
+        AvgEvidence("p", "c", "kofam", "K00002", "relaxed", 0.0, 0.0),
+        AvgEvidence("p", "c", "pfam", "PF00009", "strict", 0.0, 0.0),
+    ]
+
+    from_list = collect_positive_evidence(evidence, references)
+    from_index = collect_positive_evidence(evidence, index_positive_evidence(references))
+
+    assert from_index == from_list
+    assert [(item.database, item.accession, item.proposed_class) for item in from_list] == [
+        ("pfam", "PF00001", "putative_amg"),
+        ("pfam", "PF00001", "putative_apg"),
+        ("phrog", "phrog_7", "putative_apg"),
+    ]

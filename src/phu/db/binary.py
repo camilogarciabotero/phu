@@ -16,7 +16,11 @@ from pathlib import Path
 import pyhmmer
 
 from phu.core.log import log_call
-from phu.db.bundle import derived_dir, derived_files_lock, write_atomically
+from phu.db.bundle import derived_dir, derived_files_lock, resolve_db, write_atomically
+
+# Databases whose whole model file is searched (by avger), so worth a copy.
+SEARCHED_DATABASES = ("pfam", "kofam", "phrog")
+TEXT_NAME = "profiles.hmm"
 
 BINARY_NAME = "profiles.h3m"
 STAMP_NAME = "profiles.h3m.json"
@@ -41,6 +45,21 @@ def _is_current(binary: Path, stamp_path: Path, expected: dict[str, object]) -> 
         return json.loads(stamp_path.read_text()) == expected
     except (OSError, ValueError):
         return False
+
+
+def has_binary_models(name: str) -> bool:
+    """Whether database ``name`` of the installed bundle has a current binary copy."""
+    text_path = resolve_db(name) / TEXT_NAME
+    place = derived_dir(text_path.parent)
+    try:
+        return _is_current(place / BINARY_NAME, place / STAMP_NAME, _stamp(text_path))
+    except OSError:
+        return False
+
+
+def build_binary_models(name: str) -> Path:
+    """Build (if needed) the binary copy of database ``name``; returns the file to read."""
+    return binary_hmm_path(resolve_db(name) / TEXT_NAME)
 
 
 def _build(text_path: Path, binary: Path) -> int:

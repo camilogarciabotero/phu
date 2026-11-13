@@ -360,3 +360,30 @@ def test_screen_defaults_to_evalue_1e6_and_user_coverage_035(tmp_path: Path):
     assert (cfg.max_evalue, cfg.min_hmm_coverage) == (1e-6, 0.35)
     plan = cfg.plan()
     assert (plan.max_evalue, plan.min_hmm_coverage) == (1e-6, 0.35)
+
+
+def test_min_protein_coverage_is_off_by_default_and_applies_to_every_model():
+    def hit(model, protein_coverage):
+        return screen.Hit(
+            contig=f"{model}-{protein_coverage}",
+            prot_id=f"{model}-{protein_coverage}|gene1",
+            model=model,
+            bitscore=100.0,
+            domain_bitscore=100.0,
+            evalue=1e-20,
+            hmm_coverage=0.9,
+            protein_coverage=protein_coverage,
+        )
+
+    hits = [hit("my_family", 0.5), hit("my_family", 0.49), hit("my_family", None), hit("PF00001", 0.2)]
+
+    def kept(**kwargs):
+        return [
+            (item.model, item.protein_coverage)
+            for item in screen._filter_qualifying_hits(
+                hits, None, 1e-6, database_model_ids=("PF00001",), **kwargs
+            )
+        ]
+
+    assert len(kept()) == 4
+    assert kept(min_protein_coverage=0.5) == [("my_family", 0.5)]

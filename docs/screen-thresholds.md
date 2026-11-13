@@ -23,6 +23,12 @@ its E-value is at most `1e-6` (`--max-evalue`). Hits without a usable HMM
 alignment do not pass. The coverage filter is not applied to Pfam or KOfam
 models, which keep their curated thresholds.
 
+## Protein coverage
+
+`--min-protein-coverage F` is off by default. When set, a hit passes only if
+its best domain aligns to at least the fraction `F` of the protein. It applies
+to every model, in addition to the rules of that model's kind.
+
 ## dbCAN behavior
 
 For resolved dbCAN models, a hit passes the dbCAN-specific filter only when

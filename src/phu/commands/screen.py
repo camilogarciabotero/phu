@@ -230,6 +230,7 @@ def write_cazyme_evidence(
         "evalue",
         "domain_i_evalue",
         "hmm_coverage",
+        "protein_coverage",
         "hmm_from",
         "hmm_to",
         "target_from",
@@ -251,6 +252,9 @@ def write_cazyme_evidence(
                 "hmm_coverage": ""
                 if hit.hmm_coverage is None
                 else f"{hit.hmm_coverage:.6f}",
+                "protein_coverage": ""
+                if hit.protein_coverage is None
+                else f"{hit.protein_coverage:.6f}",
                 "hmm_from": "" if hit.hmm_from is None else hit.hmm_from,
                 "hmm_to": "" if hit.hmm_to is None else hit.hmm_to,
                 "target_from": "" if hit.target_from is None else hit.target_from,
@@ -287,6 +291,7 @@ def write_cazyme_outputs(
         "evalue",
         "domain_i_evalue",
         "hmm_coverage",
+        "protein_coverage",
         "hmm_from",
         "hmm_to",
         "target_from",
@@ -308,6 +313,9 @@ def write_cazyme_outputs(
                 "hmm_coverage": ""
                 if hit.hmm_coverage is None
                 else f"{hit.hmm_coverage:.6f}",
+                "protein_coverage": ""
+                if hit.protein_coverage is None
+                else f"{hit.protein_coverage:.6f}",
                 "hmm_from": hit.hmm_from if hit.hmm_from is not None else "",
                 "hmm_to": hit.hmm_to if hit.hmm_to is not None else "",
                 "target_from": hit.target_from if hit.target_from is not None else "",
@@ -978,6 +986,8 @@ class ScreenConfig:
     max_evalue: Optional[float] = 1e-6
     # Model coverage a hit to a user-supplied model must exceed (None: no filter).
     min_hmm_coverage: Optional[float] = 0.35
+    # Protein fraction every hit must reach, whatever its model (None: no filter).
+    min_protein_coverage: Optional[float] = None
     cut_ga: bool = True
     use_kofam_thresholds: bool = True
     top_per_contig: int = 1
@@ -1046,6 +1056,7 @@ class ScreenConfig:
             min_bitscore=self.min_bitscore,
             max_evalue=self.max_evalue,
             min_hmm_coverage=self.min_hmm_coverage,
+            min_protein_coverage=self.min_protein_coverage,
             cut_ga=self.cut_ga,
             use_kofam_thresholds=self.use_kofam_thresholds,
             top_per_contig=self.top_per_contig,
@@ -1080,6 +1091,7 @@ class ScreenPlan:
     min_bitscore: Optional[float]
     max_evalue: Optional[float]
     min_hmm_coverage: Optional[float]
+    min_protein_coverage: Optional[float]
     cut_ga: bool
     use_kofam_thresholds: bool
     top_per_contig: int
@@ -1178,6 +1190,8 @@ class Hit:
     evalue: float
     domain_bitscore: Optional[float] = None
     hmm_coverage: Optional[float] = None
+    # Fraction of the protein aligned in the best domain.
+    protein_coverage: Optional[float] = None
     domain_i_evalue: Optional[float] = None
     hmm_from: Optional[int] = None
     hmm_to: Optional[int] = None
@@ -1428,6 +1442,7 @@ def _hmmsearch(
 
                 domain_bitscore: Optional[float] = None
                 hmm_coverage: Optional[float] = None
+                protein_coverage: Optional[float] = None
                 domain_i_evalue: Optional[float] = None
                 hmm_from: Optional[int] = None
                 hmm_to: Optional[int] = None
@@ -1456,6 +1471,11 @@ def _hmmsearch(
                             hmm_coverage = (
                                 alignment.hmm_to - alignment.hmm_from + 1
                             ) / model_length
+                            protein_length = getattr(hit, "length", None)
+                            if protein_length:
+                                protein_coverage = (
+                                    alignment.target_to - alignment.target_from + 1
+                                ) / protein_length
 
                 yield Hit(
                     contig=contig,
@@ -1465,6 +1485,7 @@ def _hmmsearch(
                     domain_bitscore=domain_bitscore,
                     evalue=hit.evalue,
                     hmm_coverage=hmm_coverage,
+                    protein_coverage=protein_coverage,
                     domain_i_evalue=domain_i_evalue,
                     hmm_from=hmm_from,
                     hmm_to=hmm_to,
@@ -1552,12 +1573,14 @@ def _filter_qualifying_hits(
     dbcan_model_ids: Optional[Iterable[str]] = None,
     min_hmm_coverage: Optional[float] = None,
     database_model_ids: Optional[Iterable[str]] = None,
+    min_protein_coverage: Optional[float] = None,
 ) -> list[Hit]:
     """Keep the hits that pass the thresholds of their model's kind.
 
     ``min_hmm_coverage`` applies to user-supplied models only, that is to
     models not in ``database_model_ids``: Pfam and KOfam have curated score
-    thresholds and dbCAN has its own coverage rule.
+    thresholds and dbCAN has its own coverage rule. ``min_protein_coverage``
+    is opt-in and applies to every model.
     """
     kofam_metadata_by_model = kofam_metadata_by_model or {}
     dbcan_models = set(dbcan_model_ids or ())
@@ -1583,6 +1606,10 @@ def _filter_qualifying_hits(
             and hit.model not in database_models
             and ko_meta is None
             and (hit.hmm_coverage is None or hit.hmm_coverage <= min_hmm_coverage)
+        ):
+            continue
+        if min_protein_coverage is not None and (
+            hit.protein_coverage is None or hit.protein_coverage < min_protein_coverage
         ):
             continue
         effective_min_bitscore = min_bitscore
@@ -1617,6 +1644,7 @@ def _choose_best_contigs(
     dbcan_model_ids: Optional[Iterable[str]] = None,
     min_hmm_coverage: Optional[float] = None,
     database_model_ids: Optional[Iterable[str]] = None,
+    min_protein_coverage: Optional[float] = None,
 ) -> tuple[list[Hit], list[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
@@ -1639,6 +1667,7 @@ def _choose_best_contigs(
         dbcan_model_ids,
         min_hmm_coverage=min_hmm_coverage,
         database_model_ids=database_model_ids,
+        min_protein_coverage=min_protein_coverage,
     ):
         per_contig[hit.contig].append(hit)
 
@@ -2136,6 +2165,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                             "max_evalue": plan.max_evalue,
                             "min_bitscore": plan.min_bitscore,
                 "user_model_min_hmm_coverage": plan.min_hmm_coverage,
+                "min_protein_coverage": plan.min_protein_coverage,
                             "dbcan_independent_evalue": "<1e-15",
                             "dbcan_hmm_coverage": ">0.35",
                         },
@@ -2183,6 +2213,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         min_bitscore=plan.min_bitscore,
         max_evalue=plan.max_evalue,
         min_hmm_coverage=plan.min_hmm_coverage,
+        min_protein_coverage=plan.min_protein_coverage,
         use_kofam_thresholds=plan.use_kofam_thresholds,
         combine_mode=plan.combine_mode,
         top_per_contig=plan.top_per_contig,
@@ -2230,6 +2261,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             dbcan_model_ids,
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
+            min_protein_coverage=plan.min_protein_coverage,
         )
         filtered_hits, _ = _choose_best_contigs(
             all_hits,
@@ -2245,6 +2277,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             dbcan_model_ids=dbcan_model_ids,
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
+            min_protein_coverage=plan.min_protein_coverage,
         )
         pul_matches, contig_ids = evaluate_pul_signatures(filtered_hits, pul_rules)
         kept_contig_set = set(contig_ids)
@@ -2259,6 +2292,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             dbcan_model_ids,
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
+            min_protein_coverage=plan.min_protein_coverage,
         )
         kept_hits = qualifying_cazyme_hits
         contig_ids = list(dict.fromkeys(hit.contig for hit in kept_hits))
@@ -2277,6 +2311,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             dbcan_model_ids=dbcan_model_ids,
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
+            min_protein_coverage=plan.min_protein_coverage,
         )
 
     if query.all_puls:
@@ -2400,6 +2435,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 "max_evalue": plan.max_evalue,
                 "min_bitscore": plan.min_bitscore,
                 "user_model_min_hmm_coverage": plan.min_hmm_coverage,
+                "min_protein_coverage": plan.min_protein_coverage,
                 "dbcan_independent_evalue": "<1e-15",
                 "dbcan_hmm_coverage": ">0.35",
             },

@@ -51,7 +51,7 @@ caller, `hmmsearch`, a table parser and a sequence extractor with shell
 scripts that differ between laboratories. Each program is one more thing to
 install, which is often the hardest step on a shared computing cluster, and
 each script is a place where parameters go unrecorded. Reference databases add
-a second problem: Pfam [1], KOfam [2] and dbCAN are updated in place, so the
+a second problem: Pfam [1], KOfam [2] and dbCAN [21] are updated in place, so the
 same command can give different results months apart unless versions are
 tracked by hand.
 
@@ -85,10 +85,11 @@ builds a new HMM from them (Figure 1). `phu jack` performs the same contig-level
 screening starting from seed protein sequences by iterative search (Figure 2).
 `phu cluster` groups genomes into species- and genus-level clusters using
 vclust [10]. `phu avger` ranks candidate auxiliary viral genes on trusted
-viral contigs from Pfam and KOfam annotations, V- and VL-scores [8] and the
-reference tables curated by the CheckAMG project; it keeps annotation
-evidence, virus-association evidence and class assignment in separate tables
-and reports candidates for prioritisation, not confirmed auxiliary genes. Figure 3 summarises this workflow.
+viral contigs from Pfam, KOfam and PHROG [22] annotations, V- and VL-scores
+[8] and the reference tables curated by the CheckAMG project; it keeps
+annotation evidence, virus-association evidence and class assignment in
+separate tables and reports candidates for prioritisation, not confirmed
+auxiliary genes (Figure 3; details below).
 `phu normalize-lineage` standardises lineage strings produced by
 gene-sharing-network classifiers.
 
@@ -102,12 +103,64 @@ wheels: the aligner binding is held to a release series whose wheels run on
 the older C libraries still common on clusters. Two external programs remain,
 vclust and SeqKit [17].
 
+**Auxiliary viral gene candidates.** <!-- TODO: PHROG support in `phu avger`
+is being implemented; recheck every statement in this paragraph against the
+merged code and its documentation before submission. --> `phu avger` searches
+the predicted proteins against Pfam, KOfam and PHROG and keeps two sets of
+hits. A relaxed track (E-value at most 1e-5) is used only for scoring: the
+best hit of each protein in each database is given the V- and VL-score of its
+family, and VL-scores are averaged per contig and per database (AVL). A strict
+track is used for functional calls: Pfam gathering thresholds, KOfam adaptive
+thresholds, and for PHROG a bit score of at least 60 with at least 0.4 of the
+model covered, the thresholds CheckAMG applies to PHROG. Each database is
+searched once and each hit is tested against the thresholds of both tracks;
+earlier versions ran one search per track, and removing the second search
+halved the run time on a test set of 21 viral contigs (5.9 Mb; 485 s to 245 s
+on 16 CPUs) with identical output tables. A gene is a candidate when, in at
+least one database, its contig has AVL above 3 while the gene itself has VL
+below 3 and V below 10; the three databases are scored and averaged
+separately and their values are never mixed. Candidates are then matched to
+the CheckAMG positive lists through their strict hits. The lists contain
+PHROG entries only for auxiliary physiological genes (77 families) and
+auxiliary regulatory genes (655 families), so PHROG can support those two
+classes but not an auxiliary metabolic gene call, which still requires Pfam or
+KOfam evidence and a minimum AMG weight (0.6 by default). A strict hit to a
+family on the CheckAMG filter lists, in any of the three databases, removes
+the corresponding class. PHROG is used by default and can be switched off.
+
 **Pinned reference databases.** All reference data are distributed as one
 archive, phu-db, built by a separate preparation tool and deposited on Zenodo
-[18]. Each phu release pins one archive by checksum; it is downloaded on first
-use in parallel ranges with resumption, verified, and installed. Users
-therefore cannot pick up a new Pfam release until a new archive is published,
-in exchange for results that are reproducible for a given phu version.
+[18] (Table 1). Each phu release pins one archive by checksum; it is
+downloaded on first use in parallel ranges with resumption, verified, and
+installed, and a copy already on disk can be supplied through the
+`PHU_DB_BUNDLE` environment variable for machines without internet access.
+The archive carries a manifest, `phu-db.json`, that records for every file
+the upstream URL, SHA-256, size, record count and the steps used to prepare
+it, so that the archive can be rebuilt and compared. Users therefore cannot
+pick up a new Pfam release until a new archive is published, in exchange for
+results that are reproducible for a given phu version.
+
+PHROGs are distributed as HH-suite profiles and MMseqs2 databases, which
+HMMER cannot search. To keep a single search engine, the archive contains
+HMMER models built from the official alignment of each PHROG with PyHMMER,
+using the default `hmmbuild` settings and one model per PHROG. The build
+fixes the date written into each model, so building twice gives the same
+bytes and the result can be pinned by checksum like any other file.
+
+**Table 1. Reference databases in the phu-db archive, version 0.2.0.** The
+archive is 2.2 GB compressed and about 12.8 GB installed.
+
+| Database | Upstream version | Content | Used by |
+|---|---|---|---|
+| Pfam [1] | 37.0 | 21,979 profile HMMs | `screen`, `avger` |
+| KOfam [2] | archive of 2026-07-02 | 27,816 profile HMMs with per-model score thresholds | `screen`, `avger` |
+| dbCAN [21] | HMMdb V15 | 881 profile HMMs; family substrates and polysaccharide utilisation locus rules | `screen` |
+| CheckAMG tables [8] | v1.1.1 | V- and VL-scores; positive and filter lists for three classes of auxiliary viral gene | `avger` |
+| PHROGs [22] | v4 | 38,880 profile HMMs built for phu-db from the official alignments; annotation table | `avger` |
+
+<!-- TODO: Table 1 and reference 18 describe phu-db 0.2.0, which is staged on
+Zenodo but not yet published. Add its version DOI to reference 18 once it is
+published, and confirm that the phu release described here pins it. -->
 
 **Caching and provenance.** Predicted proteins are cached under a key derived
 from the input and the prediction parameters, because repeated screens of the
@@ -121,7 +174,8 @@ draws each one (make_screen_figure.py, make_jack_figure.py,
 make_avger_figure.py; shared helpers in figure_kit.py).
 Figure 1: screen-workflow.pdf. Figure 2: jack-workflow.pdf.
 Figure 3: avger-workflow.pdf. TODO: Figure 3 shows PHROG as a third
-database, which is planned and not yet in a release; revise when it lands. -->
+database, which is being implemented and is not yet in a release; recheck the
+figure and its legend against the merged code. -->
 
 **Figure 1. The `phu screen` workflow.** (A) The query can mix HMM files with
 Pfam, KOfam and dbCAN names, which are resolved from the pinned database
@@ -139,12 +193,13 @@ for use as a query in `phu screen`. Contigs, proteins and hits are
 illustrative.
 
 **Figure 3. The `phu avger` workflow.** (A) Genes are predicted on trusted
-viral contigs. (B) Proteins are searched against Pfam, KOfam and PHROG in a
-relaxed track used for scoring and a strict track used for functional calls.
+viral contigs. (B) Proteins are searched once against each of Pfam, KOfam and PHROG;
+the hits are kept in a relaxed track used for scoring and a strict track used
+for functional calls, which differ only in the thresholds applied.
 (C) Each hit is given the V- and VL-score of its family, and VL-scores are
 averaged per contig and per database (AVL). (D) A gene with low V and VL on a
-contig with high AVL is a candidate; candidates are matched to curated
-positive lists, filtered, and given a final status. Gene values are
+contig with high AVL in at least one database is a candidate; candidates are
+matched to curated positive lists, filtered, and given a final status. Gene values are
 illustrative.
 
 **Testing.** An automated test suite (more than 700 tests) runs on Python
@@ -181,11 +236,11 @@ be enough for a Technical Release.
 - Documentation: https://camilogarciabotero.github.io/phu
 - Operating system(s): Linux, macOS <!-- TODO: confirm macOS is tested -->
 - Programming language: Python 3.11 or later
-- Other requirements: vclust 1.0 or later and SeqKit for the `cluster` and `screen` commands; about 12 GB of free disk while the reference databases install
+- Other requirements: vclust 1.0 or later and SeqKit for the `cluster` and `screen` commands; about 15 GB of free disk while the reference databases install (2.2 GB download, 12.8 GB installed)
 - License: MIT
 - RRID: <!-- TODO: register at SciCrunch.org -->
 - bio.tools ID: <!-- TODO: register at bio.tools -->
-- Distribution: PyPI, Bioconda <!-- TODO: Bioconda is at 0.8.0; update the recipe before submission -->
+- Distribution: PyPI, Bioconda <!-- TODO: the Bioconda recipe for 0.9.0 was corrected in November 2026; the release described here needs its own recipe update (Python 3.11, pyfamsa, pytrimal, no MAFFT) before submission -->
 - Support: GitHub issues
 
 <!-- TODO: state the exact version described (tag a release) and cite its
@@ -220,8 +275,10 @@ phu-db is available from Zenodo [18].
 
 ## List of abbreviations
 
-AMG: auxiliary metabolic gene; AVG: auxiliary viral gene; HMM: hidden Markov
-model; KO: KEGG Orthology; PUL: polysaccharide utilisation locus.
+AMG: auxiliary metabolic gene; APG: auxiliary physiological gene; AReG:
+auxiliary regulatory gene; AVG: auxiliary viral gene; AVL: average VL-score of
+a contig; HMM: hidden Markov model; KO: KEGG Orthology; PHROG: prokaryotic
+virus remote homologous group; PUL: polysaccharide utilisation locus.
 
 ## Declarations
 
@@ -269,6 +326,11 @@ Entries marked (verify) were written from memory. URLs need an access date. -->
 15. Deorowicz S, Debudaj-Grabysz A, Gudyś A. FAMSA: fast and accurate multiple sequence alignment of huge protein families. Sci Rep. 2016;6:33964. doi:10.1038/srep33964.
 16. Capella-Gutiérrez S, Silla-Martínez JM, Gabaldón T. trimAl: a tool for automated alignment trimming in large-scale phylogenetic analyses. Bioinformatics. 2009;25:1972-3. doi:10.1093/bioinformatics/btp348.
 17. Shen W, Sipos B, Zhao L. SeqKit2: a Swiss army knife for sequence and alignment processing. iMeta. 2024;3:e191. doi:10.1002/imt2.191.
-18. phu-db: reference database archive for phu, version 0.1.1. Zenodo. 2026. doi:10.5281/zenodo.24121209. <!-- TODO: authors and title as on the Zenodo record -->
+18. García-Botero C. Phu Databases, version 0.2.0. Zenodo. 2026. doi:10.5281/zenodo.19503347. <!-- TODO: this is the concept DOI, which always resolves to the latest version. Replace it with the version DOI of 0.2.0 once that version is published (0.1.1 is doi:10.5281/zenodo.24121209). -->
 19. GitHub. GitHub Copilot [Large language model coding assistant]. <!-- TODO: versions, dates of use, user's name, URL -->
 20. Anthropic. Claude (Claude Opus 5.5 and Claude Fable 5.2, used through Claude Code) [Large language model]. <!-- TODO: dates of use, user's name, URL -->
+21. Zheng J, Ge Q, Yan Y, Zhang X, Huang L, Yin Y. dbCAN3: automated carbohydrate-active enzyme and substrate annotation. Nucleic Acids Res. 2023;51:W115-21. doi:10.1093/nar/gkad328. (verify)
+22. Terzian P, Olo Ndela E, Galiez C, Lossouarn J, Pérez Bucio RE, Mom R, et al. PHROG: families of prokaryotic virus proteins clustered using remote homology. NAR Genom Bioinform. 2021;3:lqab067. doi:10.1093/nargab/lqab067. (verify)
+
+<!-- TODO: references 21 and 22 were added after the first numbering; renumber
+all references in order of first citation when converting to Word or LaTeX. -->

@@ -207,7 +207,18 @@ text(
 )
 text(
     bx + 328,
-    by + 302,
+    by + 288,
+    "Each database is searched once; the two tracks differ only in the "
+    "thresholds applied to the hits",
+    11.5,
+    "normal",
+    "middle",
+    MUTED,
+    "italic",
+)
+text(
+    bx + 328,
+    by + 308,
     "Pfam, KOfam and PHROG are scored and averaged independently; "
     "values are never mixed",
     11.5,

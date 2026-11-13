@@ -53,6 +53,12 @@ behavior in the unreleased branch and may change before a release.
 
 ### Screen
 
+- `phu screen` accepts PHROG identifiers as queries, for example
+  `phu screen phrog_216 -i contigs.fna`, alone or mixed with Pfam, KOfam and
+  dbCAN identifiers and your own HMMs. A PHROG hit needs a bit score of at
+  least 60 and at least half of both the model and the protein aligned;
+  `--no-use-phrog-thresholds` turns that off. The function and category of
+  each queried PHROG are recorded in `.phu/query.json`.
 - The default `--max-evalue` of `phu screen` is now `1e-6` (was `1e-5`), for
   every kind of model. Pass `--max-evalue 1e-5` for the previous behaviour.
 - Hits to your own HMMs must now cover more than 35% of the model. The new

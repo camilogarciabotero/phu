@@ -387,3 +387,37 @@ def test_min_protein_coverage_is_off_by_default_and_applies_to_every_model():
 
     assert len(kept()) == 4
     assert kept(min_protein_coverage=0.5) == [("my_family", 0.5)]
+
+
+def test_phrog_queries_use_the_avger_score_and_coverage_rule():
+    def hit(model, bitscore, hmm_coverage, protein_coverage):
+        return screen.Hit(
+            contig=f"{model}-{bitscore}-{hmm_coverage}-{protein_coverage}",
+            prot_id="p|gene1",
+            model=model,
+            bitscore=bitscore,
+            domain_bitscore=bitscore,
+            evalue=1e-20,
+            hmm_coverage=hmm_coverage,
+            protein_coverage=protein_coverage,
+        )
+
+    hits = [
+        hit("phrog_7", 60.0, 0.5, 0.5),  # exactly at every limit
+        hit("phrog_7", 59.9, 1.0, 1.0),
+        hit("phrog_7", 300.0, 0.49, 1.0),
+        hit("phrog_7", 300.0, 1.0, 0.49),
+        hit("phrog_7", 300.0, None, None),
+        hit("phrog_9", 20.0, 0.9, 0.1),  # a user's own model that happens to be named like one
+    ]
+
+    def kept(**kwargs):
+        return [
+            (item.model, item.bitscore)
+            for item in screen._filter_qualifying_hits(
+                hits, None, 1e-6, database_model_ids=("phrog_7",), min_hmm_coverage=0.35, **kwargs
+            )
+        ]
+
+    assert kept() == [("phrog_7", 60.0), ("phrog_9", 20.0)]
+    assert len(kept(use_phrog_thresholds=False)) == 6

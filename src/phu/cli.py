@@ -551,6 +551,12 @@ def screen(
         help="Use per-KO thresholds from ko_list according to score_type (full/domain)",
         rich_help_panel="Search thresholds",
     ),
+    use_phrog_thresholds: bool = typer.Option(
+        True,
+        "--use-phrog-thresholds/--no-use-phrog-thresholds",
+        help="For PHROG queries, require a bit score of 60 and half of both model and protein aligned",
+        rich_help_panel="Search thresholds",
+    ),
     top_per_contig: int = typer.Option(
         1,
         "--top-per-contig",
@@ -750,6 +756,7 @@ def screen(
         min_protein_coverage=min_protein_coverage or None,
         cut_ga=cut_ga,
         use_kofam_thresholds=use_kofam_thresholds,
+        use_phrog_thresholds=use_phrog_thresholds,
         top_per_contig=top_per_contig,
         min_protein_len_aa=min_protein_len_aa,
         translation_table=translation_table,

@@ -128,6 +128,36 @@ def test_avger_searches_phrog_from_the_installed_bundle(installed, tmp_path):
     assert phrog_db.normalize_phrog_id("PHROG_007") == "phrog_7"
 
 
+def test_screen_resolves_phrog_identifiers_from_the_installed_bundle(installed, tmp_path):
+    from phu.db import phrog as phrog_db
+
+    paths, missing = phrog_db.extract_phrog_models(["PHROG_2", "phrog_1", "phrog_4"], tmp_path / "x")
+    assert [path.name for path in paths] == ["phrog_2.hmm", "phrog_1.hmm"]
+    assert missing == ["phrog_4"]  # annotated upstream, but has no alignment
+    assert _model_names(paths[0]) == ["phrog_2"]
+    assert (installed / "phrog" / "offsets.json").is_file()
+
+    hmms, ko_metadata, query = screen._resolve_hmm_inputs(
+        [Path("phrog_2"), Path("PF00001")], tmp_path / "out", return_query=True
+    )
+    assert [path.name for path in hmms] == ["PF00001.hmm", "phrog_2.hmm"]
+    assert query.normalized_models == ("PF00001", "phrog_2")
+    assert query.databases == ("pfam", "phrog")
+    manifest = screen._query_manifest(query, "any")
+    assert manifest["phrog_annotations"] == {
+        "phrog_2": {
+            "annotation": "fixture anti-restriction protein",
+            "category": "moron, auxiliary metabolic gene and host takeover",
+        }
+    }
+    assert any(name.startswith("phrog/") for name in manifest["database_hashes"])
+
+    with pytest.raises(FileNotFoundError, match="phrog_4"):
+        screen._resolve_hmm_inputs([Path("phrog_4")], tmp_path / "out2")
+    pins, bundle_manifest, _ = db_bundle._pinned(None, None)
+    assert db_bundle.installed_problems(installed.parent.parent, pins, bundle_manifest, deep=True) == []
+
+
 def test_avger_evalues_do_not_depend_on_the_protein_batch_size(installed, tmp_path):
     from phu.avger.annotation import AnnotationConfig, annotate_proteins_tracks
 

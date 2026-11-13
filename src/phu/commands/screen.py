@@ -57,6 +57,13 @@ from phu.db.kofam import (
     is_kofam_id,
     normalize_kofam_id,
 )
+from phu.db.phrog import (
+    ensure_phrog_database,
+    extract_phrog_models,
+    get_all_phrog_annotations,
+    is_phrog_id,
+    normalize_phrog_id,
+)
 from phu.db.pfam import (
     ensure_pfam_database,
     extract_pfam_models,
@@ -113,6 +120,12 @@ app = typer.Typer(
 )
 
 
+# PHROG has no curated per-model cutoffs. These are the ones `phu avger` uses:
+# sequence bit score, and the fraction of both model and protein aligned.
+PHROG_MIN_BITSCORE = 60.0
+PHROG_MIN_COVERAGE = 0.5
+
+
 @dataclass(frozen=True)
 class ScreenQuery:
     original_inputs: tuple[str, ...]
@@ -132,6 +145,8 @@ class ScreenQuery:
     database_digest: str | None = None
     # The phu-db databases the query's models came from; empty for local HMM files.
     databases: tuple[str, ...] = ()
+    # Function and category of each PHROG in the query, keyed by identifier.
+    phrog_annotations: tuple[tuple[str, str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -185,6 +200,11 @@ def _query_manifest(query: ScreenQuery, combine_mode: str) -> dict[str, object]:
         else query.matching_rule,
         "database_hashes": hashes,
     }
+    if query.phrog_annotations:
+        manifest["phrog_annotations"] = {
+            phrog_id: {"annotation": annotation, "category": category}
+            for phrog_id, annotation, category in query.phrog_annotations
+        }
     if query.databases:
         manifest["phu_db"] = bundle_provenance()
     return manifest
@@ -794,11 +814,13 @@ def _resolve_hmm_inputs(
     """
     Resolve positional inputs into concrete HMM file paths.
 
-    Input tokens may be local HMM paths, PFAM/KOfam identifiers, dbCAN families, or PUL IDs.
+    Input tokens may be local HMM paths, PFAM/KOfam/PHROG identifiers, dbCAN
+    families, or PUL IDs.
     """
     local_hmms: list[Path] = []
     pfam_ids: list[str] = []
     ko_ids: list[str] = []
+    phrog_ids: list[str] = []
     dbcan_ids: list[str] = []
     pul_ids: list[str] = []
 
@@ -817,6 +839,10 @@ def _resolve_hmm_inputs(
             ko_ids.append(normalize_kofam_id(token))
             continue
 
+        if is_phrog_id(token):
+            phrog_ids.append(normalize_phrog_id(token))
+            continue
+
         if is_dbcan_pul_id(token):
             pul_ids.append(normalize_dbcan_pul_id(token))
             continue
@@ -829,6 +855,7 @@ def _resolve_hmm_inputs(
 
     dedup_pfam_ids = list(dict.fromkeys(pfam_ids))
     dedup_ko_ids = list(dict.fromkeys(ko_ids))
+    dedup_phrog_ids = list(dict.fromkeys(phrog_ids))
     dedup_dbcan_ids = list(dict.fromkeys(dbcan_ids))
     dedup_pul_ids = list(dict.fromkeys(pul_ids))
 
@@ -837,6 +864,7 @@ def _resolve_hmm_inputs(
         or local_hmms
         or dedup_pfam_ids
         or dedup_ko_ids
+        or dedup_phrog_ids
         or dedup_dbcan_ids
     ):
         raise ValueError(
@@ -896,6 +924,38 @@ def _resolve_hmm_inputs(
         )
         resolved.extend(kofam_hmms)
 
+    phrog_annotations: tuple[tuple[str, str, str], ...] = ()
+    if dedup_phrog_ids:
+        run_click_task("Preparing PHROG database", ensure_phrog_database)
+        phrog_hmms, missing = run_click_task(
+            "Resolving PHROG identifiers",
+            extract_phrog_models,
+            requested_ids=dedup_phrog_ids,
+            output_dir=outdir / QUERY_HMMS_DIR / "phrog",
+        )
+        if missing:
+            raise FileNotFoundError(
+                f"PHROG identifier(s) without a model in the PHROG database: "
+                f"{', '.join(missing)}. Models exist for phrog_1 to phrog_38880."
+            )
+        annotations = get_all_phrog_annotations()
+        phrog_annotations = tuple(
+            (
+                phrog_id,
+                annotations[phrog_id].annotation if phrog_id in annotations else "",
+                annotations[phrog_id].category if phrog_id in annotations else "",
+            )
+            for phrog_id in dedup_phrog_ids
+        )
+        print(
+            f"Resolved {len(phrog_hmms)} PHROG model(s) from local database: "
+            + ", ".join(
+                f"{phrog_id} ({annotation or 'unknown function'})"
+                for phrog_id, annotation, _ in phrog_annotations
+            )
+        )
+        resolved.extend(phrog_hmms)
+
     if dedup_pul_ids:
         run_click_task("Preparing dbCAN database", ensure_dbcan_database)
         pul = get_dbcan_pul(dedup_pul_ids[0])
@@ -949,7 +1009,12 @@ def _resolve_hmm_inputs(
             )
         query = ScreenQuery(
             original_inputs=tuple(str(value) for value in hmm_inputs),
-            normalized_models=(*dedup_pfam_ids, *dedup_ko_ids, *dedup_dbcan_ids),
+            normalized_models=(
+                *dedup_pfam_ids,
+                *dedup_ko_ids,
+                *dedup_phrog_ids,
+                *dedup_dbcan_ids,
+            ),
         )
         print(
             f"Resolved {len(dbcan_hmms)} dbCAN model(s) from local database: "
@@ -960,11 +1025,23 @@ def _resolve_hmm_inputs(
     if "query" not in locals():
         query = ScreenQuery(
             original_inputs=tuple(str(value) for value in hmm_inputs),
-            normalized_models=(*dedup_pfam_ids, *dedup_ko_ids, *dedup_dbcan_ids),
+            normalized_models=(
+                *dedup_pfam_ids,
+                *dedup_ko_ids,
+                *dedup_phrog_ids,
+                *dedup_dbcan_ids,
+            ),
         )
-    used = {"pfam": dedup_pfam_ids, "kofam": dedup_ko_ids, "dbcan": dedup_dbcan_ids}
+    used = {
+        "pfam": dedup_pfam_ids,
+        "kofam": dedup_ko_ids,
+        "phrog": dedup_phrog_ids,
+        "dbcan": dedup_dbcan_ids,
+    }
     query = dataclasses.replace(
-        query, databases=tuple(name for name, ids in used.items() if ids)
+        query,
+        databases=tuple(name for name, ids in used.items() if ids),
+        phrog_annotations=phrog_annotations,
     )
     if return_query:
         return resolved, ko_metadata, query
@@ -990,6 +1067,7 @@ class ScreenConfig:
     min_protein_coverage: Optional[float] = None
     cut_ga: bool = True
     use_kofam_thresholds: bool = True
+    use_phrog_thresholds: bool = True
     top_per_contig: int = 1
     min_protein_len_aa: int = 30
     translation_table: int | None = None
@@ -1059,6 +1137,7 @@ class ScreenConfig:
             min_protein_coverage=self.min_protein_coverage,
             cut_ga=self.cut_ga,
             use_kofam_thresholds=self.use_kofam_thresholds,
+            use_phrog_thresholds=self.use_phrog_thresholds,
             top_per_contig=self.top_per_contig,
             min_protein_len_aa=self.min_protein_len_aa,
             translation_table=self.translation_table,
@@ -1094,6 +1173,7 @@ class ScreenPlan:
     min_protein_coverage: Optional[float]
     cut_ga: bool
     use_kofam_thresholds: bool
+    use_phrog_thresholds: bool
     top_per_contig: int
     min_protein_len_aa: int
     translation_table: int | None
@@ -1574,13 +1654,15 @@ def _filter_qualifying_hits(
     min_hmm_coverage: Optional[float] = None,
     database_model_ids: Optional[Iterable[str]] = None,
     min_protein_coverage: Optional[float] = None,
+    use_phrog_thresholds: bool = True,
 ) -> list[Hit]:
     """Keep the hits that pass the thresholds of their model's kind.
 
     ``min_hmm_coverage`` applies to user-supplied models only, that is to
     models not in ``database_model_ids``: Pfam and KOfam have curated score
     thresholds and dbCAN has its own coverage rule. ``min_protein_coverage``
-    is opt-in and applies to every model.
+    is opt-in and applies to every model. PHROG models have no curated
+    cutoffs; with ``use_phrog_thresholds`` they get the fixed ones avger uses.
     """
     kofam_metadata_by_model = kofam_metadata_by_model or {}
     dbcan_models = set(dbcan_model_ids or ())
@@ -1606,6 +1688,19 @@ def _filter_qualifying_hits(
             and hit.model not in database_models
             and ko_meta is None
             and (hit.hmm_coverage is None or hit.hmm_coverage <= min_hmm_coverage)
+        ):
+            continue
+        if (
+            use_phrog_thresholds
+            and is_phrog_id(hit.model)
+            and hit.model in database_models
+            and (
+                hit.bitscore < PHROG_MIN_BITSCORE
+                or hit.hmm_coverage is None
+                or hit.hmm_coverage < PHROG_MIN_COVERAGE
+                or hit.protein_coverage is None
+                or hit.protein_coverage < PHROG_MIN_COVERAGE
+            )
         ):
             continue
         if min_protein_coverage is not None and (
@@ -1645,6 +1740,7 @@ def _choose_best_contigs(
     min_hmm_coverage: Optional[float] = None,
     database_model_ids: Optional[Iterable[str]] = None,
     min_protein_coverage: Optional[float] = None,
+    use_phrog_thresholds: bool = True,
 ) -> tuple[list[Hit], list[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
@@ -1668,6 +1764,7 @@ def _choose_best_contigs(
         min_hmm_coverage=min_hmm_coverage,
         database_model_ids=database_model_ids,
         min_protein_coverage=min_protein_coverage,
+        use_phrog_thresholds=use_phrog_thresholds,
     ):
         per_contig[hit.contig].append(hit)
 
@@ -2166,6 +2263,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                             "min_bitscore": plan.min_bitscore,
                             "user_model_min_hmm_coverage": plan.min_hmm_coverage,
                             "min_protein_coverage": plan.min_protein_coverage,
+                            "use_phrog_thresholds": plan.use_phrog_thresholds,
                             "dbcan_independent_evalue": "<1e-15",
                             "dbcan_hmm_coverage": ">0.35",
                         },
@@ -2262,6 +2360,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
+            use_phrog_thresholds=plan.use_phrog_thresholds,
         )
         filtered_hits, _ = _choose_best_contigs(
             all_hits,
@@ -2278,6 +2377,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
+            use_phrog_thresholds=plan.use_phrog_thresholds,
         )
         pul_matches, contig_ids = evaluate_pul_signatures(filtered_hits, pul_rules)
         kept_contig_set = set(contig_ids)
@@ -2293,6 +2393,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
+            use_phrog_thresholds=plan.use_phrog_thresholds,
         )
         kept_hits = qualifying_cazyme_hits
         contig_ids = list(dict.fromkeys(hit.contig for hit in kept_hits))
@@ -2312,6 +2413,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_coverage=plan.min_hmm_coverage,
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
+            use_phrog_thresholds=plan.use_phrog_thresholds,
         )
 
     if query.all_puls:
@@ -2436,6 +2538,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 "min_bitscore": plan.min_bitscore,
                 "user_model_min_hmm_coverage": plan.min_hmm_coverage,
                 "min_protein_coverage": plan.min_protein_coverage,
+                "use_phrog_thresholds": plan.use_phrog_thresholds,
                 "dbcan_independent_evalue": "<1e-15",
                 "dbcan_hmm_coverage": ">0.35",
             },

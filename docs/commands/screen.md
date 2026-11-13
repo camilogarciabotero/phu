@@ -14,7 +14,7 @@ For implementation-level details on pass/fail decisions, see [screen thresholds 
 phu screen --input-contigs [INPUT_CONTIGS] [HMMS...]
 ```
 
-`[HMMS...]` accepts local HMM paths, PFAM/KOfam identifiers, dbCAN families
+`[HMMS...]` accepts local HMM paths, PFAM/KOfam/PHROG identifiers, dbCAN families
 (for example `GH128` or `CBM89`), and one dbCAN PUL identifier such as
 `PUL0621`.
 
@@ -212,7 +212,7 @@ All saved protein FASTA files contain only proteins that come from contigs that 
 | `matched-contigs.fna` | always | Nucleotide FASTA of the contigs that passed the screen |
 | `matched-contig-ids.txt` | always | IDs of those contigs, one per line |
 | `{hmm}-hmmsearch-domains.tbl` | `--keep-domtbl` (default) | hmmsearch per-domain table, one per input HMM file |
-| `.phu/query.json` | always, except `--all-cazymes` / `--all-puls` | Original query, expansion and matching rule; for Pfam, KOfam and dbCAN queries also the `phu-db` bundle version and database file hashes |
+| `.phu/query.json` | always, except `--all-cazymes` / `--all-puls` | Original query, expansion and matching rule; for Pfam, KOfam, PHROG and dbCAN queries also the `phu-db` bundle version (and for PHROG the function and category of each family) and database file hashes |
 | `.phu/run.json` | `--all-cazymes` / `--all-puls` | Run manifest with counts, thresholds and `generated_files` |
 | `query-hmms/pfam/`, `query-hmms/kofam/`, `query-hmms/dbcan/` | Pfam, KO, dbCAN-family or PUL queries | The HMM files resolved from the local databases |
 | `predicted-proteins.faa` | `--keep-proteins` | Protein FASTA of all predicted proteins |
@@ -439,6 +439,8 @@ Use `--max-evalue` to make your searches more or less strict. The default is 1e-
 Use `--min-hmm-coverage` to control how much of one of your own HMMs a hit must cover. The default is 0.35: a hit is kept only when its best domain aligns to more than 35% of the model, which removes matches to a small fragment of the family. It applies only to HMMs you supply; Pfam and KOfam models keep their curated score thresholds, and dbCAN models always use the same 0.35 rule. Set it to 0 to turn it off. The coverage of every hit is written to the result tables as `hmm_coverage`.
 
 Use `--min-protein-coverage` to control how much of the protein a hit must cover. It is off by default. With `--min-protein-coverage 0.5`, a hit is kept only when its best domain aligns to at least half of the protein, which rejects a small domain found inside a long protein. Unlike `--min-hmm-coverage`, it applies to every kind of model, including Pfam, KOfam and dbCAN, so expect it to remove single-domain matches in multi-domain proteins.
+
+PHROG families are queried by identifier, for example `phu screen phrog_216 -i contigs.fna`, and can be mixed with other identifiers and your own HMMs. Models exist for `phrog_1` to `phrog_38880`. PHROG has no curated per-model cutoffs, so a PHROG hit must score at least 60 bits and align to at least half of both the model and the protein, the rule `phu avger` uses (here measured on the best domain). `--no-use-phrog-thresholds` drops that rule and leaves only `--max-evalue` and `--min-bitscore`. The function and category of each queried PHROG are printed and recorded in `.phu/query.json`.
 
 `--cut-ga` is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).
 

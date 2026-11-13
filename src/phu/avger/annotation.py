@@ -60,11 +60,12 @@ class AnnotationConfig:
     pfam_require_ga: bool = True
     pfam_missing_ga_policy: str = "skip_model"  # skip_model | include_without_ga
     kofam_require_thresholds: bool = True
-    # PHROG has no curated per-model cutoffs. The strict track uses CheckAMG's
-    # fixed ones: sequence bit score, and coverage of both model and protein.
+    # PHROG has no curated per-model cutoffs. The strict track uses fixed ones,
+    # as CheckAMG does: sequence bit score, and coverage of both model and
+    # protein. CheckAMG's coverage default is 0.4; phu asks for half.
     phrog_require_thresholds: bool = True
     phrog_min_score: float = 60.0
-    phrog_min_coverage: float = 0.4
+    phrog_min_coverage: float = 0.5
     track: str = "strict"
 
     def __post_init__(self) -> None:

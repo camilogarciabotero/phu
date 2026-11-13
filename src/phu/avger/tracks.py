@@ -32,7 +32,7 @@ def annotate_avg_tracks(
 
     The relaxed track uses only the independent E-value cutoff. The strict
     track retains Pfam GA and KOfam adaptive thresholds, and for PHROG a bit
-    score of at least 60 with at least 40% of both model and protein aligned,
+    score of at least 60 with at least 50% of both model and protein aligned,
     for functional calls.
     """
     if keep_all_hits and (

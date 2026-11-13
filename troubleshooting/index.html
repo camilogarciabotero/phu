@@ -927,10 +927,10 @@ and the step's real duration, and without colour codes:</p>
 <code>cancelled after</code>. On a terminal the same steps are shown as live lines with a
 running timer.</p>
 <p><code>--verbose</code> adds one line per tool invocation, always prefixed with <code>[cmd]</code>.
-External programs (<code>vclust</code>, <code>seqkit</code>, <code>mafft</code>) are shown as the exact,
+External programs (<code>vclust</code>, <code>seqkit</code>) are shown as the exact,
 shell-quoted command that was executed, including any output redirection.
 In-process steps (pyrodigal-gv gene prediction, pyhmmer <code>hmmsearch</code> and
-<code>jackhmmer</code>) are shown as the function name followed by the <code>key=value</code>
+<code>jackhmmer</code>, pyfamsa alignment, pytrimal trimming) are shown as the function name followed by the <code>key=value</code>
 parameters that determine the result:</p>
 <div class="highlight"><pre><span></span><code>[cmd] pyrodigal_gv.ViralGeneFinder contigs=4 mode=meta meta=True min_gene=90 max_overlap=89 translation_table=auto training_table=none min_protein_len_aa=30 threads=2
 [cmd] pyhmmer.hmmsearch hmm_files=1 models=1 sequences=19 cpus=2 parallel=queries bit_cutoffs=gathering hmm_mode=pure ...

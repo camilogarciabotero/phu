@@ -1143,7 +1143,7 @@ download). For install location, offline use and disk needs, see
 <h2 id="target-data-extraction-and-hmm-building">Target Data Extraction and HMM Building<a class="headerlink" href="#target-data-extraction-and-hmm-building" title="Permanent link">&para;</a></h2>
 <p>The tool offers powerful features for analyzing and reusing your screening results:</p>
 <p><strong>Target Protein Extraction</strong> (<code>--save-target-proteins</code>) saves the actual protein sequences that matched each HMM model, organized in separate files per model. These proteins come only from contigs that passed your final filtering criteria.</p>
-<p><strong>Custom HMM Building</strong> (<code>--save-target-hmms</code>) builds HMM files from matched target proteins and requires <code>--save-target-proteins</code>. For model sets containing multiple proteins, PHU runs the external <code>mafft</code> aligner before building the HMM. MAFFT is not installed by <code>uv</code> or bundled with PHU; install it in the environment or module used to run PHU, for example with <code>conda install -c bioconda mafft</code> or <code>pixi add mafft</code>. PHU fails clearly when MAFFT is unavailable. Single-protein outputs use a single-sequence HMM and are not a family alignment.</p>
+<p><strong>Custom HMM Building</strong> (<code>--save-target-hmms</code>) builds HMM files from matched target proteins and requires <code>--save-target-proteins</code>. For model sets containing multiple proteins, PHU aligns them with FAMSA before building the HMM. FAMSA runs inside PHU through the <code>pyfamsa</code> package, which is installed with PHU, so no aligner program is needed. Single-protein outputs use a single-sequence HMM and are not a family alignment.</p>
 <p><strong>Viral Mode Support</strong> - When using viral gene prediction (if pyrodigal-gv is available), the tool is optimized for shorter, more compact viral genes and can handle overlapping gene structures common in viral genomes.</p>
 <h2 id="understanding-your-results">Understanding Your Results<a class="headerlink" href="#understanding-your-results" title="Permanent link">&para;</a></h2>
 <p>The main output is <code>matched-contigs.fna</code>, which contains all the contigs that passed your filtering criteria. You'll also get <code>matched-contig-ids.txt</code> with just the names of these contigs.</p>
@@ -1246,6 +1246,41 @@ rename one of them.</p>
 by the current run; files left in <code>target-proteins/</code> by an earlier run are not
 read. The alignments used to build them are temporary and are not written into
 the output folder.</p>
+<p><strong>Alignment trimming</strong> (<code>--trim-target-msa</code>, off by default) removes columns
+from each alignment with trimAl (through <code>pytrimal</code>, installed with PHU)
+before the HMM is built. It needs <code>--save-target-hmms</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>What is removed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>none</code></td>
+<td>Nothing (default)</td>
+</tr>
+<tr>
+<td><code>gappyout</code></td>
+<td>Columns judged too gappy from the alignment's own gap distribution; the mildest choice</td>
+</tr>
+<tr>
+<td><code>strict</code></td>
+<td>Gappy columns and columns with low residue similarity</td>
+</tr>
+<tr>
+<td><code>strictplus</code></td>
+<td>As <code>strict</code>, with a tighter similarity criterion; the most aggressive</td>
+</tr>
+</tbody>
+</table>
+<p>Trimming shortens the model, most of all for protein sets with very uneven
+lengths, and it lowers hit bit scores, so cutoffs chosen for untrimmed models
+do not carry over. The run prints the column count before and after, for
+example <code>(gappyout: 1523 -&gt; 377 columns)</code>. If trimming leaves no columns, or
+fewer than two sequences, that model is built from the untrimmed alignment and
+a warning is printed.</p>
 <h2 id="passfail-behavior-summary">Pass/fail behavior summary<a class="headerlink" href="#passfail-behavior-summary" title="Permanent link">&para;</a></h2>
 <p>The screening decision uses pyHMMER hit objects, not a second parsing pass over the domain table text files.</p>
 <ul>
@@ -1258,7 +1293,7 @@ the output folder.</p>
 <p>See the full rule set and examples in <a href="../../screen-thresholds/">screen thresholds and decision logic</a>.</p>
 <p><strong>Target Data Outputs:</strong>
 - <code>target-proteins/{model}.faa</code> - Proteins matching each model (if <code>--save-target-proteins</code>)
-- <code>target-hmms/{model}.hmm</code> - HMMs built from target proteins after MAFFT alignment (if <code>--save-target-hmms</code>)</p>
+- <code>target-hmms/{model}.hmm</code> - HMMs built from target proteins after FAMSA alignment (if <code>--save-target-hmms</code>)</p>
 <p>These outputs respect your HMM mode settings and combination logic, ensuring consistency between your screening criteria and extracted data.</p>
 <h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>Usage:<span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>QUERY<span class="o">]</span>...
@@ -1385,6 +1420,16 @@ the output folder.</p>
 │<span class="w">                                                      </span>target-hmms/<span class="w"> </span>subfolder<span class="w">  </span>│
 │<span class="w">                                                      </span><span class="o">[</span>default:<span class="w">               </span>│
 │<span class="w">                                                      </span>no-save-target-hmms<span class="o">]</span><span class="w">    </span>│
+│<span class="w"> </span>--trim-target-msa<span class="w">                             </span>&lt;str&gt;<span class="w">  </span>Trim<span class="w"> </span>each<span class="w"> </span>target<span class="w">        </span>│
+│<span class="w">                                                      </span>alignment<span class="w"> </span>with<span class="w"> </span>trimAl<span class="w">   </span>│
+│<span class="w">                                                      </span>before<span class="w"> </span>building<span class="w"> </span>its<span class="w"> </span>HMM<span class="w"> </span>│
+│<span class="w">                                                      </span><span class="o">(</span>needs<span class="w">                  </span>│
+│<span class="w">                                                      </span>--save-target-hmms<span class="o">)</span>:<span class="w">    </span>│
+│<span class="w">                                                      </span><span class="s1">'none'</span>,<span class="w"> </span><span class="s1">'gappyout'</span><span class="w">      </span>│
+│<span class="w">                                                      </span><span class="o">(</span>gap-based,<span class="w"> </span>the<span class="w">         </span>│
+│<span class="w">                                                      </span>mildest<span class="o">)</span>,<span class="w"> </span><span class="s1">'strict'</span><span class="w"> </span>or<span class="w">   </span>│
+│<span class="w">                                                      </span><span class="s1">'strictplus'</span><span class="w">            </span>│
+│<span class="w">                                                      </span><span class="o">[</span>default:<span class="w"> </span>none<span class="o">]</span><span class="w">         </span>│
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─<span class="w"> </span>Search<span class="w"> </span>options<span class="w"> </span>─────────────────────────────────────────────────────────────╮
 │<span class="w"> </span>--hmm-mode<span class="w">  </span>-M<span class="w">      </span>&lt;str&gt;<span class="w">  </span>HMM<span class="w"> </span>file<span class="w"> </span>type:<span class="w"> </span><span class="s1">'pure'</span><span class="w"> </span><span class="o">(</span>one<span class="w"> </span>model<span class="w"> </span>per<span class="w"> </span>file<span class="o">)</span><span class="w"> </span>or<span class="w">     </span>│
@@ -1396,7 +1441,7 @@ the output folder.</p>
 │<span class="w"> </span>--verbose<span class="w">          </span>Show<span class="w"> </span>additional<span class="w"> </span>progress<span class="w"> </span>details.<span class="w">                         </span>│
 ╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
-<p>Use <code>--verbose</code> to record how each tool was run: every <code>seqkit</code> and <code>mafft</code> command line, and the effective parameters of the in-process gene prediction and <code>hmmsearch</code> steps, are printed on lines that start with <code>[cmd]</code>. Use <code>--quiet</code> to hide the timed step lines. See <a href="../../troubleshooting/#run-logs">Run logs</a> for the log format.</p>
+<p>Use <code>--verbose</code> to record how each tool was run: every <code>seqkit</code> command line, and the effective parameters of the in-process gene prediction, <code>hmmsearch</code> and FAMSA alignment steps, are printed on lines that start with <code>[cmd]</code>. Use <code>--quiet</code> to hide the timed step lines. See <a href="../../troubleshooting/#run-logs">Run logs</a> for the log format.</p>
 <p>Use <code>--output-folder</code> to change where the results are saved. The default is a folder called <code>phu-screen</code> in your current directory.</p>
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
 <p>Use <code>--min-protein-len-aa</code> to keep only proteins at or above a given amino-acid length before running HMM searches.</p>
@@ -1404,7 +1449,7 @@ the output folder.</p>
 <p><code>--cut-ga</code> is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).</p>
 <p>Use <code>--no-cut-ga</code> if you want to disable GA filtering and rely only on explicit score/E-value filters.</p>
 <p>Use <code>--save-target-proteins</code> if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).</p>
-<p>Use <code>--save-target-hmms</code> together with <code>--save-target-proteins</code> to build custom HMMs. For multiple target proteins, PHU requires <code>mafft</code> on <code>PATH</code> and uses it to create a real multiple-sequence alignment. Install MAFFT separately in the runtime environment, for example <code>conda install -c bioconda mafft</code> or <code>pixi add mafft</code>. PHU does not vendor or install MAFFT through <code>uv</code>.</p>
+<p>Use <code>--save-target-hmms</code> together with <code>--save-target-proteins</code> to build custom HMMs. For multiple target proteins, PHU creates a real multiple-sequence alignment with FAMSA (through <code>pyfamsa</code>, installed with PHU). No separate aligner has to be installed.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>Find contigs with any viral protein (default "any" preserves best-per-model hits):
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>assembly.fasta<span class="w"> </span>--combine-mode<span class="w"> </span>any<span class="w"> </span>viral_capsid.hmm<span class="w"> </span>viral_polymerase.hmm
@@ -1430,7 +1475,7 @@ the output folder.</p>
 <p>Be more strict about matches:
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>contigs.fa<span class="w"> </span>--max-evalue<span class="w"> </span>1e-10<span class="w"> </span>protein_family.hmm
 </code></pre></div></p>
-<p>Build custom HMMs from viral proteins after installing MAFFT:
+<p>Build custom HMMs from viral proteins (add <code>--trim-target-msa gappyout</code> to trim each alignment first):
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span>viral_assembly.fasta<span class="w"> </span>--save-target-proteins<span class="w"> </span>--save-target-hmms<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>capsid.hmm<span class="w"> </span>polymerase.hmm
 </code></pre></div></p>
 <p>Complete viral screening workflow with custom HMM generation:
@@ -1442,14 +1487,14 @@ the output folder.</p>
 <h2 id="what-to-expect">What to expect<a class="headerlink" href="#what-to-expect" title="Permanent link">&para;</a></h2>
 <p>Runtime depends on input size, model count, available resources, and external tools. PHU does not promise a fixed runtime or scaling factor; benchmark representative data on your environment.</p>
 <p>The output size depends on how many contigs match your criteria. In "any" mode, you might get quite a few contigs. In "all" mode, you'll typically get fewer but higher-confidence results.</p>
-<p>The search engine is pyHMMER, while sequence extraction uses the external <code>seqkit</code> executable. Target-HMM generation additionally requires the external <code>mafft</code> executable for multi-sequence alignments.</p>
+<p>The search engine is pyHMMER, while sequence extraction uses the external <code>seqkit</code> executable. Target-HMM generation aligns multi-sequence sets in-process with FAMSA (<code>pyfamsa</code>).</p>
 <p>If you don't get any results, try relaxing your E-value threshold or check that your HMM files are in the correct format. If you get too many results, try using "all" mode instead of "any" mode, or make your E-value threshold more strict.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>You need to have <strong>pyrodigal</strong>, <strong>pyHMMER</strong>, and <strong>seqkit</strong> installed and available. <strong>pyrodigal-gv</strong> is optional but recommended for viral genome analysis. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format.</p>
 <p><strong>Workflow notes:</strong>
 - <strong>No HMMER binary required</strong>: pyHMMER performs the HMM search
 - <strong>External extraction</strong>: <code>seqkit</code> must be available on <code>PATH</code>
-- <strong>Optional HMM generation</strong>: <code>mafft</code> must be available on <code>PATH</code> for multi-sequence target sets
+- <strong>Optional HMM generation</strong>: no extra program; multi-sequence target sets are aligned with FAMSA through <code>pyfamsa</code>
 - <strong>Explicit identifiers</strong>: quote shell paths containing special characters</p>
 <p>The command expects DNA sequences as input, not protein sequences. If you already have predicted proteins, you should use pyHMMER directly rather than this command.</p>
 

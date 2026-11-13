@@ -1009,7 +1009,12 @@ def _resolve_hmm_inputs(
             )
         query = ScreenQuery(
             original_inputs=tuple(str(value) for value in hmm_inputs),
-            normalized_models=(*dedup_pfam_ids, *dedup_ko_ids, *dedup_phrog_ids, *dedup_dbcan_ids),
+            normalized_models=(
+                *dedup_pfam_ids,
+                *dedup_ko_ids,
+                *dedup_phrog_ids,
+                *dedup_dbcan_ids,
+            ),
         )
         print(
             f"Resolved {len(dbcan_hmms)} dbCAN model(s) from local database: "
@@ -1020,7 +1025,12 @@ def _resolve_hmm_inputs(
     if "query" not in locals():
         query = ScreenQuery(
             original_inputs=tuple(str(value) for value in hmm_inputs),
-            normalized_models=(*dedup_pfam_ids, *dedup_ko_ids, *dedup_phrog_ids, *dedup_dbcan_ids),
+            normalized_models=(
+                *dedup_pfam_ids,
+                *dedup_ko_ids,
+                *dedup_phrog_ids,
+                *dedup_dbcan_ids,
+            ),
         )
     used = {
         "pfam": dedup_pfam_ids,

@@ -356,3 +356,121 @@ def test_all_hits_output_written_with_header(tmp_path, monkeypatch):
     assert "ctgA|gene1" in lines[1]
     assert passing == 1
     assert "ctgA|gene1" in best
+
+class _Rows:
+    def __init__(self):
+        self.rows = []
+
+    def writerow(self, row):
+        self.rows.append(row)
+
+
+def _track_configs():
+    relaxed = ann.AnnotationConfig(
+        pfam_require_ga=False, kofam_require_thresholds=False, track="relaxed"
+    )
+    return [relaxed, ann.AnnotationConfig(track="strict")]
+
+
+def _pfam_outputs():
+    return [
+        FakeTopHits(
+            query=FakeHMM("famA", "PF00001.1", cutoffs=FakeCutoffs(True, 50.0, 40.0)),
+            hits=[
+                FakeHit("ctgA|gene1", score=80.0, evalue=1e-30, domains=[FakeDomain(70.0)]),
+                # Below the sequence GA: relaxed only.
+                FakeHit("ctgA|gene2", score=45.0, evalue=1e-12, domains=[FakeDomain(44.0)]),
+                # Above the sequence GA, below the domain GA: relaxed only.
+                FakeHit("ctgA|gene3", score=60.0, evalue=1e-15, domains=[FakeDomain(30.0)]),
+                # Above the E-value limit: neither track.
+                FakeHit("ctgA|gene4", score=90.0, evalue=1e-2, domains=[FakeDomain(90.0)]),
+            ],
+        ),
+        FakeTopHits(
+            # No GA cutoffs: the strict track skips the model.
+            query=FakeHMM("famB", "PF00002.3", cutoffs=FakeCutoffs(False)),
+            hits=[FakeHit("ctgA|gene1", score=95.0, evalue=1e-40, domains=[FakeDomain(95.0)])],
+        ),
+    ]
+
+
+def _kofam_outputs():
+    return [
+        FakeTopHits(
+            query=FakeHMM("K00001", "K00001"),
+            hits=[
+                FakeHit("ctgA|gene1", score=40.0, evalue=1e-30, domains=[FakeDomain(80.0)]),
+                FakeHit("ctgA|gene2", score=90.0, evalue=1e-30, domains=[FakeDomain(20.0)]),
+            ],
+        ),
+        FakeTopHits(
+            # No threshold in ko_list: relaxed only.
+            query=FakeHMM("K00002", "K00002"),
+            hits=[FakeHit("ctgA|gene3", score=70.0, evalue=1e-30, domains=[FakeDomain(45.0)])],
+        ),
+    ]
+
+
+_KOFAM_META = {
+    "K00001": KOFamMetadata(
+        ko_id="K00001", threshold=50.0, score_type="domain",
+        profile_type="all families", definition="a",
+    ),
+    "K00002": KOFamMetadata(
+        ko_id="K00002", threshold=None, score_type="full",
+        profile_type="all families", definition="b",
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    "database, outputs, meta",
+    [("pfam", _pfam_outputs, None), ("kofam", _kofam_outputs, _KOFAM_META)],
+)
+def test_one_search_gives_each_track_what_its_own_search_gave(
+    monkeypatch, database, outputs, meta
+):
+    _patch_hmmfile(monkeypatch)
+    _patch_sequencefile(monkeypatch)
+    searches = []
+
+    def fake_hmmsearch(*args, **kwargs):
+        searches.append(1)
+        return iter(outputs())
+
+    monkeypatch.setattr(ann.pyhmmer, "hmmsearch", fake_hmmsearch)
+    common = dict(
+        database=database,
+        hmm_path=Path("db.hmm"),
+        proteins_path=Path("proteins.faa"),
+        kofam_meta_by_model=meta,
+    )
+    cfgs = _track_configs()
+
+    separate, separate_rows = [], []
+    for cfg in cfgs:
+        rows = _Rows()
+        separate.append(ann._search_and_collect(cfg=cfg, all_hits_writer=rows, **common))
+        separate_rows.append(rows.rows)
+    assert len(searches) == 2
+
+    searches.clear()
+    writers = [_Rows(), _Rows()]
+    together = ann._search_tracks(cfgs=cfgs, all_hits_writers=writers, **common)
+
+    assert len(searches) == 1
+    assert together == separate
+    assert [writer.rows for writer in writers] == separate_rows
+    relaxed, strict = together
+    # The strict track is a strict subset here, and each hit carries its track.
+    assert set(strict[0]) < set(relaxed[0])
+    assert {hit.track for hit in relaxed[0].values()} == {"relaxed"}
+    assert {hit.track for hit in strict[0].values()} == {"strict"}
+
+
+def test_tracks_searched_together_must_share_search_settings():
+    cfgs = [ann.AnnotationConfig(threads=1), ann.AnnotationConfig(threads=2)]
+    with pytest.raises(ValueError, match="share threads"):
+        ann._search_tracks(
+            database="pfam", hmm_path=Path("db.hmm"), proteins_path=Path("p.faa"), cfgs=cfgs
+        )

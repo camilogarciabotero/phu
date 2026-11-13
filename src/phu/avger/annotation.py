@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import gzip
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -202,33 +203,75 @@ def _search_and_collect(
     kofam_meta_by_model: Optional[dict[str, KOFamMetadata]] = None,
     all_hits_writer=None,
 ) -> tuple[dict[str, AnnotationHit], int, int, int]:
-    best_by_protein: dict[str, AnnotationHit] = {}
-    passing = 0
+    """Search one database for one track (see _search_tracks)."""
+    return _search_tracks(
+        database=database,
+        hmm_path=hmm_path,
+        proteins_path=proteins_path,
+        cfgs=[cfg],
+        kofam_meta_by_model=kofam_meta_by_model,
+        all_hits_writers=[all_hits_writer],
+    )[0]
+
+
+def _score_thresholds(database: str, cfg: AnnotationConfig) -> str:
+    if database == "pfam":
+        return "pfam_ga" if cfg.pfam_require_ga else "none"
+    return "kofam_ko_list" if cfg.kofam_require_thresholds else "none"
+
+
+def _search_tracks(
+    *,
+    database: str,
+    hmm_path: Path,
+    proteins_path: Path,
+    cfgs: Sequence[AnnotationConfig],
+    kofam_meta_by_model: Optional[dict[str, KOFamMetadata]] = None,
+    all_hits_writers: Optional[Sequence] = None,
+) -> list[tuple[dict[str, AnnotationHit], int, int, int]]:
+    """Search one database once and collect the hits of every track in ``cfgs``.
+
+    The tracks differ only in how hits are filtered afterwards (E-value limit,
+    Pfam GA, KOfam thresholds), never in how the search is run, so one search
+    serves them all. Returns, per track and in the order of ``cfgs``: best hit
+    per protein, passing hit count, models seen, Pfam models skipped for
+    lacking GA cutoffs.
+    """
+    if not cfgs:
+        raise ValueError("at least one annotation track is required")
+    first = cfgs[0]
+    if any(
+        cfg.threads != first.threads or cfg.protein_batch_size != first.protein_batch_size
+        for cfg in cfgs
+    ):
+        raise ValueError("tracks searched together must share threads and batch size")
+    writers = list(all_hits_writers) if all_hits_writers is not None else [None] * len(cfgs)
+    if len(writers) != len(cfgs):
+        raise ValueError("all_hits_writers must match the tracks")
+
+    best_by_protein: list[dict[str, AnnotationHit]] = [{} for _ in cfgs]
+    passing = [0] * len(cfgs)
+    skipped_missing_ga = [0] * len(cfgs)
     models = 0
     seen_models: set[str] = set()
-    skipped_missing_ga = 0
     kofam_meta_by_model = kofam_meta_by_model or {}
-    if database == "pfam":
-        cutoffs = "pfam_ga" if cfg.pfam_require_ga else "none"
-    else:
-        cutoffs = "kofam_ko_list" if cfg.kofam_require_thresholds else "none"
     log_call(
         "pyhmmer.hmmsearch",
         database=database,
-        track=cfg.track,
+        track="+".join(cfg.track for cfg in cfgs),
         hmm_file=hmm_path,
         proteins=proteins_path,
-        protein_batch_size=cfg.protein_batch_size,
-        cpus=cfg.threads,
+        protein_batch_size=first.protein_batch_size,
+        cpus=first.threads,
         parallel="queries",
         bit_cutoffs="none",
-        max_evalue=cfg.max_evalue,
-        score_thresholds=cutoffs,
+        max_evalue="+".join(str(cfg.max_evalue) for cfg in cfgs),
+        score_thresholds="+".join(_score_thresholds(database, cfg) for cfg in cfgs),
     )
 
     with pyhmmer.easel.SequenceFile(proteins_path, digital=True) as seq_file:
         while True:
-            proteins = seq_file.read_block(sequences=cfg.protein_batch_size)
+            proteins = seq_file.read_block(sequences=first.protein_batch_size)
             if not proteins:
                 break
 
@@ -238,7 +281,7 @@ def _search_and_collect(
                 hit_batches = pyhmmer.hmmsearch(
                     hmm_file,
                     proteins,
-                    cpus=cfg.threads,
+                    cpus=first.threads,
                     parallel="queries",
                 )
                 for top_hits in hit_batches:
@@ -251,6 +294,10 @@ def _search_and_collect(
                         seen_models.add(model_key)
                         models += 1
 
+                    seq_ga = dom_ga = None
+                    ko_meta = None
+                    # Tracks that take this model at all.
+                    active = list(range(len(cfgs)))
                     if database == "pfam":
                         model_accession = _normalize_pfam_accession(hmm)
                         if model_accession is None:
@@ -260,12 +307,20 @@ def _search_and_collect(
                         model_description = _hmm_text(getattr(hmm, "description", None))
 
                         ga_pair = _pfam_model_ga(hmm)
-                        if cfg.pfam_require_ga and ga_pair is None:
-                            if cfg.pfam_missing_ga_policy == "skip_model":
-                                skipped_missing_ga += 1
+                        if ga_pair is None:
+                            active = []
+                            for index, cfg in enumerate(cfgs):
+                                if (
+                                    cfg.pfam_require_ga
+                                    and cfg.pfam_missing_ga_policy == "skip_model"
+                                ):
+                                    skipped_missing_ga[index] += 1
+                                else:
+                                    active.append(index)
+                            if not active:
                                 continue
-                        seq_ga = ga_pair[0] if ga_pair is not None else None
-                        dom_ga = ga_pair[1] if ga_pair is not None else None
+                        else:
+                            seq_ga, dom_ga = ga_pair
                     else:
                         model_id = _kofam_model_id(hmm)
                         if model_id is None:
@@ -279,7 +334,8 @@ def _search_and_collect(
 
                     for hit in top_hits:
                         evalue = float(hit.evalue)
-                        if evalue > cfg.max_evalue:
+                        tracks = [i for i in active if evalue <= cfgs[i].max_evalue]
+                        if not tracks:
                             continue
 
                         protein_id = hit.name.decode() if isinstance(hit.name, bytes) else str(hit.name)
@@ -291,15 +347,17 @@ def _search_and_collect(
                         if database == "pfam":
                             threshold_source = "pfam_ga"
                             threshold_value = seq_ga
-                            if cfg.pfam_require_ga and seq_ga is not None and full_score < seq_ga:
-                                continue
-                            if cfg.pfam_require_ga and dom_ga is not None and domain_score is not None:
-                                if domain_score < dom_ga:
-                                    continue
                             score_type = "full"
                             effective_score = full_score
+                            below_ga = (seq_ga is not None and full_score < seq_ga) or (
+                                dom_ga is not None
+                                and domain_score is not None
+                                and domain_score < dom_ga
+                            )
+                            tracks = [
+                                i for i in tracks if not (cfgs[i].pfam_require_ga and below_ga)
+                            ]
                         else:
-                            ko_meta = kofam_meta_by_model[model_id]
                             score_type = ko_meta.score_type
                             threshold_source = "kofam_ko_list"
                             threshold_value = ko_meta.threshold
@@ -309,70 +367,91 @@ def _search_and_collect(
                                 effective_score = domain_score
                             else:
                                 effective_score = full_score
-                            if cfg.kofam_require_thresholds:
-                                if threshold_value is None:
-                                    continue
-                                if effective_score < float(threshold_value):
-                                    continue
+                            below_threshold = threshold_value is None or effective_score < float(
+                                threshold_value
+                            )
+                            tracks = [
+                                i
+                                for i in tracks
+                                if not (cfgs[i].kofam_require_thresholds and below_threshold)
+                            ]
 
-                        record = AnnotationHit(
-                            protein_id=protein_id,
-                            contig_id=contig_id,
-                            database=database,
-                            model_id=model_id,
-                            model_accession=model_accession,
-                            score_type=score_type,
-                            effective_score=effective_score,
-                            full_score=full_score,
-                            domain_score=domain_score,
-                            evalue=evalue,
-                            hmm_from=hmm_from,
-                            hmm_to=hmm_to,
-                            target_from=target_from,
-                            target_to=target_to,
-                            threshold_source=threshold_source,
-                            threshold_value=threshold_value,
-                            model_name=model_name,
-                            model_description=model_description,
-                            track=cfg.track,
-                        )
-
-                        passing += 1
-                        if all_hits_writer is not None:
-                            all_hits_writer.writerow(
-                                [
-                                    record.protein_id,
-                                    record.contig_id,
-                                    record.database,
-                                    record.model_id,
-                                    record.model_accession,
-                                    record.score_type,
-                                    f"{record.effective_score:.6f}",
-                                    f"{record.full_score:.6f}",
-                                    "" if record.domain_score is None else f"{record.domain_score:.6f}",
-                                    f"{record.evalue:.6g}",
-                                    "" if record.hmm_from is None else str(record.hmm_from),
-                                    "" if record.hmm_to is None else str(record.hmm_to),
-                                    "" if record.target_from is None else str(record.target_from),
-                                    "" if record.target_to is None else str(record.target_to),
-                                    record.threshold_source,
-                                    "" if record.threshold_value is None else f"{record.threshold_value:.6f}",
-                                ]
+                        for index in tracks:
+                            record = AnnotationHit(
+                                protein_id=protein_id,
+                                contig_id=contig_id,
+                                database=database,
+                                model_id=model_id,
+                                model_accession=model_accession,
+                                score_type=score_type,
+                                effective_score=effective_score,
+                                full_score=full_score,
+                                domain_score=domain_score,
+                                evalue=evalue,
+                                hmm_from=hmm_from,
+                                hmm_to=hmm_to,
+                                target_from=target_from,
+                                target_to=target_to,
+                                threshold_source=threshold_source,
+                                threshold_value=threshold_value,
+                                model_name=model_name,
+                                model_description=model_description,
+                                track=cfgs[index].track,
                             )
 
-                        current = best_by_protein.get(record.protein_id)
-                        if _better_hit(record, current):
-                            best_by_protein[record.protein_id] = record
+                            passing[index] += 1
+                            if writers[index] is not None:
+                                _write_hit(writers[index], record)
 
-    return best_by_protein, passing, models, skipped_missing_ga
+                            current = best_by_protein[index].get(record.protein_id)
+                            if _better_hit(record, current):
+                                best_by_protein[index][record.protein_id] = record
+
+    return [
+        (best_by_protein[index], passing[index], models, skipped_missing_ga[index])
+        for index in range(len(cfgs))
+    ]
+
+
+def _write_hit(writer, record: AnnotationHit) -> None:
+    writer.writerow(
+        [
+            record.protein_id,
+            record.contig_id,
+            record.database,
+            record.model_id,
+            record.model_accession,
+            record.score_type,
+            f"{record.effective_score:.6f}",
+            f"{record.full_score:.6f}",
+            "" if record.domain_score is None else f"{record.domain_score:.6f}",
+            f"{record.evalue:.6g}",
+            "" if record.hmm_from is None else str(record.hmm_from),
+            "" if record.hmm_to is None else str(record.hmm_to),
+            "" if record.target_from is None else str(record.target_from),
+            "" if record.target_to is None else str(record.target_to),
+            record.threshold_source,
+            "" if record.threshold_value is None else f"{record.threshold_value:.6f}",
+        ]
+    )
 
 
 def annotate_proteins_complete_databases(
     proteins_faa: Path,
     cfg: AnnotationConfig,
 ) -> AnnotationResults:
-    if cfg.keep_all_hits and cfg.all_hits_path is None:
-        raise ValueError("all_hits_path is required when keep_all_hits is True")
+    """Annotate against the complete Pfam and KOfam databases for one track."""
+    return annotate_proteins_tracks(proteins_faa, [cfg])[0]
+
+
+def annotate_proteins_tracks(
+    proteins_faa: Path,
+    cfgs: Sequence[AnnotationConfig],
+) -> list[AnnotationResults]:
+    """Annotate for several tracks with one search of each database."""
+    for cfg in cfgs:
+        if cfg.keep_all_hits and cfg.all_hits_path is None:
+            raise ValueError("all_hits_path is required when keep_all_hits is True")
 
     pfam_meta = ensure_pfam_database()
     kofam_meta = ensure_kofam_database()
@@ -381,35 +460,43 @@ def annotate_proteins_complete_databases(
     kofam_hmm_path = Path(kofam_meta["hmm_path"])
     all_kofam_meta = get_all_kofam_metadata()
 
-    all_hits_handle = None
-    all_hits_writer = None
-    if cfg.keep_all_hits:
-        all_hits_handle, all_hits_writer = _open_all_hits_writer(cfg.all_hits_path)
-
+    handles = []
+    writers = []
     try:
-        best_pfam, pass_pfam, models_pfam, skipped_ga = _search_and_collect(
+        for cfg in cfgs:
+            if cfg.keep_all_hits:
+                handle, writer = _open_all_hits_writer(cfg.all_hits_path)
+                handles.append(handle)
+                writers.append(writer)
+            else:
+                writers.append(None)
+
+        pfam = _search_tracks(
             database="pfam",
             hmm_path=pfam_hmm_path,
             proteins_path=proteins_faa,
-            cfg=cfg,
-            all_hits_writer=all_hits_writer,
+            cfgs=cfgs,
+            all_hits_writers=writers,
         )
-        best_kofam, pass_kofam, models_kofam, _ = _search_and_collect(
+        kofam = _search_tracks(
             database="kofam",
             hmm_path=kofam_hmm_path,
             proteins_path=proteins_faa,
-            cfg=cfg,
+            cfgs=cfgs,
             kofam_meta_by_model=all_kofam_meta,
-            all_hits_writer=all_hits_writer,
+            all_hits_writers=writers,
         )
     finally:
-        if all_hits_handle is not None:
-            all_hits_handle.close()
+        for handle in handles:
+            handle.close()
 
-    return AnnotationResults(
-        best_pfam_by_protein=best_pfam,
-        best_kofam_by_protein=best_kofam,
-        passing_hit_count=pass_pfam + pass_kofam,
-        scanned_model_count=models_pfam + models_kofam,
-        skipped_pfam_models_missing_ga=skipped_ga,
-    )
+    return [
+        AnnotationResults(
+            best_pfam_by_protein=pfam[index][0],
+            best_kofam_by_protein=kofam[index][0],
+            passing_hit_count=pfam[index][1] + kofam[index][1],
+            scanned_model_count=pfam[index][2] + kofam[index][2],
+            skipped_pfam_models_missing_ga=pfam[index][3],
+        )
+        for index in range(len(cfgs))
+    ]

@@ -6,7 +6,7 @@ from pathlib import Path
 from phu.avger.annotation import (
     AnnotationConfig,
     AnnotationResults,
-    annotate_proteins_complete_databases,
+    annotate_proteins_tracks,
 )
 
 
@@ -39,26 +39,27 @@ def annotate_avg_tracks(
             "both all-hit paths are required when keep_all_hits is True"
         )
 
-    relaxed = annotate_proteins_complete_databases(
+    # One search of each database serves both tracks: they differ only in the
+    # thresholds applied to the hits.
+    relaxed, strict = annotate_proteins_tracks(
         proteins_faa,
-        AnnotationConfig(
-            threads=threads,
-            max_evalue=scoring_evalue,
-            keep_all_hits=keep_all_hits,
-            all_hits_path=relaxed_all_hits_path,
-            pfam_require_ga=False,
-            kofam_require_thresholds=False,
-            track="relaxed",
-        ),
-    )
-    strict = annotate_proteins_complete_databases(
-        proteins_faa,
-        AnnotationConfig(
-            threads=threads,
-            max_evalue=scoring_evalue,
-            keep_all_hits=keep_all_hits,
-            all_hits_path=strict_all_hits_path,
-            track="strict",
-        ),
+        [
+            AnnotationConfig(
+                threads=threads,
+                max_evalue=scoring_evalue,
+                keep_all_hits=keep_all_hits,
+                all_hits_path=relaxed_all_hits_path,
+                pfam_require_ga=False,
+                kofam_require_thresholds=False,
+                track="relaxed",
+            ),
+            AnnotationConfig(
+                threads=threads,
+                max_evalue=scoring_evalue,
+                keep_all_hits=keep_all_hits,
+                all_hits_path=strict_all_hits_path,
+                track="strict",
+            ),
+        ],
     )
     return AvgAnnotationResults(relaxed=relaxed, strict=strict)

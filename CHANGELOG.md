@@ -5,6 +5,12 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Requirements
+
+- PHU now needs Python 3.11 or later. Python 3.10 reached end of life in
+  October 2026 and is no longer supported or tested; create a new environment
+  with a newer Python to upgrade.
+
 ### Screen
 
 - `phu screen --save-target-hmms` no longer needs `mafft`. Target proteins are

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pyhmmer
@@ -43,12 +44,10 @@ class _Completed:
 
 
 def _fake_run(cmd, stdout=None, **kwargs):
-    """Stand in for `seqkit grep -f ids fasta` and `mafft ... fasta`."""
-    if cmd[1] == "grep":
-        wanted = set(Path(cmd[3]).read_text().split())
-        records = [r for r in _fasta_records(Path(cmd[4])) if r[0] in wanted]
-    else:  # aligner: the fixture sequences already have equal lengths
-        records = _fasta_records(Path(cmd[-1]))
+    """Stand in for `seqkit grep -f ids fasta`."""
+    assert cmd[1] == "grep", f"unexpected external command: {cmd}"
+    wanted = set(Path(cmd[3]).read_text().split())
+    records = [r for r in _fasta_records(Path(cmd[4])) if r[0] in wanted]
     stdout.write("".join(f">{name}\n{seq}\n" for name, seq in records))
     return _Completed()
 
@@ -180,8 +179,36 @@ def test_build_target_hmms_reads_only_this_runs_protein_files(workspace: Path) -
     screen._build_target_hmms([current], workspace / "out")
 
     assert _listing(workspace / "out" / "target-hmms") == ["famA.hmm"]
-    # The alignment is scratch outside target-proteins/: nothing added or changed.
+    # The alignment stays in memory: nothing added or changed.
     assert {path.name: path.read_text() for path in proteins_dir.iterdir()} == before
+
+
+def test_build_target_hmms_aligns_unequal_lengths_without_external_tools(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def no_subprocess(*args, **kwargs):
+        raise AssertionError("target HMM building must not start a program")
+
+    monkeypatch.setattr(screen.subprocess, "run", no_subprocess)
+    monkeypatch.setenv("PATH", "")
+    proteins_dir = tmp_path / "out" / "target-proteins"
+    proteins_dir.mkdir(parents=True)
+    family = proteins_dir / "famA.faa"
+    # Different lengths, a duplicate, and a trailing stop: a real alignment
+    # is needed before the sequences can form one MSA.
+    family.write_text(
+        f">p1\n{SEQ_A}\n>p2\n{SEQ_A[3:-4]}\n>p3\n{SEQ_A[:10]}{SEQ_A[14:]}*\n"
+        f">p4\n{SEQ_A}\n"
+    )
+
+    screen._build_target_hmms([family], tmp_path / "out", threads=2)
+
+    hmm_path = tmp_path / "out" / "target-hmms" / "famA.hmm"
+    with pyhmmer.plan7.HMMFile(hmm_path) as handle:
+        hmm = handle.read()
+    assert hmm.name in ("famA", b"famA")
+    assert hmm.nseq == 4
+    assert 0 < hmm.M <= len(SEQ_A)
 
 
 def test_jack_output_names_single_seed(workspace: Path) -> None:
@@ -452,5 +479,79 @@ def test_names_that_sanitise_to_one_file_name_are_refused(workspace: Path) -> No
         _write_hmm(workspace / "m1.hmm", "gamma/2", SEQ_A),
         _write_hmm(workspace / "m2.hmm", "gamma_2", SEQ_B),
     ]
-    with pytest.raises(ValueError, match="'gamma/2' and 'gamma_2' would both be written"):
+    with pytest.raises(
+        ValueError, match="'gamma/2' and 'gamma_2' would both be written"
+    ):
         screen._query_model_ids(mixed, "mixed")
+
+
+def _family_with_ragged_ends(folder: Path) -> Path:
+    folder.mkdir(parents=True)
+    family = folder / "famA.faa"
+    # p5 carries a long private insertion: columns that are almost all gaps.
+    family.write_text(
+        f">p1\n{SEQ_A}\n>p2\n{SEQ_A[3:-4]}\n>p3\n{SEQ_A[:10]}{SEQ_A[14:]}\n"
+        f">p4\n{SEQ_A}\n>p5\n{SEQ_A[:20]}{'WCHWCHWCHWCHWCHWCHWCHWCH'}{SEQ_A[20:]}\n"
+        f">p6\n{SEQ_A[1:]}\n"
+    )
+    return family
+
+
+def _model_length(path: Path) -> int:
+    with pyhmmer.plan7.HMMFile(path) as handle:
+        return handle.read().M
+
+
+@pytest.mark.parametrize("method", ["gappyout", "strict", "strictplus"])
+def test_build_target_hmms_trims_alignment_when_asked(
+    tmp_path: Path, capsys, method: str
+) -> None:
+    family = _family_with_ragged_ends(tmp_path / "plain" / "target-proteins")
+    screen._build_target_hmms([family], tmp_path / "plain")
+    plain = capsys.readouterr().out
+    screen._build_target_hmms([family], tmp_path / "trimmed", trim_method=method)
+    trimmed = capsys.readouterr().out
+
+    assert method not in plain
+    assert f"({method}: " in trimmed
+    before, after = re.search(r"(\d+) -> (\d+) columns", trimmed).groups()
+    assert 0 < int(after) < int(before)
+    assert (
+        0
+        < _model_length(tmp_path / "trimmed" / "target-hmms" / "famA.hmm")
+        <= int(after)
+    )
+
+
+def test_trim_alignment_falls_back_when_nothing_is_left(monkeypatch, capsys) -> None:
+    class _Empty:
+        names: list[bytes] = []
+        sequences: list[str] = []
+
+    class _Trimmer:
+        def __init__(self, method: str) -> None:
+            pass
+
+        def trim(self, alignment):
+            return _Empty()
+
+    monkeypatch.setattr(screen.pytrimal, "AutomaticTrimmer", _Trimmer)
+    rows = [(b"p1", b"MK-L"), (b"p2", b"MKAL")]
+
+    kept, note = screen._trim_alignment(rows, "gappyout", "famA")
+
+    assert kept == rows and note == ""
+    assert "using the untrimmed alignment" in capsys.readouterr().out
+
+
+def test_trim_target_msa_is_validated(tmp_path: Path) -> None:
+    common = dict(input_contigs=tmp_path / "c.fna", hmms=[tmp_path / "a.hmm"])
+    with pytest.raises(ValueError, match="trim_target_msa must be one of"):
+        screen.ScreenConfig(
+            **common,
+            save_target_proteins=True,
+            save_target_hmms=True,
+            trim_target_msa="nogaps",
+        )
+    with pytest.raises(ValueError, match="requires save_target_hmms"):
+        screen.ScreenConfig(**common, trim_target_msa="gappyout")

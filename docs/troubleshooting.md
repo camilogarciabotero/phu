@@ -95,10 +95,10 @@ A step ends with `done in`, `failed after`, `skipped after`, or
 running timer.
 
 `--verbose` adds one line per tool invocation, always prefixed with `[cmd]`.
-External programs (`vclust`, `seqkit`, `mafft`) are shown as the exact,
+External programs (`vclust`, `seqkit`) are shown as the exact,
 shell-quoted command that was executed, including any output redirection.
 In-process steps (pyrodigal-gv gene prediction, pyhmmer `hmmsearch` and
-`jackhmmer`) are shown as the function name followed by the `key=value`
+`jackhmmer`, pyfamsa alignment, pytrimal trimming) are shown as the function name followed by the `key=value`
 parameters that determine the result:
 
 ```text

@@ -11,6 +11,20 @@ behavior in the unreleased branch and may change before a release.
   October 2026 and is no longer supported or tested; create a new environment
   with a newer Python to upgrade.
 
+### Screen
+
+- `phu screen --save-target-hmms` no longer needs `mafft`. Target proteins are
+  aligned inside PHU with FAMSA through the `pyfamsa` package, which is now a
+  dependency installed with PHU. Models built from several proteins can differ
+  slightly from those built from MAFFT alignments. With `--verbose` the step
+  is logged as `[cmd] pyfamsa.align ...`.
+- New `phu screen --trim-target-msa {none,gappyout,strict,strictplus}` (default
+  `none`): trims each target alignment with trimAl, through the new `pytrimal`
+  dependency, before its HMM is built. Needs `--save-target-hmms`. Trimmed
+  models are shorter and give lower bit scores.
+- `pyfamsa` is held to the 0.5 series: its wheels run on glibc 2.17 and later,
+  while 0.6 and later need glibc 2.34 or a C++20 compiler to build.
+
 ### Databases
 
 - Databases now install automatically. The first `screen` or `avger` run that

@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import warnings
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -17,9 +18,11 @@ from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Optional
 
+import pyfamsa
 import pyhmmer
 import pyhmmer.easel
 import pyhmmer.plan7
+import pytrimal
 import typer
 
 from . import __version__
@@ -71,6 +74,8 @@ PREDICTED_PROTEINS = "predicted-proteins.faa"
 PREDICTION_METADATA = Path(".phu") / "prediction.json"
 QUERY_MANIFEST = Path(".phu") / "query.json"
 RUN_MANIFEST = Path(".phu") / "run.json"
+# trimAl methods offered for target alignments, mildest first.
+TRIM_METHODS = ("none", "gappyout", "strict", "strictplus")
 QUERY_HMMS_DIR = "query-hmms"
 TARGET_PROTEINS_DIR = "target-proteins"
 TARGET_HMMS_DIR = "target-hmms"
@@ -982,6 +987,7 @@ class ScreenConfig:
     min_hmm_hits: int = 1  # New: minimum number of HMMs that must hit a contig
     save_target_proteins: bool = False  # New: save matched proteins per HMM
     save_target_hmms: bool = False  # New: build and save HMMs from target proteins
+    trim_target_msa: str = "none"  # trimAl method applied before HMM building
     hmm_mode: str = (
         "pure"  # New: "pure" for single models, "mixed" for pressed/concatenated HMMs
     )
@@ -1008,6 +1014,12 @@ class ScreenConfig:
             raise ValueError(
                 "save_target_hmms requires save_target_proteins to be True"
             )
+        if self.trim_target_msa not in TRIM_METHODS:
+            raise ValueError(
+                "trim_target_msa must be one of: " + ", ".join(TRIM_METHODS)
+            )
+        if self.trim_target_msa != "none" and not self.save_target_hmms:
+            raise ValueError("trim_target_msa requires save_target_hmms to be True")
         if self.min_protein_len_aa < 1:
             raise ValueError("min_protein_len_aa must be >= 1")
 
@@ -1042,6 +1054,7 @@ class ScreenConfig:
             min_hmm_hits=self.min_hmm_hits,
             save_target_proteins=self.save_target_proteins,
             save_target_hmms=self.save_target_hmms,
+            trim_target_msa=self.trim_target_msa,
             hmm_mode=self.hmm_mode,
             proteins_fa=self.outdir / PREDICTED_PROTEINS,
             domtbl_paths=domtbl_paths,
@@ -1074,6 +1087,7 @@ class ScreenPlan:
     min_hmm_hits: int
     save_target_proteins: bool  # New
     save_target_hmms: bool  # New
+    trim_target_msa: str
     hmm_mode: str  # New
     proteins_fa: Path
     domtbl_paths: dict[str, Path]  # Changed from domtbl: Path
@@ -1773,7 +1787,7 @@ def _build_target_hmms(
     protein_files: list[Path],
     outdir: Path,
     threads: int = 1,
-    aligner_bin: str = "mafft",
+    trim_method: str = "none",
 ) -> None:
     """
     Build HMM models from target protein sequences using pyHMMER.
@@ -1782,7 +1796,9 @@ def _build_target_hmms(
     target-proteins/ by an earlier run are never read.
 
     For single sequences, builds HMM directly using builder.build().
-    For multiple sequences, uses the configured external aligner before MSA creation.
+    For multiple sequences, aligns them in-process with FAMSA (pyfamsa) first.
+    With ``trim_method`` other than "none", the alignment is then trimmed with
+    trimAl (pytrimal); an alignment left without columns is used untrimmed.
     """
     target_hmms_dir = outdir / TARGET_HMMS_DIR
     target_hmms_dir.mkdir(parents=True, exist_ok=True)
@@ -1793,6 +1809,12 @@ def _build_target_hmms(
 
     print(f"    Building HMMs for {len(protein_files)} protein sets...")
 
+    # Models are built side by side; threads left over go to each alignment
+    # (16 threads and 2 models: 2 at once, 8 threads per alignment).
+    threads = max(1, threads or 1)
+    workers = min(threads, len(protein_files))
+    align_threads = max(1, threads // workers)
+
     def _build_single_hmm(protein_file: Path) -> None:
         model_name = protein_file.stem
         hmm_output_path = target_hmms_dir / f"{model_name}.hmm"
@@ -1802,10 +1824,14 @@ def _build_target_hmms(
             builder = pyhmmer.plan7.Builder(alphabet)
             background = pyhmmer.plan7.Background(alphabet)
 
-            sequences = [
-                pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=seq_str)
+            records = [
+                (seq_id, seq_str)
                 for seq_id, seq_str in _read_fasta(protein_file)
                 if seq_str
+            ]
+            sequences = [
+                pyhmmer.easel.TextSequence(name=seq_id.encode(), sequence=seq_str)
+                for seq_id, seq_str in records
             ]
 
             if len(sequences) == 0:
@@ -1818,49 +1844,36 @@ def _build_target_hmms(
                 hmm.name = model_name.encode()
                 print(f"      Built HMM from 1 sequence: {model_name}")
             else:
-                # The alignment is scratch: keep it out of target-proteins/,
-                # where it could be mistaken for (or overwrite) a protein set.
-                align_dir = Path(tempfile.mkdtemp(prefix="phu-align-"))
-                aligned_path = align_dir / f"{model_name}.afa"
-                aligner_cmd = [
-                    aligner_bin,
-                    "--auto",
-                    "--thread",
-                    str(1 if threads and threads > 1 else max(1, threads)),
-                    str(protein_file),
+                # FAMSA runs in-process (pyfamsa); the alignment stays in
+                # memory.
+                log_call(
+                    "pyfamsa.align",
+                    input=protein_file,
+                    sequences=len(sequences),
+                    guide_tree="sl",
+                    threads=align_threads,
+                )
+                aligned = pyfamsa.Aligner(threads=align_threads).align(
+                    pyfamsa.Sequence(seq_id.encode(), seq_str.encode())
+                    for seq_id, seq_str in records
+                )
+                rows = [(row.id, row.sequence) for row in aligned]
+                trim_note = ""
+                if trim_method != "none":
+                    rows, trim_note = _trim_alignment(rows, trim_method, model_name)
+                aligned_sequences = [
+                    pyhmmer.easel.TextSequence(name=name, sequence=seq.decode())
+                    for name, seq in rows
                 ]
-                log_command(aligner_cmd, stdout=aligned_path)
-                try:
-                    with aligned_path.open("w") as aligned_output:
-                        result = subprocess.run(
-                            aligner_cmd,
-                            stdout=aligned_output,
-                            stderr=subprocess.PIPE,
-                            text=True,
-                            check=False,
-                        )
-                    if result.returncode != 0:
-                        raise RuntimeError(
-                            f"{aligner_bin} failed with code {result.returncode}: "
-                            f"{result.stderr.strip()}"
-                        )
-
-                    aligned_sequences = [
-                        pyhmmer.easel.TextSequence(
-                            name=seq_id.encode(), sequence=seq_str
-                        )
-                        for seq_id, seq_str in _read_fasta(aligned_path)
-                    ]
-                    text_msa = pyhmmer.easel.TextMSA(
-                        name=model_name.encode(), sequences=aligned_sequences
-                    )
-                    digital_msa = text_msa.digitize(alphabet)
-                    hmm, _, _ = builder.build_msa(digital_msa, background)
-                    print(
-                        f"      Built HMM from {len(aligned_sequences)} aligned sequences: {model_name}"
-                    )
-                finally:
-                    shutil.rmtree(align_dir, ignore_errors=True)
+                text_msa = pyhmmer.easel.TextMSA(
+                    name=model_name.encode(), sequences=aligned_sequences
+                )
+                digital_msa = text_msa.digitize(alphabet)
+                hmm, _, _ = builder.build_msa(digital_msa, background)
+                print(
+                    f"      Built HMM from {len(aligned_sequences)} aligned sequences"
+                    f"{trim_note}: {model_name}"
+                )
 
             if not hmm.name:
                 hmm.name = model_name.encode()
@@ -1876,13 +1889,56 @@ def _build_target_hmms(
             traceback.print_exc()
 
     # Use threads if requested; otherwise fall back to sequential processing
-    if threads and threads > 1:
-        print(f"    Using {threads} threads for HMM building")
-        with ThreadPool(processes=threads) as pool:
-            pool.map(_build_single_hmm, protein_files)
-    else:
-        for protein_file in protein_files:
-            _build_single_hmm(protein_file)
+    with warnings.catch_warnings():
+        # trimAl warns once per sequence it drops; _trim_alignment reports
+        # the count instead.
+        warnings.filterwarnings(
+            "ignore", message="Removing sequence", category=RuntimeWarning
+        )
+        if workers > 1:
+            print(f"    Using {threads} threads for HMM building")
+            with ThreadPool(processes=workers) as pool:
+                pool.map(_build_single_hmm, protein_files)
+        else:
+            for protein_file in protein_files:
+                _build_single_hmm(protein_file)
+
+
+def _trim_alignment(
+    rows: list[tuple[bytes, bytes]], method: str, model_name: str
+) -> tuple[list[tuple[bytes, bytes]], str]:
+    """
+    Trim aligned ``(name, sequence)`` rows with trimAl. Returns the rows to
+    build from and a note for the progress line. Sequences left with gaps
+    only are dropped by trimAl; if no column or fewer than two sequences
+    survive, the untrimmed rows are returned.
+    """
+    columns = len(rows[0][1])
+    trimmed = pytrimal.AutomaticTrimmer(method).trim(
+        pytrimal.Alignment([name for name, _ in rows], [seq for _, seq in rows])
+    )
+    kept = [
+        (bytes(name), seq.encode() if isinstance(seq, str) else bytes(seq))
+        for name, seq in zip(trimmed.names, trimmed.sequences)
+    ]
+    kept_columns = len(kept[0][1]) if kept else 0
+    log_call(
+        "pytrimal.trim",
+        model=model_name,
+        method=method,
+        columns=f"{columns}->{kept_columns}",
+        sequences=f"{len(rows)}->{len(kept)}",
+    )
+    if kept_columns == 0 or len(kept) < 2:
+        print(
+            f"      Warning: {method} trimming left nothing to build from for "
+            f"{model_name}; using the untrimmed alignment"
+        )
+        return rows, ""
+    note = f" ({method}: {columns} -> {kept_columns} columns"
+    if len(kept) < len(rows):
+        note += f", {len(rows) - len(kept)} gap-only sequences dropped"
+    return kept, note + ")"
 
 
 def _screen(cfg: ScreenConfig) -> ScreenPlan:
@@ -1965,7 +2021,6 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
 
     # Discover binaries required by the selected output paths.
     seqkit_bin = _binaries()
-    aligner_bin = _executable(["mafft"]) if cfg.save_target_hmms else ""
     plan = cfg.plan()
     if bulk_work_dir is not None:
         plan.domtbl_paths = _domtbl_paths(plan.hmms, bulk_work_dir)
@@ -2232,7 +2287,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 target_protein_files,
                 plan.outdir,
                 threads=plan.threads,
-                aligner_bin=aligner_bin,
+                trim_method=plan.trim_target_msa,
             )
 
     print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")

@@ -13,7 +13,7 @@ import tarfile
 from collections import Counter
 from pathlib import Path
 
-from phu.db_fetch import DatabaseError
+from phu.db.fetch import DatabaseError
 
 COPY_CHUNK = 1024 * 1024
 

@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from .db_bundle import (
+from phu.db.bundle import (
     bundle_provenance,
     database_hashes,
     derived_dir,

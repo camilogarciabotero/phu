@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .avger_annotation import (
+from phu.avger.annotation import (
     AnnotationConfig,
     AnnotationResults,
     annotate_proteins_complete_databases,

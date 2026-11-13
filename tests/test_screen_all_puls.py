@@ -5,9 +5,9 @@ from pathlib import Path
 import typer
 from typer.testing import CliRunner
 
-from phu import screen
+from phu.commands import screen
 from phu.cli import app
-from phu.dbcan_db import PULRule
+from phu.db.dbcan import PULRule
 
 runner = CliRunner()
 

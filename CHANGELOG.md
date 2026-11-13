@@ -5,6 +5,13 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Internal
+
+- The Python modules are grouped into packages: `phu.commands` (one module per
+  command), `phu.avger`, `phu.db` and `phu.core`. The command line is
+  unchanged. Code that imported phu modules directly must use the new paths,
+  for example `phu.commands.screen` instead of `phu.screen`.
+
 ### Requirements
 
 - PHU now needs Python 3.11 or later. Python 3.10 reached end of life in

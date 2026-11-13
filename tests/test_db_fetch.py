@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from phu import db_fetch
-from phu.db_fetch import (
+from phu.db import fetch as db_fetch
+from phu.db.fetch import (
     DatabaseError,
     DownloadError,
     InsecureRedirect,
@@ -20,7 +20,7 @@ from phu.db_fetch import (
     redirect_allowed,
     required_install_bytes,
 )
-from phu.db_manifest import load_manifest
+from phu.db.manifest import load_manifest
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "phu_db"
 
@@ -465,7 +465,7 @@ def test_untrusted_certificate_fails_at_once_and_names_the_fix(tmp_path, monkeyp
     import ssl
     import urllib.error
 
-    from phu import db_fetch
+    from phu.db import fetch as db_fetch
 
     calls = []
 

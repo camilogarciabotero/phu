@@ -7,16 +7,16 @@ from pathlib import Path
 
 import pytest
 
-from phu import db_bundle
-from phu.db_bundle import (
+from phu.db import bundle as db_bundle
+from phu.db.bundle import (
     bundle_provenance,
     database_hashes,
     default_db_folder,
     resolve_db,
     tree_problems,
 )
-from phu.db_fetch import DatabaseError, download_verified
-from phu.db_manifest import DATABASE_NAMES
+from phu.db.fetch import DatabaseError, download_verified
+from phu.db.manifest import DATABASE_NAMES
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "phu_db"
 # Every URL in the fixture manifest and pins lives under this host.
@@ -193,8 +193,8 @@ def test_pins_without_a_manifest_are_refused(db_folder, fixture_pins, fixture_ma
 
 
 def test_unpinned_phu_raises_a_database_error(monkeypatch, db_folder):
-    # No phu._bundle (until 0.1.1 is published): None in sys.modules makes it unimportable.
-    monkeypatch.setitem(sys.modules, "phu._bundle", None)
+    # No phu.db.pins (until 0.1.1 is published): None in sys.modules makes it unimportable.
+    monkeypatch.setitem(sys.modules, "phu.db.pins", None)
 
     with pytest.raises(DatabaseError, match="not pinned yet") as raised:
         resolve_db("pfam", db_folder=db_folder)
@@ -227,7 +227,7 @@ def test_pins_without_a_vendored_manifest_raise_a_database_error(
     monkeypatch, tmp_path, db_folder, fixture_pins
 ):
     monkeypatch.setitem(
-        sys.modules, "phu._bundle", types.SimpleNamespace(PRODUCTION_PINS=fixture_pins)
+        sys.modules, "phu.db.pins", types.SimpleNamespace(PRODUCTION_PINS=fixture_pins)
     )
     _vendored_data(monkeypatch, tmp_path / "package")
 
@@ -240,7 +240,7 @@ def test_production_pins_and_vendored_manifest_are_used_by_default(
     monkeypatch, tmp_path, db_folder, fixture_bundle, fixture_pins, fixture_manifest_bytes
 ):
     monkeypatch.setitem(
-        sys.modules, "phu._bundle", types.SimpleNamespace(PRODUCTION_PINS=fixture_pins)
+        sys.modules, "phu.db.pins", types.SimpleNamespace(PRODUCTION_PINS=fixture_pins)
     )
     package = tmp_path / "package"
     (package / "data").mkdir(parents=True)

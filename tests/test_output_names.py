@@ -9,8 +9,10 @@ from pathlib import Path
 import pyhmmer
 import pytest
 
-from phu import cluster, jack, screen
-from phu.gene_prediction_core import CacheArtifact
+from phu.commands import cluster
+from phu.commands import jack
+from phu.commands import screen
+from phu.core.gene_prediction import CacheArtifact
 
 SEQ_A = "MKKLLAAVAGWAAAPAAACDEFGHIKLMNPQRSTVWY"
 SEQ_B = "WYVTSRQPNMLKIHGFEDCWWHHYYFFMMKKRRDDEE"

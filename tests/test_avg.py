@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pytest
 
-import phu.avg as avg
-from phu.avg_annotation import AvgAnnotationResults
-from phu.avg_reference_db import AvgReference
-from phu.avger_annotation import AnnotationHit, AnnotationResults
-from phu.gene_prediction_core import CacheArtifact, PredictedGene
+import phu.commands.avger as avg
+from phu.avger.tracks import AvgAnnotationResults
+from phu.avger.reference import AvgReference
+from phu.avger.annotation import AnnotationHit, AnnotationResults
+from phu.core.gene_prediction import CacheArtifact, PredictedGene
 
 
 def test_avg_config_defaults_and_validation(tmp_path: Path):

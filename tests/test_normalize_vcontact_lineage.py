@@ -9,7 +9,7 @@ import pytest
 from typer.testing import CliRunner
 
 from phu.cli import app
-from phu.normalize_vcontact_lineage import (
+from phu.commands.normalize_lineage import (
     QualitySummary,
     normalize_cell,
     normalize_dataframe,

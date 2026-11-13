@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from phu.kofam_db import (
+from phu.db.kofam import (
     extract_kofam_models,
     is_kofam_id,
     normalize_kofam_id,
@@ -36,7 +36,7 @@ def test_extract_kofam_models_extracts_from_profiles(tmp_path: Path, monkeypatch
     models_dir = tmp_path / "kofam" / "models"
     out_dir = tmp_path / "resolved"
 
-    import phu.kofam_db as kofam_db
+    import phu.db.kofam as kofam_db
 
     monkeypatch.setattr(kofam_db, "_kofam_hmm_path", lambda: hmm_db_path)
     monkeypatch.setattr(kofam_db, "_kofam_models_dir", lambda: models_dir)

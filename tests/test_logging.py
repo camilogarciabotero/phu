@@ -8,10 +8,10 @@ import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
-from phu import _log
-from phu import _click
-from phu._click import ProgressReporter, download_progress, run_click_task
-from phu._exec import run
+from phu.core import log as _log
+from phu.core import progress as _click
+from phu.core.progress import ProgressReporter, download_progress, run_click_task
+from phu.core.exec import run
 from phu.cli import app
 
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
@@ -125,7 +125,7 @@ def test_verbose_command_line_shows_redirect_and_in_process_calls(capsys) -> Non
 
 
 def test_gene_prediction_states_its_parameters_when_verbose(tmp_path, capsys) -> None:
-    from phu.gene_prediction_core import PredictionInputs, predict_genes_pyrodigal
+    from phu.core.gene_prediction import PredictionInputs, predict_genes_pyrodigal
 
     contigs = tmp_path / "contigs.fna"
     contigs.write_text(

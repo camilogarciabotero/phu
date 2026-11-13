@@ -7,7 +7,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Union
 
-from ._exec import _executable, run
+from phu.core.exec import _executable, run
 
 
 class Mode(str, Enum):

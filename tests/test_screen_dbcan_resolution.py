@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from phu import screen
-from phu.dbcan_db import PULRule
+from phu.commands import screen
+from phu.db.dbcan import PULRule
 
 
 def test_resolve_hmm_inputs_resolves_dbcan_families(monkeypatch, tmp_path: Path):

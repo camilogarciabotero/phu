@@ -8,23 +8,23 @@ import typer
 
 from phu import __version__
 
-from ._click import ProgressReporter, run_click_task
-from ._exec import CmdNotFound
-from ._log import set_verbosity
-from .avg import AvgConfig, run_avg
-from .db_bundle import bundle_provenance, prepare_bundle
-from .db_fetch import DatabaseError
-from .cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
-from .gene_prediction_core import (
+from phu.core.progress import ProgressReporter, run_click_task
+from phu.core.exec import CmdNotFound
+from phu.core.log import set_verbosity
+from phu.commands.avger import AvgConfig, run_avg
+from phu.db.bundle import bundle_provenance, prepare_bundle
+from phu.db.fetch import DatabaseError
+from phu.commands.cluster import ClusterConfig, Mode, _cluster, parse_vclust_params
+from phu.core.gene_prediction import (
     clean_prediction_cache,
 )
-from .jack import JackConfig, _jack
-from .screen import TRIM_METHODS, ScreenConfig, _screen
-from .normalize_vcontact_lineage import (
+from phu.commands.jack import JackConfig, _jack
+from phu.commands.screen import TRIM_METHODS, ScreenConfig, _screen
+from phu.commands.normalize_lineage import (
     NormalizeLineageConfig,
     normalize_lineage_file,
 )
-from .simplify_vcontact_taxa import TaxaConfig, _simplify_taxa
+from phu.commands.simplify_taxa import TaxaConfig, _simplify_taxa
 
 app = typer.Typer(
     help="Phage utilities CLI",

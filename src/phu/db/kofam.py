@@ -10,8 +10,8 @@ from typing import Optional
 
 import click
 
-from ._click import run_click_task
-from .db_bundle import derived_dir, derived_files_lock, resolve_db_cached, write_atomically
+from phu.core.progress import run_click_task
+from phu.db.bundle import derived_dir, derived_files_lock, resolve_db_cached, write_atomically
 
 logger = logging.getLogger(__name__)
 

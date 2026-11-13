@@ -9,7 +9,7 @@ from pathlib import Path
 import pyhmmer
 import pytest
 
-from phu.db_manifest import (
+from phu.db.manifest import (
     MANIFEST_MEMBER,
     ManifestError,
     Step,
@@ -507,7 +507,7 @@ def test_fixture_pul_rules_follow_pul_table_semantics():
 
 
 def test_fixture_pul_rules_agree_with_phu_rule_reader():
-    from phu.dbcan_db import parse_pul_rules
+    from phu.db.dbcan import parse_pul_rules
 
     rules = parse_pul_rules(FIXTURE_DIR / "prepared" / "dbcan" / "pul_rules.tsv", {"GH5", "CBM48"})
     rows = (FIXTURE_DIR / "prepared" / "dbcan" / "pul_rules.tsv").read_text().splitlines()[1:]

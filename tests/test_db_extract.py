@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from phu import db_bundle
-from phu.db_bundle import BundleMismatch, extract_bundle
-from phu.db_fetch import DatabaseError
-from phu.db_manifest import DATABASE_NAMES, MANIFEST_MEMBER
-from phu.db_archive import ArchiveError, UnsafeArchive, check_tar_members, extract_member
+from phu.db import bundle as db_bundle
+from phu.db.bundle import BundleMismatch, extract_bundle
+from phu.db.fetch import DatabaseError
+from phu.db.manifest import DATABASE_NAMES, MANIFEST_MEMBER
+from phu.db.archive import ArchiveError, UnsafeArchive, check_tar_members, extract_member
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "phu_db"
 PFAM_HMM = "phu-db/pfam/profiles.hmm"

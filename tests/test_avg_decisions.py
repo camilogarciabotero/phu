@@ -1,6 +1,6 @@
 import pytest
 
-from phu.avg_decisions import (
+from phu.avger.decisions import (
     AvgEvidence,
     FilterEvidence,
     PositiveEvidence,

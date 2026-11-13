@@ -39,8 +39,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from phu._click import download_progress
-from phu.db_fetch import (
+from phu.core.progress import download_progress
+from phu.db.fetch import (
     CHUNK_SIZE,
     DEFAULT_CONNECTIONS,
     MAX_CONNECTIONS,
@@ -51,7 +51,7 @@ from phu.db_fetch import (
     ensure_free_space,
     required_install_bytes,
 )
-from phu.db_manifest import (
+from phu.db.manifest import (
     BUNDLE_ROOT,
     DATABASE_NAMES,
     MANIFEST_MEMBER,
@@ -60,7 +60,7 @@ from phu.db_manifest import (
     PreparedFile,
     loads_manifest,
 )
-from phu.db_archive import (
+from phu.db.archive import (
     ArchiveError,
     UnsafeArchive,
     check_tar_members,
@@ -1027,7 +1027,7 @@ _DEEP_VERIFIED: set[str] = set()
 _RESOLVED: dict[tuple[str, str, str | None, str | None], Path] = {}
 
 _NOT_PINNED = (
-    "phu-db bundle is not pinned yet: this phu has no phu._bundle pins or vendored "
+    "phu-db bundle is not pinned yet: this phu has no phu.db.pins or vendored "
     "phu/data/phu-db.json, so it cannot install or locate its databases"
 )
 
@@ -1035,10 +1035,10 @@ _NOT_PINNED = (
 def _production_pins() -> tuple[BundlePins, bytes]:
     """The pins and vendored manifest shipped with phu."""
     try:
-        bundle = importlib.import_module("phu._bundle")
+        bundle = importlib.import_module("phu.db.pins")
     except ModuleNotFoundError as error:
         # Only a missing pins module means "not pinned"; a broken one is a bug.
-        if error.name != "phu._bundle":
+        if error.name != "phu.db.pins":
             raise
         raise DatabaseError(_NOT_PINNED) from None
     # One joinpath step at a time: Traversable takes a single child before 3.11.

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from phu.gene_prediction_core import (
+from phu.core.gene_prediction import (
     PredictedGene,
     PredictionInputs,
     compute_cache_key,
@@ -15,7 +15,7 @@ from phu.gene_prediction_core import (
     write_predicted_proteins_fasta,
     write_prediction_metadata,
 )
-from phu.screen import _predict_proteins_pyrodigal
+from phu.commands.screen import _predict_proteins_pyrodigal
 
 
 
@@ -433,7 +433,7 @@ def test_predict_proteins_single_mode_trains_and_respects_translation_table(
                 _FakeGene("MKGEGE", "ATGAAAGGTGAAGGTGAATGA", 1, 21, 1),
             ]
 
-    monkeypatch.setattr("phu.gene_prediction_core.ViralGeneFinder", FakeFinder)
+    monkeypatch.setattr("phu.core.gene_prediction.ViralGeneFinder", FakeFinder)
 
     proteins = tmp_path / "proteins.faa"
     count = _predict_proteins_pyrodigal(
@@ -485,7 +485,7 @@ def test_predict_genes_returns_typed_records_and_preserves_contig_pipes(
                 ]
             return [_FakeGene("MPP", "ATGCCCCCCTAG", 5, 16, 1)]
 
-    monkeypatch.setattr("phu.gene_prediction_core.ViralGeneFinder", _FakeFinder)
+    monkeypatch.setattr("phu.core.gene_prediction.ViralGeneFinder", _FakeFinder)
 
     genes = predict_genes_pyrodigal(
         PredictionInputs(input_contigs=contigs, min_gene_len=9, min_protein_len_aa=3)
@@ -525,7 +525,7 @@ def test_predict_genes_respects_min_protein_length(tmp_path, monkeypatch):
         def find_genes(self, sequence):
             return [_FakeGene()]
 
-    monkeypatch.setattr("phu.gene_prediction_core.ViralGeneFinder", _FakeFinder)
+    monkeypatch.setattr("phu.core.gene_prediction.ViralGeneFinder", _FakeFinder)
 
     genes = predict_genes_pyrodigal(
         PredictionInputs(

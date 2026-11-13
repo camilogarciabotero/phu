@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from phu.avg_annotation import annotate_avg_tracks
-from phu.avger_annotation import AnnotationConfig, AnnotationResults
+from phu.avger.tracks import annotate_avg_tracks
+from phu.avger.annotation import AnnotationConfig, AnnotationResults
 
 
 def empty_results():
@@ -24,7 +24,7 @@ def test_avg_annotation_runs_distinct_relaxed_and_strict_configs(monkeypatch, tm
         calls.append((proteins_path, config))
         return empty_results()
 
-    monkeypatch.setattr("phu.avg_annotation.annotate_proteins_complete_databases", fake_annotate)
+    monkeypatch.setattr("phu.avger.tracks.annotate_proteins_complete_databases", fake_annotate)
 
     result = annotate_avg_tracks(tmp_path / "proteins.faa", threads=4)
 

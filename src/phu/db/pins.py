@@ -5,7 +5,7 @@ built by phu-db-prep 0.1.1. The vendored phu/data/phu-db.json is the manifest
 inside that tarball; its digest is pinned here too.
 """
 
-from phu.db_bundle import BundlePins
+from phu.db.bundle import BundlePins
 
 PRODUCTION_PINS = BundlePins(
     url="https://zenodo.org/records/24121209/files/phu-db.tar.gz",

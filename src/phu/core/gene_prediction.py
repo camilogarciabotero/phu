@@ -30,7 +30,7 @@ from typing import Optional
 
 from pyrodigal_gv import ViralGeneFinder
 
-from ._log import log_call
+from phu.core.log import log_call
 
 PROTEIN_FASTA_FORMAT_VERSION = 2
 

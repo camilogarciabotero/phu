@@ -5,7 +5,7 @@ from pathlib import Path
 import typer
 from typer.testing import CliRunner
 
-from phu import screen
+from phu.commands import screen
 from phu.cli import app
 
 runner = CliRunner()

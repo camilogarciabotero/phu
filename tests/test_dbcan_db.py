@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from phu import dbcan_db
-from phu.dbcan_db import (
+from phu.db import dbcan as dbcan_db
+from phu.db.dbcan import (
     build_family_offsets,
     is_dbcan_id,
     normalize_dbcan_id,

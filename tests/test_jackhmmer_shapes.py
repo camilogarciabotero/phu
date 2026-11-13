@@ -1,4 +1,4 @@
-import phu.jack as jack
+import phu.commands.jack as jack
 
 
 class _FakeHit:

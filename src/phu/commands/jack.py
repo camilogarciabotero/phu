@@ -11,14 +11,14 @@ from typing import Optional
 import pyhmmer.easel
 import pyhmmer.hmmer
 
-from ._exec import _executable
-from ._log import log_call
-from .gene_prediction_core import (
+from phu.core.exec import _executable
+from phu.core.log import log_call
+from phu.core.gene_prediction import (
     PredictionInputs,
     get_or_predict_proteins,
     write_prediction_metadata,
 )
-from .screen import (
+from phu.commands.screen import (
     MATCHED_CONTIG_IDS,
     MATCHED_CONTIGS,
     PREDICTED_PROTEINS,

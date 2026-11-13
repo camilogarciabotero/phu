@@ -10,10 +10,10 @@ from datetime import datetime, timezone
 from io import StringIO
 from pathlib import Path
 
-from . import __version__
-from .avg_reference_db import load_avg_reference
-from .avg_annotation import AvgAnnotationResults, annotate_avg_tracks
-from .avg_decisions import (
+from phu import __version__
+from phu.avger.reference import load_avg_reference
+from phu.avger.tracks import AvgAnnotationResults, annotate_avg_tracks
+from phu.avger.decisions import (
     AvgEvidence,
     FilterEvidence,
     PositiveEvidence,
@@ -24,13 +24,13 @@ from .avg_decisions import (
     evaluate_candidates,
     resolve_final_class,
 )
-from .gene_prediction_core import (
+from phu.core.gene_prediction import (
     CacheArtifact,
     PredictionInputs,
     get_or_predict_proteins,
 )
-from .db_bundle import bundle_provenance, resolve_db
-from ._click import ProgressReporter
+from phu.db.bundle import bundle_provenance, resolve_db
+from phu.core.progress import ProgressReporter
 
 
 @dataclass(frozen=True)

@@ -19,7 +19,7 @@ from .gene_prediction_core import (
     clean_prediction_cache,
 )
 from .jack import JackConfig, _jack
-from .screen import ScreenConfig, _screen
+from .screen import TRIM_METHODS, ScreenConfig, _screen
 from .normalize_vcontact_lineage import (
     NormalizeLineageConfig,
     normalize_lineage_file,
@@ -580,6 +580,16 @@ def screen(
         help="Save HMMs built from target proteins in target-hmms/ subfolder",
         rich_help_panel="Output",
     ),
+    trim_target_msa: str = typer.Option(
+        "none",
+        "--trim-target-msa",
+        help=(
+            "Trim each target alignment with trimAl before building its HMM "
+            "(needs --save-target-hmms): 'none', 'gappyout' (gap-based, the "
+            "mildest), 'strict' or 'strictplus'"
+        ),
+        rich_help_panel="Output",
+    ),
     hmm_mode: str = typer.Option(
         "pure",
         "--hmm-mode",
@@ -676,6 +686,21 @@ def screen(
     if not all_puls and not all_cazymes and not hmm_paths:
         typer.secho("No HMM files specified", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
+    if trim_target_msa not in TRIM_METHODS:
+        typer.secho(
+            f"--trim-target-msa must be one of: {', '.join(TRIM_METHODS)}",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+    if trim_target_msa != "none" and not save_target_hmms:
+        typer.secho(
+            "--trim-target-msa needs --save-target-hmms "
+            "(and --save-target-proteins)",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
 
     # Build config
     cfg = ScreenConfig(
@@ -699,6 +724,7 @@ def screen(
         min_hmm_hits=min_hmm_hits,
         save_target_proteins=save_target_proteins,
         save_target_hmms=save_target_hmms,
+        trim_target_msa=trim_target_msa,
         hmm_mode=hmm_mode,  # New parameter
     )
 

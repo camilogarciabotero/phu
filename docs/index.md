@@ -176,6 +176,12 @@ This program uses several key tools and libraries, make sure to acknowledge them
 - [seqkit](https://bioinf.shenwei.me/seqkit/): A toolkit for FASTA/Q file manipulation.
 > Wei Shen*, Botond Sipos, and Liuyang Zhao. 2024. SeqKit2: A Swiss Army Knife for Sequence and Alignment Processing. iMeta e191. doi:10.1002/imt2.191.
 
+- [FAMSA](https://github.com/refresh-bio/FAMSA) and [pyfamsa](https://github.com/althonos/pyfamsa): A multiple sequence aligner for large protein families, and its Python bindings.
+> Deorowicz, S., Debudaj-Grabysz, A., & Gudyś, A. (2016). FAMSA: Fast and accurate multiple sequence alignment of huge protein families. Scientific Reports, 6, 33964. https://doi.org/10.1038/srep33964
+
+- [trimAl](https://github.com/inab/trimal) and [pytrimal](https://github.com/althonos/pytrimal): Automated alignment trimming, and its Python bindings.
+> Capella-Gutiérrez, S., Silla-Martínez, J. M., & Gabaldón, T. (2009). trimAl: a tool for automated alignment trimming in large-scale phylogenetic analyses. Bioinformatics, 25(15), 1972–1973. https://doi.org/10.1093/bioinformatics/btp348
+
 - [Prodigal](https://github.com/hyattpd/prodigal): A gene prediction tool for prokaryotic genomes.
 > Hyatt, D., Chen, G. L., LoCascio, P. F., Land, M. L., Larimer, F. W., & Hauser, L. J. (2010). Prodigal: prokaryotic gene recognition and translation initiation site identification. BMC bioinformatics, 11(1), 119. https://doi.org/10.1186/1471-2105-11-119
 

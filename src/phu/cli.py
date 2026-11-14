@@ -484,7 +484,7 @@ def screen(
     ),
     hmms: list[Path] = typer.Argument(
         None,
-        help="HMM files, PFAM/KOfam IDs, dbCAN families (GH128), or one PUL ID (PUL0621)",
+        help="HMM files, PFAM/KOfam/PHROG IDs (PF00001, K00001, phrog_216), dbCAN families (GH128), or one PUL ID (PUL0621)",
         metavar="[QUERY]...",
         rich_help_panel="Query selection",
     ),
@@ -666,10 +666,11 @@ def screen(
     - all: Keep contigs matching all HMMs (most restrictive)
     - threshold: Keep contigs matching at least --min-hmm-hits HMMs
 
-    KO IDs (K00001-style) are resolved from local KOFam DB. dbCAN families
-    (GH128-style) and one PUL ID (PUL0621-style) are resolved from local dbCAN.
-    By default,
-    KO-specific thresholds from ko_list are applied using each KO score_type.
+    KO IDs (K00001-style) are resolved from the local KOfam DB and PHROG IDs
+    (phrog_216-style) from the local PHROG DB. dbCAN families (GH128-style)
+    and one PUL ID (PUL0621-style) are resolved from local dbCAN. By default,
+    KO-specific thresholds from ko_list are applied using each KO score_type,
+    and PHROG hits need 60 bits and half of both model and protein aligned.
 
     HMM modes:
     - pure: Each HMM file contains one model (default, most common)

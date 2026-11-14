@@ -7,6 +7,13 @@ behavior in the unreleased branch and may change before a release.
 
 ### Avger
 
+- Strict annotations in every database now also need coverage: a hit counts
+  only when its domains align over at least half of the model and half of the
+  protein (every reported domain counts, overlaps once, as CheckAMG counts
+  it). The new `--min-coverage` option sets the fraction; `0` restores the
+  old behaviour for Pfam and KOfam. Expect fewer strict Pfam and KOfam
+  annotations, most visibly for short domains inside long proteins. The
+  relaxed scoring track is unaffected.
 - The output of `phu avger` is reorganised around the person reading it.
   `avg-predictions.tsv` is now a short table, one row per predicted gene with
   its class, supporting reference entries and rule values. New files:
@@ -65,6 +72,12 @@ behavior in the unreleased branch and may change before a release.
 
 ### Screen
 
+- The `hmm_coverage` and `protein_coverage` of a hit now count every reported
+  domain (overlaps once) instead of only the best domain, matching `phu
+  avger` and CheckAMG. Hits matched in several pieces gain coverage, so the
+  dbCAN rule, `--min-hmm-coverage` and `--min-protein-coverage` can keep hits
+  they previously dropped. The `hmm_from`/`hmm_to` columns still describe the
+  best domain.
 - `phu screen` accepts PHROG identifiers as queries, for example
   `phu screen phrog_216 -i contigs.fna`, alone or mixed with Pfam, KOfam and
   dbCAN identifiers and your own HMMs. A PHROG hit needs a bit score of at

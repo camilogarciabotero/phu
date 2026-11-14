@@ -27,6 +27,7 @@ import typer
 
 from phu import __version__
 from phu.core.progress import run_click_task
+from phu.core.coverage import hit_coverage
 from phu.core.exec import _executable
 from phu.db.bundle import bundle_provenance, database_hashes
 from phu.core.log import log_call, log_command
@@ -1543,19 +1544,18 @@ def _hmmsearch(
                         domain_i_evalue = getattr(best_domain, "i_evalue", None)
                         model_length = getattr(top_hits.query, "M", None)
                         alignment = getattr(best_domain, "alignment", None)
-                        if model_length and alignment is not None:
+                        if alignment is not None:
+                            # The best domain's span, for the coordinate columns.
                             hmm_from = alignment.hmm_from
                             hmm_to = alignment.hmm_to
                             target_from = alignment.target_from
                             target_to = alignment.target_to
-                            hmm_coverage = (
-                                alignment.hmm_to - alignment.hmm_from + 1
-                            ) / model_length
-                            protein_length = getattr(hit, "length", None)
-                            if protein_length:
-                                protein_coverage = (
-                                    alignment.target_to - alignment.target_from + 1
-                                ) / protein_length
+                        if model_length:
+                            # Coverage counts every reported domain, overlaps
+                            # once, as `phu avger` and CheckAMG count it.
+                            hmm_coverage, protein_coverage = hit_coverage(
+                                hit, model_length
+                            )
 
                 yield Hit(
                     contig=contig,

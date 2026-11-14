@@ -55,6 +55,7 @@ class AvgConfig:
     gene_v_cutoff: float = 10.0
     scoring_evalue: float = 1e-5
     phrog: bool = True
+    min_coverage: float = 0.5
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "input_contigs", Path(self.input_contigs))
@@ -83,6 +84,8 @@ class AvgConfig:
             raise ValueError("gene_v_cutoff must be >= 0")
         if self.scoring_evalue < 0:
             raise ValueError("scoring_evalue must be >= 0")
+        if not 0.0 <= self.min_coverage <= 1.0:
+            raise ValueError("min_coverage must be between 0 and 1")
 
 
 @dataclass(frozen=True)
@@ -147,6 +150,7 @@ def run_avg(
             if config.keep_hits
             else None,
             phrog=config.phrog,
+            min_coverage=config.min_coverage,
         )
         reporter.succeed_task(annotation_task)
         output_task = reporter.start_task("Writing AVG results")
@@ -811,6 +815,7 @@ def write_avg_outputs(
             "gene_v_cutoff": config.gene_v_cutoff,
             "scoring_evalue": config.scoring_evalue,
             "phrog": config.phrog,
+            "min_coverage": config.min_coverage,
         },
         "phu_db": bundle_provenance(),
         "output_schema_version": 3,

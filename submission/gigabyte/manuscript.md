@@ -46,6 +46,13 @@ https://camilogarciabotero.github.io/phu.
 
 ## Statement of need
 
+Annotating viral genomes is harder than annotating their hosts: most
+predicted viral proteins have no detectable homolog in reference databases,
+the "viral dark matter" [24], and community evaluations of viromics tools
+show that the choice of tool, database and threshold changes what is
+recovered [25]. Community standards for uncultivated viruses therefore ask
+that analyses record their methods and database versions [26].
+
 Screening viral contigs for marker proteins is commonly done by joining a gene
 caller, `hmmsearch`, a table parser and a sequence extractor with shell
 scripts that differ between laboratories. Each program is one more thing to
@@ -60,10 +67,13 @@ viral sequences and assess their quality. Pharokka [5], DRAM-v [6] and VIBRANT
 [7] annotate every gene of a genome against fixed databases. None is designed
 to answer "which of these contigs carry these specific models", with
 user-supplied profiles and an explicit rule for combining hits, or to build
-new profiles from the hits. For auxiliary viral genes, CheckAMG and the
-V-score framework [8], following the terminology of Martin et al. [9], provide
-the scores and curated tables; CheckAMG is a comprehensive pipeline with a
-database of tens of gigabytes.
+new profiles from the hits. For auxiliary viral genes — a line of work
+opened by phage photosynthesis and carbon-metabolism genes in marine
+cyanophages [27,28], extended to sulfur oxidation in deep-sea viruses [29]
+and to ocean-scale metabolic reprogramming [30] — CheckAMG and the V-score
+framework [8], following the terminology and cautions of Martin et al. [9],
+provide the scores and curated tables; CheckAMG is a comprehensive pipeline
+with a database of tens of gigabytes.
 
 phu fills this gap for researchers who work with contigs already judged viral.
 It replaces the script chain with documented, tested commands, and makes
@@ -83,7 +93,7 @@ are combined per contig with a stated rule (any model, all models, or a
 minimum number). Optionally it writes the matched proteins per model and
 builds a new HMM from them (Figure 1). `phu jack` performs the same contig-level
 screening starting from seed protein sequences by iterative search (Figure 2).
-`phu cluster` (Figure 4A) groups genomes into species- and genus-level clusters using
+`phu cluster` (Figure 4A) groups genomes into species- and genus-level clusters, with defaults that follow MIUViG [26] and ICTV practice, using
 vclust [10]. `phu avger` ranks candidate auxiliary viral genes on trusted
 viral contigs from Pfam, KOfam and PHROG [22] annotations, V- and VL-scores
 [8] and the reference tables curated by the CheckAMG project; it keeps
@@ -129,6 +139,9 @@ classes but not an auxiliary metabolic gene call, which still requires Pfam or
 KOfam evidence and a minimum AMG weight (0.6 by default). A strict hit to a
 family on the CheckAMG filter lists, in any of the three databases, removes
 the corresponding class. PHROG is used by default and can be switched off.
+Predictions are computational evidence for prioritisation, not confirmed
+auxiliary genes: sequence-based virus-host inference has well-described
+limitations and biases [31].
 
 **Relationship to CheckAMG.** `phu avger` takes its scores, positive lists,
 AMG weights and exclusion lists from CheckAMG [23], and CheckAMG is the
@@ -396,6 +409,17 @@ Entries marked (verify) were written from memory. URLs need an access date. -->
 22. Terzian P, Olo Ndela E, Galiez C, Lossouarn J, Pérez Bucio RE, Mom R, et al. PHROG: families of prokaryotic virus proteins clustered using remote homology. NAR Genom Bioinform. 2021;3:lqab067. doi:10.1093/nargab/lqab067. (verify)
 
 23. Anantharaman Lab. CheckAMG: automated discovery and curation of auxiliary metabolic, regulatory and physiology genes encoded by viral genomes. GitHub. https://github.com/AnantharamanLab/CheckAMG. <!-- TODO: the CheckAMG README says a manuscript is in preparation and asks to cite the repository and its Zenodo database record (https://zenodo.org/records/18407279) until then; cite the version compared, and check whether reference 8 was meant to cover CheckAMG where it is cited beside "CheckAMG tables". -->
+24. Roux S, Hallam SJ, Woyke T, Sullivan MB. Viral dark matter and virus-host interactions resolved from publicly available microbial genomes. Elife. 2015;4:e08490. doi:10.7554/eLife.08490.
+25. Pratama AA, Bolduc B, Zayed AA, Zhong ZP, Guo J, Vik DR, et al. Expanding standards in viromics: in silico evaluation of dsDNA viral genome identification, classification, and auxiliary metabolic gene curation. PeerJ. 2021;9:e11447. doi:10.7717/peerj.11447.
+26. Roux S, Adriaenssens EM, Dutilh BE, Koonin EV, Kropinski AM, Krupovic M, et al. Minimum Information about an Uncultivated Virus Genome (MIUViG). Nat Biotechnol. 2019;37:29-37. doi:10.1038/nbt.4306.
+27. Lindell D, Jaffe JD, Johnson ZI, Church GM, Chisholm SW. Photosynthesis genes in marine viruses yield proteins during host infection. Nature. 2005;438:86-9. doi:10.1038/nature04111.
+28. Thompson LR, Zeng Q, Kelly L, Huang KH, Singer AU, Stubbe J, et al. Phage auxiliary metabolic genes and the redirection of cyanobacterial host carbon metabolism. Proc Natl Acad Sci U S A. 2011;108:E757-64. doi:10.1073/pnas.1102164108.
+29. Anantharaman K, Duhaime MB, Breier JA, Wendt KA, Toner BM, Dick GJ. Sulfur oxidation genes in diverse deep-sea viruses. Science. 2014;344:757-60. doi:10.1126/science.1252229.
+30. Hurwitz BL, Hallam SJ, Sullivan MB. Metabolic reprogramming by viruses in the sunlit and dark ocean. Genome Biol. 2013;14:R123. doi:10.1186/gb-2013-14-11-r123.
+31. Iuchi H, Kawasaki J, Kubo K, Fukunaga T, Hokao K, Yokoyama G, et al. Bioinformatics approaches for unveiling virus-host interactions. Comput Struct Biotechnol J. 2023;21:1774-84. doi:10.1016/j.csbj.2023.02.044.
 
-<!-- TODO: references 21 to 23 were added after the first numbering; renumber
+<!-- References 24 to 31 were verified against Europe PMC on 2026-11-13
+(authors, journal, year, volume, pages, DOI). -->
+
+<!-- TODO: references 21 to 31 were added after the first numbering; renumber
 all references in order of first citation when converting to Word or LaTeX. -->

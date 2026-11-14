@@ -24,11 +24,20 @@ class FakeDomain:
 
 
 class FakeHit:
-    def __init__(self, name: str, score: float, evalue: float, domains: list[FakeDomain]):
+    def __init__(
+        self,
+        name: str,
+        score: float,
+        evalue: float,
+        domains: list[FakeDomain],
+        length: int = 20,
+    ):
         self.name = name.encode()
         self.score = score
         self.evalue = evalue
         self.domains = domains
+        # Protein length: the default alignment (target 2-20) covers 95% of it.
+        self.length = length
 
 
 class FakeCutoffs:
@@ -47,6 +56,8 @@ class FakeHMM:
         self.accession = accession.encode()
         self.cutoffs = cutoffs
         self.description = None if description is None else description.encode()
+        # Model length: the default alignment (hmm 1-10) covers all of it.
+        self.M = 10
 
 
 class FakeTopHits:
@@ -548,7 +559,56 @@ def test_phrog_thresholds_are_configurable(monkeypatch):
         monkeypatch,
         [_phrog_hit("c|gene1", 30.0, (1, 20, 1, 20))],
         phrog_min_score=25.0,
-        phrog_min_coverage=0.2,
+        min_coverage=0.2,
     )
 
     assert set(strict[0]) == {"c|gene1"}
+
+
+def test_coverage_rule_gates_strict_pfam_and_kofam_but_not_relaxed(monkeypatch):
+    _patch_hmmfile(monkeypatch)
+    _patch_sequencefile(monkeypatch)
+    # GA passes, but the alignment covers only 19 of 100 protein residues.
+    _patch_hmmsearch(
+        monkeypatch,
+        [
+            FakeTopHits(
+                query=FakeHMM("DOM", "PF00001.1", cutoffs=FakeCutoffs(True, 10.0, 10.0)),
+                hits=[FakeHit("c|gene1", score=120.0, evalue=1e-20, domains=[FakeDomain(80.0)], length=100)],
+            )
+        ],
+    )
+    cfgs = [
+        ann.AnnotationConfig(pfam_require_ga=False, track="relaxed"),
+        ann.AnnotationConfig(track="strict"),
+        ann.AnnotationConfig(track="strict", min_coverage=0.1),
+    ]
+
+    pfam = ann._search_tracks(
+        database="pfam", hmm_path=Path("p.hmm"), proteins_path=Path("p.faa"), cfgs=cfgs
+    )
+    assert [set(result[0]) for result in pfam] == [{"c|gene1"}, set(), {"c|gene1"}]
+    assert pfam[0][0]["c|gene1"].protein_coverage == pytest.approx(0.19)
+
+    _patch_hmmsearch(
+        monkeypatch,
+        [
+            FakeTopHits(
+                query=FakeHMM("K00001", "K00001"),
+                hits=[FakeHit("c|gene1", score=120.0, evalue=1e-20, domains=[FakeDomain(80.0)], length=100)],
+            )
+        ],
+    )
+    from phu.db.kofam import KOFamMetadata
+
+    kofam = ann._search_tracks(
+        database="kofam",
+        hmm_path=Path("k.hmm"),
+        proteins_path=Path("p.faa"),
+        cfgs=[
+            ann.AnnotationConfig(kofam_require_thresholds=False, track="relaxed"),
+            ann.AnnotationConfig(track="strict"),
+        ],
+        kofam_meta_by_model={"K00001": KOFamMetadata("K00001", 50.0, "full", "trim", "d")},
+    )
+    assert [set(result[0]) for result in kofam] == [{"c|gene1"}, set()]

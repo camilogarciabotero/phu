@@ -88,11 +88,18 @@ def _read_seed_queries(seed_marker: Path):
     return out
 
 
+def _read_targets(proteins_fa: Path, alphabet) -> "pyhmmer.easel.DigitalSequenceBlock":
+    """Load the predicted proteins once; every seed searches the same block."""
+    with pyhmmer.easel.SequenceFile(
+        str(proteins_fa), digital=True, alphabet=alphabet
+    ) as seq_file:
+        return seq_file.read_block()
+
+
 def _run_jackhmmer(
     query,
-    alphabet,
+    targets,
     seed_id: str,
-    proteins_fa: Path,
     iterations: int,
     inc_evalue: float,
     max_evalue: Optional[float],
@@ -100,11 +107,6 @@ def _run_jackhmmer(
     hmm_output_path: Optional[Path] = None,
 ) -> tuple[list[Hit], list[dict[str, object]]]:
     """Run pyhmmer.hmmer.jackhmmer and return final hits plus iteration summary."""
-    with pyhmmer.easel.SequenceFile(
-        str(proteins_fa), digital=True, alphabet=alphabet
-    ) as seq_file:
-        targets = seq_file.read_block()
-
     log_call(
         "pyhmmer.hmmer.jackhmmer",
         seed=seed_id,
@@ -353,6 +355,7 @@ def _jack(cfg: JackConfig) -> None:
     all_hits: list[Hit] = []
     iter_rows: list[dict[str, object]] = []
 
+    targets = _read_targets(proteins_fa_actual, seeds[0][2]) if seeds else None
     for seed_id, query, alphabet in seeds:
         print(f"  Seed: {seed_id}")
         hmm_output_path: Optional[Path] = None
@@ -365,9 +368,8 @@ def _jack(cfg: JackConfig) -> None:
 
         seed_hits, seed_iter_rows = _run_jackhmmer(
             query=query,
-            alphabet=alphabet,
+            targets=targets,
             seed_id=seed_id,
-            proteins_fa=proteins_fa_actual,
             iterations=cfg.iterations,
             inc_evalue=cfg.inc_evalue,
             max_evalue=cfg.max_evalue,

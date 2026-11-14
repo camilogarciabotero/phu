@@ -48,9 +48,8 @@ def test_run_jackhmmer_accepts_iteration_objects(monkeypatch, tmp_path):
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
-        alphabet=object(),
+        targets=[],
         seed_id="seedA",
-        proteins_fa=tmp_path / "proteins.faa",
         iterations=2,
         inc_evalue=1e-3,
         max_evalue=1e-5,
@@ -83,9 +82,8 @@ def test_run_jackhmmer_accepts_list_iterations(monkeypatch, tmp_path):
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
-        alphabet=object(),
+        targets=[],
         seed_id="seedB",
-        proteins_fa=tmp_path / "proteins.faa",
         iterations=3,
         inc_evalue=1e-3,
         max_evalue=1e-5,
@@ -121,9 +119,8 @@ def test_run_jackhmmer_saves_final_iteration_hmm(monkeypatch, tmp_path):
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
-        alphabet=object(),
+        targets=[],
         seed_id="seedC",
-        proteins_fa=tmp_path / "proteins.faa",
         iterations=3,
         inc_evalue=1e-3,
         max_evalue=1e-5,
@@ -145,9 +142,8 @@ def test_run_jackhmmer_skip_hmm_export_when_unavailable(monkeypatch, tmp_path):
 
     kept, summary = jack._run_jackhmmer(
         query=object(),
-        alphabet=object(),
+        targets=[],
         seed_id="seedD",
-        proteins_fa=tmp_path / "proteins.faa",
         iterations=2,
         inc_evalue=1e-3,
         max_evalue=1e-5,

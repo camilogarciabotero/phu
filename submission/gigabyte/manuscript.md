@@ -121,10 +121,10 @@ hits. A relaxed track (E-value at most 1e-5) is used only for scoring: the
 best hit of each protein in each database is given the V- and VL-score of its
 family, and VL-scores are averaged per contig and per database (AVL). A strict
 track is used for functional calls: Pfam gathering thresholds, KOfam adaptive
-thresholds, and for PHROG a bit score of at least 60 with at least half of
-both the model and the protein aligned. Coverage is computed as in CheckAMG,
-over all reported domains of a hit; the cutoff is stricter than CheckAMG's
-default of 0.4. Each database is
+thresholds, a PHROG bit score of at least 60, and in every database an
+alignment covering at least half of both the model and the protein. Coverage
+is computed as in CheckAMG, over all reported domains of a hit; CheckAMG
+applies the same rule with a default of 0.4. Each database is
 searched once and each hit is tested against the thresholds of both tracks;
 earlier versions ran one search per track, and removing the second search
 halved the run time on a test set of 21 viral contigs (5.9 Mb; 485 s to 245 s
@@ -155,9 +155,10 @@ with more databases, judges viral origin from the local neighbourhood of each
 gene (flanking viral and mobile-element genes and delineated viral regions)
 with a trained classifier, and offers a separate annotation-independent
 module based on a protein language model. Neither tool is uniformly the more
-stringent: `phu avger` is stricter on candidate eligibility and on KOfam
-score thresholds, whereas CheckAMG is stricter on alignment coverage for Pfam
-and KEGG hits and on genomic context. The main limitation of `phu avger`
+stringent: `phu avger` is stricter on candidate eligibility, on KOfam score
+thresholds and on alignment coverage (0.5 against CheckAMG's default of 0.4),
+whereas CheckAMG is stricter on genomic context and can keep some
+sub-threshold KEGG hits through its rescue heuristic. The main limitation of `phu avger`
 follows from its rule: a whole-contig average can hide a locally atypical
 region, and a convincing local viral neighbourhood can sit on a contig whose
 average fails. `phu avger` is therefore best described as integrating
@@ -183,7 +184,7 @@ is a comparison of methods, not of performance.
 | Viral context | Whole-contig mean VL-score, per database | Local windows, flanking viral signals, hallmark and mobile-element genes, viral-region delineation |
 | Confidence | Rule outcomes with audit reasons | Viral-origin probability from a gradient-boosted classifier, reported as low, medium or high [verify] |
 | Contextual filters | None | Optional exclusion outside strict viral regions; runs of three or more consecutive candidates excluded by default [verify] |
-| Annotation thresholds | Pfam gathering thresholds; KOfam adaptive thresholds; PHROG bit score and coverage | Coverage of at least 0.4 of model and protein for all hits; database thresholds, with a heuristic that can keep some sub-threshold KEGG hits |
+| Annotation thresholds | Pfam gathering thresholds; KOfam adaptive thresholds; PHROG bit score of 60; coverage of at least 0.5 of model and protein for every strict hit | Coverage of at least 0.4 of model and protein for all hits; database thresholds, with a heuristic that can keep some sub-threshold KEGG hits |
 | Proteins without annotation | Kept as unclassified candidates when the score rule holds; no annotation-independent predictor | Separate de novo module using protein language model embeddings |
 | Conflicting classes | Reported as a class conflict | Resolved by priority: metabolic, then physiological, then regulatory [verify] |
 | Software stack | One Python package; no machine-learning inference | Snakemake workflow with machine-learning dependencies; the de novo module benefits from a GPU |

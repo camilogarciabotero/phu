@@ -189,7 +189,7 @@ text(bx + 28, by + 180, "Strict track", 12.5, "bold")
 text(
     bx + 120,
     by + 180,
-    "Pfam GA cutoffs · KOfam KO thresholds · PHROG ≥ 60 bits, ≥ 0.5 of model and protein",
+    "Pfam GA · KOfam thresholds · PHROG ≥ 60 bits · all: ≥ 0.5 of model and protein",
     11.5,
     fill=MUTED,
 )

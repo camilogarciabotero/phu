@@ -421,3 +421,47 @@ def test_phrog_queries_use_the_avger_score_and_coverage_rule():
 
     assert kept() == [("phrog_7", 60.0), ("phrog_9", 20.0)]
     assert len(kept(use_phrog_thresholds=False)) == 6
+
+
+def test_extract_target_proteins_adds_phrog_annotation_to_headers(
+    tmp_path: Path, monkeypatch
+):
+    from phu.db.phrog import PhrogAnnotation
+
+    proteins_fa = tmp_path / "proteins.faa"
+    proteins_fa.write_text(">contigA|gene1\nMPEPTIDE\n")
+
+    class _FakeCompleted:
+        returncode = 0
+
+    def _fake_seqkit_run(cmd, stdout, text=True, check=False):
+        stdout.write(proteins_fa.read_text())
+        return _FakeCompleted()
+
+    monkeypatch.setattr(screen.subprocess, "run", _fake_seqkit_run)
+    monkeypatch.setattr(
+        screen,
+        "get_all_phrog_annotations",
+        lambda: {"phrog_7": PhrogAnnotation("phrog_7", "anti-restriction", "moron")},
+    )
+
+    screen._extract_target_proteins(
+        kept_hits=[
+            screen.Hit(
+                contig="contigA",
+                prot_id="contigA|gene1",
+                model="phrog_7",
+                bitscore=100.0,
+                domain_bitscore=100.0,
+                evalue=1e-20,
+            )
+        ],
+        kept_contig_ids=["contigA"],
+        proteins_fa=proteins_fa,
+        outdir=tmp_path,
+        hmm_mode="pure",
+        seqkit_bin="seqkit",
+    )
+
+    content = (tmp_path / "target-proteins" / "phrog_7.faa").read_text()
+    assert ">contigA|gene1|phrog_7|anti-restriction|moron" in content

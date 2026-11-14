@@ -59,6 +59,9 @@ behavior in the unreleased branch and may change before a release.
 
 ### Internal
 
+- `phu jack` reads the predicted proteins once and reuses them for every
+  seed, instead of re-reading the protein file per seed.
+
 - The Python modules are grouped into packages: `phu.commands` (one module per
   command), `phu.avger`, `phu.db` and `phu.core`. The command line is
   unchanged. Code that imported phu modules directly must use the new paths,
@@ -71,6 +74,10 @@ behavior in the unreleased branch and may change before a release.
   with a newer Python to upgrade.
 
 ### Screen
+
+- With `--save-target-proteins`, proteins matched by a PHROG query now carry
+  the PHROG identifier, function and category in their FASTA headers, as
+  KOfam matches carry the KO definition.
 
 - The `hmm_coverage` and `protein_coverage` of a hit now count every reported
   domain (overlaps once) instead of only the best domain, matching `phu

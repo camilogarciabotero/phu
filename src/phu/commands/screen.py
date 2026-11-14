@@ -1859,13 +1859,24 @@ def _extract_target_proteins(
 ) -> list[Path]:
     """
     Extract matched proteins per HMM model from the final kept contigs only.
-    For KOFam models, headers are enriched as KO|definition.
+    For KOfam models, headers are enriched as KO|definition; for PHROG models,
+    as identifier|annotation|category.
 
     Returns the protein files written by this run, one per model.
     """
     # Create a set of kept contig IDs for fast lookup
     kept_contig_set = set(kept_contig_ids)
     kofam_metadata_by_model = kofam_metadata_by_model or {}
+
+    def _header_label(model_id: str) -> Optional[str]:
+        ko_meta = kofam_metadata_by_model.get(model_id)
+        if ko_meta is not None and ko_meta.definition:
+            return f"{ko_meta.ko_id}|{ko_meta.definition}"
+        if is_phrog_id(model_id):
+            phrog = get_all_phrog_annotations().get(normalize_phrog_id(model_id))
+            if phrog is not None:
+                return f"{phrog.phrog_id}|{phrog.annotation or 'unknown function'}|{phrog.category}"
+        return None
 
     # Group protein IDs by model - only from kept hits AND kept contigs
     proteins_per_model: dict[str, list[str]] = defaultdict(list)
@@ -1911,9 +1922,8 @@ def _extract_target_proteins(
         if result.returncode != 0:
             print(f"Warning: seqkit failed to extract proteins for {model_id}")
         else:
-            ko_meta = kofam_metadata_by_model.get(model_id)
-            if ko_meta is not None and ko_meta.definition:
-                label = f"{ko_meta.ko_id}|{ko_meta.definition}"
+            label = _header_label(model_id)
+            if label is not None:
                 rewritten_path = output_path.parent / f"{output_path.name}.tmp"
                 with output_path.open("r") as src, rewritten_path.open("w") as dst:
                     for line in src:

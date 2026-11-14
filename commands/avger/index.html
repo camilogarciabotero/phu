@@ -1341,8 +1341,8 @@ completeness. These are viral-classification criteria, not AVG-classification
 criteria. <code>avger</code> does not silently apply them to individual proteins; the
 input contigs should therefore already have a documented viral-sequence
 assessment.</p>
-<p>Thus, a row in <code>avg-candidates.tsv</code> is an <strong>AVG candidate record</strong>, not a
-confirmed AVG call, when it passes the candidate thresholds. A named
+<p>Thus, a candidate (a <code>true</code> in the <code>rule_avg_candidate</code> column) is an <strong>AVG
+candidate record</strong>, not a confirmed AVG call. A named
 classification requires an internal AVG rule that combines the relevant
 KOfam/Pfam evidence, V-score support where appropriate, and the already-
 established viral context.
@@ -1357,20 +1357,16 @@ Passing a viral AV/AVᴸ cutoff does not by itself make a gene an AVG.</p>
 </thead>
 <tbody>
 <tr>
-<td>Row in <code>gene-annotations.tsv</code></td>
-<td>Predicted gene, including strict annotation fields and any scoring evidence</td>
-</tr>
-<tr>
-<td>Row in <code>avg-candidates.tsv</code></td>
-<td>Candidate passed the AVL/V/VL predicate</td>
-</tr>
-<tr>
 <td>Row in <code>avg-predictions.tsv</code></td>
 <td>Candidate received a final curated AVG class</td>
 </tr>
 <tr>
-<td>Non-<code>classified</code> status</td>
-<td>Candidate evidence exists, but no final named class was assigned or multiple classes conflicted</td>
+<td>Row in <code>detailed/filtered-candidates.tsv</code></td>
+<td>Candidate passed the AVL/V/VL predicate, but no final class was assigned or classes conflicted</td>
+</tr>
+<tr>
+<td>Row in <code>detailed/gene-annotations.tsv</code></td>
+<td>Predicted gene, including strict annotation fields and any scoring evidence</td>
 </tr>
 </tbody>
 </table>
@@ -1407,8 +1403,8 @@ combined with the contig score of another.</p>
 <li>gene V-score <code>&lt; 10</code>;</li>
 <li>same-database contig AVL-score <code>&gt; 3</code>.</li>
 </ul>
-<p><code>zhou_pfam_candidate</code>, <code>zhou_kofam_candidate</code> and <code>zhou_phrog_candidate</code> are
-evaluated independently. The combined <code>zhou_avg_candidate</code> is true when any
+<p><code>rule_pfam_candidate</code>, <code>rule_kofam_candidate</code> and <code>rule_phrog_candidate</code> are
+evaluated independently. The combined <code>rule_avg_candidate</code> is true when any
 database-specific candidate is true. The cutoffs are configurable with <code>--scaffold-avl-cutoff</code>,
 <code>--gene-vl-cutoff</code>, and <code>--gene-v-cutoff</code>; their defaults are <code>3</code>, <code>3</code>, and
 <code>10</code>. Boundary values are excluded.</p>
@@ -1419,16 +1415,16 @@ database-specific candidate is true. The cutoffs are configurable with <code>--s
     D --&gt; E[Average relaxed VL-scores per contig and database]
     E --&gt; F{AVL &gt; cutoff and gene VL &lt; cutoff and gene V &lt; cutoff?}
     F --&gt;|No| G[Not a Zhou candidate]
-    F --&gt;|Yes| H[zhou_avg_candidate]
+    F --&gt;|Yes| H[rule_avg_candidate]
     H --&gt; I[Match positive AVG reference evidence]
     I --&gt; J[Apply AMG weight threshold]
     J --&gt; K[Apply standard, strict, or no class filters]
     K --&gt; L{Final named class?}
     L --&gt;|No| M[Candidate without final classification]
     L --&gt;|Yes| N[avg-predictions.tsv]
-    G --&gt; O[gene-annotations.tsv]
+    G --&gt; O[detailed/gene-annotations.tsv]
     M --&gt; O
-    O --&gt; P[avg-evidence.tsv]
+    O --&gt; P[detailed/avg-evidence.tsv]
     O --&gt; Q[Metadata: .phu/run.json]</code></pre>
 <p>The Pfam, KOfam and PHROG branches represented by this flow are independent;
 their AVL values are never mixed. AVL is therefore an active candidate-selection
@@ -1438,25 +1434,40 @@ criterion, not merely a reported summary value.</p>
 Its context evidence comes from the reference tables, AMG weighting, and class
 filters described below.</p>
 <h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
+<p>Start with <code>output-info.txt</code>: it is written by every run and holds the run's
+counts, what each file is, and a data dictionary for every column of
+<code>avg-predictions.tsv</code>.</p>
+<p>At the top level:</p>
 <ul>
-<li><code>gene-annotations.tsv</code>: one row per predicted gene, including annotation, V/VL scoring,
-    AVL, candidate, curation, and classification fields.</li>
-<li><code>avg-candidates.tsv</code>: the subset of <code>gene-annotations.tsv</code> passing the database-specific
-    AVL/V/VL candidate predicate.</li>
-<li><code>avg-predictions.tsv</code>: candidates assigned a final named AVG class.</li>
+<li><code>avg-predictions.tsv</code>: <strong>the main result.</strong> One row per predicted auxiliary
+    viral gene, with its class, the function and reference entries that
+    support it, the rule values that made it a candidate, and its best strict
+    hit per database.</li>
+<li><code>contig-summary.tsv</code>: one row per contig, with gene counts, the AVL of each
+    database, and candidate and prediction counts by class.</li>
+<li><code>avg-proteins.faa</code>: amino-acid sequences of the predicted genes; each
+    header carries the class and function.</li>
+<li><code>output-info.txt</code>: counts, file notes and the data dictionary.</li>
+</ul>
+<p>Under <code>detailed/</code>:</p>
+<ul>
+<li><code>gene-annotations.tsv</code>: one row per predicted gene, including annotation,
+    V/VL scoring, AVL, candidate, curation, and classification fields. Each
+    database has its own group of columns (<code>pfam_*</code>, <code>kofam_*</code>, <code>phrog_*</code>);
+    the <code>phrog_*</code> columns are always present and are empty when PHROG was not
+    searched. Empty scoring fields mean that no matching AVG reference record
+    was available; they can prevent a gene from becoming a candidate.</li>
+<li><code>filtered-candidates.tsv</code>: candidates that did not become predictions, one
+    row per gene, with the status and reason (no supported class, below the
+    AMG weight, filtered, or a class conflict).</li>
 <li><code>avg-evidence.tsv</code>: audit records from relaxed/strict hits and reference matches.</li>
-<li><code>.phu/run.json</code>: automatically generated provenance metadata containing
-    parameters, database manifests, cache information, schema version, output
-    counts, and timestamps. It is not needed to read the TSV results, but should
-    be retained when runs need to be reproduced, compared, or audited.</li>
 <li><code>hmm-hits-relaxed.tsv.gz</code> and <code>hmm-hits-strict.tsv.gz</code>: all annotation hits when
     <code>--keep-hits</code> is supplied.</li>
 </ul>
-<p>Each database has its own group of columns (<code>pfam_*</code>, <code>kofam_*</code>, <code>phrog_*</code>).
-The <code>phrog_*</code> columns are always present and are empty when PHROG was not
-searched. Empty scoring fields mean
-that no matching AVG reference record was available; they can prevent a gene
-from becoming a candidate.</p>
+<p>And <code>.phu/run.json</code>: automatically generated provenance metadata containing
+parameters, database manifests, cache information, schema version, output
+counts, and timestamps. It is not needed to read the TSV results, but should
+be retained when runs need to be reproduced, compared, or audited.</p>
 <p>The Pfam, KOfam, PHROG and AVG databases install automatically on the first run (see
 <a href="../../databases/">Databases and Provenance</a>):</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>avger<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>-o<span class="w"> </span>phu-avger

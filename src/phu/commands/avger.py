@@ -136,10 +136,14 @@ def run_avg(
             threads=config.threads,
             scoring_evalue=config.scoring_evalue,
             keep_all_hits=config.keep_hits,
-            relaxed_all_hits_path=(config.output_folder / "hmm-hits-relaxed.tsv.gz")
+            relaxed_all_hits_path=(
+                config.output_folder / "detailed" / "hmm-hits-relaxed.tsv.gz"
+            )
             if config.keep_hits
             else None,
-            strict_all_hits_path=(config.output_folder / "hmm-hits-strict.tsv.gz")
+            strict_all_hits_path=(
+                config.output_folder / "detailed" / "hmm-hits-strict.tsv.gz"
+            )
             if config.keep_hits
             else None,
             phrog=config.phrog,
@@ -182,6 +186,140 @@ def _atomic_write_text(path: Path, content: str) -> None:
         temporary_path = Path(handle.name)
         handle.write(content)
     temporary_path.replace(path)
+
+
+DATABASE_ORDER = ("pfam", "kofam", "phrog")
+
+# Column -> meaning, written as the data dictionary in output-info.txt.
+PREDICTION_COLUMNS = {
+    "contig": "Contig the gene sits on.",
+    "protein_id": "Identifier of the predicted protein.",
+    "gene_number": "Position of the gene on its contig (1 is the first gene).",
+    "avg_class": (
+        "putative_amg (metabolic), putative_apg (physiology) or "
+        "putative_areg (regulatory)."
+    ),
+    "function": (
+        "Function of the reference entry that supports the class, or, when it "
+        "names none, of the gene's best strict annotation."
+    ),
+    "supporting_databases": (
+        "Databases whose reference entries support the class, separated by ';'."
+    ),
+    "supporting_models": "Accessions of those reference entries.",
+    "amg_weight": (
+        "Highest AMG weight among the supporting metabolic entries; empty for "
+        "the other classes. A weight of the reference function, not a "
+        "probability that this gene is an AMG."
+    ),
+    "candidate_databases": (
+        "Databases in which the candidate rule held: contig AVL above the "
+        "cutoff while the gene's VL and V scores are below theirs."
+    ),
+    "gene_v_score": "V-score of the gene's scoring hit in the scoring database.",
+    "gene_vl_score": "VL-score of that hit.",
+    "contig_avl": (
+        "Average VL-score of the contig in the scoring database. The scoring "
+        "database is the first candidate database that also supports the "
+        "class, else the first candidate database (pfam, kofam, phrog order)."
+    ),
+    "pfam_id": "Best strict Pfam hit of the gene; empty when none.",
+    "kofam_id": "Best strict KOfam hit of the gene; empty when none.",
+    "phrog_id": "Best strict PHROG hit of the gene; empty when none.",
+}
+
+SUMMARY_COLUMNS = (
+    "contig",
+    "genes",
+    "genes_scored",
+    "pfam_avl",
+    "pfam_scored_genes",
+    "kofam_avl",
+    "kofam_scored_genes",
+    "phrog_avl",
+    "phrog_scored_genes",
+    "candidates",
+    "predictions",
+    "putative_amg",
+    "putative_apg",
+    "putative_areg",
+)
+
+FILTERED_COLUMNS = (
+    "contig",
+    "protein_id",
+    "gene_number",
+    "candidate_databases",
+    "proposed_classes",
+    "amg_weight",
+    "status",
+    "reason",
+)
+
+_FILE_NOTES = {
+    "avg-predictions.tsv": "One row per predicted auxiliary viral gene. The main result.",
+    "contig-summary.tsv": "One row per contig: genes, AVL per database, candidates and predictions.",
+    "avg-proteins.faa": "Amino-acid sequences of the predicted genes.",
+    "detailed/gene-annotations.tsv": "One row per predicted gene, with every annotation, score and rule value.",
+    "detailed/filtered-candidates.tsv": "Candidates that did not become predictions, with the reason.",
+    "detailed/avg-evidence.tsv": "Every piece of evidence behind the tables above, one row each.",
+    "detailed/hmm-hits-relaxed.tsv.gz": "With --keep-hits: every relaxed-track HMM hit.",
+    "detailed/hmm-hits-strict.tsv.gz": "With --keep-hits: every strict-track HMM hit.",
+    ".phu/run.json": "Versions, parameters, database provenance and output counts of this run.",
+}
+
+
+def _output_info(
+    output_counts: dict[str, int], contig_stats: dict[str, dict[str, int]]
+) -> str:
+    """The text of output-info.txt: run counts, files and the data dictionary."""
+    totals = {
+        key: sum(stats[key] for stats in contig_stats.values())
+        for key in (
+            "genes",
+            "candidates",
+            "predictions",
+            "putative_amg",
+            "putative_apg",
+            "putative_areg",
+        )
+    }
+    lines = [
+        "phu avger results",
+        "=================",
+        "",
+        f"phu version: {__version__}",
+        "",
+        "This run",
+        "--------",
+        f"Contigs analyzed:    {len(contig_stats):,}",
+        f"Genes analyzed:      {totals['genes']:,}",
+        f"Candidate genes:     {totals['candidates']:,}",
+        f"Predicted AVGs:      {totals['predictions']:,} "
+        f"({totals['putative_amg']} metabolic, {totals['putative_apg']} physiological, "
+        f"{totals['putative_areg']} regulatory)",
+        "",
+        "Files",
+        "-----",
+    ]
+    for name, note in _FILE_NOTES.items():
+        if name in output_counts or name.startswith(".phu") or "hmm-hits" in name:
+            lines.append(f"{name:36s} {note}")
+    lines += [
+        "",
+        "avg-predictions.tsv columns",
+        "---------------------------",
+    ]
+    width = max(len(name) for name in PREDICTION_COLUMNS)
+    for name, meaning in PREDICTION_COLUMNS.items():
+        lines.append(f"{name:{width}s}  {meaning}")
+    lines += [
+        "",
+        "A prediction is computational evidence for prioritization, not a",
+        "confirmed auxiliary viral gene; see the phu documentation.",
+        "",
+    ]
+    return "\n".join(lines)
 
 
 def write_avg_outputs(
@@ -290,8 +428,10 @@ def write_avg_outputs(
         )
 
     rows = []
-    candidates = []
-    predictions = []
+    predictions: list[dict[str, object]] = []
+    filtered_rows: list[dict[str, object]] = []
+    contig_stats: dict[str, dict[str, int]] = {}
+    predicted_headers: dict[str, str] = {}
     audit_rows: list[dict[str, object]] = []
     for record in scoring_evidence:
         audit_rows.append({**record.__dict__, "evidence_type": "relaxed_best"})
@@ -438,16 +578,16 @@ def write_avg_outputs(
             if phrog_decision is None
             or (average := scaffold_averages.get((gene.contig_id, "phrog"))) is None
             else average.denominator,
-            "zhou_pfam_candidate": ""
+            "rule_pfam_candidate": ""
             if pfam_decision is None
             else str(pfam_decision.candidate).lower(),
-            "zhou_kofam_candidate": ""
+            "rule_kofam_candidate": ""
             if kofam_decision is None
             else str(kofam_decision.candidate).lower(),
-            "zhou_phrog_candidate": ""
+            "rule_phrog_candidate": ""
             if phrog_decision is None
             else str(phrog_decision.candidate).lower(),
-            "zhou_avg_candidate": str(is_candidate).lower(),
+            "rule_avg_candidate": str(is_candidate).lower(),
             "proposed_classes": ";".join(sorted(weighted.supported_classes)),
             "amg_weight": ""
             if weighted.maximum_amg_weight is None
@@ -456,10 +596,101 @@ def write_avg_outputs(
             "avg_class": final.avg_class,
         }
         rows.append(row)
+        stats = contig_stats.setdefault(
+            gene.contig_id,
+            dict.fromkeys(
+                (
+                    "genes",
+                    "genes_scored",
+                    "candidates",
+                    "predictions",
+                    "putative_amg",
+                    "putative_apg",
+                    "putative_areg",
+                ),
+                0,
+            ),
+        )
+        stats["genes"] += 1
+        if scoring_by_database:
+            stats["genes_scored"] += 1
         if is_candidate:
-            candidates.append(row)
+            stats["candidates"] += 1
+        candidate_databases = [
+            name
+            for name in DATABASE_ORDER
+            if (decision := database_decisions.get(name)) is not None
+            and decision.candidate
+        ]
         if final.status == "classified" and final.avg_class:
-            predictions.append(row)
+            stats["predictions"] += 1
+            stats[final.avg_class] += 1
+            supporting = [
+                item
+                for item in weighted.evidence
+                if item.proposed_class == final.avg_class
+                and (
+                    item.proposed_class != "putative_amg"
+                    or (
+                        item.amg_weight is not None
+                        and item.amg_weight >= config.min_amg_weight
+                    )
+                )
+            ]
+            supporting_databases = {item.database for item in supporting}
+            # The rule values reported are those of one database: the first
+            # candidate database that also supports the class, else the first
+            # candidate database (in pfam, kofam, phrog order).
+            scoring_database = next(
+                (n for n in candidate_databases if n in supporting_databases),
+                candidate_databases[0],
+            )
+            decision = database_decisions[scoring_database]
+            best_strict = max(
+                strict_by_database.values(),
+                key=lambda hit: hit.full_score,
+                default=None,
+            )
+            function = next((item.name for item in supporting if item.name), "") or (
+                ""
+                if best_strict is None
+                else best_strict.model_description or best_strict.model_name or ""
+            )
+            predictions.append(
+                {
+                    "contig": gene.contig_id,
+                    "protein_id": gene.gene_id,
+                    "gene_number": gene.ordinal,
+                    "avg_class": final.avg_class,
+                    "function": function,
+                    "supporting_databases": ";".join(sorted(supporting_databases)),
+                    "supporting_models": ";".join(
+                        sorted({item.accession for item in supporting})
+                    ),
+                    "amg_weight": row["amg_weight"],
+                    "candidate_databases": ";".join(candidate_databases),
+                    "gene_v_score": decision.gene_v_score,
+                    "gene_vl_score": decision.gene_vl_score,
+                    "contig_avl": decision.scaffold_avl,
+                    "pfam_id": row["pfam_id"],
+                    "kofam_id": row["kofam_id"],
+                    "phrog_id": row["phrog_id"],
+                }
+            )
+            predicted_headers[gene.gene_id] = f"{final.avg_class} {function}".strip()
+        elif is_candidate:
+            filtered_rows.append(
+                {
+                    "contig": gene.contig_id,
+                    "protein_id": gene.gene_id,
+                    "gene_number": gene.ordinal,
+                    "candidate_databases": ";".join(candidate_databases),
+                    "proposed_classes": row["proposed_classes"],
+                    "amg_weight": row["amg_weight"],
+                    "status": final.status,
+                    "reason": ";".join(final.reasons),
+                }
+            )
 
     fields = (
         list(rows[0])
@@ -468,33 +699,68 @@ def write_avg_outputs(
             "contig",
             "protein_id",
             "gene_number",
-            "zhou_avg_candidate",
+            "rule_avg_candidate",
             "classification_status",
             "avg_class",
         ]
     )
-    paths = []
-    output_counts = {}
-    for filename, selected, selected_fields in (
-        ("gene-annotations.tsv", rows, fields),
-        ("avg-candidates.tsv", candidates, fields),
-        ("avg-predictions.tsv", predictions, fields),
-    ):
-        path = config.output_folder / filename
+    detailed = config.output_folder / "detailed"
+    paths: list[Path] = []
+    output_counts: dict[str, int] = {}
+
+    def write_table(path: Path, fieldnames: list[str], selected: list) -> None:
         buffer = StringIO()
         writer = csv.DictWriter(
             buffer,
-            fieldnames=selected_fields,
+            fieldnames=fieldnames,
             delimiter="\t",
             lineterminator="\n",
+            extrasaction="ignore",
         )
         writer.writeheader()
         writer.writerows(selected)
         _atomic_write_text(path, buffer.getvalue())
-        output_counts[filename] = len(selected)
+        output_counts[path.relative_to(config.output_folder).as_posix()] = len(selected)
         paths.append(path)
 
-    evidence_path = config.output_folder / "avg-evidence.tsv"
+    write_table(
+        config.output_folder / "avg-predictions.tsv",
+        list(PREDICTION_COLUMNS),
+        predictions,
+    )
+
+    summary_rows = []
+    for contig, stats in contig_stats.items():
+        summary = {"contig": contig, **stats}
+        for name in DATABASE_ORDER:
+            average = scaffold_averages.get((contig, name))
+            summary[f"{name}_avl"] = "" if average is None else average.score
+            summary[f"{name}_scored_genes"] = (
+                "" if average is None else average.denominator
+            )
+        summary_rows.append(summary)
+    write_table(
+        config.output_folder / "contig-summary.tsv",
+        list(SUMMARY_COLUMNS),
+        summary_rows,
+    )
+
+    fasta_path = config.output_folder / "avg-proteins.faa"
+    fasta_lines = []
+    for gene in prediction.genes or []:
+        header = predicted_headers.get(gene.gene_id)
+        if header is not None and gene.amino_acid_sequence:
+            fasta_lines.append(
+                f">{gene.gene_id} {header}\n{gene.amino_acid_sequence}\n"
+            )
+    _atomic_write_text(fasta_path, "".join(fasta_lines))
+    output_counts["avg-proteins.faa"] = len(fasta_lines)
+    paths.append(fasta_path)
+
+    write_table(detailed / "gene-annotations.tsv", fields, rows)
+    write_table(
+        detailed / "filtered-candidates.tsv", list(FILTERED_COLUMNS), filtered_rows
+    )
     evidence_fields = [
         "protein_id",
         "contig_id",
@@ -511,19 +777,11 @@ def write_avg_outputs(
         "amg_weight",
         "amg_level",
     ]
-    buffer = StringIO()
-    writer = csv.DictWriter(
-        buffer,
-        fieldnames=evidence_fields,
-        delimiter="\t",
-        lineterminator="\n",
-        extrasaction="ignore",
-    )
-    writer.writeheader()
-    writer.writerows(audit_rows)
-    _atomic_write_text(evidence_path, buffer.getvalue())
-    output_counts["avg-evidence.tsv"] = len(audit_rows)
-    paths.append(evidence_path)
+    write_table(detailed / "avg-evidence.tsv", evidence_fields, audit_rows)
+
+    info_path = config.output_folder / "output-info.txt"
+    _atomic_write_text(info_path, _output_info(output_counts, contig_stats))
+    paths.append(info_path)
 
     manifest_path = config.output_folder / ".phu" / "run.json"
     completed_at = datetime.now(timezone.utc).isoformat()
@@ -555,7 +813,7 @@ def write_avg_outputs(
             "phrog": config.phrog,
         },
         "phu_db": bundle_provenance(),
-        "output_schema_version": 2,
+        "output_schema_version": 3,
         "output_counts": output_counts,
         "run_started_at": run_started_at or completed_at,
         "run_completed_at": completed_at,

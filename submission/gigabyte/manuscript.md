@@ -83,14 +83,14 @@ are combined per contig with a stated rule (any model, all models, or a
 minimum number). Optionally it writes the matched proteins per model and
 builds a new HMM from them (Figure 1). `phu jack` performs the same contig-level
 screening starting from seed protein sequences by iterative search (Figure 2).
-`phu cluster` groups genomes into species- and genus-level clusters using
+`phu cluster` (Figure 4A) groups genomes into species- and genus-level clusters using
 vclust [10]. `phu avger` ranks candidate auxiliary viral genes on trusted
 viral contigs from Pfam, KOfam and PHROG [22] annotations, V- and VL-scores
 [8] and the reference tables curated by the CheckAMG project; it keeps
 annotation evidence, virus-association evidence and class assignment in
 separate tables and reports candidates for prioritisation, not confirmed
 auxiliary genes (Figure 3; details below).
-`phu normalize-lineage` standardises lineage strings produced by
+`phu normalize-lineage` (Figure 4B) standardises lineage strings produced by
 gene-sharing-network classifiers.
 
 **In-process libraries.** Gene prediction uses pyrodigal and pyrodigal-gv
@@ -220,9 +220,9 @@ verbose mode prints one line per tool invocation.
 draws each one (make_screen_figure.py, make_jack_figure.py,
 make_avger_figure.py; shared helpers in figure_kit.py).
 Figure 1: screen-workflow.pdf. Figure 2: jack-workflow.pdf.
-Figure 3: avger-workflow.pdf. TODO: Figure 3 shows PHROG as a third
-database, which is being implemented and is not yet in a release; recheck the
-figure and its legend against the merged code. -->
+Figure 3: avger-workflow.pdf. Figure 4: cluster-lineage-workflow.pdf. TODO: the PHROG-aware avger and the
+reorganised output are merged on main but unreleased; recheck the figure and
+legend once the release described by this paper is tagged. -->
 
 **Figure 1. The `phu screen` workflow.** (A) The query can mix HMM files with
 Pfam, KOfam and dbCAN names, which are resolved from the pinned database
@@ -246,8 +246,19 @@ for functional calls, which differ only in the thresholds applied.
 (C) Each hit is given the V- and VL-score of its family, and VL-scores are
 averaged per contig and per database (AVL). (D) A gene with low V and VL on a
 contig with high AVL in at least one database is a candidate; candidates are
-matched to curated positive lists, filtered, and given a final status. Gene values are
-illustrative.
+matched to curated positive lists, filtered, and given a final status. Below
+the panels: the output files; `avg-predictions.tsv` is the main result and
+`output-info.txt` carries the run's counts and a data dictionary. Gene values
+are illustrative.
+
+**Figure 4. `phu cluster` and `phu normalize-lineage`.** (A) One command runs
+vclust's prefilter, align and cluster steps with one of three recipes:
+dereplication (cd-hit algorithm), viral OTUs (Leiden) and species (complete
+linkage on total ANI); other vclust parameters pass through unchanged. (B)
+`phu normalize-lineage` rewrites vConTACT3 `novel_` and `unplaced_` lineage
+chains as compact codes anchored on the last known taxon; values that do not
+parse are kept and counted, and the command is idempotent. Clusters and
+lineage values shown are illustrative.
 
 **Testing.** An automated test suite (more than 700 tests) runs on Python
 3.11, 3.12 and 3.13 in continuous integration, which also builds the package
@@ -310,7 +321,7 @@ Anthropic's Claude models used through the Claude Code agent [20] assisted
 with writing and refactoring source code, writing tests, and drafting
 documentation; commits made with such assistance carry co-author trailers in
 the public repository history. A first draft of this manuscript was produced
-with Claude and revised by the authors. Figures 1 to 3 are vector schematics drawn by
+with Claude and revised by the authors. Figures 1 to 4 are vector schematics drawn by
 scripts written with Claude; Figure 3 follows a diagram designed by the
 authors. <!-- TODO:
 GigaByte restricts AI-made figures; confirm with the journal that a schematic

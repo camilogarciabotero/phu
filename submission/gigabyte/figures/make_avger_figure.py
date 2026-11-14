@@ -189,7 +189,7 @@ text(bx + 28, by + 180, "Strict track", 12.5, "bold")
 text(
     bx + 120,
     by + 180,
-    "Pfam GA cutoffs · KOfam KO thresholds · PHROG bit score ≥ 60, coverage ≥ 0.4",
+    "Pfam GA cutoffs · KOfam KO thresholds · PHROG ≥ 60 bits, ≥ 0.5 of model and protein",
     11.5,
     fill=MUTED,
 )
@@ -390,11 +390,11 @@ text(dx + 356, dy + 423, "unclassified_candidate · not_candidate", 10.5, fill=M
 oy = 872
 text(30, oy + 32, "Outputs", 14, "bold")
 files = [
-    ("gene-annotations.tsv", "every predicted gene"),
-    ("avg-candidates.tsv", "genes passing the test"),
-    ("avg-predictions.tsv", "one final named class"),
-    ("avg-evidence.tsv", "hits and reference matches"),
-    (".phu/run.json", "parameters and database versions"),
+    ("avg-predictions.tsv", "one row per predicted AVG"),
+    ("contig-summary.tsv", "genes, AVL and calls per contig"),
+    ("avg-proteins.faa", "sequences of the predictions"),
+    ("output-info.txt", "counts and a data dictionary"),
+    ("detailed/ + .phu/run.json", "per-gene tables and provenance"),
 ]
 for i, (name, what) in enumerate(files):
     x = 120 + i * 252

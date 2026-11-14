@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" width="1400" height="1000" font-family="Liberation Sans, Arial, Helvetica, DejaVu Sans, sans-serif">
+<defs>
+<marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#52606d"/></marker>
+<marker id="head-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d35400"/></marker>
+<marker id="head-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/></marker>
+</defs>
+<rect x="0" y="0" width="1400" height="1000" rx="0" fill="#ffffff" stroke="none" stroke-width="0"/>
+<text x="700.0" y="40" font-size="21" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">phu cluster and phu normalize-lineage: grouping genomes and tidying their names</text>
+<rect x="30" y="64" width="1340" height="414" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="54" cy="90" r="13" fill="#1f2933" stroke="none" stroke-width="1.2"/>
+<text x="54" y="95" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">A</text>
+<text x="76" y="95" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">phu cluster: three vclust recipes</text>
+<text x="58" y="130" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Viral genomes (FASTA)</text>
+<line x1="58" y1="152" x2="248" y2="152" stroke="#9aa5b1" stroke-width="3"/>
+<text x="58" y="176" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">all-vs-all, in one command</text>
+<line x1="262" y1="152" x2="312" y2="152" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="316" y="114" width="206" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="419.0" y="134.0" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">1 · prefilter</text>
+<text x="419.0" y="151.0" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">k-mer pairs worth aligning</text>
+<line x1="522" y1="137" x2="554" y2="137" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="558" y="114" width="206" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="661.0" y="134.0" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">2 · align</text>
+<text x="661.0" y="151.0" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">ANI / TANI per pair (Lempel-Ziv)</text>
+<line x1="764" y1="137" x2="796" y2="137" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="800" y="114" width="206" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="903.0" y="134.0" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">3 · cluster</text>
+<text x="903.0" y="151.0" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">one algorithm per recipe</text>
+<text x="1030" y="142" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#8e44ad">vclust [10]</text>
+<rect x="78" y="212" width="400" height="214" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<rect x="94" y="228" width="150" height="24" rx="12.0" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
+<text x="169.0" y="244.0" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">--mode dereplication</text>
+<text x="94" y="278" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">cd-hit algorithm</text>
+<text x="94" y="297" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">ANI ≥ 95% · coverage ≥ 85%</text>
+<text x="94" y="316" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">prefilter identity 95%</text>
+<circle cx="318" cy="276" r="8" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="352" cy="276" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="386" cy="276" r="8" fill="#2e8b57" stroke="#2e8b57" stroke-width="1.8"/>
+<circle cx="318" cy="306" r="8" fill="#ffffff" stroke="#2e8b57" stroke-width="1.8"/>
+<circle cx="352" cy="306" r="8" fill="#ffffff" stroke="#2e8b57" stroke-width="1.8"/>
+<circle cx="386" cy="306" r="8" fill="#d35400" stroke="#d35400" stroke-width="1.8"/>
+<circle cx="318" cy="336" r="8" fill="#8e44ad" stroke="#8e44ad" stroke-width="1.8"/>
+<circle cx="352" cy="336" r="8" fill="#ffffff" stroke="#8e44ad" stroke-width="1.8"/>
+<circle cx="386" cy="336" r="8" fill="#ffffff" stroke="#8e44ad" stroke-width="1.8"/>
+<text x="351" y="370" font-size="10" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">filled dot = representative</text>
+<text x="94" y="388" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">one representative per group of near-duplicates</text>
+<text x="94" y="410" font-size="10.5" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="normal" text-anchor="start" fill="#52606d">dereplicated-representatives.fna</text>
+<rect x="510" y="212" width="400" height="214" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<rect x="526" y="228" width="150" height="24" rx="12.0" fill="#2e8b57" stroke="#2e8b57" stroke-width="0"/>
+<text x="601.0" y="244.0" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">--mode votu</text>
+<text x="526" y="278" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">Leiden algorithm</text>
+<text x="526" y="297" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">ANI ≥ 95% · coverage ≥ 85%</text>
+<text x="526" y="316" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">prefilter identity 95%</text>
+<circle cx="750" cy="276" r="8" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="784" cy="276" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="818" cy="276" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="750" cy="306" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="784" cy="306" r="8" fill="#2e8b57" stroke="#2e8b57" stroke-width="1.8"/>
+<circle cx="818" cy="306" r="8" fill="#ffffff" stroke="#2e8b57" stroke-width="1.8"/>
+<circle cx="750" cy="336" r="8" fill="#d35400" stroke="#d35400" stroke-width="1.8"/>
+<circle cx="784" cy="336" r="8" fill="#ffffff" stroke="#d35400" stroke-width="1.8"/>
+<circle cx="818" cy="336" r="8" fill="#ffffff" stroke="#d35400" stroke-width="1.8"/>
+<text x="783" y="370" font-size="10" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">filled dot = representative</text>
+<text x="526" y="388" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">viral OTUs with MIUViG-style defaults</text>
+<text x="526" y="410" font-size="10.5" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="normal" text-anchor="start" fill="#52606d">clusters.tsv · cluster-representatives.fna</text>
+<rect x="942" y="212" width="400" height="214" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<rect x="958" y="228" width="150" height="24" rx="12.0" fill="#d35400" stroke="#d35400" stroke-width="0"/>
+<text x="1033.0" y="244.0" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">--mode species</text>
+<text x="958" y="278" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">complete linkage</text>
+<text x="958" y="297" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">total ANI (TANI) ≥ 95%</text>
+<text x="958" y="316" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">prefilter identity 70%</text>
+<circle cx="1182" cy="276" r="8" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="1216" cy="276" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="1250" cy="276" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="1182" cy="306" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="1216" cy="306" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="1250" cy="306" r="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.8"/>
+<circle cx="1182" cy="336" r="8" fill="#2e8b57" stroke="#2e8b57" stroke-width="1.8"/>
+<circle cx="1216" cy="336" r="8" fill="#ffffff" stroke="#2e8b57" stroke-width="1.8"/>
+<circle cx="1250" cy="336" r="8" fill="#ffffff" stroke="#2e8b57" stroke-width="1.8"/>
+<text x="1215" y="370" font-size="10" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">filled dot = representative</text>
+<text x="958" y="388" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">species groups with ICTV-style defaults</text>
+<text x="958" y="410" font-size="10.5" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="normal" text-anchor="start" fill="#52606d">species-clusters.tsv · cluster-representatives.fna</text>
+<text x="700" y="458" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">anything else goes through --vclust-params, straight to vclust</text>
+<rect x="30" y="502" width="1340" height="350" rx="10" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.2"/>
+<circle cx="54" cy="528" r="13" fill="#1f2933" stroke="none" stroke-width="1.2"/>
+<text x="54" y="533" font-size="14" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">B</text>
+<text x="76" y="533" font-size="15" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">phu normalize-lineage: compact codes for vConTACT predictions</text>
+<text x="58" y="566" font-size="12" font-weight="normal" font-style="normal" text-anchor="start" fill="#1f2933">A vConTACT3 assignment table keeps its columns; only the lineage cells change:</text>
+<rect x="58" y="584" width="650" height="30" rx="4" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="70" y="604" font-size="11.5" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="normal" text-anchor="start" fill="#1f2933">novel_genus_1_of_Viruses</text>
+<line x1="722" y1="599" x2="770" y2="599" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="778" y="584" width="300" height="30" rx="4" fill="#ffffff" stroke="#8e44ad" stroke-width="1.2"/>
+<text x="790" y="604" font-size="12" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="bold" text-anchor="start" fill="#8e44ad">Viruses:NG1</text>
+<rect x="58" y="626" width="650" height="30" rx="4" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="70" y="646" font-size="11.5" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="normal" text-anchor="start" fill="#1f2933">novel_genus_1_of_novel_family_2_of_unplaced_order_within_Caudoviricetes</text>
+<line x1="722" y1="641" x2="770" y2="641" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="778" y="626" width="300" height="30" rx="4" fill="#ffffff" stroke="#8e44ad" stroke-width="1.2"/>
+<text x="790" y="646" font-size="12" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="bold" text-anchor="start" fill="#8e44ad">Caudoviricetes:UO:NF2:NG1</text>
+<rect x="58" y="668" width="650" height="30" rx="4" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
+<text x="70" y="688" font-size="11.5" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="normal" text-anchor="start" fill="#1f2933">unplaced_phylum_within_unplaced_kingdom_within_default</text>
+<line x1="722" y1="683" x2="770" y2="683" stroke="#52606d" stroke-width="1.6" marker-end="url(#head)"/>
+<rect x="778" y="668" width="300" height="30" rx="4" fill="#ffffff" stroke="#8e44ad" stroke-width="1.2"/>
+<text x="790" y="688" font-size="12" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, monospace" font-weight="bold" text-anchor="start" fill="#8e44ad">DEF:UK:UP</text>
+<text x="58" y="740" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">How a value is rewritten</text>
+<text x="76" y="762" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">the anchor (the last known taxon) comes first; codes follow from the highest rank to the lowest</text>
+<text x="76" y="781" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">N = novel node with its number · U = unplaced node (no number) · DEF = the placeholder anchor 'default'</text>
+<text x="76" y="800" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">rank letters: R K P C O F SF G (realm to genus); each node must be of a lower rank than the one before it</text>
+<text x="778" y="740" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Safety</text>
+<text x="796" y="762" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">unparsed values are kept and counted in the QA summary; --strict makes them fatal</text>
+<text x="796" y="781" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">already-compact values are left alone, so the command is idempotent</text>
+<text x="796" y="800" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">--add-lineage appends one combined lineage column; nothing else is added or renamed</text>
+<text x="700.0" y="956" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">Clusters and lineage values shown are illustrative.</text>
+<text x="700.0" y="976" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">Recipes follow the vclust use cases; defaults follow MIUViG and ICTV practice · lineage grammar: vConTACT3 novel_/unplaced_ chains</text>
+</svg>

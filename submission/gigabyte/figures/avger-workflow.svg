@@ -100,7 +100,7 @@
 <text x="1298.5" y="179.0" font-size="11" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">g7</text>
 <text x="743" y="210" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#52606d">→ feeds V / VL scoring (panel C)</text>
 <text x="743" y="244" font-size="12.5" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Strict track</text>
-<text x="835" y="244" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Pfam GA cutoffs · KOfam KO thresholds · PHROG bit score ≥ 60, coverage ≥ 0.4</text>
+<text x="835" y="244" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">Pfam GA cutoffs · KOfam KO thresholds · PHROG ≥ 60 bits, ≥ 0.5 of model and protein</text>
 <line x1="743" y1="287" x2="1343" y2="287" stroke="#9aa5b1" stroke-width="3"/>
 <rect x="757" y="256" width="22" height="13" rx="3" fill="#2f6fb0" stroke="#2f6fb0" stroke-width="0"/>
 <text x="768" y="266" font-size="8.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#ffffff">Pf</text>
@@ -243,20 +243,20 @@
 <text x="1071" y="837" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#52606d">unclassified_candidate · not_candidate</text>
 <text x="30" y="904" font-size="14" font-weight="bold" font-style="normal" text-anchor="start" fill="#1f2933">Outputs</text>
 <rect x="120" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
-<text x="240" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">gene-annotations.tsv</text>
-<text x="240" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">every predicted gene</text>
+<text x="240" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-predictions.tsv</text>
+<text x="240" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">one row per predicted AVG</text>
 <rect x="372" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
-<text x="492" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-candidates.tsv</text>
-<text x="492" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">genes passing the test</text>
+<text x="492" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">contig-summary.tsv</text>
+<text x="492" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">genes, AVL and calls per contig</text>
 <rect x="624" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
-<text x="744" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-predictions.tsv</text>
-<text x="744" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">one final named class</text>
+<text x="744" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-proteins.faa</text>
+<text x="744" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">sequences of the predictions</text>
 <rect x="876" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
-<text x="996" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">avg-evidence.tsv</text>
-<text x="996" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">hits and reference matches</text>
+<text x="996" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">output-info.txt</text>
+<text x="996" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">counts and a data dictionary</text>
 <rect x="1128" y="876" width="240" height="46" rx="6" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.2"/>
-<text x="1248" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">.phu/run.json</text>
-<text x="1248" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">parameters and database versions</text>
+<text x="1248" y="896" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#1f2933">detailed/ + .phu/run.json</text>
+<text x="1248" y="913" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">per-gene tables and provenance</text>
 <text x="700.0" y="956" font-size="11.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#52606d">All calls are computational candidates for prioritisation, not confirmed auxiliary genes.</text>
 <text x="700.0" y="976" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#52606d">Scores: Zhou et al. 2026 · reference tables: CheckAMG · terminology: Martin et al. 2025 · gene values shown are illustrative</text>
 </svg>

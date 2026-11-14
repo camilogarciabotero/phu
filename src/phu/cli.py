@@ -430,6 +430,7 @@ def avger(
     gene_v_cutoff: float = typer.Option(10.0, "--gene-v-cutoff", min=0.0, help="Maximum gene V-score (exclusive)", rich_help_panel="Scoring"),
     scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0, help="E-value cutoff for scoring searches", rich_help_panel="Scoring"),
     phrog: bool = typer.Option(True, "--phrog/--no-phrog", help="Search PHROG as a third database, beside Pfam and KOfam", rich_help_panel="Scoring"),
+    min_coverage: float = typer.Option(0.5, "--min-coverage", min=0.0, max=1.0, help="Fraction of model and protein a strict hit must align, every database (0 turns it off)", rich_help_panel="Scoring"),
     quiet: bool = typer.Option(
         False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
     ),
@@ -456,6 +457,7 @@ def avger(
             gene_v_cutoff=gene_v_cutoff,
             scoring_evalue=scoring_evalue,
             phrog=phrog,
+            min_coverage=min_coverage,
         )
         if quiet or verbose:
             result = run_avg(
@@ -484,7 +486,7 @@ def screen(
     ),
     hmms: list[Path] = typer.Argument(
         None,
-        help="HMM files, PFAM/KOfam IDs, dbCAN families (GH128), or one PUL ID (PUL0621)",
+        help="HMM files, PFAM/KOfam/PHROG IDs (PF00001, K00001, phrog_216), dbCAN families (GH128), or one PUL ID (PUL0621)",
         metavar="[QUERY]...",
         rich_help_panel="Query selection",
     ),
@@ -666,10 +668,11 @@ def screen(
     - all: Keep contigs matching all HMMs (most restrictive)
     - threshold: Keep contigs matching at least --min-hmm-hits HMMs
 
-    KO IDs (K00001-style) are resolved from local KOFam DB. dbCAN families
-    (GH128-style) and one PUL ID (PUL0621-style) are resolved from local dbCAN.
-    By default,
-    KO-specific thresholds from ko_list are applied using each KO score_type.
+    KO IDs (K00001-style) are resolved from the local KOfam DB and PHROG IDs
+    (phrog_216-style) from the local PHROG DB. dbCAN families (GH128-style)
+    and one PUL ID (PUL0621-style) are resolved from local dbCAN. By default,
+    KO-specific thresholds from ko_list are applied using each KO score_type,
+    and PHROG hits need 60 bits and half of both model and protein aligned.
 
     HMM modes:
     - pure: Each HMM file contains one model (default, most common)

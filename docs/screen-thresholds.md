@@ -15,9 +15,13 @@ and curated scientific rules; see the
 
 These rules apply to the screening workflow in `phu screen` after protein prediction and HMM search.
 
+Coverage, everywhere it appears below, counts every reported domain of a hit,
+with overlapping domains counted once, on the model side and on the protein
+side. This is how `phu avger` and CheckAMG compute it.
+
 ## User-supplied models
 
-A hit to one of your own HMMs passes only when the best domain aligns to more
+A hit to one of your own HMMs passes only when its domains align to more
 than `0.35` of the model (`--min-hmm-coverage`; `0` turns the filter off) and
 its E-value is at most `1e-6` (`--max-evalue`). Hits without a usable HMM
 alignment do not pass. The coverage filter is not applied to Pfam or KOfam
@@ -26,13 +30,13 @@ models, which keep their curated thresholds.
 ## Protein coverage
 
 `--min-protein-coverage F` is off by default. When set, a hit passes only if
-its best domain aligns to at least the fraction `F` of the protein. It applies
+its domains align to at least the fraction `F` of the protein. It applies
 to every model, in addition to the rules of that model's kind.
 
 ## PHROG behavior
 
 For PHROG models queried by identifier (`phrog_216`), a hit passes only when
-its bit score is at least `60` and its best domain aligns to at least `0.5` of
+its bit score is at least `60` and its domains align to at least `0.5` of
 the model and at least `0.5` of the protein. `--no-use-phrog-thresholds` turns
 this off. An HMM file of your own is treated as a user-supplied model even if
 it is named like a PHROG.

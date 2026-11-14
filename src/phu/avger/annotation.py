@@ -9,6 +9,7 @@ from typing import Optional
 
 import pyhmmer
 
+from phu.core.coverage import hit_coverage
 from phu.core.log import log_call
 from phu.db.binary import binary_hmm_path
 from phu.db.kofam import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
@@ -62,11 +63,13 @@ class AnnotationConfig:
     pfam_missing_ga_policy: str = "skip_model"  # skip_model | include_without_ga
     kofam_require_thresholds: bool = True
     # PHROG has no curated per-model cutoffs. The strict track uses fixed ones,
-    # as CheckAMG does: sequence bit score, and coverage of both model and
-    # protein. CheckAMG's coverage default is 0.4; phu asks for half.
+    # as CheckAMG does: a sequence bit score, and the coverage rule below.
     phrog_require_thresholds: bool = True
     phrog_min_score: float = 60.0
-    phrog_min_coverage: float = 0.5
+    # Every strict hit, in every database, must align over at least this
+    # fraction of both the model and the protein (CheckAMG applies 0.4 to all
+    # hits; phu asks for half). Applied with each database's require flag.
+    min_coverage: float = 0.5
     track: str = "strict"
 
     def __post_init__(self) -> None:
@@ -80,8 +83,8 @@ class AnnotationConfig:
             raise ValueError(
                 "pfam_missing_ga_policy must be 'skip_model' or 'include_without_ga'"
             )
-        if not 0.0 <= self.phrog_min_coverage <= 1.0:
-            raise ValueError("phrog_min_coverage must be between 0 and 1")
+        if not 0.0 <= self.min_coverage <= 1.0:
+            raise ValueError("min_coverage must be between 0 and 1")
         if self.track not in {"relaxed", "strict"}:
             raise ValueError("track must be 'relaxed' or 'strict'")
 
@@ -128,41 +131,6 @@ def _domain_metrics(hit) -> tuple[Optional[float], Optional[int], Optional[int],
                 target_to = int(alignment.target_to)
 
     return best_score, hmm_from, hmm_to, target_from, target_to
-
-
-def _covered(intervals: list[tuple[int, int]]) -> int:
-    """Positions covered by 1-based inclusive intervals, overlaps counted once."""
-    total = 0
-    end = 0
-    for start, stop in sorted(intervals):
-        if stop > end:
-            total += stop - max(start, end + 1) + 1
-            end = stop
-    return total
-
-
-def _coverage(hit, model_length: int) -> tuple[Optional[float], Optional[float]]:
-    """Model and protein fractions covered by the reported domains of a hit.
-
-    This is CheckAMG's definition: every reported domain counts, not only the
-    best one, so a protein matched in two pieces is credited for both.
-    """
-    domains = getattr(hit, "domains", [])
-    model: list[tuple[int, int]] = []
-    protein: list[tuple[int, int]] = []
-    for domain in getattr(domains, "reported", domains):
-        alignment = getattr(domain, "alignment", None)
-        if alignment is None:
-            continue
-        model.append((int(alignment.hmm_from), int(alignment.hmm_to)))
-        protein.append((int(alignment.target_from), int(alignment.target_to)))
-    if not model:
-        return None, None
-    protein_length = getattr(hit, "length", None)
-    return (
-        _covered(model) / model_length if model_length else None,
-        _covered(protein) / protein_length if protein_length else None,
-    )
 
 
 def _better_hit(candidate: AnnotationHit, current: Optional[AnnotationHit]) -> bool:
@@ -299,7 +267,7 @@ def _search_tracks(
     """Search one database once and collect the hits of every track in ``cfgs``.
 
     The tracks differ only in how hits are filtered afterwards (E-value limit,
-    Pfam GA, KOfam thresholds, PHROG score and coverage), never in how the search is run, so one search
+    Pfam GA, KOfam thresholds, the coverage rule, PHROG score), never in how the search is run, so one search
     serves them all. Returns, per track and in the order of ``cfgs``: best hit
     per protein, passing hit count, models seen, Pfam models skipped for
     lacking GA cutoffs.
@@ -372,6 +340,7 @@ def _search_tracks(
 
                     seq_ga = dom_ga = None
                     ko_meta = None
+                    model_length = int(getattr(hmm, "M", 0) or 0)
                     # Tracks that take this model at all.
                     active = list(range(len(cfgs)))
                     if database == "pfam":
@@ -406,7 +375,6 @@ def _search_tracks(
                         phrog = phrog_annotations.get(model_id)
                         # Most PHROGs have no known function: keep the hit anyway.
                         model_description = phrog.annotation if phrog else ""
-                        model_length = int(hmm.M)
                     else:
                         model_id = _kofam_model_id(hmm)
                         if model_id is None:
@@ -429,27 +397,32 @@ def _search_tracks(
 
                         full_score = float(hit.score)
                         domain_score, hmm_from, hmm_to, target_from, target_to = _domain_metrics(hit)
-                        model_coverage = protein_coverage = None
+                        model_coverage, protein_coverage = hit_coverage(hit, model_length)
+
+                        def lacks_coverage(cfg):
+                            return (
+                                model_coverage is None
+                                or model_coverage < cfg.min_coverage
+                                or protein_coverage is None
+                                or protein_coverage < cfg.min_coverage
+                            )
 
                         if database == "phrog":
                             threshold_source = "phrog_score_coverage"
                             score_type = "full"
                             effective_score = full_score
-                            model_coverage, protein_coverage = _coverage(hit, model_length)
                             threshold_value = None
-                            strict_tracks = []
-                            for i in tracks:
-                                cfg = cfgs[i]
-                                if cfg.phrog_require_thresholds and (
-                                    full_score < cfg.phrog_min_score
-                                    or model_coverage is None
-                                    or model_coverage < cfg.phrog_min_coverage
-                                    or protein_coverage is None
-                                    or protein_coverage < cfg.phrog_min_coverage
-                                ):
-                                    continue
-                                strict_tracks.append(i)
-                            tracks = strict_tracks
+                            tracks = [
+                                i
+                                for i in tracks
+                                if not (
+                                    cfgs[i].phrog_require_thresholds
+                                    and (
+                                        full_score < cfgs[i].phrog_min_score
+                                        or lacks_coverage(cfgs[i])
+                                    )
+                                )
+                            ]
                         elif database == "pfam":
                             threshold_source = "pfam_ga"
                             threshold_value = seq_ga
@@ -461,7 +434,12 @@ def _search_tracks(
                                 and domain_score < dom_ga
                             )
                             tracks = [
-                                i for i in tracks if not (cfgs[i].pfam_require_ga and below_ga)
+                                i
+                                for i in tracks
+                                if not (
+                                    cfgs[i].pfam_require_ga
+                                    and (below_ga or lacks_coverage(cfgs[i]))
+                                )
                             ]
                         else:
                             score_type = ko_meta.score_type
@@ -479,7 +457,10 @@ def _search_tracks(
                             tracks = [
                                 i
                                 for i in tracks
-                                if not (cfgs[i].kofam_require_thresholds and below_threshold)
+                                if not (
+                                    cfgs[i].kofam_require_thresholds
+                                    and (below_threshold or lacks_coverage(cfgs[i]))
+                                )
                             ]
 
                         for index in tracks:

@@ -21,8 +21,6 @@ python3 compare.py phu-out checkamg-expected
 16 CPUs, 106 s). Proteins are matched by contig and gene ordinal
 (3,829 of 3,840 matched).
 
-Caveats recorded for the manuscript: phu's reference tables come from
-CheckAMG v1.1.1 while the expected outputs are v1.2, so some disagreement
-may come from table changes between those versions; and the shipped outputs
-were produced by the CheckAMG authors, not rerun here (stage 2 reruns
-CheckAMG annotate on the same machine for timing).
+Caveat recorded for the manuscript: the shipped outputs were produced by
+the CheckAMG authors, not rerun here; stage 2 reruns CheckAMG annotate on
+the same machine for timing.

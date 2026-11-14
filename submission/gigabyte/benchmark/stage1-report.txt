@@ -1,0 +1,34 @@
+Preparing worktree (detached HEAD 636a9e5)
+HEAD is now at 636a9e5 Accept PHROG identifiers as phu screen queries (#35)
+phu: 636a9e5
+RESULT avger exit=0 seconds=106
+proteins: phu=3846 checkamg=3840 matched=3829
+calls: phu=69 {'metabolic': 13, 'regulatory': 44, 'physiological': 12}
+calls: checkamg=70 {'metabolic': 25, 'physiological': 15, 'regulatory': 30}
+called by both=20 same class=19 class differs=[('regulatory', 'physiological')]
+
+CheckAMG-only calls, by phu's view:
+   21  regulatory: fails score rule
+   10  metabolic: fails score rule
+    8  physiological: fails score rule
+    6  metabolic: unclassified_candidate
+    2  metabolic: below_amg_weight
+    1  metabolic: fails score rule, no strict annotation
+    1  physiological: class_conflict
+    1  regulatory: unclassified_candidate
+
+phu-only calls, by CheckAMG's view:
+   21  regulatory: CheckAMG unclassified (viral-origin high)
+   10  regulatory: CheckAMG unclassified (viral-origin medium)
+    5  physiological: CheckAMG unclassified (viral-origin medium)
+    4  regulatory: CheckAMG unclassified (viral-origin low)
+    3  metabolic: CheckAMG unclassified (viral-origin medium)
+    2  metabolic: CheckAMG unclassified (viral-origin low)
+    2  metabolic: CheckAMG unclassified (viral-origin high)
+    2  physiological: CheckAMG unclassified (viral-origin low)
+
+pfam: phu annotates 795, checkamg 304, both 273, same model 257
+
+kofam: phu annotates 168, checkamg 204, both 118, same model 108
+
+phrog: phu annotates 430, checkamg 524, both 410, same model 389

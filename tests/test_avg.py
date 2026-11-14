@@ -116,14 +116,14 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
 
     avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=tmp_path / "out"), prediction, annotations)
 
-    header, row = (tmp_path / "out" / "gene-annotations.tsv").read_text().splitlines()
+    header, row = (tmp_path / "out" / "detailed" / "gene-annotations.tsv").read_text().splitlines()
     assert "pfam_name" in header
     assert "pfam_description" in header
     assert "kofam_name" in header
     assert "kofam_description" in header
     assert "K00001" in row
     assert "KOfam function" in row
-    evidence = (tmp_path / "out" / "avg-evidence.tsv").read_text()
+    evidence = (tmp_path / "out" / "detailed" / "avg-evidence.tsv").read_text()
     assert "PF test" in evidence
     assert "Pfam function" in evidence
     assert not (tmp_path / "out" / "run.json").exists()
@@ -202,7 +202,7 @@ def _phrog_outputs(monkeypatch, tmp_path, strict_ids):
     prediction = CacheArtifact(tmp_path / "proteins.faa", 2, True, "key", genes=genes)
     out = tmp_path / "out"
     avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=out), prediction, annotations)
-    lines = (out / "gene-annotations.tsv").read_text().splitlines()
+    lines = (out / "detailed" / "gene-annotations.tsv").read_text().splitlines()
     header = lines[0].split("\t")
     return [dict(zip(header, line.split("\t"))) for line in lines[1:]], out
 
@@ -211,19 +211,19 @@ def test_phrog_alone_can_make_and_classify_a_candidate(monkeypatch, tmp_path):
     rows, out = _phrog_outputs(monkeypatch, tmp_path, "phrog_2")
 
     gene1, gene2 = rows
-    assert gene1["zhou_phrog_candidate"] == "true"
-    assert gene1["zhou_avg_candidate"] == "true"
+    assert gene1["rule_phrog_candidate"] == "true"
+    assert gene1["rule_avg_candidate"] == "true"
     assert gene1["phrog_scaffold_avl"] == "3.5"
     assert gene1["phrog_scored_gene_count"] == "2"
     assert (gene1["phrog_id"], gene1["phrog_category"]) == ("phrog_2", "moron")
     assert (gene1["phrog_model_coverage"], gene1["phrog_protein_coverage"]) == ("0.5", "0.75")
     assert (gene1["classification_status"], gene1["avg_class"]) == ("classified", "putative_apg")
-    assert gene2["zhou_phrog_candidate"] == "false"
+    assert gene2["rule_phrog_candidate"] == "false"
     assert gene2["phrog_id"] == ""
     assert len((out / "avg-predictions.tsv").read_text().splitlines()) == 2
     run = json.loads((out / ".phu" / "run.json").read_text())
     assert run["parameters"]["phrog"] is True
-    assert run["output_schema_version"] == 2
+    assert run["output_schema_version"] == 3
 
 
 def test_phrog_columns_stay_in_the_tables_when_phrog_is_off(monkeypatch, tmp_path):
@@ -241,8 +241,8 @@ def test_phrog_columns_stay_in_the_tables_when_phrog_is_off(monkeypatch, tmp_pat
         AvgAnnotationResults(empty, empty),
     )
 
-    header = (tmp_path / "out" / "gene-annotations.tsv").read_text().splitlines()[0].split("\t")
-    assert {"phrog_id", "phrog_v_score", "phrog_scaffold_avl", "zhou_phrog_candidate"} <= set(header)
+    header = (tmp_path / "out" / "detailed" / "gene-annotations.tsv").read_text().splitlines()[0].split("\t")
+    assert {"phrog_id", "phrog_v_score", "phrog_scaffold_avl", "rule_phrog_candidate"} <= set(header)
 
 
 @pytest.mark.parametrize(
@@ -315,9 +315,9 @@ def test_a_phrog_filter_hit_vetoes_a_class_another_database_supports(
         annotations,
     )
 
-    header, row = (line.split("\t") for line in (out / "gene-annotations.tsv").read_text().splitlines())
+    header, row = (line.split("\t") for line in (out / "detailed" / "gene-annotations.tsv").read_text().splitlines())
     result = dict(zip(header, row))
-    assert result["zhou_avg_candidate"] == "true"
+    assert result["rule_avg_candidate"] == "true"
     assert (result["classification_status"], result["avg_class"]) == (status, avg_class)
     assert len((out / "avg-predictions.tsv").read_text().splitlines()) == (2 if avg_class else 1)
 
@@ -349,3 +349,63 @@ def test_run_avg_builds_missing_binary_models_as_a_visible_step(
     assert calls == built
     output = capsys.readouterr()
     assert ("Building fast-loading models" in output.out + output.err) == bool(built)
+
+
+def test_new_output_layout_has_the_user_facing_files(monkeypatch, tmp_path):
+    rows, out = _phrog_outputs(monkeypatch, tmp_path, "phrog_2")
+
+    header, row = (
+        line.split("\t") for line in (out / "avg-predictions.tsv").read_text().splitlines()
+    )
+    prediction = dict(zip(header, row))
+    assert header == list(avg.PREDICTION_COLUMNS)
+    assert prediction["avg_class"] == "putative_apg"
+    assert prediction["function"] == "x"
+    assert prediction["supporting_databases"] == "phrog"
+    assert prediction["supporting_models"] == "phrog_2"
+    assert prediction["candidate_databases"] == "phrog"
+    assert (prediction["gene_vl_score"], prediction["contig_avl"]) == ("1.0", "3.5")
+    assert prediction["phrog_id"] == "phrog_2"
+
+    header, row = (
+        line.split("\t") for line in (out / "contig-summary.tsv").read_text().splitlines()
+    )
+    summary = dict(zip(header, row))
+    assert header == list(avg.SUMMARY_COLUMNS)
+    assert (summary["contig"], summary["genes"], summary["genes_scored"]) == ("contig-1", "2", "2")
+    assert (summary["phrog_avl"], summary["phrog_scored_genes"]) == ("3.5", "2")
+    assert (summary["candidates"], summary["predictions"], summary["putative_apg"]) == ("1", "1", "1")
+
+    assert (out / "avg-proteins.faa").read_text() == ">contig-1|gene1 putative_apg x\nM\n"
+    assert (out / "detailed" / "filtered-candidates.tsv").read_text().splitlines() == [
+        "\t".join(avg.FILTERED_COLUMNS)
+    ]
+
+    info = (out / "output-info.txt").read_text()
+    assert "Predicted AVGs:      1 (0 metabolic, 1 physiological, 0 regulatory)" in info
+    for column in avg.PREDICTION_COLUMNS:
+        assert f"\n{column}" in info
+    assert "avg-predictions.tsv" in info
+
+    run = json.loads((out / ".phu" / "run.json").read_text())
+    assert run["output_counts"]["avg-predictions.tsv"] == 1
+    assert run["output_counts"]["detailed/gene-annotations.tsv"] == 2
+    assert run["output_counts"]["avg-proteins.faa"] == 1
+
+
+def test_an_unclassified_candidate_lands_in_the_filtered_table_with_its_reason(
+    monkeypatch, tmp_path
+):
+    # phrog_1 matches no positive reference, so the candidate gets no class.
+    rows, out = _phrog_outputs(monkeypatch, tmp_path, "phrog_1")
+
+    assert (out / "avg-predictions.tsv").read_text().splitlines()[1:] == []
+    header, row = (
+        line.split("\t")
+        for line in (out / "detailed" / "filtered-candidates.tsv").read_text().splitlines()
+    )
+    filtered = dict(zip(header, row))
+    assert filtered["protein_id"] == "contig-1|gene1"
+    assert filtered["status"] == "unclassified_candidate"
+    assert filtered["reason"] == "no_supported_class"
+    assert filtered["candidate_databases"] == "phrog"

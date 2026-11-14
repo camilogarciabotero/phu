@@ -244,8 +244,8 @@ criteria. `avger` does not silently apply them to individual proteins; the
 input contigs should therefore already have a documented viral-sequence
 assessment.
 
-Thus, a row in `avg-candidates.tsv` is an **AVG candidate record**, not a
-confirmed AVG call, when it passes the candidate thresholds. A named
+Thus, a candidate (a `true` in the `rule_avg_candidate` column) is an **AVG
+candidate record**, not a confirmed AVG call. A named
 classification requires an internal AVG rule that combines the relevant
 KOfam/Pfam evidence, V-score support where appropriate, and the already-
 established viral context.
@@ -255,10 +255,9 @@ Passing a viral AV/AVᴸ cutoff does not by itself make a gene an AVG.
 
 | Output situation | Scientific meaning |
 | --- | --- |
-| Row in `gene-annotations.tsv` | Predicted gene, including strict annotation fields and any scoring evidence |
-| Row in `avg-candidates.tsv` | Candidate passed the AVL/V/VL predicate |
 | Row in `avg-predictions.tsv` | Candidate received a final curated AVG class |
-| Non-`classified` status | Candidate evidence exists, but no final named class was assigned or multiple classes conflicted |
+| Row in `detailed/filtered-candidates.tsv` | Candidate passed the AVL/V/VL predicate, but no final class was assigned or classes conflicted |
+| Row in `detailed/gene-annotations.tsv` | Predicted gene, including strict annotation fields and any scoring evidence |
 
 V-scores should not be treated as universal protein-level probability cutoffs.
 Their interpretation depends on the database family and the V-Score-Search
@@ -300,8 +299,8 @@ A database-specific candidate requires all three strict inequalities:
 - gene V-score `< 10`;
 - same-database contig AVL-score `> 3`.
 
-`zhou_pfam_candidate`, `zhou_kofam_candidate` and `zhou_phrog_candidate` are
-evaluated independently. The combined `zhou_avg_candidate` is true when any
+`rule_pfam_candidate`, `rule_kofam_candidate` and `rule_phrog_candidate` are
+evaluated independently. The combined `rule_avg_candidate` is true when any
 database-specific candidate is true. The cutoffs are configurable with `--scaffold-avl-cutoff`,
 `--gene-vl-cutoff`, and `--gene-v-cutoff`; their defaults are `3`, `3`, and
 `10`. Boundary values are excluded.
@@ -314,16 +313,16 @@ flowchart TD
     D --> E[Average relaxed VL-scores per contig and database]
     E --> F{AVL > cutoff and gene VL < cutoff and gene V < cutoff?}
     F -->|No| G[Not a Zhou candidate]
-    F -->|Yes| H[zhou_avg_candidate]
+    F -->|Yes| H[rule_avg_candidate]
     H --> I[Match positive AVG reference evidence]
     I --> J[Apply AMG weight threshold]
     J --> K[Apply standard, strict, or no class filters]
     K --> L{Final named class?}
     L -->|No| M[Candidate without final classification]
     L -->|Yes| N[avg-predictions.tsv]
-    G --> O[gene-annotations.tsv]
+    G --> O[detailed/gene-annotations.tsv]
     M --> O
-    O --> P[avg-evidence.tsv]
+    O --> P[detailed/avg-evidence.tsv]
     O --> Q[Metadata: .phu/run.json]
 ```
 
@@ -339,24 +338,41 @@ filters described below.
 
 ## Outputs
 
-- `gene-annotations.tsv`: one row per predicted gene, including annotation, V/VL scoring,
-    AVL, candidate, curation, and classification fields.
-- `avg-candidates.tsv`: the subset of `gene-annotations.tsv` passing the database-specific
-    AVL/V/VL candidate predicate.
-- `avg-predictions.tsv`: candidates assigned a final named AVG class.
+Start with `output-info.txt`: it is written by every run and holds the run's
+counts, what each file is, and a data dictionary for every column of
+`avg-predictions.tsv`.
+
+At the top level:
+
+- `avg-predictions.tsv`: **the main result.** One row per predicted auxiliary
+    viral gene, with its class, the function and reference entries that
+    support it, the rule values that made it a candidate, and its best strict
+    hit per database.
+- `contig-summary.tsv`: one row per contig, with gene counts, the AVL of each
+    database, and candidate and prediction counts by class.
+- `avg-proteins.faa`: amino-acid sequences of the predicted genes; each
+    header carries the class and function.
+- `output-info.txt`: counts, file notes and the data dictionary.
+
+Under `detailed/`:
+
+- `gene-annotations.tsv`: one row per predicted gene, including annotation,
+    V/VL scoring, AVL, candidate, curation, and classification fields. Each
+    database has its own group of columns (`pfam_*`, `kofam_*`, `phrog_*`);
+    the `phrog_*` columns are always present and are empty when PHROG was not
+    searched. Empty scoring fields mean that no matching AVG reference record
+    was available; they can prevent a gene from becoming a candidate.
+- `filtered-candidates.tsv`: candidates that did not become predictions, one
+    row per gene, with the status and reason (no supported class, below the
+    AMG weight, filtered, or a class conflict).
 - `avg-evidence.tsv`: audit records from relaxed/strict hits and reference matches.
-- `.phu/run.json`: automatically generated provenance metadata containing
-    parameters, database manifests, cache information, schema version, output
-    counts, and timestamps. It is not needed to read the TSV results, but should
-    be retained when runs need to be reproduced, compared, or audited.
 - `hmm-hits-relaxed.tsv.gz` and `hmm-hits-strict.tsv.gz`: all annotation hits when
     `--keep-hits` is supplied.
 
-Each database has its own group of columns (`pfam_*`, `kofam_*`, `phrog_*`).
-The `phrog_*` columns are always present and are empty when PHROG was not
-searched. Empty scoring fields mean
-that no matching AVG reference record was available; they can prevent a gene
-from becoming a candidate.
+And `.phu/run.json`: automatically generated provenance metadata containing
+parameters, database manifests, cache information, schema version, output
+counts, and timestamps. It is not needed to read the TSV results, but should
+be retained when runs need to be reproduced, compared, or audited.
 
 The Pfam, KOfam, PHROG and AVG databases install automatically on the first run (see
 [Databases and Provenance](../databases.md)):

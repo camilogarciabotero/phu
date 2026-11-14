@@ -7,6 +7,18 @@ behavior in the unreleased branch and may change before a release.
 
 ### Avger
 
+- The output of `phu avger` is reorganised around the person reading it.
+  `avg-predictions.tsv` is now a short table, one row per predicted gene with
+  its class, supporting reference entries and rule values. New files:
+  `contig-summary.tsv` (one row per contig), `avg-proteins.faa` (sequences of
+  the predicted genes) and `output-info.txt` (the run's counts and a data
+  dictionary for the predictions table). The wide per-gene table
+  `gene-annotations.tsv` and the audit table `avg-evidence.tsv` move into
+  `detailed/`, joined by `filtered-candidates.tsv` (candidates that did not
+  become predictions, with the reason) and, with `--keep-hits`, the raw hit
+  files. `avg-candidates.tsv` is gone: its rows are the predictions plus the
+  filtered candidates. The `zhou_*` columns are renamed `rule_*`. The output
+  schema version in `.phu/run.json` is now 3.
 - `phu avger` now reads binary copies of the HMM files (about 5 GB), which
   load in seconds instead of minutes. `phu dbs prepare` builds them and shows
   the step; otherwise the first `phu avger` run does, as a visible one-time

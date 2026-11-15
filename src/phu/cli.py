@@ -257,7 +257,7 @@ def cluster(
     except CmdNotFound as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         typer.echo(
-            "Required executables on PATH: 'vclust' (or 'vclust.py') and 'seqkit'"
+            "Required executable on PATH: 'vclust' (or 'vclust.py')"
         )
         raise typer.Exit(1)
 
@@ -968,10 +968,6 @@ def jack(
         raise typer.Exit(1)
     except ValueError as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-    except CmdNotFound as e:
-        typer.secho(str(e), fg=typer.colors.RED, err=True)
-        typer.echo("Required executables on PATH: 'seqkit'")
         raise typer.Exit(1)
 
 

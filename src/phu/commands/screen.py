@@ -8,7 +8,6 @@ import logging
 import os
 import re
 import shutil
-import subprocess
 import tempfile
 import warnings
 from collections import defaultdict
@@ -28,9 +27,9 @@ import typer
 from phu import __version__
 from phu.core.progress import run_click_task
 from phu.core.coverage import hit_coverage
-from phu.core.exec import _executable
+from phu.core.fasta import extract_records, extract_records_multi
 from phu.db.bundle import bundle_provenance, database_hashes
-from phu.core.log import log_call, log_command
+from phu.core.log import log_call
 from phu.db.dbcan import (
     ensure_dbcan_database,
     extract_dbcan_models,
@@ -1126,7 +1125,6 @@ class ScreenConfig:
 
         return ScreenPlan(
             hmmer_bin="",
-            seqkit_bin="",
             input_contigs=self.input_contigs,
             hmms=self.hmms,
             outdir=self.outdir,
@@ -1162,7 +1160,6 @@ class ScreenPlan:
     """Execution plan for screening operation."""
 
     hmmer_bin: str
-    seqkit_bin: str
     input_contigs: Path
     hmms: list[Path]  # Changed from hmm: Path
     outdir: Path
@@ -1191,14 +1188,6 @@ class ScreenPlan:
     kept_ids: Path
     out_contigs: Path
 
-
-def _binaries() -> str:
-    """
-    Discover required binaries for screening.
-    Only seqkit is needed since we use pyHMMER instead of HMMER binary.
-    """
-    seqkit = _executable(["seqkit"])
-    return seqkit
 
 
 def _read_fasta(fp: Path) -> Iterable[tuple[str, str]]:
@@ -1827,25 +1816,10 @@ def _choose_best_contigs(
     return kept, kept_contigs
 
 
-def _seqkit_extract(
-    input_fa: Path,
-    ids: list[str],
-    output_fa: Path,
-    seqkit_bin: str = "seqkit",
-) -> None:
-    if not ids:
-        # write empty file but succeed, useful for pipelines
-        output_fa.write_text("")
-        return
-    tmp = output_fa.parent / (output_fa.name + ".ids.txt")
-    tmp.write_text("\n".join(ids) + "\n")
-    cmd = [seqkit_bin, "grep", "-f", str(tmp), str(input_fa)]
-    log_command(cmd, stdout=output_fa)
-    with output_fa.open("w") as out:
-        p = subprocess.run(cmd, stdout=out, text=True, check=False)
-    if p.returncode != 0:
-        raise RuntimeError(f"seqkit grep failed with code {p.returncode}")
-    tmp.unlink()  # cleanup
+def _extract_contigs(input_fa: Path, ids: list[str], output_fa: Path) -> None:
+    """Write the contigs named in ``ids`` to ``output_fa`` (empty file if none)."""
+    n = extract_records(input_fa, ids, output_fa)
+    logger.debug("extracted %d of %d requested contig(s) to %s", n, len(ids), output_fa)
 
 
 def _extract_target_proteins(
@@ -1854,7 +1828,6 @@ def _extract_target_proteins(
     proteins_fa: Path,
     outdir: Path,
     hmm_mode: str,
-    seqkit_bin: str = "seqkit",
     kofam_metadata_by_model: Optional[dict[str, KOFamMetadata]] = None,
 ) -> list[Path]:
     """
@@ -1889,56 +1862,31 @@ def _extract_target_proteins(
     target_proteins_dir = outdir / TARGET_PROTEINS_DIR
     target_proteins_dir.mkdir(parents=True, exist_ok=True)
 
-    # Extract proteins for each model
-    written: list[Path] = []
+    # One pass over the protein file writes every model's proteins
+    targets: dict[Path, list[str]] = {}
+    model_by_path: dict[Path, str] = {}
     for model_id, protein_ids in proteins_per_model.items():
-        # Create a safe filename from the model identifier
-        safe_model_name = _safe_file_label(model_id)
-        output_path = target_proteins_dir / f"{safe_model_name}.faa"
+        output_path = target_proteins_dir / f"{_safe_file_label(model_id)}.faa"
+        targets[output_path] = list(dict.fromkeys(protein_ids))
+        model_by_path[output_path] = model_id
+    counts = extract_records_multi(proteins_fa, targets)
+
+    written: list[Path] = []
+    for output_path, model_id in model_by_path.items():
         written.append(output_path)
-
-        if not protein_ids:
-            output_path.write_text("")
-            continue
-
-        # Remove duplicates while preserving order
-        unique_protein_ids = []
-        seen = set()
-        for pid in protein_ids:
-            if pid not in seen:
-                unique_protein_ids.append(pid)
-                seen.add(pid)
-
-        # Use seqkit to extract the proteins
-        tmp_ids_file = output_path.parent / f"{output_path.name}.ids.tmp"
-        tmp_ids_file.write_text("\n".join(unique_protein_ids) + "\n")
-
-        cmd = [seqkit_bin, "grep", "-f", str(tmp_ids_file), str(proteins_fa)]
-        log_command(cmd, stdout=output_path)
-
-        with output_path.open("w") as out:
-            result = subprocess.run(cmd, stdout=out, text=True, check=False)
-
-        if result.returncode != 0:
-            print(f"Warning: seqkit failed to extract proteins for {model_id}")
-        else:
-            label = _header_label(model_id)
-            if label is not None:
-                rewritten_path = output_path.parent / f"{output_path.name}.tmp"
-                with output_path.open("r") as src, rewritten_path.open("w") as dst:
-                    for line in src:
-                        if line.startswith(">"):
-                            dst.write(f"{line.rstrip()}|{label}\n")
-                        else:
-                            dst.write(line)
-                rewritten_path.replace(output_path)
-
-            print(
-                f"    Extracted {len(unique_protein_ids)} proteins for {model_id} (from screened contigs)"
-            )
-
-        # Cleanup temporary file
-        tmp_ids_file.unlink()
+        label = _header_label(model_id)
+        if label is not None and counts[output_path]:
+            rewritten_path = output_path.parent / f"{output_path.name}.tmp"
+            with output_path.open("r") as src, rewritten_path.open("w") as dst:
+                for line in src:
+                    if line.startswith(">"):
+                        dst.write(f"{line.rstrip()}|{label}\n")
+                    else:
+                        dst.write(line)
+            rewritten_path.replace(output_path)
+        print(
+            f"    Extracted {counts[output_path]} proteins for {model_id} (from screened contigs)"
+        )
 
     return written
 
@@ -2179,8 +2127,6 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
 
     queried_model_ids = _query_model_ids(cfg.hmms, cfg.hmm_mode)
 
-    # Discover binaries required by the selected output paths.
-    seqkit_bin = _binaries()
     plan = cfg.plan()
     if bulk_work_dir is not None:
         plan.domtbl_paths = _domtbl_paths(plan.hmms, bulk_work_dir)
@@ -2189,7 +2135,6 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
     if query.pul_id is not None and cfg.combine_mode == "any":
         plan.combine_mode = "all"
     plan.hmmer_bin = ""  # Not used with pyHMMER
-    plan.seqkit_bin = seqkit_bin
 
     # Create output directory
     plan.outdir.mkdir(parents=True, exist_ok=True)
@@ -2457,7 +2402,6 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             proteins_fa,
             plan.outdir,
             plan.hmm_mode,
-            plan.seqkit_bin,
             kofam_metadata_by_model=kofam_metadata_by_model,
         )
 
@@ -2471,14 +2415,13 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 trim_method=plan.trim_target_msa,
             )
 
-    print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")
+    print(f"Extracting {len(contig_ids)} contig(s)…")
     run_click_task(
         "Extracting contigs",
-        _seqkit_extract,
+        _extract_contigs,
         input_fa=plan.input_contigs,
         ids=contig_ids,
         output_fa=plan.out_contigs,
-        seqkit_bin=plan.seqkit_bin,
     )
 
     # Output handling: copy proteins to output folder if requested

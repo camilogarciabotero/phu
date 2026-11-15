@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from phu.core.exec import _executable, run
+from phu.core.fasta import extract_records
 
 
 class Mode(str, Enum):
@@ -150,7 +151,6 @@ class ClusterConfig:
         out = self.output_folder
         return ClusterPlan(
             vclust_bin="",
-            seqkit_bin="",
             input_contigs=self.input_contigs,
             out_dir=out,
             fltr=out / "prefilter-pairs.txt",
@@ -177,7 +177,6 @@ class ClusterConfig:
 @dataclass
 class ClusterPlan:
     vclust_bin: str
-    seqkit_bin: str
     input_contigs: Path
     out_dir: Path
     fltr: Path
@@ -199,13 +198,11 @@ def _threads(n: int) -> int:
     return max(1, n or (os.cpu_count() or 1))
 
 
-def _binaries() -> tuple[str, str]:
+def _binaries() -> str:
     """
-    Discover required binaries for sequencing clustering.
+    Discover the binary required for sequence clustering.
     """
-    vclust = _executable(["vclust", "vclust.py"])
-    seqkit = _executable(["seqkit"])
-    return vclust, seqkit
+    return _executable(["vclust", "vclust.py"])
 
 
 def _add_custom_params(
@@ -227,10 +224,8 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
     if not cfg.input_contigs.exists():
         raise FileNotFoundError(f"Input file not found: {cfg.input_contigs}")
 
-    vclust_bin, seqkit_bin = _binaries()
     plan = cfg.plan()
-    plan.vclust_bin = vclust_bin
-    plan.seqkit_bin = seqkit_bin
+    plan.vclust_bin = _binaries()
 
     plan.out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -333,17 +328,11 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
     print("Extracting cluster representative IDs…")
     _extract_cluster_ids(plan.output, plan.representatives_ids)
 
-    print("Extracting representative sequences with seqkit…")
-    run(
-        [
-            plan.seqkit_bin,
-            "grep",
-            "-f",
-            plan.representatives_ids,
-            str(plan.input_contigs),
-            "-o",
-            str(plan.representatives_fna),
-        ]
+    print("Extracting representative sequences…")
+    extract_records(
+        plan.input_contigs,
+        Path(plan.representatives_ids).read_text().split(),
+        plan.representatives_fna,
     )
 
     return plan

@@ -11,7 +11,6 @@ from typing import Optional
 import pyhmmer.easel
 import pyhmmer.hmmer
 
-from phu.core.exec import _executable
 from phu.core.log import log_call
 from phu.core.gene_prediction import (
     PredictionInputs,
@@ -25,7 +24,7 @@ from phu.commands.screen import (
     PREDICTION_METADATA,
     Hit,
     _read_fasta,
-    _seqkit_extract,
+    _extract_contigs,
 )
 
 
@@ -288,7 +287,6 @@ def _jack(cfg: JackConfig) -> None:
     if not cfg.seed_marker.exists():
         raise FileNotFoundError(f"Seed marker file not found: {cfg.seed_marker}")
 
-    seqkit_bin = _executable(["seqkit"])
     cfg.outdir.mkdir(parents=True, exist_ok=True)
 
     proteins_fa = cfg.outdir / PREDICTED_PROTEINS
@@ -394,8 +392,8 @@ def _jack(cfg: JackConfig) -> None:
     _write_iteration_summary(iter_tsv, iter_rows)
     _write_hits_table(hits_tsv, kept_hits)
 
-    print(f"Extracting {len(contig_ids)} contig(s) with seqkit…")
-    _seqkit_extract(cfg.input_contigs, contig_ids, out_contigs, seqkit_bin)
+    print(f"Extracting {len(contig_ids)} contig(s)…")
+    _extract_contigs(cfg.input_contigs, contig_ids, out_contigs)
 
     # Output handling: copy proteins to output folder if requested
     if cfg.keep_proteins:

@@ -426,7 +426,7 @@ Usage: phu screen [OPTIONS] [QUERY]...
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
-Use `--verbose` to record how each tool was run: every `seqkit` command line, and the effective parameters of the in-process gene prediction, `hmmsearch` and FAMSA alignment steps, are printed on lines that start with `[cmd]`. Use `--quiet` to hide the timed step lines. See [Run logs](../troubleshooting.md#run-logs) for the log format.
+Use `--verbose` to record how each tool was run: the effective parameters of the in-process gene prediction, `hmmsearch`, FAMSA alignment and sequence extraction steps, are printed on lines that start with `[cmd]`. Use `--quiet` to hide the timed step lines. See [Run logs](../troubleshooting.md#run-logs) for the log format.
 
 Use `--output-folder` to change where the results are saved. The default is a folder called `phu-screen` in your current directory.
 
@@ -513,17 +513,17 @@ Runtime depends on input size, model count, available resources, and external to
 
 The output size depends on how many contigs match your criteria. In "any" mode, you might get quite a few contigs. In "all" mode, you'll typically get fewer but higher-confidence results.
 
-The search engine is pyHMMER, while sequence extraction uses the external `seqkit` executable. Target-HMM generation aligns multi-sequence sets in-process with FAMSA (`pyfamsa`).
+The search engine is pyHMMER, and matched contigs and proteins are extracted in-process; `phu screen` runs no external program. Target-HMM generation aligns multi-sequence sets in-process with FAMSA (`pyfamsa`).
 
 If you don't get any results, try relaxing your E-value threshold or check that your HMM files are in the correct format. If you get too many results, try using "all" mode instead of "any" mode, or make your E-value threshold more strict.
 
 ## Requirements
 
-You need to have **pyrodigal**, **pyHMMER**, and **seqkit** installed and available. **pyrodigal-gv** is optional but recommended for viral genome analysis. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format.
+You need to have **pyrodigal** and **pyHMMER** installed (both are installed with PHU). **pyrodigal-gv** is optional but recommended for viral genome analysis. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format.
 
 **Workflow notes:**
 - **No HMMER binary required**: pyHMMER performs the HMM search
-- **External extraction**: `seqkit` must be available on `PATH`
+- **No seqkit required**: matched contigs and proteins are extracted in-process
 - **Optional HMM generation**: no extra program; multi-sequence target sets are aligned with FAMSA through `pyfamsa`
 - **Explicit identifiers**: quote shell paths containing special characters
 

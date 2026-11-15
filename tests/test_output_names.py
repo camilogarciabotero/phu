@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pyhmmer
@@ -40,23 +41,9 @@ def _fasta_records(path: Path) -> list[tuple[str, str]]:
     return list(screen._read_fasta(path))
 
 
-class _Completed:
-    returncode = 0
-    stderr = ""
-
-
-def _fake_run(cmd, stdout=None, **kwargs):
-    """Stand in for `seqkit grep -f ids fasta`."""
-    assert cmd[1] == "grep", f"unexpected external command: {cmd}"
-    wanted = set(Path(cmd[3]).read_text().split())
-    records = [r for r in _fasta_records(Path(cmd[4])) if r[0] in wanted]
-    stdout.write("".join(f">{name}\n{seq}\n" for name, seq in records))
-    return _Completed()
-
-
 @pytest.fixture
 def workspace(tmp_path: Path, monkeypatch) -> Path:
-    """Contigs, predicted proteins and stubs for the external binaries."""
+    """Contigs, predicted proteins and a stub for gene prediction."""
     contigs = tmp_path / "contigs.fna"
     contigs.write_text(">c1\nACGT\n>c2\nACGT\n>c3\nACGT\n")
     proteins = tmp_path / "cache" / "proteins.faa"
@@ -71,8 +58,6 @@ def workspace(tmp_path: Path, monkeypatch) -> Path:
 
     for module in (screen, jack):
         monkeypatch.setattr(module, "get_or_predict_proteins", fake_prediction)
-        monkeypatch.setattr(module, "_executable", lambda names: names[0])
-    monkeypatch.setattr(screen.subprocess, "run", _fake_run)
     return tmp_path
 
 
@@ -191,7 +176,8 @@ def test_build_target_hmms_aligns_unequal_lengths_without_external_tools(
     def no_subprocess(*args, **kwargs):
         raise AssertionError("target HMM building must not start a program")
 
-    monkeypatch.setattr(screen.subprocess, "run", no_subprocess)
+    monkeypatch.setattr(subprocess, "run", no_subprocess)
+    monkeypatch.setattr(subprocess, "Popen", no_subprocess)
     monkeypatch.setenv("PATH", "")
     proteins_dir = tmp_path / "out" / "target-proteins"
     proteins_dir.mkdir(parents=True)
@@ -262,7 +248,7 @@ def test_jack_output_names_multiple_seeds(workspace: Path) -> None:
 
 
 def _fake_cluster_run(cmd, **kwargs) -> None:
-    """Write what vclust and seqkit would write for each step."""
+    """Write what vclust would write for each step."""
     args = [str(part) for part in cmd]
     output = Path(args[args.index("-o") + 1])
     if args[1] == "prefilter":
@@ -275,7 +261,7 @@ def _fake_cluster_run(cmd, **kwargs) -> None:
         assert Path(args[args.index("--ids") + 1]).exists()
         output.write_text("object\tcluster\nc1\tc1\nc2\tc1\n")
     else:
-        output.write_text(">c1\nACGT\n")
+        raise AssertionError(f"unexpected external command: {args}")
 
 
 @pytest.mark.parametrize(
@@ -292,7 +278,7 @@ def _fake_cluster_run(cmd, **kwargs) -> None:
 def test_cluster_output_names(tmp_path: Path, monkeypatch, mode, expected) -> None:
     contigs = tmp_path / "contigs.fna"
     contigs.write_text(">c1\nACGT\n>c2\nACGT\n")
-    monkeypatch.setattr(cluster, "_binaries", lambda: ("vclust", "seqkit"))
+    monkeypatch.setattr(cluster, "_binaries", lambda: "vclust")
     monkeypatch.setattr(cluster, "run", _fake_cluster_run)
     out = tmp_path / "out"
 

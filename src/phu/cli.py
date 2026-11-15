@@ -182,7 +182,10 @@ def _root(
 @app.command("cluster", rich_help_panel="Workflow")
 def cluster(
     mode: str = typer.Option(
-        ..., "--mode", help="dereplication | votu | species", rich_help_panel="Clustering"
+        ...,
+        "--mode",
+        help=" | ".join(m.value for m in Mode),
+        rich_help_panel="Clustering",
     ),
     input_contigs: Path = typer.Option(
         ..., "--input-contigs", "-i", exists=True, readable=True, help="Input FASTA", rich_help_panel="Input"
@@ -208,12 +211,18 @@ def cluster(
     ),
 ):
     """
-    Sequence clustering wrapper around external 'vclust' with three modes.
+    Sequence clustering wrapper around external 'vclust'.
+
+    Modes: dereplication and votu (ANI >= 0.95, coverage >= 0.85), genus
+    (tANI >= 0.70) and species (tANI >= 0.95), both with complete linkage.
+    Genus and species groups are operational, not ICTV names; use complete or
+    near-complete genomes.
 
     For advanced usage, provide custom vclust parameters as a quoted string.
     See the vclust wiki for parameter details: https://github.com/refresh-bio/vclust/wiki
 
     Example:
+        phu cluster --mode genus -i genomes.fna -o phu-genus
         phu cluster --mode votu --input-contigs genomes.fna --vclust-params="--min-kmers 20 --outfmt lite"
     """
     set_verbosity(quiet=quiet, verbose=verbose)
@@ -222,7 +231,7 @@ def cluster(
         mode_enum = Mode(mode)
     except ValueError:
         typer.secho(
-            "Invalid mode. Use one of: dereplication, votu, species",
+            "Invalid mode. Use one of: " + ", ".join(m.value for m in Mode),
             fg=typer.colors.RED,
             err=True,
         )
@@ -248,6 +257,12 @@ def cluster(
         threads=threads,
         vclust_params=parsed_params,
     )
+
+    try:
+        cfg.plan()  # reject contradictory settings before running vclust
+    except ValueError as e:
+        typer.secho(f"Invalid clustering settings: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
 
     try:
         run_click_task("Clustering contigs", _cluster, cfg)

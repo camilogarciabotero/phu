@@ -50,8 +50,7 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 │ --help         -h        Show this message and exit.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Workflow ───────────────────────────────────────────────────────────────────╮
-│ cluster            Sequence clustering wrapper around external 'vclust' with │
-│                    three modes.                                              │
+│ cluster            Sequence clustering wrapper around external 'vclust'.    │
 │ normalize-lineage  Normalize vContact lineage predictions without changing   │
 │                    column names.                                             │
 │ avger              Predict and curate putative auxiliary viral genes.        │
@@ -97,11 +96,12 @@ phu jack --input-contigs assembly.fasta marker_seeds.faa --combine-mode all
 ### `cluster` - Sequence Clustering
 
 
-Cluster viral sequences into operational taxonomic units with three specialized modes:
+Cluster viral sequences with four modes:
 
 - **`dereplication`** - Remove duplicate sequences
 - **`votu`** - Group sequences into viral Operational Taxonomic Units
-- **`species`** - Create species-level clusters
+- **`genus`** - Group complete genomes into genus-level clusters (tANI ≥ 70%)
+- **`species`** - Group complete genomes into species-level clusters (tANI ≥ 95%)
 
 **Example:**
 ```bash

@@ -64,8 +64,7 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 │ --help         -h        Show this message and exit.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Workflow ───────────────────────────────────────────────────────────────────╮
-│ cluster            Sequence clustering wrapper around external 'vclust' with │
-│                    three modes.                                              │
+│ cluster            Sequence clustering wrapper around external 'vclust'.    │
 │ normalize-lineage  Normalize vContact lineage predictions without changing   │
 │                    column names.                                             │
 │ avger              Predict and curate putative auxiliary viral genes.        │
@@ -84,7 +83,7 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 
 - [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Screen contigs for specific protein families using HMMER on predicted coding sequences.
 - [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine seeds hits.
-- [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into species or other operational taxonomic units (OTUs).
+- [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into vOTUs, dereplicated representatives, or genus- and species-level groups.
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
 - [`dbs prepare`](https://camilogarciabotero.github.io/phu/databases/#installing-ahead-of-time): Download, verify and install the reference database bundle ahead of time.

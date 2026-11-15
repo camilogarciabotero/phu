@@ -272,6 +272,7 @@ def _fake_cluster_run(cmd, **kwargs) -> None:
             ["clusters.tsv", "dereplicated-representatives.fna"],
         ),
         ("votu", ["cluster-representatives.fna", "clusters.tsv"]),
+        ("genus", ["cluster-representatives.fna", "genus-clusters.tsv"]),
         ("species", ["cluster-representatives.fna", "species-clusters.tsv"]),
     ],
 )

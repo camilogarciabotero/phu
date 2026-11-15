@@ -215,6 +215,7 @@ def test_jack_output_names_single_seed(workspace: Path) -> None:
 
     assert _listing(out) == [
         ".phu/prediction.json",
+        ".phu/query.json",
         "final-iteration.hmm",
         "jackhmmer-hits.tsv",
         "jackhmmer-iterations.tsv",
@@ -238,6 +239,7 @@ def test_jack_output_names_multiple_seeds(workspace: Path) -> None:
     )
 
     assert _listing(out) == [
+        ".phu/query.json",
         "final-iteration-hmms/seedA.hmm",
         "final-iteration-hmms/seedB.hmm",
         "jackhmmer-hits.tsv",

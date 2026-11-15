@@ -12,6 +12,9 @@ phu phrogs resolve alias:mcp category:lysis --ids-only
 
 # Screen contigs for major capsid and terminase large subunit families
 phu screen -i contigs.fna $(phu phrogs resolve alias:mcp alias:terl --ids-only)
+
+# The same queries seed iterative searches in jack
+phu jack -i contigs.fna --phrog alias:portal
 ```
 
 Only the 38,880 PHROG families with a model (`phrog_1` to `phrog_38880`) are

@@ -31,6 +31,20 @@ behavior in the unreleased branch and may change before a release.
   sequences with single-character names, which split genus and species
   groups. When the input has such a name, `phu cluster` now aligns on one
   thread and prints a note.
+### Jack
+
+- `phu jack --phrog QUERY` uses PHROG families as seeds, alone or with a seed
+  FASTA (which is now optional). Queries are those of `phu phrogs resolve`
+  (`phrog_<n>`, `alias:`, `category:`, `annot:`). The first iteration searches
+  with the PHROG model itself; later ones with models rebuilt from the hits.
+  A selection larger than `--max-phrog-seeds` (default 50) stops the run
+  before proteins are predicted.
+- `jackhmmer-hits.tsv` and `jackhmmer-iterations.tsv` have a new
+  `seed_source` column (`fasta` or `phrog`), after `seed_id`. Scripts that
+  read these tables by column position need updating.
+- jack now writes `.phu/query.json`, recording its seeds (and, for PHROG
+  seeds, their annotations and the database bundle's provenance).
+
 ### Phrogs
 
 - New `phu phrogs` command to find PHROG identifiers by name, for

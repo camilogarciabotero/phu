@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from typer.core import TyperGroup
 
 from phu import __version__
 
@@ -19,6 +20,9 @@ from phu.commands.cluster import ClusterConfig, Mode, _cluster, parse_vclust_par
 from phu.core.gene_prediction import (
     clean_prediction_cache,
 )
+from phu.commands.clean import find_targets as clean_targets
+from phu.commands.clean import human_size as clean_size
+from phu.commands.clean import remove as clean_remove
 from phu.commands.jack import JackConfig, _jack
 from phu.commands.phrogs import app as phrogs_app
 from phu.commands.screen import TRIM_METHODS, ScreenConfig, _screen
@@ -28,7 +32,30 @@ from phu.commands.normalize_lineage import (
 )
 from phu.commands.simplify_taxa import TaxaConfig, _simplify_taxa
 
+# Order of `phu --help`: panels appear in the order of their first command,
+# so Main (the workflows), then Database, then Utils.
+COMMAND_ORDER = (
+    "screen",
+    "jack",
+    "avger",
+    "cluster",
+    "dbs",
+    "phrogs",
+    "clean",
+    "normalize-lineage",
+    "simplify-taxa",
+)
+
+
+class _OrderedGroup(TyperGroup):
+    def list_commands(self, ctx):
+        names = super().list_commands(ctx)
+        rank = {name: i for i, name in enumerate(COMMAND_ORDER)}
+        return sorted(names, key=lambda name: rank.get(name, len(rank)))
+
+
 app = typer.Typer(
+    cls=_OrderedGroup,
     help="Phage utilities CLI",
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -41,8 +68,8 @@ dbs_app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
     no_args_is_help=True,
 )
-app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
-app.add_typer(phrogs_app, name="phrogs", rich_help_panel="Database Management")
+app.add_typer(dbs_app, name="dbs", rich_help_panel="Database")
+app.add_typer(phrogs_app, name="phrogs", rich_help_panel="Utils")
 
 DBS_NOTICE = (
     "`phu dbs {name}` is no longer available: phu keeps its databases as one pinned "
@@ -155,13 +182,15 @@ def _root(
         False,
         "--clean-cache",
         is_eager=True,
-        help="Remove cached protein predictions and exit.",
+        hidden=True,
+        help="Deprecated: use `phu clean --cache`.",
     ),
 ) -> None:
     # Each invocation starts from, and leaves behind, the default verbosity.
     set_verbosity()
     ctx.call_on_close(set_verbosity)
     if clean_cache:
+        typer.echo("`phu --clean-cache` is deprecated; use `phu clean --cache`.", err=True)
         try:
             cache_dir, existed = clean_prediction_cache()
         except OSError as exc:
@@ -181,7 +210,65 @@ def _root(
         raise typer.Exit(0)  # exit code 0 when no subcommand is given
 
 
-@app.command("cluster", rich_help_panel="Workflow")
+@app.command("clean", rich_help_panel="Utils")
+def clean(
+    cache: bool = typer.Option(
+        False, "--cache", help="Remove cached protein predictions and derived models."
+    ),
+    dbs: bool = typer.Option(
+        False, "--dbs", help="Remove the installed phu-db bundle and partial downloads."
+    ),
+    all_: bool = typer.Option(False, "--all", help="Both --cache and --dbs."),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Do not ask before removing the databases."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be removed; remove nothing."
+    ),
+) -> None:
+    """Remove phu's cache and/or its installed databases.
+
+    Without options, lists what phu keeps and its size, and removes nothing.
+    The cache is rebuilt by the next run that needs it; the databases must
+    be downloaded again (`phu dbs prepare`), so --dbs asks first.
+    """
+    kinds = tuple(
+        kind
+        for kind, wanted in (("cache", cache or all_), ("dbs", dbs or all_))
+        if wanted
+    )
+    listing = not kinds
+    targets = clean_targets(kinds or ("cache", "dbs"))
+    if not targets:
+        typer.echo("Nothing to remove.")
+        return
+    for target in targets:
+        typer.echo(f"{target.kind:<6} {clean_size(target.size):>9}  {target.path}")
+    if listing:
+        typer.echo("Nothing removed. Use --cache, --dbs or --all to remove.")
+        return
+    if dry_run:
+        typer.echo("Dry run: nothing removed.")
+        return
+    db_targets = [t for t in targets if t.kind == "dbs"]
+    if db_targets and not yes:
+        total = clean_size(sum(t.size for t in db_targets))
+        if not typer.confirm(
+            f"Remove the installed databases ({total})? They must be downloaded again",
+            default=False,
+        ):
+            typer.echo("Databases kept.")
+            targets = [t for t in targets if t.kind != "dbs"]
+    for target in targets:
+        try:
+            clean_remove(target)
+        except OSError as exc:
+            typer.secho(f"Could not remove {target.path}: {exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1)
+        typer.echo(f"Removed {target.path}")
+
+
+@app.command("cluster", rich_help_panel="Main")
 def cluster(
     mode: str = typer.Option(
         ...,
@@ -279,7 +366,7 @@ def cluster(
         raise typer.Exit(1)
 
 
-@app.command("normalize-lineage", rich_help_panel="Workflow")
+@app.command("normalize-lineage", rich_help_panel="Utils")
 def normalize_lineage(
     input_file: Path = typer.Option(
         ..., "--input-file", "-i", exists=True, readable=True, help="Input delimited table", rich_help_panel="Input"
@@ -337,7 +424,7 @@ def normalize_lineage(
         raise typer.Exit(1)
 
 
-@app.command("simplify-taxa", rich_help_panel="Workflow", hidden=True)
+@app.command("simplify-taxa", rich_help_panel="Utils", hidden=True)
 def simplify_taxa(
     input_file: Path = typer.Option(
         ...,
@@ -411,7 +498,7 @@ def simplify_taxa(
         raise typer.Exit(1)
 
 
-@app.command("avger", rich_help_panel="Workflow")
+@app.command("avger", rich_help_panel="Main")
 def avger(
     input_contigs: Path = typer.Option(
         ...,
@@ -491,7 +578,7 @@ def avger(
         typer.echo(f"Results: {output}")
 
 
-@app.command("screen", rich_help_panel="Workflow")
+@app.command("screen", rich_help_panel="Main")
 def screen(
     input_contigs: Path = typer.Option(
         ...,
@@ -804,7 +891,7 @@ def screen(
         raise typer.Exit(1)
 
 
-@app.command("jack", rich_help_panel="Workflow")
+@app.command("jack", rich_help_panel="Main")
 def jack(
     input_contigs: Path = typer.Option(
         ...,

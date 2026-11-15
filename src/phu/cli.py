@@ -20,6 +20,7 @@ from phu.core.gene_prediction import (
     clean_prediction_cache,
 )
 from phu.commands.jack import JackConfig, _jack
+from phu.commands.phrogs import app as phrogs_app
 from phu.commands.screen import TRIM_METHODS, ScreenConfig, _screen
 from phu.commands.normalize_lineage import (
     NormalizeLineageConfig,
@@ -41,6 +42,7 @@ dbs_app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(dbs_app, name="dbs", rich_help_panel="Database Management")
+app.add_typer(phrogs_app, name="phrogs", rich_help_panel="Database Management")
 
 DBS_NOTICE = (
     "`phu dbs {name}` is no longer available: phu keeps its databases as one pinned "

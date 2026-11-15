@@ -185,3 +185,18 @@ def extract_phrog_models(
             path.write_bytes(handle.read(span[1] - span[0]))
             paths.append(path)
     return paths, missing
+
+
+def phrogs_with_models() -> dict[str, PhrogAnnotation]:
+    """Annotations of the PHROGs that have a model in the installed bundle.
+
+    The first call indexes the model file (a few minutes for PHROG); the index
+    is kept with the database's derived files, as for `phu screen phrog_<n>`.
+    """
+    hmm_path = Path(ensure_phrog_database()["hmm_path"])
+    modelled = _offsets(hmm_path)
+    return {
+        phrog_id: annotation
+        for phrog_id, annotation in get_all_phrog_annotations().items()
+        if phrog_id in modelled
+    }

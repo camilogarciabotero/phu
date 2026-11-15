@@ -62,6 +62,8 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Database Management ────────────────────────────────────────────────────────╮
 │ dbs                Install and check the phu-db database bundle              │
+│ phrogs             Find PHROG identifiers by alias, functional category or   │
+│                    annotation, for use with `phu screen`.                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

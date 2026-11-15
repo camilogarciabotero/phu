@@ -11,7 +11,8 @@ import shutil
 import tempfile
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -30,6 +31,7 @@ from phu.core.coverage import hit_coverage
 from phu.core.fasta import extract_records, extract_records_multi
 from phu.db.bundle import bundle_provenance, database_hashes
 from phu.core.log import log_call
+from phu.core.memory import fits_in_memory
 from phu.db.dbcan import (
     ensure_dbcan_database,
     extract_dbcan_models,
@@ -1381,6 +1383,25 @@ def _predict_proteins_pyrodigal(
     return write_predicted_proteins_fasta(genes, output_prot_fa)
 
 
+@contextmanager
+def _protein_targets(proteins_fa: Path) -> Iterator[object]:
+    """The proteins to search: loaded when they fit in memory, else streamed.
+
+    Loaded targets are searched faster; a file larger than the memory allows
+    is read from disk for each model instead, which is slower but finishes.
+    """
+    with pyhmmer.easel.SequenceFile(
+        proteins_fa,
+        digital=True,
+        alphabet=pyhmmer.easel.Alphabet.amino(),
+    ) as seq_file:
+        if fits_in_memory(proteins_fa):
+            yield seq_file.read_block()
+        else:
+            log_call("phu.memory", proteins=proteins_fa, targets="read from disk")
+            yield seq_file
+
+
 def _hmmsearch(
     hmm_paths: list[Path],
     proteins_fa: Path,
@@ -1405,26 +1426,19 @@ def _hmmsearch(
                 # input files share a stem. It is the model ID in pure mode.
                 hmm_names.append(label)
 
-    # Load proteins into memory
-    with pyhmmer.easel.SequenceFile(
-        proteins_fa,
-        digital=True,
-        alphabet=pyhmmer.easel.Alphabet.amino(),
-    ) as seq_file:
-        proteins = seq_file.read_block()
-
     # Run hmmsearch with pyHMMER
     bit_cutoffs = "gathering" if cut_ga else None
     try:
-        hits_list = list(
-            pyhmmer.hmmsearch(
-                hmms,
-                proteins,
-                cpus=threads,
-                parallel="queries",
-                bit_cutoffs=bit_cutoffs,
+        with _protein_targets(proteins_fa) as proteins:
+            hits_list = list(
+                pyhmmer.hmmsearch(
+                    hmms,
+                    proteins,
+                    cpus=threads,
+                    parallel="queries",
+                    bit_cutoffs=bit_cutoffs,
+                )
             )
-        )
     except Exception as exc:
         missing_cutoffs_exc = getattr(pyhmmer.plan7, "MissingCutoffs", None)
         if (
@@ -1444,15 +1458,16 @@ def _hmmsearch(
                 parallel="queries",
                 bit_cutoffs="none",
             )
-            hits_list = list(
-                pyhmmer.hmmsearch(
-                    hmms,
-                    proteins,
-                    cpus=threads,
-                    parallel="queries",
-                    bit_cutoffs=None,
+            with _protein_targets(proteins_fa) as proteins:
+                hits_list = list(
+                    pyhmmer.hmmsearch(
+                        hmms,
+                        proteins,
+                        cpus=threads,
+                        parallel="queries",
+                        bit_cutoffs=None,
+                    )
                 )
-            )
         else:
             raise
 

@@ -11,6 +11,7 @@ import pyhmmer
 
 from phu.core.coverage import hit_coverage
 from phu.core.log import log_call
+from phu.core.memory import protein_batch_size
 from phu.db.binary import binary_hmm_path
 from phu.db.kofam import KOFamMetadata, ensure_kofam_database, get_all_kofam_metadata
 from phu.db.pfam import ensure_pfam_database, normalize_pfam_id
@@ -296,13 +297,20 @@ def _search_tracks(
     seen_models: set[str] = set()
     kofam_meta_by_model = kofam_meta_by_model or {}
     phrog_annotations = phrog_annotations or {}
+    # Each batch rereads every model, so search all proteins at once when
+    # they fit in memory; E-values do not depend on the batch (Z is fixed).
+    batch_size = (
+        protein_batch_size(proteins_path, total_proteins, first.protein_batch_size)
+        if total_proteins is not None
+        else first.protein_batch_size
+    )
     log_call(
         "pyhmmer.hmmsearch",
         database=database,
         track="+".join(cfg.track for cfg in cfgs),
         hmm_file=hmm_path,
         proteins=proteins_path,
-        protein_batch_size=first.protein_batch_size,
+        protein_batch_size=batch_size,
         cpus=first.threads,
         parallel="queries",
         bit_cutoffs="none",
@@ -314,7 +322,7 @@ def _search_tracks(
     search_options = {} if total_proteins is None else {"Z": total_proteins}
     with pyhmmer.easel.SequenceFile(proteins_path, digital=True) as seq_file:
         while True:
-            proteins = seq_file.read_block(sequences=first.protein_batch_size)
+            proteins = seq_file.read_block(sequences=batch_size)
             if not proteins:
                 break
 

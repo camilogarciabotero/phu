@@ -51,7 +51,7 @@ available:
 PHU_CACHE_DIR="$PWD/.phu-cache" phu --version
 ```
 
-Use `PHU_CACHE=off` for a diagnostic run without cache reuse. `phu --clean-cache`
+Use `PHU_CACHE=off` for a diagnostic run without cache reuse. `phu clean --cache`
 removes the resolved cache directory, so verify `PHU_CACHE_DIR` before using it.
 
 ## Input and empty results

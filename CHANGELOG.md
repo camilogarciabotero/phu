@@ -5,6 +5,18 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+
+### CLI
+
+- `phu --help` groups commands into three panels: **Main** (`screen`,
+  `jack`, `avger`, `cluster`), **Database** (`dbs`) and **Utils** (`phrogs`,
+  `clean`, `normalize-lineage`).
+- New `phu clean`: without options it lists what phu keeps (prediction cache,
+  installed databases, partial downloads) and its size; `--cache`, `--dbs`
+  and `--all` remove them. `--dbs` asks before deleting the databases unless
+  `--yes`; `--dry-run` shows what would go. Only phu's own folders are
+  removed. `phu --clean-cache` still works but is deprecated and hidden; use
+  `phu clean --cache`.
 ### Cluster
 
 - New `phu cluster --mode genus`: genus-level groups of complete genomes,

@@ -17,14 +17,17 @@ def test_root_help_runs():
     result = runner.invoke(app, ["--help"])
     output = plain_output(result)
     assert result.exit_code == 0
-    assert "Workflow" in output
+    # Panels in order: Main (workflows), Database, Utils.
+    assert output.index("Main") < output.index("Database") < output.index("Utils")
+    assert output.index("screen") < output.index("dbs") < output.index("phrogs")
     assert "cluster" in output
     assert "screen" in output
     assert "avger" in output
     assert "jack" in output
     assert "dbs" in output
     assert "simplify-taxa" not in output  # deprecated: hidden from the listing
-    assert "--clean-cache" in output
+    assert "clean" in output
+    assert "--clean-cache" not in output  # deprecated: hidden, still accepted
 
 
 def test_deprecated_simplify_taxa_help_still_runs():

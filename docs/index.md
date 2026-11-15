@@ -45,25 +45,27 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
  Phage utilities CLI
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --version      -v        Show version and exit.                              │
-│ --clean-cache            Remove cached protein predictions and exit.         │
-│ --help         -h        Show this message and exit.                         │
+│ --version  -v        Show version and exit.                                  │
+│ --help     -h        Show this message and exit.                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Workflow ───────────────────────────────────────────────────────────────────╮
-│ cluster            Sequence clustering wrapper around external 'vclust'.     │
-│ normalize-lineage  Normalize vContact lineage predictions without changing   │
-│                    column names.                                             │
-│ avger              Predict and curate putative auxiliary viral genes.        │
+╭─ Main ───────────────────────────────────────────────────────────────────────╮
 │ screen             Screen contigs using protein-family or PUL CAZyme         │
 │                    signatures.                                               │
 │ jack               Iteratively screen contigs from one or more seed protein  │
 │                    markers with                                              │
 │                    pyhmmer.jackhmmer.                                        │
+│ avger              Predict and curate putative auxiliary viral genes.        │
+│ cluster            Sequence clustering wrapper around external 'vclust'.     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Database Management ────────────────────────────────────────────────────────╮
+╭─ Database ───────────────────────────────────────────────────────────────────╮
 │ dbs                Install and check the phu-db database bundle              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Utils ──────────────────────────────────────────────────────────────────────╮
 │ phrogs             Find PHROG identifiers by alias, functional category or   │
 │                    annotation, for use with `phu screen`.                    │
+│ clean              Remove phu's cache and/or its installed databases.        │
+│ normalize-lineage  Normalize vContact lineage predictions without changing   │
+│                    column names.                                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -151,7 +153,7 @@ Normalize vContact lineage predictions while preserving the input table schema.
 
 The cache is rebuilt when you change the contigs, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` affect cache reuse.
 
-To clear previous predictions manually, run `phu --clean-cache`.
+To clear previous predictions manually, run `phu clean --cache`.
 
 See the full cache guide in [Cache Handling](https://camilogarciabotero.github.io/phu/cache).
 

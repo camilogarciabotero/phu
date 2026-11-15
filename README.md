@@ -59,25 +59,27 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
  Phage utilities CLI
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --version      -v        Show version and exit.                              │
-│ --clean-cache            Remove cached protein predictions and exit.         │
-│ --help         -h        Show this message and exit.                         │
+│ --version  -v        Show version and exit.                                  │
+│ --help     -h        Show this message and exit.                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Workflow ───────────────────────────────────────────────────────────────────╮
-│ cluster            Sequence clustering wrapper around external 'vclust'.     │
-│ normalize-lineage  Normalize vContact lineage predictions without changing   │
-│                    column names.                                             │
-│ avger              Predict and curate putative auxiliary viral genes.        │
+╭─ Main ───────────────────────────────────────────────────────────────────────╮
 │ screen             Screen contigs using protein-family or PUL CAZyme         │
 │                    signatures.                                               │
 │ jack               Iteratively screen contigs from one or more seed protein  │
 │                    markers with                                              │
 │                    pyhmmer.jackhmmer.                                        │
+│ avger              Predict and curate putative auxiliary viral genes.        │
+│ cluster            Sequence clustering wrapper around external 'vclust'.     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Database Management ────────────────────────────────────────────────────────╮
+╭─ Database ───────────────────────────────────────────────────────────────────╮
 │ dbs                Install and check the phu-db database bundle              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Utils ──────────────────────────────────────────────────────────────────────╮
 │ phrogs             Find PHROG identifiers by alias, functional category or   │
 │                    annotation, for use with `phu screen`.                    │
+│ clean              Remove phu's cache and/or its installed databases.        │
+│ normalize-lineage  Normalize vContact lineage predictions without changing   │
+│                    column names.                                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -89,6 +91,7 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
 - [`phrogs`](https://camilogarciabotero.github.io/phu/commands/phrogs/): Find PHROG identifiers by alias (`mcp`, `terl`, `portal`, ...), functional category or annotation, to use with `screen`.
+- [`clean`](https://camilogarciabotero.github.io/phu/cache/): List or remove the prediction cache (`--cache`) and the installed databases (`--dbs`, asks first).
 - [`dbs prepare`](https://camilogarciabotero.github.io/phu/databases/#installing-ahead-of-time): Download, verify and install the reference database bundle ahead of time.
 
 Each command page includes the current CLI help menu, input/output behavior,
@@ -121,7 +124,7 @@ For screening pass/fail and threshold rules, see [`screen thresholds and decisio
 
 The cache is rebuilt when you change the contig input, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` participate in the cache key.
 
-To remove previously cached predictions, run `phu --clean-cache`.
+To remove previously cached predictions, run `phu clean --cache`.
 
 See the full [Cache Handling guide](https://camilogarciabotero.github.io/phu/cache/), including cache locations, disabling reuse, and cleanup behavior.
 

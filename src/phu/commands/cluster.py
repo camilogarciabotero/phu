@@ -5,10 +5,9 @@ import shlex
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
 
 from phu.core.exec import _executable, run
-from phu.core.fasta import extract_records
+from phu.core.fasta import _open_text, _record_id, extract_records
 
 
 class Mode(str, Enum):
@@ -20,7 +19,7 @@ class Mode(str, Enum):
 
 def parse_vclust_params(
     params_str: str,
-) -> dict[str, dict[str, Union[str, int, float, bool]]]:
+) -> dict[str, dict[str, str | int | float | bool]]:
     """
     Parse vclust parameters from command-line style string.
 
@@ -120,7 +119,7 @@ class Recipe:
     algorithm: str
     metric: str  # ani | tani | gani
     threshold: float  # minimum value of ``metric`` to join a cluster
-    qcov: Optional[float]  # minimum query coverage, or None for no requirement
+    qcov: float | None  # minimum query coverage, or None for no requirement
     min_ident: float  # prefilter minimum identity
     # Whether align writes only pairs passing the clustering thresholds
     # (smaller ANI table) or every aligned pair, as upstream's tANI recipe does.
@@ -162,17 +161,17 @@ class ClusterConfig:
     threads: int = 0  # 0 => all cores
     # Optional overrides of the mode's recipe (see RECIPES). ``ani_cutoff`` is
     # the threshold of the effective metric (tANI in genus and species modes).
-    ani_cutoff: Optional[float] = None
-    qcov_cutoff: Optional[float] = None
-    metric: Optional[str] = None
-    algorithm: Optional[str] = None
+    ani_cutoff: float | None = None
+    qcov_cutoff: float | None = None
+    metric: str | None = None
+    algorithm: str | None = None
     # Advanced vclust parameters by step, from parse_vclust_params; they take
     # precedence over the recipe and the fields above.
-    vclust_params: Optional[dict[str, dict[str, Union[str, int, float, bool]]]] = field(
+    vclust_params: dict[str, dict[str, str | int | float | bool]] | None = field(
         default_factory=dict
     )
 
-    def plan(self) -> "ClusterPlan":
+    def plan(self) -> ClusterPlan:
         return resolve_plan(self)
 
 
@@ -200,7 +199,9 @@ class ClusterPlan:
     threads: int
     mode: Mode
     # Other user parameters passed through unchanged, by step.
-    extra_params: dict[str, dict[str, Union[str, int, float, bool]]]
+    extra_params: dict[str, dict[str, str | int | float | bool]]
+    # Threads for the align step when it must differ from ``threads``.
+    align_threads: int | None = None
 
     @property
     def threshold(self) -> float:
@@ -304,7 +305,7 @@ def _binaries() -> str:
 
 
 def _add_custom_params(
-    cmd: list[str], params: dict[str, Union[str, int, float, bool]]
+    cmd: list[str], params: dict[str, str | int | float | bool]
 ) -> None:
     """Add custom parameters to a command list."""
     for param, value in params.items():
@@ -343,7 +344,11 @@ def align_command(plan: ClusterPlan) -> list[str]:
         "--filter",
         str(plan.fltr),
         "--threads",
-        str(_threads(plan.threads)),
+        str(
+            plan.align_threads
+            if plan.align_threads is not None
+            else _threads(plan.threads)
+        ),
     ]
     for measure, value in plan.align_filters.items():
         cmd.extend([f"--out-{measure}", str(value)])
@@ -373,6 +378,16 @@ def cluster_command(plan: ClusterPlan) -> list[str]:
     return cmd
 
 
+def has_single_character_ids(fasta: Path) -> bool:
+    """Whether any record id is one character long.
+
+    vclust 1.3.1 ``align --filter`` on two or more threads skips pairs between
+    such sequences, so the align step then runs on one thread.
+    """
+    with _open_text(fasta) as fh:
+        return any(len(_record_id(line)) == 1 for line in fh if line.startswith(">"))
+
+
 def _cluster(cfg: ClusterConfig) -> ClusterPlan:
     """
     Run sequence clustering with vclust.
@@ -389,6 +404,14 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
         f"Step 1: Creating pre-alignment filter (min-ident={plan.prefilter_min_ident})…"
     )
     run(prefilter_command(plan))
+
+    if _threads(plan.threads) > 1 and has_single_character_ids(plan.input_contigs):
+        plan.align_threads = 1
+        print(
+            "Note: some sequence names are a single character; vclust 1.3.1 loses "
+            "pairs between them on several threads, so the alignment runs on one "
+            "thread. Rename the sequences to align in parallel."
+        )
 
     print("Step 2: Calculating ANI…")
     run(align_command(plan))

@@ -1441,7 +1441,7 @@ a warning is printed.</p>
 │<span class="w"> </span>--verbose<span class="w">          </span>Show<span class="w"> </span>additional<span class="w"> </span>progress<span class="w"> </span>details.<span class="w">                         </span>│
 ╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
-<p>Use <code>--verbose</code> to record how each tool was run: every <code>seqkit</code> command line, and the effective parameters of the in-process gene prediction, <code>hmmsearch</code> and FAMSA alignment steps, are printed on lines that start with <code>[cmd]</code>. Use <code>--quiet</code> to hide the timed step lines. See <a href="../../troubleshooting/#run-logs">Run logs</a> for the log format.</p>
+<p>Use <code>--verbose</code> to record how each tool was run: the effective parameters of the in-process gene prediction, <code>hmmsearch</code>, FAMSA alignment and sequence extraction steps, are printed on lines that start with <code>[cmd]</code>. Use <code>--quiet</code> to hide the timed step lines. See <a href="../../troubleshooting/#run-logs">Run logs</a> for the log format.</p>
 <p>Use <code>--output-folder</code> to change where the results are saved. The default is a folder called <code>phu-screen</code> in your current directory.</p>
 <p>Use <code>--threads</code> to speed things up if you have multiple CPU cores available. This affects both the protein prediction step and the HMMER searches.</p>
 <p>Use <code>--min-protein-len-aa</code> to keep only proteins at or above a given amino-acid length before running HMM searches.</p>
@@ -1490,13 +1490,13 @@ a warning is printed.</p>
 <h2 id="what-to-expect">What to expect<a class="headerlink" href="#what-to-expect" title="Permanent link">&para;</a></h2>
 <p>Runtime depends on input size, model count, available resources, and external tools. PHU does not promise a fixed runtime or scaling factor; benchmark representative data on your environment.</p>
 <p>The output size depends on how many contigs match your criteria. In "any" mode, you might get quite a few contigs. In "all" mode, you'll typically get fewer but higher-confidence results.</p>
-<p>The search engine is pyHMMER, while sequence extraction uses the external <code>seqkit</code> executable. Target-HMM generation aligns multi-sequence sets in-process with FAMSA (<code>pyfamsa</code>).</p>
+<p>The search engine is pyHMMER, and matched contigs and proteins are extracted in-process; <code>phu screen</code> runs no external program. Target-HMM generation aligns multi-sequence sets in-process with FAMSA (<code>pyfamsa</code>).</p>
 <p>If you don't get any results, try relaxing your E-value threshold or check that your HMM files are in the correct format. If you get too many results, try using "all" mode instead of "any" mode, or make your E-value threshold more strict.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<p>You need to have <strong>pyrodigal</strong>, <strong>pyHMMER</strong>, and <strong>seqkit</strong> installed and available. <strong>pyrodigal-gv</strong> is optional but recommended for viral genome analysis. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format.</p>
+<p>You need to have <strong>pyrodigal</strong> and <strong>pyHMMER</strong> installed (both are installed with PHU). <strong>pyrodigal-gv</strong> is optional but recommended for viral genome analysis. Your input contigs should be in FASTA format, and your HMM files should be in HMMER3 format.</p>
 <p><strong>Workflow notes:</strong>
 - <strong>No HMMER binary required</strong>: pyHMMER performs the HMM search
-- <strong>External extraction</strong>: <code>seqkit</code> must be available on <code>PATH</code>
+- <strong>No seqkit required</strong>: matched contigs and proteins are extracted in-process
 - <strong>Optional HMM generation</strong>: no extra program; multi-sequence target sets are aligned with FAMSA through <code>pyfamsa</code>
 - <strong>Explicit identifiers</strong>: quote shell paths containing special characters</p>
 <p>The command expects DNA sequences as input, not protein sequences. If you already have predicted proteins, you should use pyHMMER directly rather than this command.</p>

@@ -854,10 +854,9 @@
 
 <h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
 <h2 id="missing-external-executable">Missing external executable<a class="headerlink" href="#missing-external-executable" title="Permanent link">&para;</a></h2>
-<p><code>cluster</code> requires the external <code>vclust</code> executable. Some workflows may also
-use <code>seqkit</code>. Confirm that required programs are available on <code>PATH</code>:</p>
+<p><code>cluster</code> requires the external <code>vclust</code> executable; it is the only external
+program PHU runs. Confirm that it is available on <code>PATH</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nb">command</span><span class="w"> </span>-v<span class="w"> </span>vclust
-<span class="nb">command</span><span class="w"> </span>-v<span class="w"> </span>seqkit
 </code></pre></div>
 <p>Install the missing program using the environment or package manager appropriate
 for your system, then rerun the command. PHU does not install every external
@@ -927,14 +926,14 @@ and the step's real duration, and without colour codes:</p>
 <code>cancelled after</code>. On a terminal the same steps are shown as live lines with a
 running timer.</p>
 <p><code>--verbose</code> adds one line per tool invocation, always prefixed with <code>[cmd]</code>.
-External programs (<code>vclust</code>, <code>seqkit</code>) are shown as the exact,
+External programs (<code>vclust</code>) are shown as the exact,
 shell-quoted command that was executed, including any output redirection.
 In-process steps (pyrodigal-gv gene prediction, pyhmmer <code>hmmsearch</code> and
-<code>jackhmmer</code>, pyfamsa alignment, pytrimal trimming) are shown as the function name followed by the <code>key=value</code>
+<code>jackhmmer</code>, pyfamsa alignment, pytrimal trimming, sequence extraction) are shown as the function name followed by the <code>key=value</code>
 parameters that determine the result:</p>
 <div class="highlight"><pre><span></span><code>[cmd] pyrodigal_gv.ViralGeneFinder contigs=4 mode=meta meta=True min_gene=90 max_overlap=89 translation_table=auto training_table=none min_protein_len_aa=30 threads=2
 [cmd] pyhmmer.hmmsearch hmm_files=1 models=1 sequences=19 cpus=2 parallel=queries bit_cutoffs=gathering hmm_mode=pure ...
-[cmd] /usr/bin/seqkit grep -f out/matched-contigs.fna.ids.txt contigs.fna &gt; out/matched-contigs.fna
+[cmd] phu.extract_records input=contigs.fna ids=3 outputs=1
 </code></pre></div>
 <p>Extract them with <code>grep '^\[cmd\]' run.log</code>. Gene prediction prints no
 <code>[cmd]</code> line when the predicted proteins come from the cache, because nothing

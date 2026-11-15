@@ -14,6 +14,7 @@ from phu.core.fasta import extract_records
 class Mode(str, Enum):
     dereplication = "dereplication"
     votu = "votu"
+    genus = "genus"
     species = "species"
 
 
@@ -47,11 +48,15 @@ def parse_vclust_params(
         "outfmt": ("align", str),
         "out-ani": ("align", float),
         "out-qcov": ("align", float),
+        "out-tani": ("align", float),
+        "out-gani": ("align", float),
+        "out-rcov": ("align", float),
         # Cluster parameters
         "ani": ("cluster", float),
         "tani": ("cluster", float),
         "gani": ("cluster", float),
         "qcov": ("cluster", float),
+        "rcov": ("cluster", float),
         "leiden-resolution": ("cluster", float),
         "algorithm": ("cluster", str),
         "metric": ("cluster", str),
@@ -105,77 +110,76 @@ def parse_vclust_params(
     return {k: v for k, v in result.items() if v}
 
 
+@dataclass(frozen=True)
+class Recipe:
+    """Default vclust settings of one mode, after vclust's documented use cases.
+
+    https://github.com/refresh-bio/vclust/wiki/6-Use-cases
+    """
+
+    algorithm: str
+    metric: str  # ani | tani | gani
+    threshold: float  # minimum value of ``metric`` to join a cluster
+    qcov: Optional[float]  # minimum query coverage, or None for no requirement
+    min_ident: float  # prefilter minimum identity
+    # Whether align writes only pairs passing the clustering thresholds
+    # (smaller ANI table) or every aligned pair, as upstream's tANI recipe does.
+    filter_align: bool
+    output_name: str
+    representatives_name: str = "cluster-representatives.fna"
+
+
+RECIPES: dict[Mode, Recipe] = {
+    Mode.dereplication: Recipe(
+        "cd-hit",
+        "ani",
+        0.95,
+        0.85,
+        0.95,
+        True,
+        "clusters.tsv",
+        "dereplicated-representatives.fna",
+    ),
+    Mode.votu: Recipe("leiden", "ani", 0.95, 0.85, 0.95, True, "clusters.tsv"),
+    Mode.genus: Recipe(
+        "complete", "tani", 0.70, None, 0.70, False, "genus-clusters.tsv"
+    ),
+    Mode.species: Recipe(
+        "complete", "tani", 0.95, None, 0.70, False, "species-clusters.tsv"
+    ),
+}
+
+# Similarity measures with both a clustering flag (``--<name>``) and an align
+# output filter (``--out-<name>``).
+_MEASURES = ("ani", "tani", "gani", "qcov", "rcov")
+
+
 @dataclass
 class ClusterConfig:
     mode: Mode
     input_contigs: Path
     output_folder: Path = Path("phu-cluster")
     threads: int = 0  # 0 => all cores
-    # defaults reflecting original bash behavior
-    ani_cutoff: float = 0.95
-    qcov_cutoff: float = 0.85
-    metric: str = "ani"  # 'tani' for species
-    algorithm: Optional[str] = None  # set by mode
-    # Advanced vclust parameters for customization
+    # Optional overrides of the mode's recipe (see RECIPES). ``ani_cutoff`` is
+    # the threshold of the effective metric (tANI in genus and species modes).
+    ani_cutoff: Optional[float] = None
+    qcov_cutoff: Optional[float] = None
+    metric: Optional[str] = None
+    algorithm: Optional[str] = None
+    # Advanced vclust parameters by step, from parse_vclust_params; they take
+    # precedence over the recipe and the fields above.
     vclust_params: Optional[dict[str, dict[str, Union[str, int, float, bool]]]] = field(
         default_factory=dict
     )
-    """
-    Custom vclust parameters organized by command step.
-    Example:
-    {
-        "prefilter": {"min-kmers": 20, "batch-size": 100000, "kmers-fraction": 0.2},
-        "align": {"outfmt": "lite", "out-ani": 0.90},
-        "cluster": {"leiden-resolution": 0.9}
-    }
-    """
 
     def plan(self) -> "ClusterPlan":
-        algorithm = self.algorithm
-        metric = self.metric
-        ani_cutoff = self.ani_cutoff
-        qcov_cutoff: Optional[float] = self.qcov_cutoff
-        output_name = "clusters.tsv"
-
-        if self.mode == Mode.dereplication:
-            algorithm = "cd-hit"
-        elif self.mode == Mode.votu:
-            algorithm = "leiden"
-        elif self.mode == Mode.species:
-            algorithm = "complete"
-            metric = "tani"
-            ani_cutoff = 0.95
-            qcov_cutoff = None
-            output_name = "species-clusters.tsv"
-
-        out = self.output_folder
-        return ClusterPlan(
-            vclust_bin="",
-            input_contigs=self.input_contigs,
-            out_dir=out,
-            fltr=out / "prefilter-pairs.txt",
-            ani=out / "ani-pairs.tsv",
-            ids=out / "ani-sequence-ids.tsv",
-            output=out / output_name,
-            representatives_ids=out / "cluster-representative-ids.txt",
-            representatives_fna=out
-            / (
-                "dereplicated-representatives.fna"
-                if self.mode == Mode.dereplication
-                else "cluster-representatives.fna"
-            ),
-            algorithm=algorithm or "",
-            metric=metric,
-            ani_cutoff=ani_cutoff,
-            qcov_cutoff=qcov_cutoff,
-            threads=self.threads,
-            mode=self.mode,
-            vclust_params=self.vclust_params or {},
-        )
+        return resolve_plan(self)
 
 
 @dataclass
 class ClusterPlan:
+    """Effective settings of every vclust step; commands are built from these only."""
+
     vclust_bin: str
     input_contigs: Path
     out_dir: Path
@@ -187,11 +191,105 @@ class ClusterPlan:
     representatives_fna: Path
     algorithm: str
     metric: str
-    ani_cutoff: float
-    qcov_cutoff: Optional[float]
+    # Clustering thresholds by measure, e.g. {"tani": 0.7} or {"ani": 0.95, "qcov": 0.85}
+    thresholds: dict[str, float]
+    prefilter_min_ident: float
+    # Align output filters by measure, e.g. {"ani": 0.95, "qcov": 0.85}; empty
+    # means every aligned pair is written.
+    align_filters: dict[str, float]
     threads: int
     mode: Mode
-    vclust_params: dict[str, dict[str, Union[str, int, float, bool]]]
+    # Other user parameters passed through unchanged, by step.
+    extra_params: dict[str, dict[str, Union[str, int, float, bool]]]
+
+    @property
+    def threshold(self) -> float:
+        return self.thresholds[self.metric]
+
+
+def resolve_plan(cfg: ClusterConfig) -> ClusterPlan:
+    """Effective settings: mode recipe, then config fields, then --vclust-params.
+
+    Raises ValueError for combinations that would make a step discard genome
+    pairs the clustering needs, or that leave the clustering metric without a
+    threshold.
+    """
+    recipe = RECIPES[cfg.mode]
+    params = {step: dict(values) for step, values in (cfg.vclust_params or {}).items()}
+    prefilter = params.get("prefilter", {})
+    align = params.get("align", {})
+    cluster = params.get("cluster", {})
+
+    algorithm = str(cluster.pop("algorithm", None) or cfg.algorithm or recipe.algorithm)
+    metric = str(cluster.pop("metric", None) or cfg.metric or recipe.metric)
+    if metric not in ("ani", "tani", "gani"):
+        raise ValueError(f"Unknown vclust metric {metric!r}: use ani, tani or gani")
+
+    thresholds: dict[str, float] = {}
+    if metric == recipe.metric:
+        thresholds[metric] = recipe.threshold
+    if recipe.qcov is not None:
+        thresholds["qcov"] = recipe.qcov
+    if cfg.ani_cutoff is not None:
+        thresholds[metric] = cfg.ani_cutoff
+    if cfg.qcov_cutoff is not None:
+        thresholds["qcov"] = cfg.qcov_cutoff
+    for measure in _MEASURES:
+        if measure in cluster:
+            thresholds[measure] = float(cluster.pop(measure))
+    if metric not in thresholds:
+        raise ValueError(
+            f"--metric {metric} needs its own threshold: add --{metric} <value> "
+            f"(the {cfg.mode.value} threshold applies to {recipe.metric})"
+        )
+
+    min_ident_given = "min-ident" in prefilter
+    min_ident = float(prefilter.pop("min-ident", recipe.min_ident))
+    if not min_ident_given and thresholds[metric] < recipe.min_ident:
+        raise ValueError(
+            f"--{metric} {thresholds[metric]} is below the prefilter identity "
+            f"{recipe.min_ident}, which would drop pairs before alignment: "
+            f"also set --min-ident (for example --min-ident {thresholds[metric]})"
+        )
+
+    align_filters: dict[str, float] = {}
+    if recipe.filter_align:
+        align_filters = {
+            measure: value for measure, value in thresholds.items() if value > 0
+        }
+    for measure in _MEASURES:
+        key = f"out-{measure}"
+        if key not in align:
+            continue
+        value = float(align.pop(key))
+        if value > thresholds.get(measure, 0.0):
+            raise ValueError(
+                f"--{key} {value} would remove pairs that --{measure} "
+                f"{thresholds.get(measure, 0.0)} keeps for clustering in "
+                f"{cfg.mode.value} mode; lower it or remove it"
+            )
+        align_filters[measure] = value
+
+    out = cfg.output_folder
+    return ClusterPlan(
+        vclust_bin="",
+        input_contigs=cfg.input_contigs,
+        out_dir=out,
+        fltr=out / "prefilter-pairs.txt",
+        ani=out / "ani-pairs.tsv",
+        ids=out / "ani-sequence-ids.tsv",
+        output=out / recipe.output_name,
+        representatives_ids=out / "cluster-representative-ids.txt",
+        representatives_fna=out / recipe.representatives_name,
+        algorithm=algorithm,
+        metric=metric,
+        thresholds=thresholds,
+        prefilter_min_ident=min_ident,
+        align_filters=align_filters,
+        threads=cfg.threads,
+        mode=cfg.mode,
+        extra_params={"prefilter": prefilter, "align": align, "cluster": cluster},
+    )
 
 
 def _threads(n: int) -> int:
@@ -217,23 +315,8 @@ def _add_custom_params(
             cmd.extend([f"--{param}", str(value)])
 
 
-def _cluster(cfg: ClusterConfig) -> ClusterPlan:
-    """
-    Run sequence clustering with vclust.
-    """
-    if not cfg.input_contigs.exists():
-        raise FileNotFoundError(f"Input file not found: {cfg.input_contigs}")
-
-    plan = cfg.plan()
-    plan.vclust_bin = _binaries()
-
-    plan.out_dir.mkdir(parents=True, exist_ok=True)
-
-    # Step 1: prefilter
-    min_ident = 0.7 if plan.mode == Mode.species else 0.95
-    print(f"Step 1: Creating pre-alignment filter (min-ident={min_ident})…")
-
-    prefilter_cmd = [
+def prefilter_command(plan: ClusterPlan) -> list[str]:
+    cmd = [
         plan.vclust_bin,
         "prefilter",
         "-i",
@@ -241,21 +324,16 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
         "-o",
         str(plan.fltr),
         "--min-ident",
-        str(min_ident),
+        str(plan.prefilter_min_ident),
         "--threads",
         str(_threads(plan.threads)),
     ]
+    _add_custom_params(cmd, plan.extra_params.get("prefilter", {}))
+    return cmd
 
-    # Add custom prefilter parameters
-    if "prefilter" in plan.vclust_params:
-        _add_custom_params(prefilter_cmd, plan.vclust_params["prefilter"])
 
-    run(prefilter_cmd)
-
-    # Step 2: align
-    print("Step 2: Calculating ANI…")
-
-    align_cmd = [
+def align_command(plan: ClusterPlan) -> list[str]:
+    cmd = [
         plan.vclust_bin,
         "align",
         "-i",
@@ -267,30 +345,14 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
         "--threads",
         str(_threads(plan.threads)),
     ]
+    for measure, value in plan.align_filters.items():
+        cmd.extend([f"--out-{measure}", str(value)])
+    _add_custom_params(cmd, plan.extra_params.get("align", {}))
+    return cmd
 
-    # Add default output filtering if not overridden by custom params
-    custom_align_params = plan.vclust_params.get("align", {})
-    if "out-ani" not in custom_align_params:
-        align_cmd.extend(["--out-ani", str(cfg.ani_cutoff)])
-    if "out-qcov" not in custom_align_params and plan.qcov_cutoff is not None:
-        align_cmd.extend(["--out-qcov", str(plan.qcov_cutoff)])
 
-    # Add custom align parameters
-    if custom_align_params:
-        _add_custom_params(align_cmd, custom_align_params)
-
-    run(align_cmd)
-
-    # vclust names the sequence-ID table after the ANI table (<ani stem>.ids.tsv)
-    # and has no option for it, so it is renamed once the alignment is done.
-    vclust_ids = plan.ani.with_suffix(".ids.tsv")
-    if vclust_ids.exists():
-        vclust_ids.replace(plan.ids)
-
-    # Step 3: cluster
-    print(f"Step 3: Clustering with {plan.algorithm} (metric={plan.metric})…")
-
-    clustercmd = [
+def cluster_command(plan: ClusterPlan) -> list[str]:
+    cmd = [
         plan.vclust_bin,
         "cluster",
         "-i",
@@ -303,21 +365,44 @@ def _cluster(cfg: ClusterConfig) -> ClusterPlan:
         plan.algorithm,
         "--metric",
         plan.metric,
-        "--out-repr",
     ]
+    for measure, value in plan.thresholds.items():
+        cmd.extend([f"--{measure}", str(value)])
+    cmd.append("--out-repr")
+    _add_custom_params(cmd, plan.extra_params.get("cluster", {}))
+    return cmd
 
-    # Add default metric thresholds if not overridden by custom params
-    custom_cluster_params = plan.vclust_params.get("cluster", {})
-    if plan.metric not in custom_cluster_params:
-        clustercmd.extend([f"--{plan.metric}", str(plan.ani_cutoff)])
-    if "qcov" not in custom_cluster_params and plan.qcov_cutoff is not None:
-        clustercmd.extend(["--qcov", str(plan.qcov_cutoff)])
 
-    # Add custom cluster parameters
-    if custom_cluster_params:
-        _add_custom_params(clustercmd, custom_cluster_params)
+def _cluster(cfg: ClusterConfig) -> ClusterPlan:
+    """
+    Run sequence clustering with vclust.
+    """
+    if not cfg.input_contigs.exists():
+        raise FileNotFoundError(f"Input file not found: {cfg.input_contigs}")
 
-    run(clustercmd)
+    plan = cfg.plan()
+    plan.vclust_bin = _binaries()
+
+    plan.out_dir.mkdir(parents=True, exist_ok=True)
+
+    print(
+        f"Step 1: Creating pre-alignment filter (min-ident={plan.prefilter_min_ident})…"
+    )
+    run(prefilter_command(plan))
+
+    print("Step 2: Calculating ANI…")
+    run(align_command(plan))
+
+    # vclust names the sequence-ID table after the ANI table (<ani stem>.ids.tsv)
+    # and has no option for it, so it is renamed once the alignment is done.
+    vclust_ids = plan.ani.with_suffix(".ids.tsv")
+    if vclust_ids.exists():
+        vclust_ids.replace(plan.ids)
+
+    print(
+        f"Step 3: Clustering with {plan.algorithm} ({plan.metric} >= {plan.threshold})…"
+    )
+    run(cluster_command(plan))
 
     # Summary
     print("Clustering complete. Summary:")

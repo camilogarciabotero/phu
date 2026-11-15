@@ -5,6 +5,31 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Cluster
+
+- New `phu cluster --mode genus`: genus-level groups of complete genomes,
+  complete linkage on total ANI (tANI) ≥ 0.70, following vclust's VIRIDIC-like
+  recipe (prefilter `--min-ident 0.7`, every aligned pair kept, no
+  query-coverage requirement). Writes `genus-clusters.tsv` and
+  `cluster-representatives.fna`. The groups are operational, not ICTV taxa.
+- Fixed: `species` mode filtered the alignment output at ANI ≥ 0.95, a
+  measure its tANI clustering does not use, and every mode's prefilter
+  identity was fixed in the code whatever the threshold. All steps now read
+  one effective setting per mode; `genus` and `species` keep every aligned
+  pair, as upstream does. Species groups can change in rare cases. The old
+  documented way to get genus groups (`--mode species` with `--tani 0.70`)
+  kept the ANI 0.95 filter and so did not give genus groups.
+- `--vclust-params` flags replace the mode's value instead of being added a
+  second time, and `--out-tani`, `--out-gani`, `--out-rcov` and `--rcov` are
+  accepted. Settings that would drop pairs the clustering needs, or leave the
+  metric without a threshold, stop the run with an explanation before vclust
+  starts: an align filter above the clustering threshold, `--metric` without
+  its own threshold, or a threshold below the prefilter identity without
+  `--min-ident` (for example `--mode votu --vclust-params "--ani 0.90"`,
+  which before silently kept the 0.95 prefilter).
+- Known issue, documented: vclust 1.3.1 `align --filter` can skip pairs when
+  run on two or more threads.
+
 ### Avger
 
 - Strict annotations in every database now also need coverage: a hit counts

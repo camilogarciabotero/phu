@@ -814,11 +814,27 @@ def jack(
         readable=True,
         help="Input contigs FASTA",
     ),
-    seed_marker: Path = typer.Argument(
-        ...,
+    seed_marker: Optional[Path] = typer.Argument(
+        None,
         exists=True,
         readable=True,
-        help="Seed marker protein FASTA (supports one or more sequences)",
+        help="Seed marker protein FASTA (one or more sequences); optional with --phrog",
+    ),
+    phrog: Optional[list[str]] = typer.Option(
+        None,
+        "--phrog",
+        help=(
+            "PHROG families as seeds, repeatable: phrog_<n>, alias:<name>, "
+            "category:<name> or 'annot:<text>' (see `phu phrogs`)"
+        ),
+        rich_help_panel="Seeds",
+    ),
+    max_phrog_seeds: int = typer.Option(
+        50,
+        "--max-phrog-seeds",
+        min=1,
+        help="Stop if --phrog selects more PHROGs than this (one search each)",
+        rich_help_panel="Seeds",
     ),
     output_folder: Path = typer.Option(
         Path("phu-jack"),
@@ -953,34 +969,45 @@ def jack(
     - all: keep contigs hit by all seeds
     - threshold: keep contigs hit by at least --min-seed-hits seeds
 
+    PHROG seeds (--phrog) start from the PHROG model itself; later rounds
+    use models rebuilt from the included hits. --iterations 1 is a plain
+    search with the PHROG model, as `phu screen phrog_<n>` does.
+
     Examples:
         phu jack -i contigs.fa marker_seed.faa
         phu jack -i contigs.fa --combine-mode all marker_seeds.faa
         phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
+        phu jack -i contigs.fa --phrog alias:terl --phrog alias:portal
     """
     set_verbosity(quiet=quiet, verbose=verbose)
-    cfg = JackConfig(
-        input_contigs=input_contigs,
-        seed_marker=seed_marker,
-        outdir=output_folder,
-        mode=mode,
-        threads=threads,
-        iterations=iterations,
-        inc_evalue=inc_evalue,
-        max_evalue=max_evalue,
-        top_per_contig=top_per_contig,
-        combine_mode=combine_mode,
-        min_seed_hits=min_seed_hits,
-        min_gene_len=min_gene_len,
-        translation_table=translation_table,
-        keep_proteins=keep_proteins,
-        save_hmm=save_hmm,
-        min_protein_len_aa=min_protein_len_aa,
-    )
+    try:
+        cfg = JackConfig(
+            input_contigs=input_contigs,
+            seed_marker=seed_marker,
+            phrog_queries=tuple(phrog or ()),
+            max_phrog_seeds=max_phrog_seeds,
+            outdir=output_folder,
+            mode=mode,
+            threads=threads,
+            iterations=iterations,
+            inc_evalue=inc_evalue,
+            max_evalue=max_evalue,
+            top_per_contig=top_per_contig,
+            combine_mode=combine_mode,
+            min_seed_hits=min_seed_hits,
+            min_gene_len=min_gene_len,
+            translation_table=translation_table,
+            keep_proteins=keep_proteins,
+            save_hmm=save_hmm,
+            min_protein_len_aa=min_protein_len_aa,
+        )
+    except ValueError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
 
     try:
         run_click_task("Iterative marker screening", _jack, cfg)
-    except FileNotFoundError as e:
+    except (FileNotFoundError, DatabaseError) as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     except ValueError as e:

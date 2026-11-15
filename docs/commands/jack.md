@@ -9,10 +9,10 @@ This command is useful when a trusted marker protein is available but a profile 
 ## Synopsis
 
 ```bash
-phu jack -i <INPUT_CONTIGS> [OPTIONS] <SEED_MARKER>
+phu jack -i <INPUT_CONTIGS> [OPTIONS] [<SEED_MARKER>] [--phrog QUERY ...]
 ```
 
-`<SEED_MARKER>` is a protein FASTA file and may contain one or more seed sequences.
+`<SEED_MARKER>` is a protein FASTA file and may contain one or more seed sequences. PHROG families can be seeds too, with `--phrog` (see [PHROG seeds](#phrog-seeds)); give a FASTA, `--phrog`, or both.
 
 **Examples:**
 
@@ -20,6 +20,8 @@ phu jack -i <INPUT_CONTIGS> [OPTIONS] <SEED_MARKER>
 phu jack -i contigs.fa marker_seed.faa
 phu jack -i contigs.fa --combine-mode all marker_seeds.faa
 phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
+phu jack -i contigs.fa --phrog alias:portal
+phu jack -i contigs.fa --combine-mode all --phrog phrog_2 marker_seed.faa
 ```
 
 ## Iterative search
@@ -31,6 +33,44 @@ When multiple seed sequences are provided, `--combine-mode` controls contig rete
 - `any`: retain contigs hit by at least one seed.
 - `all`: retain contigs hit by every seed.
 - `threshold`: retain contigs hit by at least `--min-seed-hits` seeds.
+
+## PHROG seeds
+
+`--phrog QUERY` (repeatable) uses PHROG families as seeds. Queries are those of
+[`phu phrogs resolve`](phrogs.md): `phrog_<n>`, `alias:<name>`,
+`category:<name>` or `'annot:<annotation>'`. Use `phu phrogs resolve` first to
+see what a query selects.
+
+- **How a PHROG seed is searched.** The first iteration searches with the
+  PHROG model itself, a profile built from the whole family; later
+  iterations use models rebuilt from the included hits, as for sequence
+  seeds. `--iterations`, `--inc-evalue` and `--max-evalue` apply to both.
+  `--iterations 1` is a plain search with the PHROG model, the same search as
+  `phu screen phrog_<n>` but with jack's thresholds. When nothing is included,
+  the seed stops after one iteration, reported as converged, as jackhmmer does
+  for a sequence seed.
+- **Drift.** Models rebuilt from hits can move away from the PHROG family,
+  especially when the first iteration includes few or distant proteins.
+  Check `jackhmmer-iterations.tsv`, and lower `--iterations` if later
+  iterations add unexpected hits.
+- **Cap.** Each PHROG is one iterative search, and an alias or category can
+  select dozens to thousands of PHROGs (`alias:terl` 54, `category:tail`
+  1,238). jack stops before predicting proteins when the selection is larger
+  than `--max-phrog-seeds` (default 50). Narrow the query or raise the cap.
+- **Seed groups.** `--combine-mode` counts seed groups, not single seeds.
+  Each FASTA sequence is a group, and each `--phrog` query is one group
+  however many PHROGs it selects: the 54 PHROGs of `alias:terl` are
+  alternatives for one marker. So `--combine-mode all --phrog alias:terl
+  --phrog alias:portal` keeps contigs with a terminase *and* a portal hit,
+  and `--min-seed-hits 2` needs two different queries. A PHROG selected by
+  two queries belongs to the first. Within a group, a protein hit by several
+  PHROGs is kept once, by its best hit.
+- **Mixing.** FASTA and PHROG seeds can be combined. A FASTA record named like
+  a selected PHROG (`phrog_2`) is refused, so that every seed ID is unique.
+- **What a query meant.** With `--verbose`, jack logs each query with the
+  PHROG identifiers it selected, then each PHROG seed with its annotation,
+  category and group (lines starting `[cmd] phu.phrogs`). The same is kept in
+  `.phu/query.json`.
 
 ## Input and output
 
@@ -46,7 +86,7 @@ phu-jack/
 └── jackhmmer-iterations.tsv
 ```
 
-`jackhmmer-hits.tsv` contains final hit records and filtering metadata. `jackhmmer-iterations.tsv` records the per-iteration search summary. With `--save-hmm`, the final model is written as `final-iteration.hmm` for a single seed or under `final-iteration-hmms/` for multiple seeds.
+`jackhmmer-hits.tsv` contains final hit records and filtering metadata. `jackhmmer-iterations.tsv` records the per-iteration search summary. Both have a `seed_source` column (`fasta` or `phrog`) and a `seed_group` column (the FASTA seed ID, or the `--phrog` query that selected the PHROG). `.phu/query.json` records the seeds: the FASTA, the `--phrog` queries, and each PHROG seed with its annotation, category and the query that selected it, plus the database bundle's provenance. With `--save-hmm`, the final model is written as `final-iteration.hmm` for a single seed or under `final-iteration-hmms/` for multiple seeds.
 
 ## Command options
 

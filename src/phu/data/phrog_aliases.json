@@ -1,0 +1,122 @@
+{
+  "_about": "Short names for groups of PHROGs, used by `phu phrogs resolve alias:<name>`. Each alias lists exact PHROG v4 annotation strings (phrog_annot_v4.tsv, column 'annot'); a PHROG matches when its annotation equals one of them, ignoring letter case. 'categories' maps shortcuts to PHROG functional categories. Draft: review every entry before relying on it.",
+  "phrogs_version": "v4",
+  "aliases": {
+    "mcp": {
+      "description": "major capsid (head) protein",
+      "annotations": ["major head protein", "major capsid protein", "major head and protease protein"]
+    },
+    "terl": {
+      "description": "terminase large subunit",
+      "annotations": ["terminase large subunit"]
+    },
+    "ters": {
+      "description": "terminase small subunit",
+      "annotations": ["terminase small subunit"]
+    },
+    "portal": {
+      "description": "portal protein",
+      "annotations": ["portal protein"]
+    },
+    "scaffold": {
+      "description": "head scaffolding protein",
+      "annotations": ["head scaffolding protein", "scaffolding protein"]
+    },
+    "head-tail": {
+      "description": "head-tail connector and adaptor proteins",
+      "annotations": ["head-tail connector protein", "head-tail adaptor", "head-tail adaptor Ad1"]
+    },
+    "neck": {
+      "description": "neck and tail-completion proteins",
+      "annotations": [
+        "neck protein",
+        "tail completion or Neck1 protein",
+        "pre-neck appendage protein",
+        "neck passage structure protein",
+        "neck passage structure"
+      ]
+    },
+    "collar": {
+      "description": "collar proteins",
+      "annotations": [
+        "tail collar fiber protein",
+        "tail collar protein",
+        "lower collar",
+        "upper collar connector",
+        "collar tail protein for L-shaped tail fibre attachment"
+      ]
+    },
+    "tmp": {
+      "description": "tail length tape measure protein",
+      "annotations": ["tail length tape measure protein"]
+    },
+    "tail-sheath": {
+      "description": "tail sheath",
+      "annotations": ["tail sheath"]
+    },
+    "tail-tube": {
+      "description": "tail tube protein",
+      "annotations": ["tail tube protein", "tail tube"]
+    },
+    "baseplate": {
+      "description": "baseplate proteins",
+      "annotations": [
+        "baseplate wedge subunit",
+        "baseplate protein",
+        "baseplate hub",
+        "baseplate hub subunit and tail lysozyme",
+        "baseplate hub and tail lysozyme",
+        "baseplate assembly protein"
+      ]
+    },
+    "tail-fiber": {
+      "description": "tail fiber proteins (not assembly chaperones)",
+      "annotations": [
+        "tail fiber protein",
+        "tail fiber protein; host specificity",
+        "long tail fiber protein distal subunit",
+        "short tail fiber protein"
+      ]
+    },
+    "tail-spike": {
+      "description": "tail spike and receptor-binding tail proteins",
+      "annotations": [
+        "tail spike protein",
+        "tail spike protein with colonic acid degradation activity",
+        "receptor binding tail protein"
+      ]
+    },
+    "holin": {
+      "description": "holin",
+      "annotations": ["holin", "holin/anti-holin"]
+    },
+    "endolysin": {
+      "description": "endolysin",
+      "annotations": ["endolysin", "endolysin; lysM motif", "endolysin; inhibits RNA polymerase"]
+    },
+    "spanin": {
+      "description": "spanins",
+      "annotations": ["Rz-like spanin", "spanin", "i-spanin"]
+    },
+    "integrase": {
+      "description": "integrase",
+      "annotations": ["integrase"]
+    },
+    "excisionase": {
+      "description": "excisionase",
+      "annotations": [
+        "excisionase",
+        "excisionase and transcriptional regulator",
+        "Cox-like excisionase and repressor"
+      ]
+    },
+    "anti-repressor": {
+      "description": "anti-repressor",
+      "annotations": ["anti-repressor", "anti-repressor Ant"]
+    }
+  },
+  "categories": {
+    "moron": "moron, auxiliary metabolic gene and host takeover",
+    "amg": "moron, auxiliary metabolic gene and host takeover"
+  }
+}

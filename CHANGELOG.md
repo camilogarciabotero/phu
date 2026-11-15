@@ -31,6 +31,16 @@ behavior in the unreleased branch and may change before a release.
   sequences with single-character names, which split genus and species
   groups. When the input has such a name, `phu cluster` now aligns on one
   thread and prints a note.
+### Phrogs
+
+- New `phu phrogs` command to find PHROG identifiers by name, for
+  `phu screen`: `categories`, `aliases`, `search <text>` and
+  `resolve <queries>`. Queries are `phrog_<n>`, `alias:<name>` (curated groups
+  of exact PHROG annotations such as `mcp`, `terl`, `portal`, `collar`,
+  `tail-fiber`, `holin`), `category:<name>` (matched forgivingly: `tails`,
+  `head`, `dna`, `moron`/`amg`) and `annot:<annotation>`.
+  `--ids-only` prints identifiers for the shell, for example
+  `phu screen -i contigs.fna $(phu phrogs resolve alias:mcp --ids-only)`.
 
 ### Avger
 

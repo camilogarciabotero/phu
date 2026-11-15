@@ -76,6 +76,8 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Database Management ────────────────────────────────────────────────────────╮
 │ dbs                Install and check the phu-db database bundle              │
+│ phrogs             Find PHROG identifiers by alias, functional category or   │
+│                    annotation, for use with `phu screen`.                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -86,6 +88,7 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into vOTUs, dereplicated representatives, or genus- and species-level groups.
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
+- [`phrogs`](https://camilogarciabotero.github.io/phu/commands/phrogs/): Find PHROG identifiers by alias (`mcp`, `terl`, `portal`, ...), functional category or annotation, to use with `screen`.
 - [`dbs prepare`](https://camilogarciabotero.github.io/phu/databases/#installing-ahead-of-time): Download, verify and install the reference database bundle ahead of time.
 
 Each command page includes the current CLI help menu, input/output behavior,

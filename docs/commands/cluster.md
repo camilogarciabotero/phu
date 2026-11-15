@@ -114,12 +114,12 @@ phu stops before running vclust when the parameters contradict each other:
 | `--metric` without that metric's threshold, e.g. `--mode genus` with `--metric ani` | A tANI threshold would otherwise be read as an ANI one, or none used. |
 | A threshold below the mode's prefilter identity without `--min-ident`, e.g. `--mode votu` with `--ani 0.90` | The prefilter at 0.95 would drop pairs before alignment; add `--min-ident 0.9`. |
 
-## Known issue: single-character sequence names
+## Single-character sequence names
 
-With vclust 1.3.1, `vclust align --filter` on two or more threads skips
-genome pairs whose sequence names are a single character (`>A`, `>x`). Names
-of two or more characters are not affected in our tests, at any thread
-count. Rename such sequences, or run with `-t 1`.
+vclust 1.3.1 `align --filter` on two or more threads skips genome pairs whose
+sequence names are a single character (`>A`, `>x`). When the input has such a
+name, phu runs the alignment step on one thread and says so; the other steps
+keep `--threads`. Rename the sequences to align in parallel.
 
 ## Command options
 

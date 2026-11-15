@@ -294,3 +294,36 @@ def test_real_vclust_separates_genus_from_species(tmp_path, threads):
     }
     reps = plans["genus"].representatives_fna.read_text().count(">")
     assert reps == 2
+
+
+def test_single_character_ids_are_detected(tmp_path):
+    fasta = tmp_path / "g.fna"
+    fasta.write_text(">ctg1 desc\nACGT\n>A\nACGT\n")
+    assert cluster.has_single_character_ids(fasta)
+    fasta.write_text(">ctg1\nACGT\n>AB x\nACGT\n")
+    assert not cluster.has_single_character_ids(fasta)
+
+
+@pytest.mark.skipif(
+    shutil.which("vclust") is None and shutil.which("vclust.py") is None,
+    reason="vclust is not installed",
+)
+def test_real_vclust_single_character_names_keep_every_pair(tmp_path):
+    """vclust 1.3.1 drops these pairs on several threads; phu aligns on one."""
+    genomes = tmp_path / "g.fna"
+    _write_genomes(genomes)
+    renamed = tmp_path / "short.fna"
+    renamed.write_text(
+        genomes.read_text()
+        .replace(">gA2\n", ">D\n")
+        .replace(">gA\n", ">A\n")
+        .replace(">gB\n", ">B\n")
+        .replace(">gC\n", ">C\n")
+    )
+    plan = cluster._cluster(
+        ClusterConfig(
+            mode=Mode.genus, input_contigs=renamed, output_folder=tmp_path / "o"
+        )
+    )
+    assert plan.align_threads == 1
+    assert _groups(plan.output) == {frozenset({"A", "D", "B"}), frozenset({"C"})}

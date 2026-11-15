@@ -1189,7 +1189,6 @@ class ScreenPlan:
     out_contigs: Path
 
 
-
 def _read_fasta(fp: Path) -> Iterable[tuple[str, str]]:
     """
     Read FASTA sequences with two strategies:

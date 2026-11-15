@@ -115,6 +115,19 @@
       "annotations": ["anti-repressor", "anti-repressor Ant"]
     }
   },
+  "synonyms": {
+    "_about": "Search terms (`phu phrogs search`) and the PHROG wording they also stand for. Used by search only, never by resolve.",
+    "capsid": ["head protein", "coat protein"],
+    "terl": ["terminase large"],
+    "ters": ["terminase small"],
+    "tmp": ["tape measure"],
+    "mtase": ["methyltransferase", "methylase"],
+    "rnr": ["ribonucleotide reductase"],
+    "ssb": ["single strand DNA binding"],
+    "rbp": ["receptor binding"],
+    "psba": ["photosystem II D1"],
+    "psbd": ["photosystem II D2"]
+  },
   "categories": {
     "moron": "moron, auxiliary metabolic gene and host takeover",
     "amg": "moron, auxiliary metabolic gene and host takeover"

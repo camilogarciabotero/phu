@@ -17,7 +17,7 @@ import json
 import re
 from collections import Counter
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib import resources
 
 from phu.db.phrog import PhrogAnnotation, is_phrog_id, normalize_phrog_id
@@ -37,6 +37,8 @@ class Alias:
 class AliasTable:
     aliases: dict[str, Alias]
     categories: dict[str, str]  # shortcut -> category
+    # search term -> phrases it also stands for, e.g. "capsid" -> ["head"]
+    synonyms: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -57,7 +59,14 @@ def load_aliases() -> AliasTable:
         )
         for name, entry in data["aliases"].items()
     }
-    return AliasTable(aliases, {k.lower(): v for k, v in data["categories"].items()})
+    synonyms = {
+        _normal(term): list(expansions)
+        for term, expansions in data.get("synonyms", {}).items()
+        if not term.startswith("_")
+    }
+    return AliasTable(
+        aliases, {k.lower(): v for k, v in data["categories"].items()}, synonyms
+    )
 
 
 def _normal(text: str) -> str:
@@ -201,24 +210,134 @@ def resolve(
     return list(selected.values()), notes
 
 
+@dataclass(frozen=True)
+class SearchHit:
+    phrog: PhrogAnnotation
+    how: str  # exact | variant | typo | synonym:<term> | alias:<name>
+
+
+# Ranking of SearchHit.how, most literal first.
+_TIERS = ("exact", "alias", "synonym", "variant", "typo")
+_SPELLING = {"fibre": "fiber", "fibres": "fibers"}
+_TYPO_RATIO = 0.85
+_TYPO_MIN_LENGTH = 5
+
+
+def _fold(word: str) -> str:
+    """One spelling for variants: British spelling and simple plurals."""
+    word = _SPELLING.get(word, word)
+    if len(word) > 4 and word.endswith("ies"):
+        return word[:-3] + "y"
+    if (
+        len(word) > 4
+        and word.endswith("es")
+        and word[:-2].endswith(("s", "x", "ch", "sh"))
+    ):
+        return word[:-2]
+    if len(word) > 3 and word.endswith("s") and not word.endswith(("ss", "us", "is")):
+        return word[:-1]
+    return word
+
+
+class _Annotation:
+    """An annotation prepared for matching."""
+
+    def __init__(self, text: str) -> None:
+        self.normal = _normal(text)
+        self.folded_words = [_fold(w) for w in self.normal.split()]
+        self.collapsed = "".join(self.folded_words)
+
+    def exact(self, words: list[str]) -> bool:
+        return all(word in self.normal for word in words)
+
+    def variant(self, words: list[str]) -> bool:
+        # "tapemeasure" and "anti-repressor" vs "antirepressor" match through
+        # the annotation with spaces removed.
+        return all(
+            any(_fold(w) in a for a in self.folded_words) or _fold(w) in self.collapsed
+            for w in words
+        )
+
+    def typo(self, words: list[str]) -> bool:
+        def close(word: str) -> bool:
+            folded = _fold(word)
+            if any(folded in a for a in self.folded_words):
+                return True
+            return len(folded) >= _TYPO_MIN_LENGTH and any(
+                difflib.SequenceMatcher(None, folded, a).ratio() >= _TYPO_RATIO
+                for a in self.folded_words
+            )
+
+        return all(close(w) for w in words)
+
+
+def _synonym_queries(words: list[str], synonyms: Mapping[str, list[str]]):
+    """Queries with one known term replaced by each of its expansions."""
+    for index, word in enumerate(words):
+        for expansion in synonyms.get(word, ()):
+            yield word, words[:index] + _normal(expansion).split() + words[index + 1 :]
+
+
 def search(
     text: str,
     phrogs: Mapping[str, PhrogAnnotation],
     *,
     category: str | None = None,
-) -> list[PhrogAnnotation]:
-    """PHROGs whose annotation contains every word of ``text`` (any order)."""
+    aliases: AliasTable | None = None,
+) -> list[SearchHit]:
+    """PHROGs whose annotation matches every word of ``text`` (any order).
+
+    Each PHROG is matched once, by the most literal rule that works:
+    exact (each word appears in the annotation), alias (``text`` is an alias
+    name such as ``mcp``), synonym (``capsid`` -> head, ``terl`` ->
+    terminase large), variant (British spelling, plurals, words written
+    together or apart) and typo (a close spelling of a word of five letters
+    or more). Results are ordered by that rule, then by annotation.
+    """
     words = _normal(text).split()
-    hits = [
-        p
-        for p in phrogs.values()
-        if p.annotation
-        and all(word in _normal(p.annotation) for word in words)
-        and (category is None or p.category == category)
-    ]
-    return sorted(
-        hits, key=lambda p: (p.annotation.lower(), int(p.phrog_id.split("_")[1]))
-    )
+    if not words:
+        return []
+    synonyms = aliases.synonyms if aliases else {}
+    alias = aliases.aliases.get(_normal(text).replace(" ", "-")) if aliases else None
+    alias_annotations = {a.lower() for a in alias.annotations} if alias else set()
+    alternatives = list(_synonym_queries(words, synonyms))
+
+    hits: list[SearchHit] = []
+    for phrog in phrogs.values():
+        if not phrog.annotation or (
+            category is not None and phrog.category != category
+        ):
+            continue
+        annotation = _Annotation(phrog.annotation)
+        if annotation.exact(words):
+            how = "exact"
+        elif phrog.annotation.lower() in alias_annotations:
+            how = f"alias:{alias.name}"
+        elif term := next(
+            (
+                t
+                for t, alt in alternatives
+                if annotation.exact(alt) or annotation.variant(alt)
+            ),
+            None,
+        ):
+            how = f"synonym:{term}"
+        elif annotation.variant(words):
+            how = "variant"
+        elif annotation.typo(words):
+            how = "typo"
+        else:
+            continue
+        hits.append(SearchHit(phrog, how))
+
+    def key(hit: SearchHit):
+        return (
+            _TIERS.index(hit.how.split(":")[0]),
+            hit.phrog.annotation.lower(),
+            int(hit.phrog.phrog_id.split("_")[1]),
+        )
+
+    return sorted(hits, key=key)
 
 
 def check_aliases(

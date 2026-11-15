@@ -41,6 +41,9 @@ behavior in the unreleased branch and may change before a release.
   `head`, `dna`, `moron`/`amg`) and `annot:<annotation>`.
   `--ids-only` prints identifiers for the shell, for example
   `phu screen -i contigs.fna $(phu phrogs resolve alias:mcp --ids-only)`.
+  `search` forgives British spelling, plurals, joined words, typos and
+  common abbreviations (`capsid`, `TerL`, `MTase`, `RNR`, `ssb`), and says how
+  each row matched.
 
 ### Avger
 

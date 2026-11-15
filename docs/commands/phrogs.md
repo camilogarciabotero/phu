@@ -14,12 +14,14 @@ phu phrogs resolve alias:mcp category:lysis --ids-only
 phu screen -i contigs.fna $(phu phrogs resolve alias:mcp alias:terl --ids-only)
 ```
 
-Only PHROGs with a model in the phu-db bundle are listed (38,880 of the
-109,404 PHROGs; the others are singletons without an alignment), so every
-identifier printed can be searched. Of those, about 5,100 have a known
-function; the rest are in the category "unknown function". The first use
-indexes the PHROG models, which takes a few minutes; `phu screen phrog_<n>`
-uses the same index.
+Only the 38,880 PHROG families with a model (`phrog_1` to `phrog_38880`) are
+listed, so every identifier printed can be searched. About 5,100 of them have
+a known function; the rest are in the category "unknown function". The PHROG
+annotation table also numbers entries above 38,880, almost all unannotated
+and without an alignment, apparently proteins that formed no family; they
+cannot be searched and `phu phrogs` leaves them out. The first use indexes
+the PHROG models, which takes a few minutes; `phu screen phrog_<n>` uses the
+same index.
 
 ## Queries for `resolve`
 

@@ -1,7 +1,7 @@
 # Citation
 
 `CITATION.cff` is the source of truth for PHU citation metadata. This
-This documentation describes the `0.9.1` release.
+This documentation describes the `0.10.0` release.
 
 For a published study, cite the immutable PHU release used for the analysis
 and record its version in the run manifest. Use the Zenodo concept DOI for

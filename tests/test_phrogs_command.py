@@ -152,10 +152,52 @@ def test_resolve_errors(table, query, message):
         lookup.resolve([query], _phrogs(), table)
 
 
+def _found(text, table=None, **kw):
+    return [
+        (h.phrog.phrog_id, h.how)
+        for h in lookup.search(text, _phrogs(), aliases=table, **kw)
+    ]
+
+
 def test_search_matches_all_words_any_order():
-    hits = lookup.search("fiber tail", _phrogs())
-    assert [p.phrog_id for p in hits] == ["phrog_7", "phrog_6"]
-    assert lookup.search("fiber", _phrogs(), category="lysis") == []
+    assert _found("fiber tail") == [("phrog_7", "exact"), ("phrog_6", "exact")]
+    assert _found("fiber", category="lysis") == []
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("tail fibre", [("phrog_7", "variant"), ("phrog_6", "variant")]),  # spelling
+        ("holins", [("phrog_8", "variant")]),  # plural
+        ("tailfiber protein", [("phrog_6", "variant")]),  # written together
+        ("intergrase", [("phrog_1", "typo")]),
+        ("polymerse", [("phrog_10", "typo")]),
+        ("xyzzy", []),
+    ],
+)
+def test_search_forgives_spelling(text, expected):
+    assert _found(text) == expected
+
+
+def test_search_alias_and_synonyms(table):
+    assert _found("mcp", table) == [("phrog_4", "alias:mcp"), ("phrog_3", "alias:mcp")]
+    assert _found("TerL", table) == [("phrog_2", "alias:terl")]
+    # "capsid" also means "head protein"; the literal match ranks first.
+    assert _found("capsid", table) == [
+        ("phrog_4", "exact"),
+        ("phrog_3", "synonym:capsid"),
+        ("phrog_5", "synonym:capsid"),
+    ]
+
+
+def test_search_typos_need_five_letters():
+    # "holn" is too short to be read as a typo of "holin".
+    assert _found("holn") == []
+
+
+def test_synonyms_are_search_only(table):
+    with pytest.raises(lookup.QueryError):
+        lookup.resolve(["annot:capsid"], _phrogs(), table)
 
 
 # ---------- CLI ----------
@@ -205,8 +247,9 @@ def test_cli_categories_and_search(cli):
     assert "head and packaging\t4" in result.stdout
     result = runner.invoke(app, ["phrogs", "search", "head", "-c", "head"])
     assert result.exit_code == 0
-    assert "phrog_3\tmajor head protein" in result.stdout
+    assert "phrog_3\tmajor head protein\thead and packaging\texact" in result.stdout
     assert "phrog_5\tminor head protein" in result.stdout
+    assert result.stdout.splitlines()[0].endswith("\tmatch")
 
 
 def test_cli_aliases_check_fails_on_missing(cli):

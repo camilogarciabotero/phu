@@ -39,6 +39,25 @@ selected it. A query that selects nothing stops with an explanation.
 also writes the table (`phrog_id`, `annotation`, `category`, `query`), a record
 of what each name meant in that run.
 
+## Searching annotations
+
+`phu phrogs search` is for exploring. It lists PHROGs whose annotation matches
+every word given, in any order, and is forgiving; the `match` column says how
+each row matched, and rows are ordered from the most literal match:
+
+| `match` | Example query | Finds |
+|---|---|---|
+| `exact` | `large terminase`, `baseplat` | each word appears in the annotation |
+| `alias:<name>` | `mcp`, `TerL` | the annotations of that alias |
+| `synonym:<term>` | `capsid`, `MTase`, `RNR`, `ssb`, `psbA` | PHROG's wording for the term: head protein, methyltransferase, ribonucleotide reductase, single strand DNA binding, photosystem II D1 |
+| `variant` | `tail fibre`, `holins`, `tapemeasure`, `antirepressor` | British spelling, plurals, words written together or apart |
+| `typo` | `endolysine`, `intergrase` | a close spelling of a word of five letters or more |
+
+Synonyms are listed in `phu/data/phrog_aliases.json` and apply to `search`
+only. `resolve` stays literal, apart from category names, so that a run
+records exactly what was selected: explore with `search`, then select with
+`resolve`.
+
 ## Categories
 
 PHROGs v4 has nine functional categories plus "unknown function": tail; head

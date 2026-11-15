@@ -75,7 +75,12 @@ def search(
         50, "--limit", "-n", min=0, help="Rows to show; 0 = all."
     ),
 ) -> None:
-    """Explore annotations: PHROGs whose annotation contains every word of TEXT."""
+    """Explore annotations: PHROGs whose annotation matches every word of TEXT.
+
+    Exact matches come first, then aliases (mcp), synonyms (capsid, TerL),
+    spelling variants (fibre, holins, tapemeasure) and close typos; the
+    `match` column says which rule matched.
+    """
     phrogs = _phrogs()
     table = lookup.load_aliases()
     chosen = None
@@ -90,10 +95,11 @@ def search(
                 + ". See `phu phrogs categories`."
             )
         chosen = found[0]
-    hits = lookup.search(text, phrogs, category=chosen)
-    typer.echo("\t".join(HEADER))
-    for phrog in hits[: limit or None]:
-        typer.echo(f"{phrog.phrog_id}\t{phrog.annotation}\t{phrog.category}")
+    hits = lookup.search(text, phrogs, category=chosen, aliases=table)
+    typer.echo("\t".join((*HEADER, "match")))
+    for hit in hits[: limit or None]:
+        phrog = hit.phrog
+        typer.echo(f"{phrog.phrog_id}\t{phrog.annotation}\t{phrog.category}\t{hit.how}")
     shown = min(len(hits), limit) if limit else len(hits)
     typer.echo(f"{len(hits)} PHROG(s) match; {shown} shown.", err=True)
 

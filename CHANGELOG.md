@@ -59,6 +59,14 @@ behavior in the unreleased branch and may change before a release.
 
 ### Internal
 
+- `phu avger` and `phu screen` check the memory available, honouring a batch
+  job's own limit, before loading proteins. `avger` searches all proteins in
+  one batch when they fit, so each database's models are read once instead of
+  once per 10,000 proteins (results are unchanged: E-values do not depend on
+  the batch). `screen` reads the proteins from disk during the search when
+  loading them would take more than a tenth of the memory, instead of risking
+  running out of it.
+
 - `phu jack` reads the predicted proteins once and reuses them for every
   seed, instead of re-reading the protein file per seed.
 
@@ -76,6 +84,7 @@ behavior in the unreleased branch and may change before a release.
   lines keep the input's wrapping instead of being rewrapped at 60
   characters as seqkit did. `vclust`, for `phu cluster`, is now the only
   external program.
+- `psutil` is now a direct dependency (it already came with pyhmmer).
 - PHU now needs Python 3.11 or later. Python 3.10 reached end of life in
   October 2026 and is no longer supported or tested; create a new environment
   with a newer Python to upgrade.

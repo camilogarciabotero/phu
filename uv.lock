@@ -318,6 +318,7 @@ source = { editable = "." }
 dependencies = [
     { name = "click" },
     { name = "pandas" },
+    { name = "psutil" },
     { name = "pyfamsa" },
     { name = "pyhmmer" },
     { name = "pyrodigal" },
@@ -340,6 +341,7 @@ lint = [
 requires-dist = [
     { name = "click", specifier = ">=8.1.7,<8.2" },
     { name = "pandas", specifier = ">=2.3.2" },
+    { name = "psutil", specifier = ">=5.9" },
     { name = "pyfamsa", specifier = ">=0.5.3,<0.6" },
     { name = "pyhmmer", specifier = ">=0.11.1" },
     { name = "pyrodigal", specifier = ">=3.6.3.post1" },

@@ -69,6 +69,13 @@ behavior in the unreleased branch and may change before a release.
 
 ### Requirements
 
+- seqkit is no longer needed. `phu screen`, `phu jack` and `phu cluster` now
+  extract matched contigs, target proteins and cluster representatives
+  themselves, reading the input once (target proteins were read once per
+  model before). The same records are written in the same order; sequence
+  lines keep the input's wrapping instead of being rewrapped at 60
+  characters as seqkit did. `vclust`, for `phu cluster`, is now the only
+  external program.
 - PHU now needs Python 3.11 or later. Python 3.10 reached end of life in
   October 2026 and is no longer supported or tested; create a new environment
   with a newer Python to upgrade.

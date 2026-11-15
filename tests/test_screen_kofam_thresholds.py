@@ -187,25 +187,6 @@ def test_extract_target_proteins_adds_ko_definition_to_headers(
     proteins_fa = tmp_path / "proteins.faa"
     proteins_fa.write_text(">contigA|gene1\nMPEPTIDE\n>contigB|gene1\nMSEQUENCE\n")
 
-    class _FakeCompleted:
-        def __init__(self, returncode: int):
-            self.returncode = returncode
-
-    def _fake_seqkit_run(cmd, stdout, text=True, check=False):
-        ids_file = Path(cmd[3])
-        wanted = set(ids_file.read_text().split())
-
-        records = proteins_fa.read_text().strip().split("\n>")
-        for i, raw in enumerate(records):
-            record = raw if i == 0 else ">" + raw
-            lines = record.splitlines()
-            header = lines[0].lstrip(">")
-            if header in wanted:
-                stdout.write(record + "\n")
-
-        return _FakeCompleted(returncode=0)
-
-    monkeypatch.setattr(screen.subprocess, "run", _fake_seqkit_run)
 
     hit = screen.Hit(
         contig="contigA",
@@ -222,7 +203,6 @@ def test_extract_target_proteins_adds_ko_definition_to_headers(
         proteins_fa=proteins_fa,
         outdir=tmp_path,
         hmm_mode="pure",
-        seqkit_bin="seqkit",
         kofam_metadata_by_model={
             "K00001": KOFamMetadata(
                 ko_id="K00001",
@@ -431,14 +411,6 @@ def test_extract_target_proteins_adds_phrog_annotation_to_headers(
     proteins_fa = tmp_path / "proteins.faa"
     proteins_fa.write_text(">contigA|gene1\nMPEPTIDE\n")
 
-    class _FakeCompleted:
-        returncode = 0
-
-    def _fake_seqkit_run(cmd, stdout, text=True, check=False):
-        stdout.write(proteins_fa.read_text())
-        return _FakeCompleted()
-
-    monkeypatch.setattr(screen.subprocess, "run", _fake_seqkit_run)
     monkeypatch.setattr(
         screen,
         "get_all_phrog_annotations",
@@ -460,7 +432,6 @@ def test_extract_target_proteins_adds_phrog_annotation_to_headers(
         proteins_fa=proteins_fa,
         outdir=tmp_path,
         hmm_mode="pure",
-        seqkit_bin="seqkit",
     )
 
     content = (tmp_path / "target-proteins" / "phrog_7.faa").read_text()

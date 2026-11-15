@@ -168,9 +168,6 @@ This program uses several key tools and libraries, make sure to acknowledge them
 - [vclust](https://github.com/refresh-bio/vclust): A high-performance clustering tool for viral sequences:
 > Zielezinski A, Gudyś A, Barylski J, Siminski K, Rozwalak P, Dutilh BE, Deorowicz S. Ultrafast and accurate sequence alignment and clustering of viral genomes. Nat Methods. https://doi.org/10.1038/s41592-025-02701-7
 
-- [seqkit](https://bioinf.shenwei.me/seqkit/): A toolkit for FASTA/Q file manipulation.
-> Wei Shen*, Botond Sipos, and Liuyang Zhao. 2024. SeqKit2: A Swiss Army Knife for Sequence and Alignment Processing. iMeta e191. doi:10.1002/imt2.191.
-
 - [FAMSA](https://github.com/refresh-bio/FAMSA) and [pyfamsa](https://github.com/althonos/pyfamsa): A multiple sequence aligner for large protein families, and its Python bindings.
 > Deorowicz, S., Debudaj-Grabysz, A., & Gudyś, A. (2016). FAMSA: Fast and accurate multiple sequence alignment of huge protein families. Scientific Reports, 6, 33964. https://doi.org/10.1038/srep33964
 

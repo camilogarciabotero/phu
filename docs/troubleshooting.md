@@ -2,12 +2,11 @@
 
 ## Missing external executable
 
-`cluster` requires the external `vclust` executable. Some workflows may also
-use `seqkit`. Confirm that required programs are available on `PATH`:
+`cluster` requires the external `vclust` executable; it is the only external
+program PHU runs. Confirm that it is available on `PATH`:
 
 ```bash
 command -v vclust
-command -v seqkit
 ```
 
 Install the missing program using the environment or package manager appropriate
@@ -95,16 +94,16 @@ A step ends with `done in`, `failed after`, `skipped after`, or
 running timer.
 
 `--verbose` adds one line per tool invocation, always prefixed with `[cmd]`.
-External programs (`vclust`, `seqkit`) are shown as the exact,
+External programs (`vclust`) are shown as the exact,
 shell-quoted command that was executed, including any output redirection.
 In-process steps (pyrodigal-gv gene prediction, pyhmmer `hmmsearch` and
-`jackhmmer`, pyfamsa alignment, pytrimal trimming) are shown as the function name followed by the `key=value`
+`jackhmmer`, pyfamsa alignment, pytrimal trimming, sequence extraction) are shown as the function name followed by the `key=value`
 parameters that determine the result:
 
 ```text
 [cmd] pyrodigal_gv.ViralGeneFinder contigs=4 mode=meta meta=True min_gene=90 max_overlap=89 translation_table=auto training_table=none min_protein_len_aa=30 threads=2
 [cmd] pyhmmer.hmmsearch hmm_files=1 models=1 sequences=19 cpus=2 parallel=queries bit_cutoffs=gathering hmm_mode=pure ...
-[cmd] /usr/bin/seqkit grep -f out/matched-contigs.fna.ids.txt contigs.fna > out/matched-contigs.fna
+[cmd] phu.extract_records input=contigs.fna ids=3 outputs=1
 ```
 
 Extract them with `grep '^\[cmd\]' run.log`. Gene prediction prints no

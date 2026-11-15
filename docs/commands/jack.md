@@ -57,9 +57,20 @@ see what a query selects.
   select dozens to thousands of PHROGs (`alias:terl` 54, `category:tail`
   1,238). jack stops before predicting proteins when the selection is larger
   than `--max-phrog-seeds` (default 50). Narrow the query or raise the cap.
-- **Mixing.** FASTA and PHROG seeds can be combined; `--combine-mode all` and
-  `threshold` count both kinds. A FASTA record named like a selected PHROG
-  (`phrog_2`) is refused, so that every seed ID is unique.
+- **Seed groups.** `--combine-mode` counts seed groups, not single seeds.
+  Each FASTA sequence is a group, and each `--phrog` query is one group
+  however many PHROGs it selects: the 54 PHROGs of `alias:terl` are
+  alternatives for one marker. So `--combine-mode all --phrog alias:terl
+  --phrog alias:portal` keeps contigs with a terminase *and* a portal hit,
+  and `--min-seed-hits 2` needs two different queries. A PHROG selected by
+  two queries belongs to the first. Within a group, a protein hit by several
+  PHROGs is kept once, by its best hit.
+- **Mixing.** FASTA and PHROG seeds can be combined. A FASTA record named like
+  a selected PHROG (`phrog_2`) is refused, so that every seed ID is unique.
+- **What a query meant.** With `--verbose`, jack logs each query with the
+  PHROG identifiers it selected, then each PHROG seed with its annotation,
+  category and group (lines starting `[cmd] phu.phrogs`). The same is kept in
+  `.phu/query.json`.
 
 ## Input and output
 
@@ -75,7 +86,7 @@ phu-jack/
 └── jackhmmer-iterations.tsv
 ```
 
-`jackhmmer-hits.tsv` contains final hit records and filtering metadata. `jackhmmer-iterations.tsv` records the per-iteration search summary. Both have a `seed_source` column, `fasta` or `phrog`. `.phu/query.json` records the seeds: the FASTA, the `--phrog` queries, and each PHROG seed with its annotation, category and the query that selected it, plus the database bundle's provenance. With `--save-hmm`, the final model is written as `final-iteration.hmm` for a single seed or under `final-iteration-hmms/` for multiple seeds.
+`jackhmmer-hits.tsv` contains final hit records and filtering metadata. `jackhmmer-iterations.tsv` records the per-iteration search summary. Both have a `seed_source` column (`fasta` or `phrog`) and a `seed_group` column (the FASTA seed ID, or the `--phrog` query that selected the PHROG). `.phu/query.json` records the seeds: the FASTA, the `--phrog` queries, and each PHROG seed with its annotation, category and the query that selected it, plus the database bundle's provenance. With `--save-hmm`, the final model is written as `final-iteration.hmm` for a single seed or under `final-iteration-hmms/` for multiple seeds.
 
 ## Command options
 

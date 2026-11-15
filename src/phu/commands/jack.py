@@ -124,6 +124,33 @@ def resolve_phrog_seeds(queries: tuple[str, ...], cap: int) -> PhrogSeeds:
     return selected, notes
 
 
+def _log_phrog_resolution(queries: tuple[str, ...], selected: list[Resolved]) -> None:
+    """With --verbose, show what every --phrog query resolved to.
+
+    One line per query (its PHROG count and identifiers), then one line per
+    PHROG seed with its annotation, category and seed group, so a run log
+    shows exactly which families "alias:terl" or "category:tail" meant.
+    """
+    by_query: dict[str, list[Resolved]] = {query: [] for query in queries}
+    for item in selected:
+        by_query.setdefault(item.query, []).append(item)
+    for query, items in by_query.items():
+        log_call(
+            "phu.phrogs.resolve",
+            query=repr(query),
+            phrogs=len(items),
+            ids=",".join(item.phrog.phrog_id for item in items) or "-",
+        )
+    for item in selected:
+        log_call(
+            "phu.phrogs.seed",
+            id=item.phrog.phrog_id,
+            group=repr(item.query),
+            annotation=repr(item.phrog.annotation or "unknown"),
+            category=repr(item.phrog.category),
+        )
+
+
 def _load_phrog_hmms(phrog_ids: list[str]) -> list[tuple[str, object]]:
     """The PHROG models for ``phrog_ids``, in that order."""
     with tempfile.TemporaryDirectory(prefix="phu-jack-phrog-") as tmp:
@@ -322,14 +349,45 @@ def _iterate_from_hmm(
     return rounds
 
 
+def best_hit_per_protein_per_group(
+    hits: list[Hit], groups: dict[str, str]
+) -> list[Hit]:
+    """Keep each group's best hit on each protein.
+
+    Seeds from one --phrog query (say the 54 PHROGs of alias:terl) are
+    alternatives for one marker, so a protein they all hit counts once, by
+    its best hit. Order follows the first hit kept for each protein.
+    """
+    best: dict[tuple[str, str], Hit] = {}
+    for hit in hits:
+        key = (groups.get(hit.model, hit.model), hit.prot_id)
+        current = best.get(key)
+        if current is None or (hit.bitscore, -hit.evalue) > (
+            current.bitscore,
+            -current.evalue,
+        ):
+            best[key] = hit
+    return list(best.values())
+
+
 def _choose_top_hits_per_contig(
     hits: list[Hit],
     top_per_contig: int,
     combine_mode: str,
     min_seed_hits: int,
     total_seeds: int,
+    groups: Optional[dict[str, str]] = None,
 ) -> tuple[list[Hit], list[str]]:
-    """Combine seed hits and keep top hits per contig based on combine mode."""
+    """Combine seed hits and keep top hits per contig based on combine mode.
+
+    Counts are of seed groups: one per FASTA seed and one per --phrog query,
+    however many PHROGs it selected. ``total_seeds`` is the number of groups.
+    """
+    groups = groups or {}
+
+    def group(hit: Hit) -> str:
+        return groups.get(hit.model, hit.model)
+
     per_contig: dict[str, list[Hit]] = defaultdict(list)
     for hit in hits:
         per_contig[hit.contig].append(hit)
@@ -338,7 +396,7 @@ def _choose_top_hits_per_contig(
     kept_contigs: list[str] = []
 
     for contig, contig_hits in per_contig.items():
-        seed_ids = set(hit.model for hit in contig_hits)
+        seed_ids = {group(hit) for hit in contig_hits}
 
         if combine_mode == "any":
             contig_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
@@ -351,7 +409,7 @@ def _choose_top_hits_per_contig(
                 continue
             hits_per_seed: dict[str, list[Hit]] = defaultdict(list)
             for hit in contig_hits:
-                hits_per_seed[hit.model].append(hit)
+                hits_per_seed[group(hit)].append(hit)
             for seed_hits in hits_per_seed.values():
                 seed_hits.sort(key=lambda x: (x.bitscore, -x.evalue), reverse=True)
                 kept_hits.extend(seed_hits[:top_per_contig])
@@ -368,29 +426,38 @@ def _choose_top_hits_per_contig(
 
 
 def _write_iteration_summary(path: Path, rows: list[dict[str, object]]) -> None:
-    path.write_text("seed_id\tseed_source\titeration\tn_hits\tn_included\tconverged\n")
+    path.write_text(
+        "seed_id\tseed_source\tseed_group\titeration\tn_hits\tn_included\tconverged\n"
+    )
     if not rows:
         return
     with path.open("a") as out:
         for row in rows:
             out.write(
-                f"{row['seed_id']}\t{row.get('seed_source', 'fasta')}\t{row['iteration']}"
+                f"{row['seed_id']}\t{row.get('seed_source', 'fasta')}"
+                f"\t{row.get('seed_group', row['seed_id'])}\t{row['iteration']}"
                 f"\t{row['n_hits']}\t{row['n_included']}\t{row['converged']}\n"
             )
 
 
 def _write_hits_table(
-    path: Path, hits: list[Hit], sources: Optional[dict[str, str]] = None
+    path: Path,
+    hits: list[Hit],
+    sources: Optional[dict[str, str]] = None,
+    groups: Optional[dict[str, str]] = None,
 ) -> None:
-    path.write_text("contig\tprotein\tseed_id\tseed_source\tbitscore\tevalue\n")
+    path.write_text(
+        "contig\tprotein\tseed_id\tseed_source\tseed_group\tbitscore\tevalue\n"
+    )
     if not hits:
         return
     sources = sources or {}
+    groups = groups or {}
     with path.open("a") as out:
         for hit in hits:
             out.write(
                 f"{hit.contig}\t{hit.prot_id}\t{hit.model}\t{sources.get(hit.model, 'fasta')}"
-                f"\t{hit.bitscore:.4f}\t{hit.evalue:.6g}\n"
+                f"\t{groups.get(hit.model, hit.model)}\t{hit.bitscore:.4f}\t{hit.evalue:.6g}\n"
             )
 
 
@@ -445,6 +512,7 @@ def _jack(cfg: JackConfig) -> None:
         )
         for note in phrog_notes:
             print(f"Note: {note}")
+        _log_phrog_resolution(cfg.phrog_queries, phrog_seeds)
 
     cfg.outdir.mkdir(parents=True, exist_ok=True)
     _write_query_record(
@@ -503,10 +571,15 @@ def _jack(cfg: JackConfig) -> None:
     alphabet = pyhmmer.easel.Alphabet.amino()
     seeds: list[tuple[str, object]] = []
     sources: dict[str, str] = {}
+    # Seed groups are what --combine-mode counts: each FASTA seed is its own
+    # group, and each --phrog query is one group however many PHROGs it
+    # selected (a PHROG selected by two queries belongs to the first).
+    groups: dict[str, str] = {}
     if cfg.seed_marker is not None:
         for seed_id, query, _ in _read_seed_queries(cfg.seed_marker):
             seeds.append((seed_id, query))
             sources[seed_id] = "fasta"
+            groups[seed_id] = seed_id
     if phrog_seeds:
         clash = [r.phrog.phrog_id for r in phrog_seeds if r.phrog.phrog_id in sources]
         if clash:
@@ -515,19 +588,23 @@ def _jack(cfg: JackConfig) -> None:
                 "Rename them so every seed ID is unique."
             )
         print(f"Loading {len(phrog_seeds)} PHROG seed model(s)…")
+        selected_by = {r.phrog.phrog_id: r.query for r in phrog_seeds}
         for phrog_id, hmm in _load_phrog_hmms([r.phrog.phrog_id for r in phrog_seeds]):
             seeds.append((phrog_id, hmm))
             sources[phrog_id] = "phrog"
+            groups[phrog_id] = selected_by[phrog_id]
     n_seeds = len(seeds)
-    if cfg.combine_mode == "threshold" and cfg.min_seed_hits > n_seeds:
+    n_groups = len(set(groups.values()))
+    if cfg.combine_mode == "threshold" and cfg.min_seed_hits > n_groups:
         raise ValueError(
-            f"min_seed_hits ({cfg.min_seed_hits}) cannot exceed total seeds ({n_seeds})"
+            f"min_seed_hits ({cfg.min_seed_hits}) cannot exceed the number of seed "
+            f"groups ({n_groups}: one per FASTA seed and one per --phrog query)"
         )
 
     n_phrog = sum(1 for source in sources.values() if source == "phrog")
     print(
         f"Running iterative searches for {n_seeds} seed(s)"
-        + (f" ({n_phrog} PHROG)" if n_phrog else "")
+        + (f" ({n_phrog} PHROG) in {n_groups} group(s)" if n_phrog else "")
         + f", up to {cfg.iterations} iteration(s) each (combine_mode={cfg.combine_mode})…"
     )
 
@@ -560,19 +637,21 @@ def _jack(cfg: JackConfig) -> None:
         for row in seed_iter_rows:
             row["seed_id"] = seed_id
             row["seed_source"] = sources[seed_id]
+            row["seed_group"] = groups[seed_id]
         iter_rows.extend(seed_iter_rows)
 
     kept_hits, contig_ids = _choose_top_hits_per_contig(
-        all_hits,
+        best_hit_per_protein_per_group(all_hits, groups),
         top_per_contig=cfg.top_per_contig,
         combine_mode=cfg.combine_mode,
         min_seed_hits=cfg.min_seed_hits,
-        total_seeds=n_seeds,
+        total_seeds=n_groups,
+        groups=groups,
     )
 
     kept_ids.write_text("\n".join(contig_ids) + ("\n" if contig_ids else ""))
     _write_iteration_summary(iter_tsv, iter_rows)
-    _write_hits_table(hits_tsv, kept_hits, sources)
+    _write_hits_table(hits_tsv, kept_hits, sources, groups)
 
     print(f"Extracting {len(contig_ids)} contig(s)…")
     _extract_contigs(cfg.input_contigs, contig_ids, out_contigs)

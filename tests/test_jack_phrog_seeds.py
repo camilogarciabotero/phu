@@ -37,8 +37,17 @@ PHROGS = {
     ),
     "phrog_2": PhrogAnnotation("phrog_2", "portal protein", "head and packaging"),
     "phrog_3": PhrogAnnotation("phrog_3", "holin", "lysis"),
+    # A second terminase family: alias:terl selects phrog_1 and phrog_4.
+    "phrog_4": PhrogAnnotation(
+        "phrog_4", "terminase large subunit", "head and packaging"
+    ),
 }
-MODELS = {"phrog_1": SEQ_A, "phrog_2": SEQ_B, "phrog_3": "MKKLLW" * 6}
+MODELS = {
+    "phrog_1": SEQ_A,
+    "phrog_2": SEQ_B,
+    "phrog_3": "MKKLLW" * 6,
+    "phrog_4": SEQ_A[2:],
+}
 
 
 @pytest.fixture
@@ -67,11 +76,11 @@ def test_a_seed_is_required(tmp_path):
 
 def test_cap_stops_large_selections(fake_phrogs):
     with pytest.raises(
-        ValueError, match="selects 3 PHROGs, more than --max-phrog-seeds 2"
+        ValueError, match="selects 4 PHROGs, more than --max-phrog-seeds 3"
     ):
-        jack.resolve_phrog_seeds(("category:head", "alias:holin"), cap=2)
-    selected, _ = jack.resolve_phrog_seeds(("category:head",), cap=2)
-    assert [r.phrog.phrog_id for r in selected] == ["phrog_1", "phrog_2"]
+        jack.resolve_phrog_seeds(("category:head", "alias:holin"), cap=3)
+    selected, _ = jack.resolve_phrog_seeds(("category:head",), cap=3)
+    assert [r.phrog.phrog_id for r in selected] == ["phrog_1", "phrog_2", "phrog_4"]
 
 
 # ---------- the search from a profile ----------
@@ -148,6 +157,53 @@ def test_seed_that_finds_nothing_ends_cleanly():
     ]
 
 
+# ---------- seed groups ----------
+
+
+def _hit(contig, protein, seed, score):
+    return jack.Hit(
+        contig=contig, prot_id=protein, model=seed, bitscore=score, evalue=1e-10
+    )
+
+
+def test_best_hit_per_protein_per_group():
+    groups = {"phrog_1": "alias:terl", "phrog_4": "alias:terl", "seedA": "seedA"}
+    hits = [
+        _hit("c1", "c1|gene1", "phrog_1", 50.0),
+        _hit("c1", "c1|gene1", "phrog_4", 80.0),  # same group, same protein: best wins
+        _hit("c1", "c1|gene1", "seedA", 40.0),  # other group: kept
+        _hit("c1", "c1|gene2", "phrog_1", 30.0),  # other protein: kept
+    ]
+    kept = jack.best_hit_per_protein_per_group(hits, groups)
+    assert [(h.prot_id, h.model, h.bitscore) for h in kept] == [
+        ("c1|gene1", "phrog_4", 80.0),
+        ("c1|gene1", "seedA", 40.0),
+        ("c1|gene2", "phrog_1", 30.0),
+    ]
+
+
+def test_combine_counts_groups_not_seeds():
+    groups = {
+        "phrog_1": "alias:terl",
+        "phrog_4": "alias:terl",
+        "phrog_2": "alias:portal",
+    }
+    # c1 is hit by two terminase PHROGs only; c2 by a terminase and a portal.
+    hits = [
+        _hit("c1", "c1|gene1", "phrog_1", 50.0),
+        _hit("c1", "c1|gene2", "phrog_4", 60.0),
+        _hit("c2", "c2|gene1", "phrog_1", 50.0),
+        _hit("c2", "c2|gene2", "phrog_2", 70.0),
+    ]
+    _, all_contigs = jack._choose_top_hits_per_contig(hits, 1, "all", 1, 2, groups)
+    assert all_contigs == ["c2"]
+    _, two_groups = jack._choose_top_hits_per_contig(hits, 1, "threshold", 2, 2, groups)
+    assert two_groups == ["c2"]
+    # Without groups every seed counts, and c1 would pass threshold 2.
+    _, by_seed = jack._choose_top_hits_per_contig(hits, 1, "threshold", 2, 3)
+    assert by_seed == ["c1", "c2"]
+
+
 # ---------- whole runs ----------
 
 
@@ -161,13 +217,15 @@ def test_phrog_only_run(workspace, fake_phrogs):  # noqa: F811
         )
     )
     hits = _rows(out / "jackhmmer-hits.tsv")
-    # phrog_1 (built from SEQ_A) finds c1 and c2; phrog_2 (SEQ_B) finds c1.
+    # alias:terl (phrog_1, phrog_4, both from SEQ_A) finds c1 and c2;
+    # phrog_2 (SEQ_B) finds c1.
     # One hit per contig is kept (--top-per-contig 1).
     assert sorted(h["contig"] for h in hits) == ["c1", "c2"]
     assert {h["seed_source"] for h in hits} == {"phrog"}
-    assert next(h for h in hits if h["contig"] == "c2")["seed_id"] == "phrog_1"
+    assert next(h for h in hits if h["contig"] == "c2")["seed_group"] == "alias:terl"
     assert {h["seed_id"] for h in _rows(out / "jackhmmer-iterations.tsv")} == {
         "phrog_1",
+        "phrog_4",
         "phrog_2",
     }
     record = json.loads((out / ".phu" / "query.json").read_text())
@@ -176,6 +234,12 @@ def test_phrog_only_run(workspace, fake_phrogs):  # noqa: F811
     assert record["phrog_seeds"] == [
         {
             "id": "phrog_1",
+            "annotation": "terminase large subunit",
+            "category": "head and packaging",
+            "selected_by": "alias:terl",
+        },
+        {
+            "id": "phrog_4",
             "annotation": "terminase large subunit",
             "category": "head and packaging",
             "selected_by": "alias:terl",
@@ -210,6 +274,48 @@ def test_mixed_seeds_count_together(workspace, fake_phrogs):  # noqa: F811
         ("seedA", "fasta"),
         ("phrog_1", "phrog"),
     }
+
+
+def test_alias_is_one_group_in_a_run(workspace, fake_phrogs):  # noqa: F811
+    seeds = workspace / "seed.faa"
+    seeds.write_text(f">seedB\n{SEQ_B}\n")
+    out = workspace / "out"
+    jack._jack(
+        jack.JackConfig(
+            input_contigs=workspace / "contigs.fna",
+            seed_marker=seeds,
+            phrog_queries=("alias:terl",),
+            outdir=out,
+            combine_mode="all",
+        )
+    )
+    # Two groups (seedB, alias:terl): c1 carries both SEQ_A and SEQ_B, so it
+    # passes "all" although only one of the two terminase PHROGs is counted.
+    hits = _rows(out / "jackhmmer-hits.tsv")
+    assert {h["contig"] for h in hits} == {"c1"}
+    assert {h["seed_group"] for h in hits} == {"seedB", "alias:terl"}
+    # Each group adds c1|gene1 once, by its best hit.
+    terl = [h for h in hits if h["seed_group"] == "alias:terl"]
+    assert [h["protein"] for h in terl] == ["c1|gene1"]
+    iterations = _rows(out / "jackhmmer-iterations.tsv")
+    assert {(r["seed_id"], r["seed_group"]) for r in iterations} == {
+        ("seedB", "seedB"),
+        ("phrog_1", "alias:terl"),
+        ("phrog_4", "alias:terl"),
+    }
+
+
+def test_threshold_is_checked_against_groups(workspace, fake_phrogs):  # noqa: F811
+    with pytest.raises(ValueError, match="number of seed groups \\(1"):
+        jack._jack(
+            jack.JackConfig(
+                input_contigs=workspace / "contigs.fna",
+                phrog_queries=("alias:terl",),
+                outdir=workspace / "out",
+                combine_mode="threshold",
+                min_seed_hits=2,
+            )
+        )
 
 
 def test_seed_id_clash_is_refused(workspace, fake_phrogs):  # noqa: F811
@@ -284,3 +390,35 @@ def test_cli_passes_phrog_queries(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     assert seen["cfg"].phrog_queries == ("alias:terl", "phrog_9")
     assert seen["cfg"].seed_marker is None and seen["cfg"].max_phrog_seeds == 10
+
+
+def test_verbose_log_shows_what_queries_resolved_to(workspace, fake_phrogs, capsys):  # noqa: F811
+    from phu.core.log import set_verbosity
+
+    set_verbosity(verbose=True)
+    try:
+        jack._jack(
+            jack.JackConfig(
+                input_contigs=workspace / "contigs.fna",
+                phrog_queries=("alias:terl", "phrog_2", "phrog_1"),
+                outdir=workspace / "out",
+            )
+        )
+    finally:
+        set_verbosity()
+    lines = [
+        line
+        for line in capsys.readouterr().out.splitlines()
+        if line.startswith("[cmd] phu.phrogs")
+    ]
+    assert lines[:3] == [
+        "[cmd] phu.phrogs.resolve query='alias:terl' phrogs=2 ids=phrog_1,phrog_4",
+        "[cmd] phu.phrogs.resolve query='phrog_2' phrogs=1 ids=phrog_2",
+        # phrog_1 was already selected by alias:terl, so this query adds none.
+        "[cmd] phu.phrogs.resolve query='phrog_1' phrogs=0 ids=-",
+    ]
+    assert lines[3] == (
+        "[cmd] phu.phrogs.seed id=phrog_1 group='alias:terl' "
+        "annotation='terminase large subunit' category='head and packaging'"
+    )
+    assert len(lines) == 6

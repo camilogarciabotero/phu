@@ -1123,8 +1123,7 @@ phu<span class="w"> </span>--help
 │ --help         -h        Show this message and exit.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Workflow ───────────────────────────────────────────────────────────────────╮
-│ cluster            Sequence clustering wrapper around external 'vclust' with │
-│                    three modes.                                              │
+│ cluster            Sequence clustering wrapper around external 'vclust'.     │
 │ normalize-lineage  Normalize vContact lineage predictions without changing   │
 │                    column names.                                             │
 │ avger              Predict and curate putative auxiliary viral genes.        │
@@ -1154,11 +1153,12 @@ When multiple seeds are provided, you can combine evidence with <code>--combine-
 </code></pre></div></p>
 <p><a href="commands/jack/">Learn more about iterative jack screening →</a></p>
 <h3 id="cluster-sequence-clustering"><code>cluster</code> - Sequence Clustering<a class="headerlink" href="#cluster-sequence-clustering" title="Permanent link">&para;</a></h3>
-<p>Cluster viral sequences into operational taxonomic units with three specialized modes:</p>
+<p>Cluster viral sequences with four modes:</p>
 <ul>
 <li><strong><code>dereplication</code></strong> - Remove duplicate sequences</li>
 <li><strong><code>votu</code></strong> - Group sequences into viral Operational Taxonomic Units</li>
-<li><strong><code>species</code></strong> - Create species-level clusters</li>
+<li><strong><code>genus</code></strong> - Group complete genomes into genus-level clusters (tANI ≥ 70%)</li>
+<li><strong><code>species</code></strong> - Group complete genomes into species-level clusters (tANI ≥ 95%)</li>
 </ul>
 <p><strong>Example:</strong>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>cluster<span class="w"> </span>--mode<span class="w"> </span>votu<span class="w"> </span>--input-contigs<span class="w"> </span>viral-genomes.fasta

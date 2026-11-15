@@ -17,7 +17,7 @@ phu cluster --mode <MODE> --input-contigs <FASTA_FILE> [OPTIONS]
 - `dereplication` — remove redundant sequences, keeping one representative per
   group (greedy CD-HIT-like clustering on ANI and coverage).
 - `votu` — viral Operational Taxonomic Units with MIUViG thresholds (Leiden
-  clustering on ANI ≥ 95% over ≥ 85% of the shorter sequence).
+  clustering on ANI ≥ 95% and query coverage ≥ 85%).
 - `genus` — genus-level groups of complete genomes: complete linkage on total
   ANI (tANI) ≥ 70%.
 - `species` — species-level groups of complete genomes: complete linkage on
@@ -52,7 +52,7 @@ pair the clustering would use.
 
 - **ANI** is the identity of the aligned regions only. Two genomes that share
   one short, nearly identical region have a high ANI, so ANI modes also
-  require a query coverage (the aligned fraction of the shorter sequence).
+  require a query coverage (the aligned fraction of the query sequence).
 - **tANI** (total ANI) counts identical bases over the full length of both
   genomes, so unaligned sequence lowers it; it combines identity and coverage
   in one number, as VIRIDIC does. A genome sharing 80% of its length with
@@ -102,8 +102,8 @@ phu cluster --mode genus -i genomes.fna --vclust-params="--tani 0.75"
 # vOTUs at 97% ANI; the align filter follows the new threshold
 phu cluster --mode votu -i contigs.fna --vclust-params="--ani 0.97"
 
-# Larger datasets: fewer k-mers and a compact ANI table
-phu cluster --mode votu -i contigs.fna --vclust-params="--min-kmers 20 --outfmt lite"
+# Larger datasets: analyse 20% of k-mers and write a compact ANI table
+phu cluster --mode votu -i contigs.fna --vclust-params="--kmers-fraction 0.2 --outfmt lite"
 ```
 
 phu stops before running vclust when the parameters contradict each other:
@@ -114,13 +114,12 @@ phu stops before running vclust when the parameters contradict each other:
 | `--metric` without that metric's threshold, e.g. `--mode genus` with `--metric ani` | A tANI threshold would otherwise be read as an ANI one, or none used. |
 | A threshold below the mode's prefilter identity without `--min-ident`, e.g. `--mode votu` with `--ani 0.90` | The prefilter at 0.95 would drop pairs before alignment; add `--min-ident 0.9`. |
 
-## Known issue: vclust 1.3.1 with several threads
+## Known issue: single-character sequence names
 
-With vclust 1.3.1, `vclust align --filter` run on two or more threads can skip
-genome pairs that the prefilter passed. In a three-genome test it wrote one
-of three pairs with `--threads 2` and all three with `--threads 1`. Until this
-is fixed upstream, `-t 1` gives complete results for small inputs; compare a
-run with `-t 1` when the groups matter.
+With vclust 1.3.1, `vclust align --filter` on two or more threads skips
+genome pairs whose sequence names are a single character (`>A`, `>x`). Names
+of two or more characters are not affected in our tests, at any thread
+count. Rename such sequences, or run with `-t 1`.
 
 ## Command options
 

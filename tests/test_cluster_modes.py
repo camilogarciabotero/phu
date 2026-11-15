@@ -188,6 +188,21 @@ def test_cli_rejects_contradiction_before_running(tmp_path, monkeypatch):
     assert "--out-ani" in result.stderr
 
 
+def test_cli_passes_genus_to_the_run(tmp_path, monkeypatch):
+    import phu.cli as cli_module
+
+    contigs = tmp_path / "g.fna"
+    contigs.write_text(">a\nACGT\n")
+    seen = {}
+    monkeypatch.setattr(cli_module, "_cluster", lambda cfg: seen.setdefault("cfg", cfg))
+    result = runner.invoke(
+        app, ["cluster", "--mode", "genus", "-i", str(contigs), "-o", str(tmp_path / "o")]
+    )
+    assert result.exit_code == 0, result.output
+    assert seen["cfg"].mode is Mode.genus
+    assert seen["cfg"].plan().output.name == "genus-clusters.tsv"
+
+
 def test_cli_rejects_unknown_mode(tmp_path):
     contigs = tmp_path / "g.fna"
     contigs.write_text(">a\nACGT\n")
@@ -200,7 +215,7 @@ def test_cli_rejects_unknown_mode(tmp_path):
 
 
 def _write_genomes(path: Path) -> None:
-    """A; A2 = A with 1% substitutions; B = 80% of A + 20% new; C unrelated."""
+    """gA; gA2 = gA with 1% substitutions; gB = 80% of gA + 20% new; gC unrelated."""
     rng = random.Random(7)
 
     def random_dna(n: int) -> str:
@@ -213,11 +228,13 @@ def _write_genomes(path: Path) -> None:
         return "".join(bases)
 
     a = random_dna(30_000)
+    # Names of two or more characters: vclust 1.3.1 loses pairs between
+    # single-character names when aligning on several threads.
     genomes = {
-        "A": a,
-        "A2": mutate(a, 0.01),
-        "B": a[:24_000] + random_dna(6_000),
-        "C": random_dna(30_000),
+        "gA": a,
+        "gA2": mutate(a, 0.01),
+        "gB": a[:24_000] + random_dna(6_000),
+        "gC": random_dna(30_000),
     }
     path.write_text("".join(f">{name}\n{seq}\n" for name, seq in genomes.items()))
 
@@ -244,37 +261,36 @@ def _tani(ani_table: Path) -> dict[frozenset[str], float]:
     shutil.which("vclust") is None and shutil.which("vclust.py") is None,
     reason="vclust is not installed",
 )
-def test_real_vclust_separates_genus_from_species(tmp_path):
+@pytest.mark.parametrize("threads", [1, 0])  # 0 = all cores, the CLI default
+def test_real_vclust_separates_genus_from_species(tmp_path, threads):
     genomes = tmp_path / "g.fna"
     _write_genomes(genomes)
     plans = {}
     for mode in ("genus", "species"):
-        # One thread: vclust 1.3.1 'align --filter' loses pairs with more
-        # threads (see the cluster docs).
         plans[mode] = cluster._cluster(
             ClusterConfig(
                 mode=Mode(mode),
                 input_contigs=genomes,
                 output_folder=tmp_path / mode,
-                threads=1,
+                threads=threads,
             )
         )
 
     tani = _tani(plans["genus"].ani)
     # Expectations come from the computed tANI, not from the construction.
-    assert tani[frozenset(("A", "A2"))] >= 0.95
-    for other in ("A", "A2"):
-        assert 0.70 <= tani[frozenset(("B", other))] < 0.95
-    assert all(value < 0.70 for pair, value in tani.items() if "C" in pair)
+    assert tani[frozenset(("gA", "gA2"))] >= 0.95
+    for other in ("gA", "gA2"):
+        assert 0.70 <= tani[frozenset(("gB", other))] < 0.95
+    assert all(value < 0.70 for pair, value in tani.items() if "gC" in pair)
 
     assert _groups(plans["genus"].output) == {
-        frozenset({"A", "A2", "B"}),
-        frozenset({"C"}),
+        frozenset({"gA", "gA2", "gB"}),
+        frozenset({"gC"}),
     }
     assert _groups(plans["species"].output) == {
-        frozenset({"A", "A2"}),
-        frozenset({"B"}),
-        frozenset({"C"}),
+        frozenset({"gA", "gA2"}),
+        frozenset({"gB"}),
+        frozenset({"gC"}),
     }
     reps = plans["genus"].representatives_fna.read_text().count(">")
     assert reps == 2

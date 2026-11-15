@@ -50,7 +50,7 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 │ --help         -h        Show this message and exit.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Workflow ───────────────────────────────────────────────────────────────────╮
-│ cluster            Sequence clustering wrapper around external 'vclust'.    │
+│ cluster            Sequence clustering wrapper around external 'vclust'.     │
 │ normalize-lineage  Normalize vContact lineage predictions without changing   │
 │                    column names.                                             │
 │ avger              Predict and curate putative auxiliary viral genes.        │

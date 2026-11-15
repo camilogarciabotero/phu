@@ -6,7 +6,7 @@ import pytest
 
 import phu.commands.screen as screen
 import phu.core.memory as memory
-from tests.test_hmm_parallel_reproducibility import (
+from test_hmm_parallel_reproducibility import (
     _build_hmm,
     _hit_signature,
 )

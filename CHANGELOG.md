@@ -27,8 +27,8 @@ behavior in the unreleased branch and may change before a release.
   its own threshold, or a threshold below the prefilter identity without
   `--min-ident` (for example `--mode votu --vclust-params "--ani 0.90"`,
   which before silently kept the 0.95 prefilter).
-- Known issue, documented: vclust 1.3.1 `align --filter` can skip pairs when
-  run on two or more threads.
+- Known issue, documented: vclust 1.3.1 `align --filter` on two or more
+  threads skips pairs between sequences with single-character names.
 
 ### Avger
 

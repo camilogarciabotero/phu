@@ -1,0 +1,4 @@
+f_id	f_name	t_id	t_name	h_id	h_name	x_id	x_name	architecture	pfam_acc	n_domains	n_pdb	n_predicted
+1.1.1.10	fixture family B	1.1.1	acid protease	1.1	RIFT-related	1	cradle loop barrel	beta barrels		2	1	1
+1.1.1.2	acid protease	1.1.1	acid protease	1.1	RIFT-related	1	cradle loop barrel	beta barrels	PF00026	2	1	1
+2.1.1.1	fixture family C	2.1.1	OB-fold	2.1	OB-fold	2	OB-fold-like	beta barrels	PF00001,PF00002	1	0	1

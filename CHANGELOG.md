@@ -23,6 +23,13 @@ behavior in the unreleased branch and may change before a release.
   ways to query, hit thresholds, which contigs are kept, output, gene
   prediction and runtime. Option names, short flags and defaults are
   unchanged; the details moved to the online guide.
+- `phu screen` searches ECOD families: `ecod:2004.1.1.5` is one F-group, and
+  a shorter id stands for every F-group inside a T, H or X group
+  (`ecod:2004.1.1`, `ecod:2004.1`, `ecod:2004`). Models come from the new
+  `ecod` database of phu-db 0.4.0 (ECOD v295.2, 32,041 families). An ECOD hit
+  must align to at least half of the model (`--no-use-ecod-thresholds` drops
+  this); what each id expanded to and the families' names are recorded in
+  `.phu/query.json`, and protein files are labelled with family names.
 
 ### Cluster
 

@@ -391,3 +391,50 @@ def test_dbs_prepare_connections_option_sets_the_download_setting(installed, mon
     assert result.exit_code == 0, result.output
     assert os.environ["PHU_DB_CONNECTIONS"] == "2"
     assert CliRunner().invoke(app, ["dbs", "prepare", "--connections", "0"]).exit_code == 2
+
+
+def test_screen_resolves_ecod_groups_at_every_level(installed, tmp_path):
+    from phu.db import ecod as ecod_db
+
+    expanded, missing = ecod_db.expand_ecod_ids(
+        ["ECOD:1.1.1.2", "ecod:1", "ecod:2.1", "ecod:3.1.1", "ecod:9"]
+    )
+    # X-group 1 holds two F-groups; 3.1.1 only has a T-level-only domain.
+    assert expanded == {
+        "ecod:1.1.1.2": ["ecod:1.1.1.2"],
+        "ecod:1": ["ecod:1.1.1.2", "ecod:1.1.1.10"],
+        "ecod:2.1": ["ecod:2.1.1.1"],
+    }
+    assert missing == ["ecod:3.1.1", "ecod:9"]
+
+    paths, missing = ecod_db.extract_ecod_models(["ecod:1.1.1.10", "ecod:5.1.1.1"], tmp_path / "x")
+    assert [path.name for path in paths] == ["ecod_1.1.1.10.hmm"]
+    assert missing == ["ecod:5.1.1.1"]
+    assert _model_names(paths[0]) == ["ecod:1.1.1.10"]
+    assert (installed / "ecod" / "offsets.json").is_file()
+
+    hmms, _, query = screen._resolve_hmm_inputs(
+        [Path("ecod:1.1.1"), Path("phrog_2")], tmp_path / "out", return_query=True
+    )
+    assert [path.name for path in hmms] == [
+        "phrog_2.hmm",
+        "ecod_1.1.1.2.hmm",
+        "ecod_1.1.1.10.hmm",
+    ]
+    assert query.normalized_models == ("phrog_2", "ecod:1.1.1.2", "ecod:1.1.1.10")
+    assert query.databases == ("phrog", "ecod")
+    manifest = screen._query_manifest(query, "any")
+    assert manifest["ecod_expansions"] == {"ecod:1.1.1": ["ecod:1.1.1.2", "ecod:1.1.1.10"]}
+    assert manifest["ecod_families"]["ecod:1.1.1.2"] == {
+        "f_name": "acid protease",
+        "t_name": "acid protease",
+        "h_name": "RIFT-related",
+        "x_name": "cradle loop barrel",
+        "pfam_acc": "PF00026",
+    }
+    assert any(name.startswith("ecod/") for name in manifest["database_hashes"])
+
+    with pytest.raises(FileNotFoundError, match="ecod:3.1.1"):
+        screen._resolve_hmm_inputs([Path("ecod:3.1.1")], tmp_path / "out2")
+    pins, bundle_manifest, _ = db_bundle._pinned(None, None)
+    assert db_bundle.installed_problems(installed.parent.parent, pins, bundle_manifest, deep=True) == []

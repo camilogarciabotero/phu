@@ -285,11 +285,12 @@ class _Counter:
     """Contract section 5 record count, fed in chunks.
 
     Lines end at b"\n" only. A ``tsv`` line counts when its strip() is non-empty
-    (header included); an ``hmm`` line counts when it starts with b"NAME ".
+    (header included); an ``hmm`` line counts when it starts with b"NAME " and a
+    ``fasta`` line when it starts with b">".
     """
 
     def __init__(self, file_format: str) -> None:
-        self.hmm = file_format == "hmm"
+        self.marker = {"hmm": b"\nNAME ", "fasta": b"\n>"}.get(file_format)
         self.count = 0
         # hmm: the last bytes seen, starting with a virtual b"\n" before line one.
         self._tail = b"\n"
@@ -297,12 +298,12 @@ class _Counter:
         self._blank = True
 
     def feed(self, chunk: bytes) -> None:
-        if self.hmm:
-            # Every NAME line is one b"\nNAME "; the carried five bytes let a
-            # match split across chunks be seen, and only once.
+        if self.marker is not None:
+            # Every record line is one b"\nNAME " (or b"\n>"); the carried bytes
+            # let a match split across chunks be seen, and only once.
             data = self._tail + chunk
-            self.count += data.count(b"\nNAME ")
-            self._tail = data[-5:]
+            self.count += data.count(self.marker)
+            self._tail = data[-(len(self.marker) - 1) :]
             return
         lines = chunk.split(b"\n")
         for line in lines[:-1]:
@@ -313,7 +314,7 @@ class _Counter:
             self._blank = False
 
     def total(self) -> int:
-        if not self.hmm and not self._blank:
+        if self.marker is None and not self._blank:
             return self.count + 1
         return self.count
 
@@ -349,7 +350,7 @@ def _file_problems(path: Path, label: str, item: PreparedFile, deep: bool) -> li
     # Shallow checks count TSV records only; HMMs are large, so they wait for deep
     # and a shallow check never opens them. Archives are never counted: their
     # sha256 (deep) already covers every member.
-    counted = item.format == "tsv" or (deep and item.format == "hmm")
+    counted = item.format == "tsv" or (deep and item.format in ("hmm", "fasta"))
     if not counted and not deep:
         return []
     try:

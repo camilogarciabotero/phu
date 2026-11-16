@@ -280,149 +280,126 @@ These outputs respect your HMM mode settings and combination logic, ensuring con
 ## Command Options
 
 ```bash
-Usage: phu screen [OPTIONS] [QUERY]...
 
- Screen contigs using protein-family or PUL CAZyme signatures.
+ Usage: phu screen [OPTIONS] [QUERY]...
 
- Query modes:
- Family: phu screen -i contigs.fa GH128 CBM89
- Individual PUL: phu screen -i contigs.fa PUL0621
- All resolvable PULs: phu screen -i contigs.fa --all-puls
- All canonical CAZymes: phu screen -i contigs.fa --all-cazymes
+ Find contigs that carry given protein families.
 
- --all-puls searches each unique required CAZyme family once, evaluates
- every PUL independently, and keeps contigs matching at least one complete
- PUL signature. This is CAZyme-signature screening, not biological PUL
- identification or substrate prediction.
-
- --all-cazymes searches every indexed AA, CBM, CE, GH, GT, and PL
- profile once and keeps contigs with at least one qualifying family hit.
- Ancillary profiles are excluded; see cazyme-matches.tsv for retained hits.
-
- Direct family queries support multiple HMM files with different modes:
- - any: Keep contigs matching any HMM (default, most permissive)
- - all: Keep contigs matching all HMMs (most restrictive)
- - threshold: Keep contigs matching at least --min-hmm-hits HMMs
-
- KO IDs (K00001-style) are resolved from local KOFam DB. dbCAN families
- (GH128-style) and one PUL ID (PUL0621-style) are resolved from local dbCAN.
- By default,
- KO-specific thresholds from ko_list are applied using each KO score_type.
-
- HMM modes:
- - pure: Each HMM file contains one model (default, most common)
- - mixed: HMM files contain multiple models (pressed/concatenated HMMs)
+ Proteins are predicted from the contigs and searched with each QUERY: your
+ own HMM files, or families from the phu databases by name: Pfam (PF00001),
+ KOfam (K00001), PHROG (phrog_216; find them with `phu phrogs`), dbCAN
+ (GH128) or one dbCAN PUL (PUL0621). Each database's own cutoffs apply.
 
  Examples:
-     phu screen -i contigs.fa *.hmm
      phu screen -i contigs.fa PF00001 PF00589
-     phu screen -i contigs.fa PF00001 --no-cut-ga PF00589
-     phu screen -i contigs.fa --combine-mode all file1.hmm file2.hmm file3.hmm
-     phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5
- pfam_database.hmm
-     phu screen -i contigs.fa --save-target-proteins *.hmm
+     phu screen -i contigs.fa my-models/*.hmm
+     phu screen -i contigs.fa --combine-mode all K00001 K00002
+     phu screen -i contigs.fa --all-cazymes
 
-╭─ Query selection ────────────────────────────────────────────────────────────╮
-│   [QUERY]...      <path>  HMM files, PFAM/KOfam IDs, dbCAN families (GH128), │
-│                           or one PUL ID (PUL0621)                            │
+ Full guide: https://camilogarciabotero.github.io/phu/commands/screen/
+
+╭─ Query ──────────────────────────────────────────────────────────────────────╮
+│   [QUERY]...      <path>  HMM files, or database names: PF00001, K00001,     │
+│                           phrog_216, GH128, PUL0621.                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --input-contigs       -i      <path>              Input contigs FASTA     │
-│                                                      [required]              │
-│    --output-folder       -o      <path>              Output directory        │
-│                                                      [default: phu-screen]   │
-│    --mode                -m      <str>               pyrodigal mode:         │
-│                                                      meta|single             │
-│                                                      [default: meta]         │
-│    --threads             -t      <int range> [x>=1]  Threads for both        │
-│                                                      pyrodigal and pyhmmer   │
-│                                                      [default: 1]            │
-│    --min-protein-len-aa  -g      <int range> [x>=1]  Minimum translated      │
-│                                                      protein length to keep  │
-│                                                      (aa)                    │
-│                                                      [default: 30]           │
-│    --ttable              -T      <int>               NCBI translation table  │
-│                                                      for coding sequences    │
-│                                                      [default: none]         │
-│    --help                -h                          Show this message and   │
-│                                                      exit.                   │
+│ *  --input-contigs  -i      <path>  Contigs to screen (FASTA). [required]    │
+│    --help           -h              Show this message and exit.              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ PUL screening ──────────────────────────────────────────────────────────────╮
-│ --all-puls          All PULs                                                 │
+╭─ Other ways to query ────────────────────────────────────────────────────────╮
+│ --all-cazymes                 Search all dbCAN CAZyme families instead of    │
+│                               QUERY.                                         │
+│ --all-puls                    Search for every dbCAN PUL signature instead   │
+│                               of QUERY.                                      │
+│ --hmm-mode     -M      <str>  'pure': one model per HMM file; 'mixed': files │
+│                               with many models.                              │
+│                               [default: pure]                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ CAZyme screening ───────────────────────────────────────────────────────────╮
-│ --all-cazymes          All canonical CAZymes                                 │
+╭─ Hit thresholds ─────────────────────────────────────────────────────────────╮
+│ --max-evalue      -e                      <float>          Highest E-value a │
+│                                                            hit may have.     │
+│                                                            [default: 1e-06]  │
+│ --min-bitscore    -b                      <float>          Lowest bit score  │
+│                                                            a hit may have.   │
+│ --min-hmm-cover…                          <float range>    Share of your own │
+│                                           [0.0<=x<=1.0]    HMM a hit must    │
+│                                                            cover (0 = off).  │
+│                                                            [default: 0.35]   │
+│ --min-protein-c…                          <float range>    Share of the      │
+│                                           [0.0<=x<=1.0]    protein a hit     │
+│                                                            must cover (off   │
+│                                                            by default).      │
+│ --cut-ga              --no-cut-ga                          Use Pfam's        │
+│                                                            curated cutoffs   │
+│                                                            (GA).             │
+│                                                            [default: cut-ga] │
+│ --use-kofam-thr…      --no-use-kofam-…                     Use KOfam's       │
+│                                                            per-KO cutoffs.   │
+│                                                            [default:         │
+│                                                            use-kofam-thresh… │
+│ --use-phrog-thr…      --no-use-phrog-…                     For PHROGs, need  │
+│                                                            60 bits and half  │
+│                                                            of model and      │
+│                                                            protein aligned.  │
+│                                                            [default:         │
+│                                                            use-phrog-thresh… │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Search thresholds ──────────────────────────────────────────────────────────╮
-│ --min-bitscore       -b                         <float>  Minimum bitscore to │
-│                                                          keep a domain hit   │
-│ --max-evalue         -e                         <float>  Maximum independent │
-│                                                          E-value to keep a   │
-│                                                          domain hit          │
-│                                                          [default: 1e-05]    │
-│ --cut-ga                 --no-cut-ga                     Use model GA        │
-│                                                          gathering cutoffs   │
-│                                                          during HMM search   │
-│                                                          (PFAM-style         │
-│                                                          thresholding)       │
-│                                                          [default: cut-ga]   │
-│ --use-kofam-thresh…      --no-use-kofam-thr…             Use per-KO          │
-│                                                          thresholds from     │
-│                                                          ko_list according   │
-│                                                          to score_type       │
-│                                                          (full/domain)       │
-│                                                          [default:           │
-│                                                          use-kofam-threshol… │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Matching behavior ──────────────────────────────────────────────────────────╮
-│ --top-per-contig  -n      <int>  Keep top-N hits per contig (by bitscore)    │
-│                                  [default: 1]                                │
-│ --combine-mode    -c      <str>  Direct family matching: any, all, or        │
-│                                  threshold. --all-puls uses OR across PULs   │
-│                                  and AND within each PUL.                    │
+╭─ Which contigs are kept ─────────────────────────────────────────────────────╮
+│ --combine-mode    -c      <str>  Keep contigs hit by 'any' query, 'all' of   │
+│                                  them, or a 'threshold'.                     │
 │                                  [default: any]                              │
-│ --min-hmm-hits    -k      <int>  Minimum number of HMMs that must hit a      │
-│                                  contig (for threshold mode)                 │
+│ --min-hmm-hits    -k      <int>  With --combine-mode threshold: how many     │
+│                                  queries must hit.                           │
+│                                  [default: 1]                                │
+│ --top-per-contig  -n      <int>  Best hits to report per contig.             │
 │                                  [default: 1]                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Output ─────────────────────────────────────────────────────────────────────╮
-│ --keep-proteins           --no-keep-proteins         Keep the protein FASTA  │
-│                                                      used for searching      │
-│                                                      [default:               │
-│                                                      no-keep-proteins]       │
-│ --keep-domtbl             --no-keep-domtbl           Keep the hmmsearch      │
-│                                                      domain tables           │
-│                                                      [default: keep-domtbl]  │
-│ --save-target-proteins    --no-save-target-pro…      Save matched proteins   │
-│                                                      per HMM model in        │
-│                                                      target-proteins/        │
-│                                                      subfolder               │
-│                                                      [default:               │
-│                                                      no-save-target-protein… │
-│ --save-target-hmms        --no-save-target-hmms      Save HMMs built from    │
-│                                                      target proteins in      │
-│                                                      target-hmms/ subfolder  │
-│                                                      [default:               │
-│                                                      no-save-target-hmms]    │
-│ --trim-target-msa                             <str>  Trim each target        │
-│                                                      alignment with trimAl   │
-│                                                      before building its HMM │
-│                                                      (needs                  │
-│                                                      --save-target-hmms):    │
-│                                                      'none', 'gappyout'      │
-│                                                      (gap-based, the         │
-│                                                      mildest), 'strict' or   │
-│                                                      'strictplus'            │
-│                                                      [default: none]         │
+│ --output-folder       -o                         <path>  Output folder.      │
+│                                                          [default:           │
+│                                                          phu-screen]         │
+│ --keep-proteins           --no-keep-proteins             Keep the predicted  │
+│                                                          proteins.           │
+│                                                          [default:           │
+│                                                          no-keep-proteins]   │
+│ --keep-domtbl             --no-keep-domtbl               Keep the hmmsearch  │
+│                                                          domain tables.      │
+│                                                          [default:           │
+│                                                          keep-domtbl]        │
+│ --save-target-prote…      --no-save-target-p…            Save the matched    │
+│                                                          proteins of each    │
+│                                                          model               │
+│                                                          (target-proteins/). │
+│                                                          [default:           │
+│                                                          no-save-target-pro… │
+│ --save-target-hmms        --no-save-target-h…            Build an HMM from   │
+│                                                          each model's        │
+│                                                          matched proteins    │
+│                                                          (target-hmms/).     │
+│                                                          [default:           │
+│                                                          no-save-target-hmm… │
+│ --trim-target-msa                                <str>   Trim alignments     │
+│                                                          before building     │
+│                                                          those HMMs: none,   │
+│                                                          gappyout, strict,   │
+│                                                          strictplus.         │
+│                                                          [default: none]     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Search options ─────────────────────────────────────────────────────────────╮
-│ --hmm-mode  -M      <str>  HMM file type: 'pure' (one model per file) or     │
-│                            'mixed' (pressed/concatenated HMMs)               │
-│                            [default: pure]                                   │
+╭─ Gene prediction ────────────────────────────────────────────────────────────╮
+│ --mode                -m      <str>               'meta' for mixed contigs,  │
+│                                                   'single' for one genome.   │
+│                                                   [default: meta]            │
+│ --min-protein-len-aa  -g      <int range> [x>=1]  Shortest protein to keep   │
+│                                                   (aa).                      │
+│                                                   [default: 30]              │
+│ --ttable              -T      <int range> [x>=1]  Genetic code (NCBI table); │
+│                                                   by default predicted per   │
+│                                                   contig.                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Runtime ────────────────────────────────────────────────────────────────────╮
-│ --quiet            Suppress routine progress output.                         │
-│ --verbose          Show additional progress details.                         │
+│ --threads  -t      <int range> [x>=1]  Threads. [default: 1]                 │
+│ --quiet                                Print less.                           │
+│ --verbose                              Print each search step.               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

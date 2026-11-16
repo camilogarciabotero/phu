@@ -114,7 +114,7 @@ def test_all_cazymes_cli_contract(tmp_path: Path, monkeypatch):
     cazyme_option = next(
         parameter for parameter in screen_command.params if "--all-cazymes" in parameter.opts
     )
-    assert cazyme_option.help == "All canonical CAZymes"
+    assert cazyme_option.help == "Search all dbCAN CAZyme families instead of QUERY."
     captured = {}
 
     monkeypatch.setattr(

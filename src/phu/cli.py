@@ -586,209 +586,187 @@ def screen(
         "-i",
         exists=True,
         readable=True,
-        help="Input contigs FASTA",
+        help="Contigs to screen (FASTA).",
     ),
     hmms: list[Path] = typer.Argument(
         None,
-        help="HMM files, PFAM/KOfam/PHROG IDs (PF00001, K00001, phrog_216), dbCAN families (GH128), or one PUL ID (PUL0621)",
+        help="HMM files, or database names: PF00001, K00001, phrog_216, GH128, PUL0621.",
         metavar="[QUERY]...",
-        rich_help_panel="Query selection",
-    ),
-    all_puls: bool = typer.Option(
-        False,
-        "--all-puls",
-        help="All PULs",
-        rich_help_panel="PUL screening",
+        rich_help_panel="Query",
     ),
     all_cazymes: bool = typer.Option(
         False,
         "--all-cazymes",
-        help="All canonical CAZymes",
-        rich_help_panel="CAZyme screening",
+        help="Search all dbCAN CAZyme families instead of QUERY.",
+        rich_help_panel="Other ways to query",
     ),
-    output_folder: Path = typer.Option(
-        Path("phu-screen"), "--output-folder", "-o", help="Output directory"
+    all_puls: bool = typer.Option(
+        False,
+        "--all-puls",
+        help="Search for every dbCAN PUL signature instead of QUERY.",
+        rich_help_panel="Other ways to query",
     ),
-    mode: str = typer.Option(
-        "meta", "--mode", "-m", help="pyrodigal mode: meta|single"
-    ),
-    threads: int = typer.Option(
-        1, "--threads", "-t", min=1, help="Threads for both pyrodigal and pyhmmer"
-    ),
-    min_bitscore: Optional[float] = typer.Option(
-        None,
-        "--min-bitscore",
-        "-b",
-        help="Minimum bitscore to keep a domain hit",
-        rich_help_panel="Search thresholds",
+    hmm_mode: str = typer.Option(
+        "pure",
+        "--hmm-mode",
+        "-M",
+        help="'pure': one model per HMM file; 'mixed': files with many models.",
+        rich_help_panel="Other ways to query",
     ),
     max_evalue: Optional[float] = typer.Option(
         1e-6,
         "--max-evalue",
         "-e",
-        help="Maximum independent E-value to keep a domain hit",
-        rich_help_panel="Search thresholds",
+        help="Highest E-value a hit may have.",
+        rich_help_panel="Hit thresholds",
+    ),
+    min_bitscore: Optional[float] = typer.Option(
+        None,
+        "--min-bitscore",
+        "-b",
+        help="Lowest bit score a hit may have.",
+        rich_help_panel="Hit thresholds",
     ),
     min_hmm_coverage: float = typer.Option(
         0.35,
         "--min-hmm-coverage",
         min=0.0,
         max=1.0,
-        help="Fraction of the model a hit must exceed, for your own HMMs only (0 turns it off)",
-        rich_help_panel="Search thresholds",
+        help="Share of your own HMM a hit must cover (0 = off).",
+        rich_help_panel="Hit thresholds",
     ),
     min_protein_coverage: Optional[float] = typer.Option(
         None,
         "--min-protein-coverage",
         min=0.0,
         max=1.0,
-        help="Minimum fraction of the protein a hit must align, for every model (off by default)",
-        rich_help_panel="Search thresholds",
+        help="Share of the protein a hit must cover (off by default).",
+        rich_help_panel="Hit thresholds",
     ),
     cut_ga: bool = typer.Option(
         True,
         "--cut-ga/--no-cut-ga",
-        help="Use model GA gathering cutoffs during HMM search (PFAM-style thresholding)",
-        rich_help_panel="Search thresholds",
+        help="Use Pfam's curated cutoffs (GA).",
+        rich_help_panel="Hit thresholds",
     ),
     use_kofam_thresholds: bool = typer.Option(
         True,
         "--use-kofam-thresholds/--no-use-kofam-thresholds",
-        help="Use per-KO thresholds from ko_list according to score_type (full/domain)",
-        rich_help_panel="Search thresholds",
+        help="Use KOfam's per-KO cutoffs.",
+        rich_help_panel="Hit thresholds",
     ),
     use_phrog_thresholds: bool = typer.Option(
         True,
         "--use-phrog-thresholds/--no-use-phrog-thresholds",
-        help="For PHROG queries, require a bit score of 60 and half of both model and protein aligned",
-        rich_help_panel="Search thresholds",
+        help="For PHROGs, need 60 bits and half of model and protein aligned.",
+        rich_help_panel="Hit thresholds",
+    ),
+    combine_mode: str = typer.Option(
+        "any",
+        "--combine-mode",
+        "-c",
+        help="Keep contigs hit by 'any' query, 'all' of them, or a 'threshold'.",
+        rich_help_panel="Which contigs are kept",
+    ),
+    min_hmm_hits: int = typer.Option(
+        1,
+        "--min-hmm-hits",
+        "-k",
+        help="With --combine-mode threshold: how many queries must hit.",
+        rich_help_panel="Which contigs are kept",
     ),
     top_per_contig: int = typer.Option(
         1,
         "--top-per-contig",
         "-n",
-        help="Keep top-N hits per contig (by bitscore)",
-        rich_help_panel="Matching behavior",
+        help="Best hits to report per contig.",
+        rich_help_panel="Which contigs are kept",
+    ),
+    output_folder: Path = typer.Option(
+        Path("phu-screen"),
+        "--output-folder",
+        "-o",
+        help="Output folder.",
+        rich_help_panel="Output",
+    ),
+    keep_proteins: bool = typer.Option(
+        False,
+        "--keep-proteins/--no-keep-proteins",
+        help="Keep the predicted proteins.",
+        rich_help_panel="Output",
+    ),
+    keep_domtbl: bool = typer.Option(
+        True,
+        "--keep-domtbl/--no-keep-domtbl",
+        help="Keep the hmmsearch domain tables.",
+        rich_help_panel="Output",
+    ),
+    save_target_proteins: bool = typer.Option(
+        False,
+        "--save-target-proteins/--no-save-target-proteins",
+        help="Save the matched proteins of each model (target-proteins/).",
+        rich_help_panel="Output",
+    ),
+    save_target_hmms: bool = typer.Option(
+        False,
+        "--save-target-hmms/--no-save-target-hmms",
+        help="Build an HMM from each model's matched proteins (target-hmms/).",
+        rich_help_panel="Output",
+    ),
+    trim_target_msa: str = typer.Option(
+        "none",
+        "--trim-target-msa",
+        help="Trim alignments before building those HMMs: none, gappyout, strict, strictplus.",
+        rich_help_panel="Output",
+    ),
+    mode: str = typer.Option(
+        "meta",
+        "--mode",
+        "-m",
+        help="'meta' for mixed contigs, 'single' for one genome.",
+        rich_help_panel="Gene prediction",
     ),
     min_protein_len_aa: int = typer.Option(
         30,
         "--min-protein-len-aa",
         "-g",
         min=1,
-        help="Minimum translated protein length to keep (aa)",
+        help="Shortest protein to keep (aa).",
+        rich_help_panel="Gene prediction",
     ),
     translation_table: Optional[int] = typer.Option(
         None,
         "--ttable",
         "-T",
         min=1,
-        help="NCBI translation table; default uses each contig's predicted table",
+        help="Genetic code (NCBI table); by default predicted per contig.",
+        rich_help_panel="Gene prediction",
     ),
-    keep_proteins: bool = typer.Option(
-        False,
-        "--keep-proteins/--no-keep-proteins",
-        help="Keep the protein FASTA used for searching",
-        rich_help_panel="Output",
-    ),
-    keep_domtbl: bool = typer.Option(
-        True,
-        "--keep-domtbl/--no-keep-domtbl",
-        help="Keep the hmmsearch domain tables (one -hmmsearch-domains.tbl per HMM file)",
-        rich_help_panel="Output",
-    ),
-    combine_mode: str = typer.Option(
-        "any",
-        "--combine-mode",
-        "-c",
-        help=(
-            "Direct family matching: any, all, or threshold. "
-            "--all-puls uses OR across PULs and AND within each PUL."
-        ),
-        rich_help_panel="Matching behavior",
-    ),
-    min_hmm_hits: int = typer.Option(
-        1,
-        "--min-hmm-hits",
-        "-k",
-        help="Minimum number of HMMs that must hit a contig (for threshold mode)",
-        rich_help_panel="Matching behavior",
-    ),
-    save_target_proteins: bool = typer.Option(
-        False,
-        "--save-target-proteins/--no-save-target-proteins",
-        help="Save matched proteins per HMM model in target-proteins/ subfolder",
-        rich_help_panel="Output",
-    ),
-    save_target_hmms: bool = typer.Option(
-        False,
-        "--save-target-hmms/--no-save-target-hmms",
-        help="Save HMMs built from target proteins in target-hmms/ subfolder",
-        rich_help_panel="Output",
-    ),
-    trim_target_msa: str = typer.Option(
-        "none",
-        "--trim-target-msa",
-        help=(
-            "Trim each target alignment with trimAl before building its HMM "
-            "(needs --save-target-hmms): 'none', 'gappyout' (gap-based, the "
-            "mildest), 'strict' or 'strictplus'"
-        ),
-        rich_help_panel="Output",
-    ),
-    hmm_mode: str = typer.Option(
-        "pure",
-        "--hmm-mode",
-        "-M",
-        help="HMM file type: 'pure' (one model per file) or 'mixed' (pressed/concatenated HMMs)",
-        rich_help_panel="Search options",
+    threads: int = typer.Option(
+        1, "--threads", "-t", min=1, help="Threads.", rich_help_panel="Runtime"
     ),
     quiet: bool = typer.Option(
-        False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
+        False, "--quiet", help="Print less.", rich_help_panel="Runtime"
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", help="Show additional progress details.", rich_help_panel="Runtime"
+        False, "--verbose", help="Print each search step.", rich_help_panel="Runtime"
     ),
 ):
     """
-    Screen contigs using protein-family or PUL CAZyme signatures.
+    Find contigs that carry given protein families.
 
-    Query modes:
-    [bold]Family:[/bold] phu screen -i contigs.fa GH128 CBM89
-    [bold]Individual PUL:[/bold] phu screen -i contigs.fa PUL0621
-    [bold]All resolvable PULs:[/bold] phu screen -i contigs.fa --all-puls
-    [bold]All canonical CAZymes:[/bold] phu screen -i contigs.fa --all-cazymes
-
-    [bold]--all-puls[/bold] searches each unique required CAZyme family once, evaluates
-    every PUL independently, and keeps contigs matching at least one complete
-    PUL signature. This is CAZyme-signature screening, not biological PUL
-    identification or substrate prediction.
-
-    [bold]--all-cazymes[/bold] searches every indexed AA, CBM, CE, GH, GT, and PL
-    profile once and keeps contigs with at least one qualifying family hit.
-    Ancillary profiles are excluded; see cazyme-matches.tsv for retained hits.
-
-    Direct family queries support multiple HMM files with different modes:
-    - any: Keep contigs matching any HMM (default, most permissive)
-    - all: Keep contigs matching all HMMs (most restrictive)
-    - threshold: Keep contigs matching at least --min-hmm-hits HMMs
-
-    KO IDs (K00001-style) are resolved from the local KOfam DB and PHROG IDs
-    (phrog_216-style) from the local PHROG DB. dbCAN families (GH128-style)
-    and one PUL ID (PUL0621-style) are resolved from local dbCAN. By default,
-    KO-specific thresholds from ko_list are applied using each KO score_type,
-    and PHROG hits need 60 bits and half of both model and protein aligned.
-
-    HMM modes:
-    - pure: Each HMM file contains one model (default, most common)
-    - mixed: HMM files contain multiple models (pressed/concatenated HMMs)
+    Proteins are predicted from the contigs and searched with each QUERY: your
+    own HMM files, or families from the phu databases by name: Pfam (PF00001),
+    KOfam (K00001), PHROG (phrog_216; find them with `phu phrogs`), dbCAN
+    (GH128) or one dbCAN PUL (PUL0621). Each database's own cutoffs apply.
 
     Examples:
-        phu screen -i contigs.fa *.hmm
         phu screen -i contigs.fa PF00001 PF00589
-        phu screen -i contigs.fa PF00001 --no-cut-ga PF00589
-        phu screen -i contigs.fa --combine-mode all file1.hmm file2.hmm file3.hmm
-        phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 5 pfam_database.hmm
-        phu screen -i contigs.fa --save-target-proteins *.hmm
+        phu screen -i contigs.fa my-models/*.hmm
+        phu screen -i contigs.fa --combine-mode all K00001 K00002
+        phu screen -i contigs.fa --all-cazymes
+
+    Full guide: https://camilogarciabotero.github.io/phu/commands/screen/
     """
     set_verbosity(quiet=quiet, verbose=verbose)
     # Remove duplicates while preserving order

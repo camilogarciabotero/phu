@@ -122,7 +122,7 @@ def test_all_puls_help_and_query_validation(tmp_path: Path):
     pul_option = next(
         parameter for parameter in screen_command.params if "--all-puls" in parameter.opts
     )
-    assert pul_option.help == "All PULs"
+    assert pul_option.help == "Search for every dbCAN PUL signature instead of QUERY."
 
     no_query = runner.invoke(app, ["screen", "-i", str(contigs)])
     assert no_query.exit_code == 1

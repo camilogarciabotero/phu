@@ -16,6 +16,14 @@ behavior in the unreleased branch and may change before a release.
   `--yes`; `--dry-run` shows what would go. Only phu's own folders are
   removed. `phu --clean-cache` still works but is deprecated and hidden; use
   `phu clean --cache`.
+
+### Screen
+
+- `phu screen --help` is shorter and grouped by question: the query, other
+  ways to query, hit thresholds, which contigs are kept, output, gene
+  prediction and runtime. Option names, short flags and defaults are
+  unchanged; the details moved to the online guide.
+
 ### Cluster
 
 - New `phu cluster --mode genus`: genus-level groups of complete genomes,

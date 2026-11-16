@@ -871,178 +871,159 @@ def screen(
 
 @app.command("jack", rich_help_panel="Main")
 def jack(
+    seed_marker: Optional[Path] = typer.Argument(
+        None,
+        exists=True,
+        readable=True,
+        help="Protein FASTA of seed sequences (optional with --phrog).",
+        rich_help_panel="Seeds",
+    ),
     input_contigs: Path = typer.Option(
         ...,
         "--input-contigs",
         "-i",
         exists=True,
         readable=True,
-        help="Input contigs FASTA",
-    ),
-    seed_marker: Optional[Path] = typer.Argument(
-        None,
-        exists=True,
-        readable=True,
-        help="Seed marker protein FASTA (one or more sequences); optional with --phrog",
+        help="Contigs to screen (FASTA).",
     ),
     phrog: Optional[list[str]] = typer.Option(
         None,
         "--phrog",
-        help=(
-            "PHROG families as seeds, repeatable: phrog_<n>, alias:<name>, "
-            "category:<name> or 'annot:<text>' (see `phu phrogs`)"
-        ),
-        rich_help_panel="Seeds",
+        help="PHROG families as seeds (repeatable): phrog_216, alias:terl, category:tail.",
+        rich_help_panel="PHROG seeds",
     ),
     max_phrog_seeds: int = typer.Option(
         50,
         "--max-phrog-seeds",
         min=1,
-        help="Stop if --phrog selects more PHROGs than this (one search each)",
-        rich_help_panel="Seeds",
-    ),
-    output_folder: Path = typer.Option(
-        Path("phu-jack"),
-        "--output-folder",
-        "-o",
-        help="Output directory",
-        rich_help_panel="Output",
-    ),
-    mode: str = typer.Option(
-        "meta",
-        "--mode",
-        "-m",
-        help="pyrodigal mode: meta|single",
-        rich_help_panel="Prediction",
-    ),
-    threads: int = typer.Option(
-        1,
-        "--threads",
-        "-t",
-        min=1,
-        help="Threads for both pyrodigal and pyhmmer",
-        rich_help_panel="Runtime",
+        help="Stop if --phrog selects more PHROGs than this.",
+        rich_help_panel="PHROG seeds",
     ),
     iterations: int = typer.Option(
         5,
         "--iterations",
         "-I",
         min=1,
-        help="Maximum jackhmmer iterations",
-        rich_help_panel="Iterative search",
+        help="Most search rounds per seed.",
+        rich_help_panel="Search",
     ),
     inc_evalue: float = typer.Option(
         1e-3,
         "--inc-evalue",
-        help="Inclusion E-value threshold for iterative jackhmmer",
-        rich_help_panel="Search thresholds",
+        help="E-value a hit needs to join the next round's model.",
+        rich_help_panel="Search",
     ),
     max_evalue: Optional[float] = typer.Option(
         1e-5,
         "--max-evalue",
         "-e",
-        help="Maximum independent E-value to keep a final hit",
-        rich_help_panel="Search thresholds",
-    ),
-    top_per_contig: int = typer.Option(
-        1,
-        "--top-per-contig",
-        "-n",
-        min=1,
-        help="Keep top-N hits per contig (by bitscore)",
-        rich_help_panel="Matching behavior",
+        help="Highest E-value a final hit may have.",
+        rich_help_panel="Search",
     ),
     combine_mode: str = typer.Option(
         "any",
         "--combine-mode",
         "-c",
-        help=(
-            "How to combine hits from multiple seed proteins: "
-            "any|all|threshold"
-        ),
-        rich_help_panel="Matching behavior",
+        help="Keep contigs hit by 'any' seed, 'all', or a 'threshold' (one --phrog query = one seed).",
+        rich_help_panel="Which contigs are kept",
     ),
     min_seed_hits: int = typer.Option(
         1,
         "--min-seed-hits",
         "-k",
         min=1,
-        help="Minimum number of seeds that must hit a contig (for threshold mode)",
-        rich_help_panel="Matching behavior",
+        help="With --combine-mode threshold: how many seeds must hit.",
+        rich_help_panel="Which contigs are kept",
+    ),
+    top_per_contig: int = typer.Option(
+        1,
+        "--top-per-contig",
+        "-n",
+        min=1,
+        help="Best hits to report per contig.",
+        rich_help_panel="Which contigs are kept",
+    ),
+    output_folder: Path = typer.Option(
+        Path("phu-jack"),
+        "--output-folder",
+        "-o",
+        help="Output folder.",
+        rich_help_panel="Output",
+    ),
+    keep_proteins: bool = typer.Option(
+        False,
+        "--keep-proteins/--no-keep-proteins",
+        help="Keep the predicted proteins.",
+        rich_help_panel="Output",
+    ),
+    save_hmm: bool = typer.Option(
+        False,
+        "--save-hmm/--no-save-hmm",
+        help="Save each seed's last-round HMM.",
+        rich_help_panel="Output",
+    ),
+    mode: str = typer.Option(
+        "meta",
+        "--mode",
+        "-m",
+        help="'meta' for mixed contigs, 'single' for one genome.",
+        rich_help_panel="Gene prediction",
     ),
     min_gene_len: int = typer.Option(
         90,
         "--min-gene-len",
         "-g",
-        help="Minimum gene length for pyrodigal (nt)",
-        rich_help_panel="Prediction",
+        help="Shortest gene to predict (nt).",
+        rich_help_panel="Gene prediction",
     ),
     min_protein_len_aa: int = typer.Option(
         30,
         "--min-protein-len-aa",
         min=1,
-        help="Minimum translated protein length to keep (aa)",
-        rich_help_panel="Prediction",
+        help="Shortest protein to keep (aa).",
+        rich_help_panel="Gene prediction",
     ),
     translation_table: Optional[int] = typer.Option(
         None,
         "--ttable",
         "-T",
         min=1,
-        help="NCBI translation table; default uses each contig's predicted table",
-        rich_help_panel="Prediction",
+        help="Genetic code (NCBI table); by default predicted per contig.",
+        rich_help_panel="Gene prediction",
     ),
-    keep_proteins: bool = typer.Option(
-        False,
-        "--keep-proteins/--no-keep-proteins",
-        help="Keep the protein FASTA used for searching",
-        rich_help_panel="Output",
-    ),
-    save_hmm: bool = typer.Option(
-        False,
-        "--save-hmm/--no-save-hmm",
-        help="Save the last jackhmmer iteration HMM as final-iteration.hmm",
-        rich_help_panel="Output",
+    threads: int = typer.Option(
+        1,
+        "--threads",
+        "-t",
+        min=1,
+        help="Threads.",
+        rich_help_panel="Runtime",
     ),
     quiet: bool = typer.Option(
-        False,
-        "--quiet",
-        help="Suppress routine progress output.",
-        rich_help_panel="Runtime",
+        False, "--quiet", help="Print less.", rich_help_panel="Runtime"
     ),
     verbose: bool = typer.Option(
         False,
         "--verbose",
-        help="Show additional progress details.",
+        help="Print each search step, and what --phrog queries selected.",
         rich_help_panel="Runtime",
     ),
 ):
     """
-    Iteratively screen contigs from one or more seed protein markers with
-    pyhmmer.jackhmmer.
+    Find contigs carrying relatives of seed proteins, by iterative search.
 
-    Prediction:
-    - Predict proteins with pyrodigal using --mode and the length/table options.
-    - Reuse cached proteins when prediction inputs are unchanged.
-
-    Search:
-    - Run up to --iterations jackhmmer rounds using --inc-evalue for inclusion.
-    - Keep final hits below --max-evalue and limit them with --top-per-contig.
-
-    Combine modes for multi-seed screening:
-    - any: keep contigs hit by at least one seed (default)
-    - all: keep contigs hit by all seeds
-    - threshold: keep contigs hit by at least --min-seed-hits seeds
-
-    PHROG seeds (--phrog) start from the PHROG model itself; later rounds
-    use models rebuilt from the included hits. --iterations 1 is a plain
-    search with the PHROG model, as `phu screen phrog_<n>` does.
+    Each seed searches the proteins predicted from the contigs; hits that pass
+    --inc-evalue build the model for the next round, so distant family members
+    are found round by round. Seeds are protein sequences (a FASTA file),
+    PHROG families (--phrog; find them with `phu phrogs`), or both.
 
     Examples:
-        phu jack -i contigs.fa marker_seed.faa
-        phu jack -i contigs.fa --combine-mode all marker_seeds.faa
-        phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
+        phu jack -i contigs.fa seeds.faa
+        phu jack -i contigs.fa --combine-mode all seeds.faa
         phu jack -i contigs.fa --phrog alias:terl --phrog alias:portal
+        phu jack -i contigs.fa --iterations 1 --phrog phrog_216
+
+    Full guide: https://camilogarciabotero.github.io/phu/commands/jack/
     """
     set_verbosity(quiet=quiet, verbose=verbose)
     try:

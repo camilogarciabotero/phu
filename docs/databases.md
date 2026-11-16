@@ -65,7 +65,7 @@ Inside that folder:
 
 ```text
 phu-db/
-  phu-db-0.2.0/
+  phu-db-0.3.0/
     installed.json        # source, tarball SHA-256, install time
     phu-db.json           # the bundle manifest: upstream URLs, digests, steps
     pfam/  profiles.hmm
@@ -95,7 +95,7 @@ Compute nodes often have no internet access, or many jobs would download the
 same bundle at once. Download it once and point PHU at it:
 
 ```bash
-# On a node with internet access: get phu-db.tar.gz for phu-db-0.2.0 from
+# On a node with internet access: get phu-db.tar.gz for phu-db-0.3.0 from
 # https://doi.org/10.5281/zenodo.19503347 (the page lists every version).
 export PHU_DB_FOLDER=/shared/project/phu-db      # on a shared filesystem
 phu dbs prepare --bundle /shared/project/phu-db.tar.gz   # installs once
@@ -127,7 +127,7 @@ it and says so. Download the version named in the error.
 
 ## What the bundle contains
 
-`phu-db-0.2.0` contains these pinned upstream releases. PHU records them in
+`phu-db-0.3.0` contains these pinned upstream releases. PHU records them in
 each run's provenance.
 
 | Database | Used by | Upstream release | Files |
@@ -136,12 +136,18 @@ each run's provenance.
 | `kofam` | `screen`, `avger` | KOfam, genome.jp archive 2026-07-02 | `profiles.hmm`, `ko_list.tsv` (KO thresholds) |
 | `dbcan` | `screen` | dbCAN HMMdb V15; dbCAN-PUL substrate table 12-12-2023; dbCAN-PUL workbook snapshot of 2026-09-30 | `profiles.hmm`, `family_substrate.tsv`, `pul_rules.tsv` |
 | `avg` | `avger` | CheckAMG v1.1.1 reference tables | V-scores, AMG/APG/AReG positive tables and filter tables |
-| `phrog` | `avger` | PHROGs v4 (CC-BY-4.0) | `profiles.hmm` (38,880 models), `annotations.tsv` |
+| `phrog` | `avger` | PHROGs v4 (CC-BY-4.0) | `profiles.hmm` (38,880 models), `msa_a3m.tar.gz` (38,880 alignments), `annotations.tsv` |
 
 PHROGs is published as HH-suite profiles and MMseqs2 databases, which HMMER
 cannot search. The PHROG models in the bundle were built from the official
 per-PHROG alignments with pyhmmer, using the default `hmmbuild` settings, one
 model per PHROG, named `phrog_1` to `phrog_38880`.
+
+`phrog/msa_a3m.tar.gz` holds the same per-PHROG alignments as A3M files
+(`a3m/phrog_<n>.a3m`), for searching PHROGs with HH-suite or MMseqs2. The
+upstream alignments already mark insert columns in lowercase; the A3M files
+keep those states and only drop the gap padding in insert columns. phu itself
+does not read this file.
 
 The bundle's own manifest, `phu-db.json`, lists every upstream URL, SHA-256,
 byte size, license and record count, and the exact preparation steps that turn
@@ -160,7 +166,7 @@ Keep these files with your results.
 
 Cite the bundle version you used:
 
-> García-Botero C. *Phu Databases*, version phu-db-0.2.0. Zenodo.
+> García-Botero C. *Phu Databases*, version phu-db-0.3.0. Zenodo.
 > <https://doi.org/10.5281/zenodo.19503347>
 
 Also cite the upstream databases your analysis relied on, following each

@@ -28,8 +28,10 @@ behavior in the unreleased branch and may change before a release.
   (`ecod:2004.1.1`, `ecod:2004.1`, `ecod:2004`). Models come from the new
   `ecod` database of phu-db 0.4.0 (ECOD v295.2, 32,041 families). An ECOD hit
   must align to at least half of the model (`--no-use-ecod-thresholds` drops
-  this); what each id expanded to and the families' names are recorded in
-  `.phu/query.json`, and protein files are labelled with family names.
+  this). With `--combine-mode all` or `threshold`, each `ecod:` id counts as
+  one query, met by any of its families. What each id expanded to and the
+  families' names are recorded in `.phu/query.json`, and protein files are
+  labelled with family names.
 
 ### Cluster
 

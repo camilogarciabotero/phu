@@ -193,6 +193,15 @@ def _dbcan_hashes() -> dict[str, str]:
     return database_hashes("dbcan")
 
 
+def _query_units(query: ScreenQuery) -> dict[str, frozenset[str]]:
+    """Each ECOD F-group model -> the ``ecod:`` query tokens it answers."""
+    units: dict[str, set[str]] = defaultdict(set)
+    for token, f_ids in query.ecod_expansions:
+        for f_id in f_ids:
+            units[f_id].add(token)
+    return {model: frozenset(tokens) for model, tokens in units.items()}
+
+
 def _query_manifest(query: ScreenQuery, combine_mode: str) -> dict[str, object]:
     """What was asked and which databases answered it, for .phu/query.json.
 
@@ -1407,9 +1416,8 @@ def _hmm_file_labels(hmm_paths: list[Path]) -> list[str]:
 
 def _domtbl_name(hmm_path: Path, label: str) -> str:
     """File name of the hmmsearch domain table of one HMM file."""
-    # A unique stem is used as is; a NAME-derived label is sanitised first.
-    safe = label if label == hmm_path.stem else _safe_file_label(label)
-    return f"{safe}{DOMTBL_SUFFIX}"
+    # Sanitised, so a stem such as ``ecod:1.1.1.2`` gives ``ecod_1.1.1.2``.
+    return f"{_safe_file_label(label)}{DOMTBL_SUFFIX}"
 
 
 def _domtbl_paths(hmm_paths: list[Path], outdir: Path) -> dict[str, Path]:
@@ -1849,15 +1857,25 @@ def _choose_best_contigs(
     min_protein_coverage: Optional[float] = None,
     use_phrog_thresholds: bool = True,
     use_ecod_thresholds: bool = True,
+    model_units: Optional[dict[str, frozenset[str]]] = None,
 ) -> tuple[list[Hit], list[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
     For KO models, ko_list thresholds are used by their score_type (full/domain).
 
+    ``model_units`` maps a model to the query units it answers: an
+    ``ecod:<id>`` group is one unit, met by any of its F-groups, for
+    ``combine_mode`` ``all`` and ``threshold``. Other models are their own unit.
+
     Returns (kept_hits, list_of_contig_ids).
     """
     kofam_metadata_by_model = kofam_metadata_by_model or {}
-    queried_models = set(queried_model_ids or ())
+    model_units = model_units or {}
+
+    def units(models: Iterable[str]) -> set[str]:
+        return {unit for model in models for unit in model_units.get(model, {model})}
+
+    queried_models = units(queried_model_ids or ())
     if queried_models:
         total_hmm_models = len(queried_models)
 
@@ -1898,7 +1916,7 @@ def _choose_best_contigs(
                 kept_contigs.append(contig)
 
         elif combine_mode == "all":
-            model_names = set(hit.model for hit in contig_hits)
+            model_names = units(hit.model for hit in contig_hits)
             if queried_models:
                 has_all_models = queried_models.issubset(model_names)
             else:
@@ -1920,7 +1938,7 @@ def _choose_best_contigs(
                 kept_contigs.append(contig)
 
         elif combine_mode == "threshold":
-            model_names = set(hit.model for hit in contig_hits)
+            model_names = units(hit.model for hit in contig_hits)
             if len(model_names) >= min_hmm_hits:
                 contig_hits.sort(
                     key=lambda hit: _hit_sort_key(
@@ -2453,6 +2471,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_hits=plan.min_hmm_hits,
             total_hmm_models=total_models,
             queried_model_ids=queried_model_ids,
+            model_units=_query_units(query),
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
             dbcan_model_ids=dbcan_model_ids,
@@ -2491,6 +2510,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_hits=plan.min_hmm_hits,
             total_hmm_models=total_models,
             queried_model_ids=queried_model_ids,
+            model_units=_query_units(query),
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
             dbcan_model_ids=dbcan_model_ids,

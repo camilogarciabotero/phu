@@ -164,7 +164,10 @@ def _scan_offsets(hmm_path: Path) -> dict[str, list[int]]:
 def extract_ecod_models(
     ecod_ids: Iterable[str], output_dir: Path
 ) -> tuple[list[Path], list[str]]:
-    """Write each F-group model to ``output_dir/ecod_<f_id>.hmm``, named ``ecod:<f_id>``.
+    """Write each F-group model to ``output_dir/ecod:<f_id>.hmm``, named ``ecod:<f_id>``.
+
+    The file stem is the model id, as for ``phrog_<n>.hmm``: in screen's default
+    pure mode a model is known by its file name.
 
     ``ecod_ids`` are F-level ids (``ecod:<f_id>``, as from ``expand_ecod_ids``).
     Returns the written paths in request order and the ids without a model.
@@ -191,7 +194,7 @@ def extract_ecod_models(
                 count=1,
                 flags=re.MULTILINE,
             )
-            path = output_dir / f"ecod_{bare}.hmm"
+            path = output_dir / f"{ecod_id}.hmm"
             path.write_bytes(model)
             paths.append(path)
     return paths, missing

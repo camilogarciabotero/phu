@@ -21,13 +21,15 @@ DATABASE_NAMES = frozenset({"pfam", "kofam", "dbcan", "avg", "phrog"})
 BUNDLE_ROOT = "phu-db"
 MANIFEST_NAME = "phu-db.json"
 MANIFEST_MEMBER = f"{BUNDLE_ROOT}/{MANIFEST_NAME}"
-PREPARED_FORMATS = frozenset({"hmm", "tsv"})
+# tar.gz: an archive shipped as one file (the PHROG A3M alignments); only its
+# size and sha256 are checked, never its record count.
+PREPARED_FORMATS = frozenset({"hmm", "tsv", "tar.gz"})
 
 STEP_RE = re.compile(
-    r"(gunzip|extract|concatenate|build-hmm|rename|pul-table):(\S+) -> (\S+)"
+    r"(gunzip|extract|concatenate|build-hmm|build-a3m|rename|pul-table):(\S+) -> (\S+)"
 )
 # Verbs whose source may be a glob over earlier targets.
-_GLOB_VERBS = frozenset({"concatenate", "build-hmm"})
+_GLOB_VERBS = frozenset({"concatenate", "build-hmm", "build-a3m"})
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 _GLOB_CHARS = frozenset("*?[")
 
@@ -256,7 +258,7 @@ def _database(name: str, raw: Any) -> DatabaseEntry:
             raise ManifestError(f"{here}.path {path!r} is not the target of any step")
         file_format = _require(item, "format", str, here)
         if file_format not in PREPARED_FORMATS:
-            raise ManifestError(f"{here}.format must be one of hmm, tsv: {file_format!r}")
+            raise ManifestError(f"{here}.format must be one of hmm, tsv, tar.gz: {file_format!r}")
         prepared_files.append(
             PreparedFile(
                 path=path,

@@ -347,8 +347,9 @@ def _file_problems(path: Path, label: str, item: PreparedFile, deep: bool) -> li
     if size != item.bytes:
         return [f"{label} is {size} bytes, expected {item.bytes}"]
     # Shallow checks count TSV records only; HMMs are large, so they wait for deep
-    # and a shallow check never opens them.
-    counted = item.format == "tsv" or deep
+    # and a shallow check never opens them. Archives are never counted: their
+    # sha256 (deep) already covers every member.
+    counted = item.format == "tsv" or (deep and item.format == "hmm")
     if not counted and not deep:
         return []
     try:

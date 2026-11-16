@@ -5,7 +5,6 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
-
 ### CLI
 
 - `phu --help` groups commands into three panels: **Main** (`screen`,

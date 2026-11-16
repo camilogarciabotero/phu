@@ -879,14 +879,15 @@
 <li>If <code>PHU_CACHE_DIR</code> is not set, <code>phu</code> uses an XDG-style cache directory under your home cache path.</li>
 </ul>
 <p>You can also remove all cached predictions explicitly:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>--clean-cache
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>clean<span class="w">            </span><span class="c1"># list what phu keeps and its size</span>
+phu<span class="w"> </span>clean<span class="w"> </span>--cache<span class="w">    </span><span class="c1"># remove the prediction cache</span>
 </code></pre></div>
-<p>This removes the full cache directory resolved by <code>PHU_CACHE_DIR</code> (or the default cache path) and exits.</p>
+<p><code>--cache</code> removes the full cache directory resolved by <code>PHU_CACHE_DIR</code> (or the default cache path). <code>phu clean --dbs</code> removes the installed database bundle and partial downloads, after asking, since they must be downloaded again; <code>--all</code> does both, and <code>--dry-run</code> only lists.</p>
 <h2 id="database-index-files">Database index files<a class="headerlink" href="#database-index-files" title="Permanent link">&para;</a></h2>
 <p>The cache directory can also hold a <code>phu-db-derived/</code> folder. PHU builds a
 small index and per-model files for each reference database the first time it
 is queried. They normally sit beside the database files; when the database
-install is read-only for you, PHU keeps them here instead. <code>phu --clean-cache</code>
+install is read-only for you, PHU keeps them here instead. <code>phu clean --cache</code>
 removes them too, and they are rebuilt on the next database query. See
 <a href="../databases/">Databases and Provenance</a>.</p>
 <h2 id="practical-cases">Practical cases<a class="headerlink" href="#practical-cases" title="Permanent link">&para;</a></h2>

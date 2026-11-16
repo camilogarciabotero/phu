@@ -1017,7 +1017,9 @@ def _resolve_hmm_inputs(
                 f"ECOD group(s) with no F-group model in the ECOD database: "
                 f"{', '.join(missing)}. Give ids as ecod:<X>[.<H>[.<T>[.<F>]]]."
             )
-        dedup_ecod_ids = list(dict.fromkeys(f for ids in expanded.values() for f in ids))
+        dedup_ecod_ids = list(
+            dict.fromkeys(f for ids in expanded.values() for f in ids)
+        )
         ecod_hmms, missing = run_click_task(
             "Resolving ECOD groups",
             extract_ecod_models,
@@ -1044,9 +1046,12 @@ def _resolve_hmm_inputs(
         for token, ids in expanded.items():
             level = ecod_level(token)
             first = families[ids[0][len(ECOD_PREFIX) :]]
-            name = {"X": first.x_name, "H": first.h_name, "T": first.t_name, "F": first.f_name}[
-                level
-            ]
+            name = {
+                "X": first.x_name,
+                "H": first.h_name,
+                "T": first.t_name,
+                "F": first.f_name,
+            }[level]
             print(
                 f"Resolved {token} ({level}-group: {name or 'unnamed'}) to "
                 f"{len(ids)} ECOD F-group model(s)"
@@ -1989,7 +1994,9 @@ def _extract_target_proteins(
             if phrog is not None:
                 return f"{phrog.phrog_id}|{phrog.annotation or 'unknown function'}|{phrog.category}"
         if is_ecod_id(model_id):
-            family = get_ecod_families().get(normalize_ecod_id(model_id)[len(ECOD_PREFIX) :])
+            family = get_ecod_families().get(
+                normalize_ecod_id(model_id)[len(ECOD_PREFIX) :]
+            )
             if family is not None:
                 return f"{family.ecod_id}|{family.f_name or 'unnamed'}|{family.h_name}"
         return None

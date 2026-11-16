@@ -88,7 +88,7 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 - [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Screen contigs for specific protein families using HMMER on predicted coding sequences.
 - [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine seeds hits.
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into vOTUs, dereplicated representatives, or genus- and species-level groups.
-- [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam and KOfam, and score putative auxiliary viral genes.
+- [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam, KOfam and PHROG, and score putative auxiliary viral genes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
 - [`phrogs`](https://camilogarciabotero.github.io/phu/commands/phrogs/): Find PHROG identifiers by alias (`mcp`, `terl`, `portal`, ...), functional category or annotation, to use with `screen`.
 - [`clean`](https://camilogarciabotero.github.io/phu/cache/): List or remove the prediction cache (`--cache`) and the installed databases (`--dbs`, asks first).
@@ -99,7 +99,7 @@ examples, and workflow guidance.
 
 ## Databases
 
-`screen` and `avger` use reference databases: Pfam, KOfam, dbCAN and the CheckAMG AVG tables. `phu` ships them as one pinned and checksummed bundle, [`phu-db`](https://doi.org/10.5281/zenodo.19503347), hosted on Zenodo. The bundle installs automatically the first time a command needs it, or ahead of time with:
+`screen`, `jack` and `avger` use reference databases: Pfam, KOfam, PHROG, dbCAN and the CheckAMG AVG tables. `phu` ships them as one pinned and checksummed bundle, [`phu-db`](https://doi.org/10.5281/zenodo.19503347), hosted on Zenodo. The bundle installs automatically the first time a command needs it, or ahead of time with:
 
 ```bash
 phu dbs prepare

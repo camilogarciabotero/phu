@@ -93,9 +93,23 @@ When multiple seeds are provided, you can combine evidence with `--combine-mode 
 **Example:**
 ```bash
 phu jack --input-contigs assembly.fasta marker_seeds.faa --combine-mode all
+phu jack --input-contigs assembly.fasta --phrog alias:portal   # PHROG families as seeds
 ```
 
 [Learn more about iterative jack screening →](commands/jack.md)
+
+### `avger` - Auxiliary Viral Genes
+
+Predict proteins from viral contigs, annotate them against Pfam, KOfam and
+PHROG, and apply the provisional auxiliary viral gene (AVG) candidate and
+curation rules.
+
+**Example:**
+```bash
+phu avger --input-contigs viral-contigs.fasta --output-folder phu-avger
+```
+
+[Learn more about auxiliary viral genes →](commands/avger.md)
 
 ### `cluster` - Sequence Clustering
 
@@ -117,9 +131,9 @@ phu cluster --mode votu --input-contigs viral-genomes.fasta
 
 ### Databases
 
-`screen` and `avger` use Pfam, KOfam, dbCAN and the CheckAMG AVG tables. PHU
-ships them as one pinned and checksummed bundle, `phu-db`, which installs
-automatically on first use and shows its download progress.
+`screen`, `jack` and `avger` use Pfam, KOfam, PHROG, dbCAN and the CheckAMG
+AVG tables. PHU ships them as one pinned and checksummed bundle, `phu-db`,
+which installs automatically on first use and shows its download progress.
 
 **Example:**
 ```bash
@@ -131,6 +145,30 @@ Set `PHU_DB_FOLDER` to a shared folder so every job reuses one install.
 
 [Learn more about databases and provenance →](databases.md)
 
+
+### `phrogs` - Find PHROG Families by Name
+
+Turn names into PHROG identifiers for `screen` and `jack`: curated aliases
+(`alias:mcp`, `alias:terl`), functional categories (`category:tail`) or
+annotations, with a forgiving search to explore.
+
+**Example:**
+```bash
+phu phrogs search "tail fiber"
+phu screen -i assembly.fasta $(phu phrogs resolve alias:mcp alias:terl --ids-only)
+```
+
+[Learn more about PHROG lookups →](commands/phrogs.md)
+
+### `clean` - Remove Cache and Databases
+
+List what PHU keeps between runs and remove it: the prediction cache
+(`--cache`) and the installed databases (`--dbs`, which asks first).
+
+```bash
+phu clean            # list what PHU keeps and its size
+phu clean --cache    # remove cached protein predictions
+```
 
 ### `normalize-lineage` - Normalize vContact Lineage
 

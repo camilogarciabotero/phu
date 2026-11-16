@@ -52,6 +52,11 @@ behavior in the unreleased branch and may change before a release.
   thread and prints a note.
 ### Jack
 
+- `phu jack --help` is reorganised like `phu screen --help`: seeds, PHROG seeds,
+  search, which contigs are kept, output, gene prediction and runtime, with
+  one-line help per option. `--combine-mode` now says that one `--phrog`
+  query counts as one seed. Option names, short flags and defaults are
+  unchanged.
 - `phu jack --phrog QUERY` uses PHROG families as seeds, alone or with a seed
   FASTA (which is now optional). Queries are those of `phu phrogs resolve`
   (`phrog_<n>`, `alias:`, `category:`, `annot:`). The first iteration searches

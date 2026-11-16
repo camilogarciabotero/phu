@@ -91,86 +91,93 @@ phu-jack/
 ## Command options
 
 ```text
-Usage: phu jack [OPTIONS] {seed_marker}
 
- Iteratively screen contigs from one or more seed protein markers with
- pyhmmer.jackhmmer.
+ Usage: phu jack [OPTIONS] [seed_marker]
 
- Combine modes for multi-seed screening:
- - any: keep contigs hit by at least one seed (default)
- - all: keep contigs hit by all seeds
- - threshold: keep contigs hit by at least --min-seed-hits seeds
+ Find contigs carrying relatives of seed proteins, by iterative search.
+
+ Each seed searches the proteins predicted from the contigs; hits that pass
+ --inc-evalue build the model for the next round, so distant family members
+ are found round by round. Seeds are protein sequences (a FASTA file),
+ PHROG families (--phrog; find them with `phu phrogs`), or both.
 
  Examples:
-     phu jack -i contigs.fa marker_seed.faa
-     phu jack -i contigs.fa --combine-mode all marker_seeds.faa
-     phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
+     phu jack -i contigs.fa seeds.faa
+     phu jack -i contigs.fa --combine-mode all seeds.faa
+     phu jack -i contigs.fa --phrog alias:terl --phrog alias:portal
+     phu jack -i contigs.fa --iterations 1 --phrog phrog_216
 
-╭─ Arguments ───────────────────────────────────────────────────────────────╮
-│ *    seed_marker      <path>  Seed marker protein FASTA (supports one or  │
-│                               more sequences) [required]                   │
-╰───────────────────────────────────────────────────────────────────────────╯
+ Full guide: https://camilogarciabotero.github.io/phu/commands/jack/
+
+╭─ Seeds ──────────────────────────────────────────────────────────────────────╮
+│   seed_marker      <path>  Protein FASTA of seed sequences (optional with    │
+│                            --phrog).                                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --input-contigs  -i      <path>  Input contigs FASTA [required]           │
+│ *  --input-contigs  -i      <path>  Contigs to screen (FASTA). [required]    │
 │    --help           -h              Show this message and exit.              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ PHROG seeds ────────────────────────────────────────────────────────────────╮
+│ --phrog                  <str>               PHROG families as seeds         │
+│                                              (repeatable): phrog_216,        │
+│                                              alias:terl, category:tail.      │
+│ --max-phrog-seeds        <int range> [x>=1]  Stop if --phrog selects more    │
+│                                              PHROGs than this.               │
+│                                              [default: 50]                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Search ─────────────────────────────────────────────────────────────────────╮
+│ --iterations  -I      <int range> [x>=1]  Most search rounds per seed.       │
+│                                           [default: 5]                       │
+│ --inc-evalue          <float>             E-value a hit needs to join the    │
+│                                           next round's model.                │
+│                                           [default: 0.001]                   │
+│ --max-evalue  -e      <float>             Highest E-value a final hit may    │
+│                                           have.                              │
+│                                           [default: 1e-05]                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Which contigs are kept ─────────────────────────────────────────────────────╮
+│ --combine-mode    -c      <str>               Keep contigs hit by 'any'      │
+│                                               seed, 'all', or a 'threshold'  │
+│                                               (one --phrog query = one       │
+│                                               seed).                         │
+│                                               [default: any]                 │
+│ --min-seed-hits   -k      <int range> [x>=1]  With --combine-mode threshold: │
+│                                               how many seeds must hit.       │
+│                                               [default: 1]                   │
+│ --top-per-contig  -n      <int range> [x>=1]  Best hits to report per        │
+│                                               contig.                        │
+│                                               [default: 1]                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Output ─────────────────────────────────────────────────────────────────────╮
-│ --output-folder  -o                        <path>  Output directory          │
+│ --output-folder  -o                        <path>  Output folder.            │
 │                                                    [default: phu-jack]       │
-│ --keep-proteins      --no-keep-proteins            Keep the protein FASTA    │
-│                                                    used for searching        │
+│ --keep-proteins      --no-keep-proteins            Keep the predicted        │
+│                                                    proteins.                 │
 │                                                    [default:                 │
 │                                                    no-keep-proteins]         │
-│ --save-hmm           --no-save-hmm                 Save the last jackhmmer   │
-│                                                    iteration HMM as          │
-│                                                    final-iteration.hmm       │
+│ --save-hmm           --no-save-hmm                 Save each seed's          │
+│                                                    last-round HMM.           │
 │                                                    [default: no-save-hmm]    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Prediction ─────────────────────────────────────────────────────────────────╮
-│ --mode                -m      <str>               pyrodigal mode:            │
-│                                                   meta|single                │
+╭─ Gene prediction ────────────────────────────────────────────────────────────╮
+│ --mode                -m      <str>               'meta' for mixed contigs,  │
+│                                                   'single' for one genome.   │
 │                                                   [default: meta]            │
-│ --min-gene-len        -g      <int>               Minimum gene length for    │
-│                                                   pyrodigal (nt)             │
+│ --min-gene-len        -g      <int>               Shortest gene to predict   │
+│                                                   (nt).                      │
 │                                                   [default: 90]              │
-│ --min-protein-len-aa          <int range> [x>=1]  Minimum translated protein │
-│                                                   length to keep (aa)        │
+│ --min-protein-len-aa          <int range> [x>=1]  Shortest protein to keep   │
+│                                                   (aa).                      │
 │                                                   [default: 30]              │
-│ --ttable              -T      <int range> [x>=1]  NCBI translation table;    │
-│                                                   default uses each contig's │
-│                                                   predicted table            │
+│ --ttable              -T      <int range> [x>=1]  Genetic code (NCBI table); │
+│                                                   by default predicted per   │
+│                                                   contig.                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Runtime ────────────────────────────────────────────────────────────────────╮
-│ --threads  -t      <int range> [x>=1]  Threads for both pyrodigal and        │
-│                                        pyhmmer                               │
-│                                        [default: 1]                          │
-│ --quiet                                Suppress routine progress output.     │
-│ --verbose                              Show additional progress details.     │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Iterative search ───────────────────────────────────────────────────────────╮
-│ --iterations  -I      <int range> [x>=1]  Maximum jackhmmer iterations       │
-│                                           [default: 5]                       │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Search thresholds ──────────────────────────────────────────────────────────╮
-│ --inc-evalue          <float>  Inclusion E-value threshold for iterative     │
-│                                jackhmmer                                     │
-│                                [default: 0.001]                              │
-│ --max-evalue  -e      <float>  Maximum independent E-value to keep a final   │
-│                                hit                                           │
-│                                [default: 1e-05]                              │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Matching behavior ──────────────────────────────────────────────────────────╮
-│ --top-per-contig  -n      <int range> [x>=1]  Keep top-N hits per contig (by │
-│                                               bitscore)                      │
-│                                               [default: 1]                   │
-│ --combine-mode    -c      <str>               How to combine hits from       │
-│                                               multiple seed proteins:        │
-│                                               any|all|threshold              │
-│                                               [default: any]                 │
-│ --min-seed-hits   -k      <int range> [x>=1]  Minimum number of seeds that   │
-│                                               must hit a contig (for         │
-│                                               threshold mode)                │
-│                                               [default: 1]                   │
+│ --threads  -t      <int range> [x>=1]  Threads. [default: 1]                 │
+│ --quiet                                Print less.                           │
+│ --verbose                              Print each search step, and what      │
+│                                        --phrog queries selected.             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 

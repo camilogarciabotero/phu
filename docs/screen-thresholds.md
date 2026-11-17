@@ -1,154 +1,132 @@
-# Screen thresholds and decision logic
+# Screen thresholds
 
-This page documents how `phu screen` decides whether a hit, protein, or contig passes filtering.
+This page is the reference for how `phu screen` decides which hits count and
+which contigs are kept. For a task-oriented overview, see the
+[screen guide](commands/screen.md#what-you-can-search-for).
 
-It is meant as an implementation-aligned reference for PFAM and KOfam behavior.
-
-These are computational acceptance thresholds for profile annotation, not
-biological proof of a viral sequence or an auxiliary viral gene. The published
-AV/AVᴸ thresholds classify viral genomes or fragments and are a separate
-upstream step. AVG interpretation requires additional viral sequence context
-and curated scientific rules; see the
+These are acceptance rules for profile hits. They do not prove that a contig
+is viral or that a gene is an auxiliary viral gene; for that, see the
 [avger scientific interpretation](commands/avger.md#scientific-interpretation).
 
-## Scope
+## The decision in brief
 
-These rules apply to the screening workflow in `phu screen` after protein prediction and HMM search.
+For every hit pyHMMER reports as included:
 
-Coverage, everywhere it appears below, counts every reported domain of a hit,
-with overlapping domains counted once, on the model side and on the protein
-side. This is how `phu avger` and CheckAMG compute it.
+1. Apply the rule of the model's kind (table below).
+2. Apply `--min-protein-coverage`, if set.
+3. Compare the hit's score with the effective minimum bit score.
+4. Keep the hit only if its E-value is at most `--max-evalue` (default `1e-6`).
 
-## User-supplied models
+Contigs with at least one remaining hit are then kept or dropped by
+`--combine-mode` (see [Combining hits into contigs](#combining-hits-into-contigs)).
 
-A hit to one of your own HMMs passes only when its domains align to more
-than `0.35` of the model (`--min-hmm-coverage`; `0` turns the filter off) and
-its E-value is at most `1e-6` (`--max-evalue`). Hits without a usable HMM
-alignment do not pass. The coverage filter is not applied to Pfam or KOfam
-models, which keep their curated thresholds.
+| Model kind | Rule | Turn it off with |
+| --- | --- | --- |
+| Your own HMM | Aligns to more than `0.35` of the model | `--min-hmm-coverage 0` |
+| Pfam | Pfam's gathering (GA) cutoff, applied during the search | `--no-cut-ga` |
+| KOfam | The KO's threshold from `ko_list`, on the KO's score type | `--no-use-kofam-thresholds` |
+| PHROG | At least 60 bits, and at least `0.5` of model and of protein aligned | `--no-use-phrog-thresholds` |
+| ECOD | At least `0.5` of the model aligned | `--no-use-ecod-thresholds` |
+| dbCAN | Domain (independent) E-value below `1e-15` and more than `0.35` of the model aligned | always on |
 
-## Protein coverage
+A hit without a usable alignment fails any rule that needs coverage.
+
+## Coverage
+
+Coverage counts every reported domain of a hit, with overlapping domains
+counted once, on the model side (`hmm_coverage`) and on the protein side
+(`protein_coverage`). This is how `phu avger` and CheckAMG compute it. Both
+values are written to the result tables.
 
 `--min-protein-coverage F` is off by default. When set, a hit passes only if
-its domains align to at least the fraction `F` of the protein. It applies
-to every model, in addition to the rules of that model's kind.
+its domains cover at least the fraction `F` of the protein, for every kind of
+model and in addition to that kind's rule.
 
-## PHROG behavior
+## Your own HMMs
 
-For PHROG models queried by identifier (`phrog_216`), a hit passes only when
-its bit score is at least `60` and its domains align to at least `0.5` of
-the model and at least `0.5` of the protein. `--no-use-phrog-thresholds` turns
-this off. An HMM file of your own is treated as a user-supplied model even if
-it is named like a PHROG.
+A hit to one of your HMMs must align to more than `--min-hmm-coverage` of the
+model (default `0.35`; `0` turns the filter off). This removes matches to a
+small piece of the family. The filter does not apply to database models,
+which have their own rules. An HMM file of yours is treated as your own even
+if its name looks like a database id.
 
-## dbCAN behavior
+## Pfam
 
-For resolved dbCAN models, a hit passes the dbCAN-specific filter only when
-the independent E-value is strictly less than `1e-15` and the aligned HMM
-coverage is strictly greater than `0.35`. These filters are applied per
-dbCAN model and do not change PFAM GA or KOfam threshold behavior. Models
-without usable HMM alignment coverage do not pass the dbCAN filter.
+Pfam accessions are resolved to the bundle's Pfam models. With `--cut-ga`
+(the default), pyHMMER applies each model's curated gathering cutoff during
+the search. With `--no-cut-ga`, only `--min-bitscore` and `--max-evalue`
+apply.
 
-With `--all-puls`, these threshold-passing family hits are evaluated as an
-OR across PUL signatures and an AND within each signature. Every unique family
-required by the resolvable PUL rules is searched once; unresolved rules are
-skipped and listed in `.phu/run.json`.
+Gathering cutoffs exist only in Pfam models. In a run that mixes Pfam with
+other models (your own, KOfam, PHROG, ECOD, dbCAN), the Pfam models are
+searched with their cutoffs and the others without.
 
-With `--all-cazymes`, every canonical indexed profile is searched once and
-the normal dbCAN thresholds are applied per hit. Any one qualifying canonical
-family retains its contig; ancillary profiles do not. Use `cazyme-matches.tsv`
-and the query manifest to audit the selected inventory and retained hits.
+## KOfam
 
-## Core pass/fail flow
+KOfam models come with a threshold and a score type (`full` or `domain`) for
+each KO, from KOfam's `ko_list`. With `--use-kofam-thresholds` (the default):
 
-For each hit emitted by pyHMMER:
+- the score compared is the full-sequence score, or the best domain's score
+  when the KO's score type is `domain`;
+- the minimum is the KO's threshold, or `--min-bitscore` if that is higher.
 
-1. Start from hits marked as included by pyHMMER.
-2. Compute an effective score.
-3. Compute an effective minimum bitscore threshold.
-4. Apply score and E-value filters.
-5. Group remaining hits by contig and apply `--combine-mode` rules.
+So `--min-bitscore` can only make KOfam stricter. The E-value test always uses
+the full-sequence E-value, even for KOs scored by domain.
 
-Only contigs with at least one remaining hit after all filters can be kept.
+For example, a KO with threshold `136.43` and score type `full` rejects hits
+scoring 15 to 20 bits, however good their domain scores look in the domain
+table.
 
-## Which score is used
+## PHROG
 
-Each hit has:
+PHROG models have no curated cutoffs. A hit must score at least `60` bits and
+align to at least `0.5` of the model and `0.5` of the protein, the rule
+`phu avger` uses.
 
-- Full-sequence bitscore (HMMER "full sequence score").
-- Domain bitscore derived as the maximum score among included domains for that hit.
+## ECOD
 
-Effective score selection:
+ECOD models have no curated cutoffs either. They describe single domains,
+often within longer proteins, so a hit must align to at least `0.5` of the
+model but may cover any part of the protein. Only the E-value applies with
+`--no-use-ecod-thresholds`.
 
-- Default: use full-sequence bitscore.
-- KOfam model with `score_type = domain`: use domain bitscore when available.
-- KOfam model with `score_type = full`: use full-sequence bitscore.
+## dbCAN
 
-## Threshold precedence
+A dbCAN hit must have a best-domain independent E-value below `1e-15` and
+align to more than `0.35` of the model, the cutoffs dbCAN recommends for its
+HMMs. These rules are always on.
 
-Let:
+With `--all-cazymes`, every CAZyme family is searched once and any family hit
+keeps its contig. With `--all-puls`, a PUL matches a contig when all its
+families hit there, and a contig is kept when at least one PUL matches. PULs
+that name families missing from the installed dbCAN models are skipped and
+listed in `.phu/run.json`.
 
-- `min_bitscore` be the CLI value from `--min-bitscore` (can be unset).
-- `ko_threshold` be the KOfam threshold from `ko_list` for that KO (can be missing).
+## Bit score and E-value
 
-If `--use-kofam-thresholds` is enabled and `ko_threshold` exists:
+Each hit has a full-sequence bit score and the score of its best domain. The
+full-sequence score is used, except for KOs scored by domain (see
+[KOfam](#kofam)).
 
-- If `min_bitscore` is unset: effective minimum bitscore is `ko_threshold`.
-- If `min_bitscore` is set: effective minimum bitscore is `max(min_bitscore, ko_threshold)`.
+`--min-bitscore`, if set, applies to every model. `--max-evalue` applies to
+the hit's full-sequence E-value, never to the per-domain E-values in the
+domain table.
 
-If KOfam thresholds are disabled (or no KO threshold exists), effective minimum bitscore is just `min_bitscore`.
+## Combining hits into contigs
 
-This means user thresholds can only make filtering stricter when KOfam thresholds are active.
+After filtering, contigs are kept by `--combine-mode`:
 
-## E-value behavior
+- `any`: at least one query hits the contig.
+- `all`: every query hits the contig.
+- `threshold`: at least `--min-hmm-hits` different queries hit the contig.
 
-`--max-evalue` is always applied using the hit independent E-value from the top-level hit.
+Each `ecod:` id is one query, met by a hit to any of its families. For each
+kept contig, the best hits of each matched query are reported, up to
+`--top-per-contig` (default 1).
 
-Important: even when KOfam `score_type` is `domain`, the E-value filter is still based on the hit-level E-value, not domain i-Evalue or c-Evalue from the domain table rows.
+## Domain tables
 
-## PFAM behavior
-
-PFAM accessions are resolved to local models, then screened like any other HMM model.
-
-Threshold behavior for PFAM depends on CLI options:
-
-- `--cut-ga` on (default): pyHMMER applies profile GA gathering cutoffs during search.
-- `--no-cut-ga`: no model GA cutoff is forced by pyHMMER; filtering relies on `--min-bitscore` and `--max-evalue`.
-
-PFAM does not use KOfam `ko_list` thresholds.
-
-## KOfam behavior
-
-KOfam models are resolved by KO ID and enriched with metadata parsed from `ko_list`, including:
-
-- `threshold`
-- `score_type` (`full` or `domain`)
-
-When `--use-kofam-thresholds` is enabled (default), KOfam thresholding is applied per KO using the KO `score_type` logic above.
-
-## Domain table interpretation
-
-`--keep-domtbl` keeps the raw hmmsearch domain tables (`<hmm>-hmmsearch-domains.tbl`, the HMMER per-domain table format) for inspection and audit.
-
-In current implementation, pass/fail filtering does not re-parse the domain table text. The selection is performed from in-memory hit objects produced by pyHMMER.
-
-Use the domain table as an audit artifact to interpret why a hit likely passed or failed.
-
-## combine mode after filtering
-
-After score/E-value filtering, contigs are retained by combine mode:
-
-- `any`: keep contigs with at least one passing model; keep top hits per model per contig.
-- `all`: keep contigs that match all models.
-- `threshold`: keep contigs with at least `--min-hmm-hits` distinct matching models.
-
-## Worked interpretation example
-
-If KO metadata says:
-
-- `threshold = 136.43`
-- `score_type = full`
-
-Then hits with full-sequence scores around 15-20 fail thresholding, even if domain scores look reasonable in the domain table.
-
-If `--max-evalue` remains default (`1e-6`), many such hits also fail the E-value filter.
+`--keep-domtbl` (the default) keeps hmmsearch's per-domain table of each model
+(`<model>-hmmsearch-domains.tbl`). The decisions above are made from pyHMMER's
+results directly, not by reading these files back; keep them to audit why a
+hit passed or failed.

@@ -17,65 +17,82 @@ phu avger -i contigs.fa -o phu-avger
 
 ### Options
 
-The command-line menu is available directly with `phu avger --help`. Options
-are grouped into **Input**, **Output**, **Runtime**, **Prediction**, and
-**Scoring** panels. The current panel layout is:
-
-```text
-╭─ Input ──────────────────────────────────────────────────────────────────────╮
-│ --input-contigs  -i  Trusted viral contigs FASTA                            │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Output ─────────────────────────────────────────────────────────────────────╮
-│ --output-folder  -o  Output directory                                       │
-│ --keep-hits          Keep intermediate annotation hits                      │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Runtime ────────────────────────────────────────────────────────────────────╮
-│ --threads  -t  Threads for prediction and annotation                       │
-│ --quiet             Suppress routine progress output.                       │
-│ --verbose           Show additional progress details.                       │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Prediction ─────────────────────────────────────────────────────────────────╮
-│ --mode  -m, --min-gene-len, --min-protein-len-aa, --ttable                  │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Scoring ────────────────────────────────────────────────────────────────────╮
-│ --min-amg-weight, --filter-mode, --scaffold-avl-cutoff, --gene-vl-cutoff,   │
-│ --gene-v-cutoff, --scoring-evalue                                          │
-╰──────────────────────────────────────────────────────────────────────────────╯
-```
+`phu avger --help` groups the options into **Input**, **Output**, **Runtime**,
+**Prediction** and **Scoring** panels:
 
 ```text
 Usage: phu avger [OPTIONS]
 
-Predict and curate putative auxiliary viral genes.
+ Predict and curate putative auxiliary viral genes.
 
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --input-contigs        -i                    <path>                   Trusted viral contigs   │
-│                                                                          FASTA                   │
-│                                                                          [required]              │
-│    --output-folder        -o                    <path>                   Output directory        │
-│                                                                          [default: phu-avger]    │
-│    --threads              -t                    <int range> [x>=1]       [default: 1]            │
-│    --mode                 -m                    <str>                    pyrodigal mode:         │
-│                                                                          meta|single             │
-│                                                                          [default: meta]         │
-│    --min-gene-len                               <int range> [x>=1]       [default: 90]           │
-│    --min-protein-len-aa                         <int range> [x>=1]       [default: 30]           │
-│    --ttable               -T                    <int range> [x>=1]       [default: none]         │
-│    --min-amg-weight                             <float range>            [default: 0.6]          │
-│                                                 [0.0<=x<=1.0]                                    │
-│    --filter-mode                                <str>                    [default: standard]     │
-│    --keep-hits                --no-keep-hits                             [default: no-keep-hits] │
-│    --scaffold-avl-cutoff                        <float range> [x>=0.0]   [default: 3.0]          │
-│    --gene-vl-cutoff                             <float range> [x>=0.0]   [default: 3.0]          │
-│    --gene-v-cutoff                              <float range> [x>=0.0]   [default: 10.0]         │
-│    --scoring-evalue                             <float range> [x>=0.0]   [default: 1e-05]        │
-│    --quiet                                                               Suppress routine        │
-│                                                                          progress output.        │
-│    --verbose                                                            Show additional         │
-│                                                                          progress details.       │
-│    --help                 -h                                             Show this message and   │
-│                                                                          exit.                   │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Input ──────────────────────────────────────────────────────────────────────╮
+│ *  --input-contigs  -i      <path>  Trusted viral contigs FASTA [required]   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Output ─────────────────────────────────────────────────────────────────────╮
+│ --output-folder  -o                    <path>  Output directory              │
+│                                                [default: phu-avger]          │
+│ --keep-hits          --no-keep-hits            Keep intermediate annotation  │
+│                                                hits                          │
+│                                                [default: no-keep-hits]       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Runtime ────────────────────────────────────────────────────────────────────╮
+│ --threads  -t      <int range> [x>=1]  Threads for prediction and annotation │
+│                                        [default: 1]                          │
+│ --quiet                                Suppress routine progress output.     │
+│ --verbose                              Show additional progress details.     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Prediction ─────────────────────────────────────────────────────────────────╮
+│ --mode                -m      <str>               pyrodigal mode:            │
+│                                                   meta|single                │
+│                                                   [default: meta]            │
+│ --min-gene-len                <int range> [x>=1]  Minimum gene length for    │
+│                                                   pyrodigal (nt)             │
+│                                                   [default: 90]              │
+│ --min-protein-len-aa          <int range> [x>=1]  Minimum translated protein │
+│                                                   length to keep (aa)        │
+│                                                   [default: 30]              │
+│ --ttable              -T      <int range> [x>=1]  NCBI translation table;    │
+│                                                   default uses each contig's │
+│                                                   predicted table            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Scoring ────────────────────────────────────────────────────────────────────╮
+│ --min-amg-weight                     <float range>       Minimum AMG         │
+│                                      [0.0<=x<=1.0]       evidence weight     │
+│                                                          [default: 0.6]      │
+│ --filter-mode                        <str>               Candidate filter    │
+│                                                          mode:               │
+│                                                          standard|strict|no… │
+│                                                          [default: standard] │
+│ --scaffold-avl-cut…                  <float range>       Minimum scaffold    │
+│                                      [x>=0.0]            AVL score           │
+│                                                          (exclusive)         │
+│                                                          [default: 3.0]      │
+│ --gene-vl-cutoff                     <float range>       Maximum gene        │
+│                                      [x>=0.0]            VL-score            │
+│                                                          (exclusive)         │
+│                                                          [default: 3.0]      │
+│ --gene-v-cutoff                      <float range>       Maximum gene        │
+│                                      [x>=0.0]            V-score (exclusive) │
+│                                                          [default: 10.0]     │
+│ --scoring-evalue                     <float range>       E-value cutoff for  │
+│                                      [x>=0.0]            scoring searches    │
+│                                                          [default: 1e-05]    │
+│ --phrog                --no-phrog                        Search PHROG as a   │
+│                                                          third database,     │
+│                                                          beside Pfam and     │
+│                                                          KOfam               │
+│                                                          [default: phrog]    │
+│ --min-coverage                       <float range>       Fraction of model   │
+│                                      [0.0<=x<=1.0]       and protein a       │
+│                                                          strict hit must     │
+│                                                          align, every        │
+│                                                          database (0 turns   │
+│                                                          it off)             │
+│                                                          [default: 0.5]      │
+╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
 The exact spacing and formatting may vary slightly with the Typer/Rich version

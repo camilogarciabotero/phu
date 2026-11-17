@@ -1,10 +1,18 @@
 # Databases and Provenance
 
-`phu screen` and `phu avger` need reference databases: Pfam, KOfam, dbCAN
-and the CheckAMG-derived AVG tables (`phu jack` uses none). PHU ships them as one pinned
-bundle, `phu-db`, and installs it automatically the first time a command needs
-it. You can also install it ahead of time with
+phu searches six reference databases: Pfam, KOfam, dbCAN, PHROG, ECOD and
+the CheckAMG tables for auxiliary viral genes (AVG). They come as one pinned,
+checksummed bundle, `phu-db`, which phu installs the first time a command
+needs it. You can also install it ahead of time with
 [`phu dbs prepare`](#installing-ahead-of-time).
+
+| Command | Uses |
+| --- | --- |
+| `phu screen` | Pfam, KOfam, PHROG, ECOD, dbCAN |
+| `phu jack --phrog` | PHROG (as seeds) |
+| `phu phrogs` | PHROG annotations |
+| `phu avger` | Pfam, KOfam, PHROG and the AVG tables |
+| `phu cluster`, `phu normalize-lineage` | none |
 
 ## Installing ahead of time
 
@@ -24,16 +32,18 @@ command only checks it and returns.
 | `--verify` | Re-hash every installed file and reinstall if any check fails (same as `PHU_DB_VERIFY=1`). |
 | `--connections N` | Download `N` parts of the bundle at once, from 1 to 16 (default 8; same as `PHU_DB_CONNECTIONS`). |
 
-The bundle always holds all four databases, so database names given to
+The bundle always holds all six databases, so database names given to
 `phu dbs prepare` are accepted and ignored.
 
 ## What happens on first use
 
 `phu dbs prepare`, or the first database-backed command if you skipped it:
 
-1. Checks free disk space. The install needs about **16 GB** free while it
-   runs and keeps about **13 GB** afterwards.
-2. Downloads `phu-db.tar.gz` (about 2.2 GB) from Zenodo, or uses a local copy
+1. Checks free disk space. The install needs about **20 GB** free while it
+   runs: the 2.9 GB download plus the 16.2 GB of databases. Once the
+   download is removed and the fast-loading models are built, it takes about
+   **21 GB**.
+2. Downloads `phu-db.tar.gz` (about 2.9 GB) from Zenodo, or uses a local copy
    if [`PHU_DB_BUNDLE`](#offline-and-hpc-use) is set.
 3. Verifies the tarball's exact size and SHA-256 against the values pinned in
    this PHU release. A mismatch stops the install; nothing is used.
@@ -88,7 +98,7 @@ folder yourself once nothing needs it.
 | `PHU_DB_FOLDER` | Install root (see above). |
 | `PHU_DB_BUNDLE` | Path to a pre-downloaded `phu-db.tar.gz`. It is verified exactly like a download, and PHU never deletes it. |
 | `PHU_DB_CONNECTIONS` | How many parts of the bundle to download at once, from 1 to 16 (default 8). Zenodo limits the speed of each connection, so several parts at once download several times faster. Use `1` for a single connection. |
-| `PHU_DB_VERIFY=1` | Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 13 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls. |
+| `PHU_DB_VERIFY=1` | Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 16 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls. |
 
 ## Offline and HPC use
 
@@ -137,7 +147,7 @@ each run's provenance.
 | `kofam` | `screen`, `avger` | KOfam, genome.jp archive 2026-07-02 | `profiles.hmm`, `ko_list.tsv` (KO thresholds) |
 | `dbcan` | `screen` | dbCAN HMMdb V15; dbCAN-PUL substrate table 12-12-2023; dbCAN-PUL workbook snapshot of 2026-09-30 | `profiles.hmm`, `family_substrate.tsv`, `pul_rules.tsv` |
 | `avg` | `avger` | CheckAMG v1.1.1 reference tables | V-scores, AMG/APG/AReG positive tables and filter tables |
-| `phrog` | `avger` | PHROGs v4 (CC-BY-4.0) | `profiles.hmm` (38,880 models), `msa_a3m.tar.gz` (38,880 alignments), `annotations.tsv` |
+| `phrog` | `screen`, `jack`, `phrogs`, `avger` | PHROGs v4 (CC-BY-4.0) | `profiles.hmm` (38,880 models), `msa_a3m.tar.gz` (38,880 alignments), `annotations.tsv` |
 | `ecod` | `screen` | ECOD v295.2, F70 representatives (CC-BY-4.0) | `profiles.hmm` (32,041 models), `msa_a3m.tar.gz` (32,041 alignments), `sequences.fa`, `families.tsv`, `domains.tsv` |
 
 PHROGs is published as HH-suite profiles and MMseqs2 databases, which HMMER
@@ -187,8 +197,13 @@ Cite the bundle version you used:
 > <https://doi.org/10.5281/zenodo.19503347>
 
 Also cite the upstream databases your analysis relied on, following each
-project's own citation guidance. Pfam: Mistry J, et al. *Nucleic Acids Res.*
-2021;49(D1):D412–D419. For KOfam, dbCAN and CheckAMG, see their project pages.
+project's own citation guidance:
+
+- Pfam: Mistry J, et al. *Nucleic Acids Res.* 2021;49(D1):D412–D419.
+- ECOD: Schaeffer RD, et al. *Nucleic Acids Res.* 2025.
+  doi:10.1093/nar/gkae1029.
+- PHROGs: Terzian P, et al. *NAR Genom. Bioinform.* 2021;3(3):lqab067.
+- KOfam, dbCAN and CheckAMG: see their project pages.
 
 ## Upgrading from PHU 0.9.x and earlier
 

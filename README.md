@@ -19,7 +19,7 @@
 ***
 # phu - Phage Utilities
 
-phu (phage utilities) or phutilities, is a modular toolkit for viral genomics workflows. It provides command-line tools to handle common steps in phage bioinformatics pipelines—wrapping complex utilities behind a consistent and intuitive interface.
+phu (phage utilities) is a command-line toolkit for phage and viral genomics. Each command answers one common question about your contigs: which carry a protein family, which carry relatives of proteins you have, which genes look auxiliary, which genomes group together. Searches, gene prediction and alignments run inside phu, the reference databases (Pfam, KOfam, PHROG, ECOD, dbCAN, CheckAMG) install themselves on first use, and every run records what it did.
 
 ## Installation
 
@@ -54,20 +54,18 @@ phu --help
 The top-level help menu is:
 
 ```text
-Usage: phu [OPTIONS] COMMAND [ARGS]...
-
- Phage utilities CLI
-
+Usage: phu [OPTIONS] COMMAND [ARGS]...                                         
+                                                                                
+ Phage utilities CLI                                                            
+                                                                                
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --version  -v        Show version and exit.                                  │
 │ --help     -h        Show this message and exit.                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Main ───────────────────────────────────────────────────────────────────────╮
-│ screen             Screen contigs using protein-family or PUL CAZyme         │
-│                    signatures.                                               │
-│ jack               Iteratively screen contigs from one or more seed protein  │
-│                    markers with                                              │
-│                    pyhmmer.jackhmmer.                                        │
+│ screen             Find contigs that carry given protein families.           │
+│ jack               Find contigs carrying relatives of seed proteins, by      │
+│                    iterative search.                                         │
 │ avger              Predict and curate putative auxiliary viral genes.        │
 │ cluster            Sequence clustering wrapper around external 'vclust'.     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -85,12 +83,12 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 
 ## Commands
 
-- [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Screen contigs for specific protein families using HMMER on predicted coding sequences.
-- [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Iteratively screen contigs from one or more seed proteins with jackhmmer and combine seeds hits.
+- [`screen`](https://camilogarciabotero.github.io/phu/commands/screen/): Find contigs that carry given protein families: your own HMMs, or Pfam, KOfam, PHROG, ECOD and dbCAN families by name.
+- [`jack`](https://camilogarciabotero.github.io/phu/commands/jack/): Find contigs carrying relatives of seed proteins (yours, or PHROG families) by iterative search with jackhmmer.
 - [`cluster`](https://camilogarciabotero.github.io/phu/commands/cluster/): Cluster viral sequences into vOTUs, dereplicated representatives, or genus- and species-level groups.
 - [`avger`](https://camilogarciabotero.github.io/phu/commands/avger/): Predict proteins, annotate them against Pfam, KOfam and PHROG, and score putative auxiliary viral genes.
 - [`normalize-lineage`](https://camilogarciabotero.github.io/phu/commands/normalize-lineage/): Normalize vContact lineages while preserving input columns.
-- [`phrogs`](https://camilogarciabotero.github.io/phu/commands/phrogs/): Find PHROG identifiers by alias (`mcp`, `terl`, `portal`, ...), functional category or annotation, to use with `screen`.
+- [`phrogs`](https://camilogarciabotero.github.io/phu/commands/phrogs/): Find PHROG identifiers by alias (`mcp`, `terl`, `portal`, ...), functional category or annotation, to use with `screen` and `jack`.
 - [`clean`](https://camilogarciabotero.github.io/phu/cache/): List or remove the prediction cache (`--cache`) and the installed databases (`--dbs`, asks first).
 - [`dbs prepare`](https://camilogarciabotero.github.io/phu/databases/#installing-ahead-of-time): Download, verify and install the reference database bundle ahead of time.
 
@@ -99,13 +97,13 @@ examples, and workflow guidance.
 
 ## Databases
 
-`screen`, `jack` and `avger` use reference databases: Pfam, KOfam, PHROG, dbCAN and the CheckAMG AVG tables. `phu` ships them as one pinned and checksummed bundle, [`phu-db`](https://doi.org/10.5281/zenodo.19503347), hosted on Zenodo. The bundle installs automatically the first time a command needs it, or ahead of time with:
+`screen`, `jack` and `avger` use reference databases: Pfam, KOfam, PHROG, ECOD, dbCAN and the CheckAMG AVG tables. `phu` ships them as one pinned and checksummed bundle, [`phu-db`](https://doi.org/10.5281/zenodo.19503347), hosted on Zenodo. The bundle installs automatically the first time a command needs it, or ahead of time with:
 
 ```bash
 phu dbs prepare
 ```
 
-The download is about 2.2 GB and shows its progress; the install needs about 16 GB of free disk while it runs and keeps about 13 GB. Useful settings:
+The download is about 2.9 GB and shows its progress; the install needs about 20 GB of free disk while it runs and keeps about 21 GB, including fast-loading copies of the models. Useful settings:
 
 | Setting | Effect |
 | --- | --- |
@@ -116,11 +114,11 @@ The download is about 2.2 GB and shows its progress; the install needs about 16 
 
 Each run records the bundle version and database releases it used in the `.phu/` folder of its output. See [Databases and Provenance](https://camilogarciabotero.github.io/phu/databases/) for offline and HPC use, what the bundle contains, and citation.
 
-For screening pass/fail and threshold rules, see [`screen thresholds and decision logic`](https://camilogarciabotero.github.io/phu/commands/screen-thresholds/).
+For screening pass/fail and threshold rules, see [Screen thresholds](https://camilogarciabotero.github.io/phu/screen-thresholds/).
 
 ## Cache Handling
 
-`phu` caches predicted proteins for both `screen` and `jack` so repeated runs can reuse the same translated proteins when the prediction inputs have not changed. Search settings such as HMM files, seed markers, combine mode, and output folder do not affect the cache.
+`phu` caches predicted proteins for `screen`, `jack` and `avger` so repeated runs can reuse the same translated proteins when the prediction inputs have not changed. Search settings such as HMM files, seed markers, combine mode, and output folder do not affect the cache.
 
 The cache is rebuilt when you change the contig input, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` participate in the cache key.
 

@@ -156,6 +156,17 @@ behavior in the unreleased branch and may change before a release.
   `phrog_scored_gene_count` and `zhou_phrog_candidate`. The output schema
   version in `.phu/run.json` is now 2.
 
+### Docs
+
+- The home page starts from what you want to do, with a table of tasks and
+  commands. The `screen` guide is reorganised around what you can search for
+  (with ECOD's levels explained), how queries combine, and what you get; the
+  thresholds page opens with one table of the rule for each kind of model.
+- Updated for phu-db 0.4.0: ECOD everywhere databases are listed, which
+  command uses which database, download and disk sizes, PHROG and ECOD
+  citations. The `avger` page shows its current options, links no longer
+  point to the old `avg` branch, and the cache page lists `avger` too.
+
 ### Databases
 
 - phu now installs phu-db 0.4.0 (doi:10.5281/zenodo.24296611). It adds the

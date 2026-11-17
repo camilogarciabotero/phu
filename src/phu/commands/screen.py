@@ -59,6 +59,16 @@ from phu.db.kofam import (
     is_kofam_id,
     normalize_kofam_id,
 )
+from phu.db.ecod import (
+    ECOD_PREFIX,
+    ecod_level,
+    ensure_ecod_database,
+    expand_ecod_ids,
+    extract_ecod_models,
+    get_ecod_families,
+    is_ecod_id,
+    normalize_ecod_id,
+)
 from phu.db.phrog import (
     ensure_phrog_database,
     extract_phrog_models,
@@ -126,6 +136,9 @@ app = typer.Typer(
 # sequence bit score, and the fraction of both model and protein aligned.
 PHROG_MIN_BITSCORE = 60.0
 PHROG_MIN_COVERAGE = 0.5
+# ECOD has no curated cutoffs either. Its models are single domains, often of
+# longer proteins, so only the fraction of the model aligned is required.
+ECOD_MIN_HMM_COVERAGE = 0.5
 
 
 @dataclass(frozen=True)
@@ -149,6 +162,10 @@ class ScreenQuery:
     databases: tuple[str, ...] = ()
     # Function and category of each PHROG in the query, keyed by identifier.
     phrog_annotations: tuple[tuple[str, str, str], ...] = ()
+    # Each ecod:<id> token and the F-groups it stands for.
+    ecod_expansions: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    # Names of each ECOD F-group in the query: (ecod:<f_id>, f_name, t_name, h_name, x_name, pfam_acc).
+    ecod_families: tuple[tuple[str, str, str, str, str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -174,6 +191,15 @@ def _best_hit_key(hit: Hit) -> tuple[float, float, float, str]:
 def _dbcan_hashes() -> dict[str, str]:
     """The pinned sha256 of each dbCAN file in the phu-db bundle."""
     return database_hashes("dbcan")
+
+
+def _query_units(query: ScreenQuery) -> dict[str, frozenset[str]]:
+    """Each ECOD F-group model -> the ``ecod:`` query tokens it answers."""
+    units: dict[str, set[str]] = defaultdict(set)
+    for token, f_ids in query.ecod_expansions:
+        for f_id in f_ids:
+            units[f_id].add(token)
+    return {model: frozenset(tokens) for model, tokens in units.items()}
 
 
 def _query_manifest(query: ScreenQuery, combine_mode: str) -> dict[str, object]:
@@ -206,6 +232,20 @@ def _query_manifest(query: ScreenQuery, combine_mode: str) -> dict[str, object]:
         manifest["phrog_annotations"] = {
             phrog_id: {"annotation": annotation, "category": category}
             for phrog_id, annotation, category in query.phrog_annotations
+        }
+    if query.ecod_expansions:
+        manifest["ecod_expansions"] = {
+            token: list(f_ids) for token, f_ids in query.ecod_expansions
+        }
+        manifest["ecod_families"] = {
+            ecod_id: {
+                "f_name": f_name,
+                "t_name": t_name,
+                "h_name": h_name,
+                "x_name": x_name,
+                "pfam_acc": pfam_acc,
+            }
+            for ecod_id, f_name, t_name, h_name, x_name, pfam_acc in query.ecod_families
         }
     if query.databases:
         manifest["phu_db"] = bundle_provenance()
@@ -816,13 +856,14 @@ def _resolve_hmm_inputs(
     """
     Resolve positional inputs into concrete HMM file paths.
 
-    Input tokens may be local HMM paths, PFAM/KOfam/PHROG identifiers, dbCAN
-    families, or PUL IDs.
+    Input tokens may be local HMM paths, PFAM/KOfam/PHROG identifiers, ECOD
+    groups (``ecod:<id>``, at any level), dbCAN families, or PUL IDs.
     """
     local_hmms: list[Path] = []
     pfam_ids: list[str] = []
     ko_ids: list[str] = []
     phrog_ids: list[str] = []
+    ecod_tokens: list[str] = []
     dbcan_ids: list[str] = []
     pul_ids: list[str] = []
 
@@ -845,6 +886,10 @@ def _resolve_hmm_inputs(
             phrog_ids.append(normalize_phrog_id(token))
             continue
 
+        if is_ecod_id(token):
+            ecod_tokens.append(normalize_ecod_id(token))
+            continue
+
         if is_dbcan_pul_id(token):
             pul_ids.append(normalize_dbcan_pul_id(token))
             continue
@@ -858,6 +903,7 @@ def _resolve_hmm_inputs(
     dedup_pfam_ids = list(dict.fromkeys(pfam_ids))
     dedup_ko_ids = list(dict.fromkeys(ko_ids))
     dedup_phrog_ids = list(dict.fromkeys(phrog_ids))
+    dedup_ecod_tokens = list(dict.fromkeys(ecod_tokens))
     dedup_dbcan_ids = list(dict.fromkeys(dbcan_ids))
     dedup_pul_ids = list(dict.fromkeys(pul_ids))
 
@@ -867,6 +913,7 @@ def _resolve_hmm_inputs(
         or dedup_pfam_ids
         or dedup_ko_ids
         or dedup_phrog_ids
+        or dedup_ecod_tokens
         or dedup_dbcan_ids
     ):
         raise ValueError(
@@ -958,6 +1005,59 @@ def _resolve_hmm_inputs(
         )
         resolved.extend(phrog_hmms)
 
+    ecod_expansions: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    ecod_families: tuple[tuple[str, str, str, str, str, str], ...] = ()
+    dedup_ecod_ids: list[str] = []
+    if dedup_ecod_tokens:
+        run_click_task("Preparing ECOD database", ensure_ecod_database)
+        families = get_ecod_families()
+        expanded, missing = expand_ecod_ids(dedup_ecod_tokens, families)
+        if missing:
+            raise FileNotFoundError(
+                f"ECOD group(s) with no F-group model in the ECOD database: "
+                f"{', '.join(missing)}. Give ids as ecod:<X>[.<H>[.<T>[.<F>]]]."
+            )
+        dedup_ecod_ids = list(
+            dict.fromkeys(f for ids in expanded.values() for f in ids)
+        )
+        ecod_hmms, missing = run_click_task(
+            "Resolving ECOD groups",
+            extract_ecod_models,
+            ecod_ids=dedup_ecod_ids,
+            output_dir=outdir / QUERY_HMMS_DIR / "ecod",
+        )
+        if missing:
+            raise FileNotFoundError(
+                f"ECOD F-group(s) listed in families.tsv but without a model: {', '.join(missing)}"
+            )
+        ecod_expansions = tuple((token, tuple(ids)) for token, ids in expanded.items())
+        ecod_families = tuple(
+            (
+                ecod_id,
+                family.f_name,
+                family.t_name,
+                family.h_name,
+                family.x_name,
+                family.pfam_acc,
+            )
+            for ecod_id in dedup_ecod_ids
+            for family in (families[ecod_id[len(ECOD_PREFIX) :]],)
+        )
+        for token, ids in expanded.items():
+            level = ecod_level(token)
+            first = families[ids[0][len(ECOD_PREFIX) :]]
+            name = {
+                "X": first.x_name,
+                "H": first.h_name,
+                "T": first.t_name,
+                "F": first.f_name,
+            }[level]
+            print(
+                f"Resolved {token} ({level}-group: {name or 'unnamed'}) to "
+                f"{len(ids)} ECOD F-group model(s)"
+            )
+        resolved.extend(ecod_hmms)
+
     if dedup_pul_ids:
         run_click_task("Preparing dbCAN database", ensure_dbcan_database)
         pul = get_dbcan_pul(dedup_pul_ids[0])
@@ -1015,6 +1115,7 @@ def _resolve_hmm_inputs(
                 *dedup_pfam_ids,
                 *dedup_ko_ids,
                 *dedup_phrog_ids,
+                *dedup_ecod_ids,
                 *dedup_dbcan_ids,
             ),
         )
@@ -1031,6 +1132,7 @@ def _resolve_hmm_inputs(
                 *dedup_pfam_ids,
                 *dedup_ko_ids,
                 *dedup_phrog_ids,
+                *dedup_ecod_ids,
                 *dedup_dbcan_ids,
             ),
         )
@@ -1038,12 +1140,15 @@ def _resolve_hmm_inputs(
         "pfam": dedup_pfam_ids,
         "kofam": dedup_ko_ids,
         "phrog": dedup_phrog_ids,
+        "ecod": dedup_ecod_ids,
         "dbcan": dedup_dbcan_ids,
     }
     query = dataclasses.replace(
         query,
         databases=tuple(name for name, ids in used.items() if ids),
         phrog_annotations=phrog_annotations,
+        ecod_expansions=ecod_expansions,
+        ecod_families=ecod_families,
     )
     if return_query:
         return resolved, ko_metadata, query
@@ -1070,6 +1175,7 @@ class ScreenConfig:
     cut_ga: bool = True
     use_kofam_thresholds: bool = True
     use_phrog_thresholds: bool = True
+    use_ecod_thresholds: bool = True
     top_per_contig: int = 1
     min_protein_len_aa: int = 30
     translation_table: int | None = None
@@ -1139,6 +1245,7 @@ class ScreenConfig:
             cut_ga=self.cut_ga,
             use_kofam_thresholds=self.use_kofam_thresholds,
             use_phrog_thresholds=self.use_phrog_thresholds,
+            use_ecod_thresholds=self.use_ecod_thresholds,
             top_per_contig=self.top_per_contig,
             min_protein_len_aa=self.min_protein_len_aa,
             translation_table=self.translation_table,
@@ -1174,6 +1281,7 @@ class ScreenPlan:
     cut_ga: bool
     use_kofam_thresholds: bool
     use_phrog_thresholds: bool
+    use_ecod_thresholds: bool
     top_per_contig: int
     min_protein_len_aa: int
     translation_table: int | None
@@ -1313,9 +1421,8 @@ def _hmm_file_labels(hmm_paths: list[Path]) -> list[str]:
 
 def _domtbl_name(hmm_path: Path, label: str) -> str:
     """File name of the hmmsearch domain table of one HMM file."""
-    # A unique stem is used as is; a NAME-derived label is sanitised first.
-    safe = label if label == hmm_path.stem else _safe_file_label(label)
-    return f"{safe}{DOMTBL_SUFFIX}"
+    # Sanitised, so a stem such as ``ecod:1.1.1.2`` gives ``ecod_1.1.1.2``.
+    return f"{_safe_file_label(label)}{DOMTBL_SUFFIX}"
 
 
 def _domtbl_paths(hmm_paths: list[Path], outdir: Path) -> dict[str, Path]:
@@ -1658,6 +1765,7 @@ def _filter_qualifying_hits(
     database_model_ids: Optional[Iterable[str]] = None,
     min_protein_coverage: Optional[float] = None,
     use_phrog_thresholds: bool = True,
+    use_ecod_thresholds: bool = True,
 ) -> list[Hit]:
     """Keep the hits that pass the thresholds of their model's kind.
 
@@ -1666,6 +1774,8 @@ def _filter_qualifying_hits(
     thresholds and dbCAN has its own coverage rule. ``min_protein_coverage``
     is opt-in and applies to every model. PHROG models have no curated
     cutoffs; with ``use_phrog_thresholds`` they get the fixed ones avger uses.
+    ECOD models have none either; with ``use_ecod_thresholds`` at least
+    ``ECOD_MIN_HMM_COVERAGE`` of the model must be aligned.
     """
     kofam_metadata_by_model = kofam_metadata_by_model or {}
     dbcan_models = set(dbcan_model_ids or ())
@@ -1706,6 +1816,13 @@ def _filter_qualifying_hits(
             )
         ):
             continue
+        if (
+            use_ecod_thresholds
+            and is_ecod_id(hit.model)
+            and hit.model in database_models
+            and (hit.hmm_coverage is None or hit.hmm_coverage < ECOD_MIN_HMM_COVERAGE)
+        ):
+            continue
         if min_protein_coverage is not None and (
             hit.protein_coverage is None or hit.protein_coverage < min_protein_coverage
         ):
@@ -1744,15 +1861,26 @@ def _choose_best_contigs(
     database_model_ids: Optional[Iterable[str]] = None,
     min_protein_coverage: Optional[float] = None,
     use_phrog_thresholds: bool = True,
+    use_ecod_thresholds: bool = True,
+    model_units: Optional[dict[str, frozenset[str]]] = None,
 ) -> tuple[list[Hit], list[str]]:
     """
     Filter by thresholds, then pick top N hits per contig by bitscore.
     For KO models, ko_list thresholds are used by their score_type (full/domain).
 
+    ``model_units`` maps a model to the query units it answers: an
+    ``ecod:<id>`` group is one unit, met by any of its F-groups, for
+    ``combine_mode`` ``all`` and ``threshold``. Other models are their own unit.
+
     Returns (kept_hits, list_of_contig_ids).
     """
     kofam_metadata_by_model = kofam_metadata_by_model or {}
-    queried_models = set(queried_model_ids or ())
+    model_units = model_units or {}
+
+    def units(models: Iterable[str]) -> set[str]:
+        return {unit for model in models for unit in model_units.get(model, {model})}
+
+    queried_models = units(queried_model_ids or ())
     if queried_models:
         total_hmm_models = len(queried_models)
 
@@ -1768,6 +1896,7 @@ def _choose_best_contigs(
         database_model_ids=database_model_ids,
         min_protein_coverage=min_protein_coverage,
         use_phrog_thresholds=use_phrog_thresholds,
+        use_ecod_thresholds=use_ecod_thresholds,
     ):
         per_contig[hit.contig].append(hit)
 
@@ -1792,7 +1921,7 @@ def _choose_best_contigs(
                 kept_contigs.append(contig)
 
         elif combine_mode == "all":
-            model_names = set(hit.model for hit in contig_hits)
+            model_names = units(hit.model for hit in contig_hits)
             if queried_models:
                 has_all_models = queried_models.issubset(model_names)
             else:
@@ -1814,7 +1943,7 @@ def _choose_best_contigs(
                 kept_contigs.append(contig)
 
         elif combine_mode == "threshold":
-            model_names = set(hit.model for hit in contig_hits)
+            model_names = units(hit.model for hit in contig_hits)
             if len(model_names) >= min_hmm_hits:
                 contig_hits.sort(
                     key=lambda hit: _hit_sort_key(
@@ -1847,7 +1976,8 @@ def _extract_target_proteins(
     """
     Extract matched proteins per HMM model from the final kept contigs only.
     For KOfam models, headers are enriched as KO|definition; for PHROG models,
-    as identifier|annotation|category.
+    as identifier|annotation|category; for ECOD models, as
+    ecod:<f_id>|F-group name|H-group name.
 
     Returns the protein files written by this run, one per model.
     """
@@ -1863,6 +1993,12 @@ def _extract_target_proteins(
             phrog = get_all_phrog_annotations().get(normalize_phrog_id(model_id))
             if phrog is not None:
                 return f"{phrog.phrog_id}|{phrog.annotation or 'unknown function'}|{phrog.category}"
+        if is_ecod_id(model_id):
+            family = get_ecod_families().get(
+                normalize_ecod_id(model_id)[len(ECOD_PREFIX) :]
+            )
+            if family is not None:
+                return f"{family.ecod_id}|{family.f_name or 'unnamed'}|{family.h_name}"
         return None
 
     # Group protein IDs by model - only from kept hits AND kept contigs
@@ -2233,6 +2369,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                             "user_model_min_hmm_coverage": plan.min_hmm_coverage,
                             "min_protein_coverage": plan.min_protein_coverage,
                             "use_phrog_thresholds": plan.use_phrog_thresholds,
+                            "use_ecod_thresholds": plan.use_ecod_thresholds,
                             "dbcan_independent_evalue": "<1e-15",
                             "dbcan_hmm_coverage": ">0.35",
                         },
@@ -2330,6 +2467,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
             use_phrog_thresholds=plan.use_phrog_thresholds,
+            use_ecod_thresholds=plan.use_ecod_thresholds,
         )
         filtered_hits, _ = _choose_best_contigs(
             all_hits,
@@ -2340,6 +2478,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_hits=plan.min_hmm_hits,
             total_hmm_models=total_models,
             queried_model_ids=queried_model_ids,
+            model_units=_query_units(query),
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
             dbcan_model_ids=dbcan_model_ids,
@@ -2347,6 +2486,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
             use_phrog_thresholds=plan.use_phrog_thresholds,
+            use_ecod_thresholds=plan.use_ecod_thresholds,
         )
         pul_matches, contig_ids = evaluate_pul_signatures(filtered_hits, pul_rules)
         kept_contig_set = set(contig_ids)
@@ -2363,6 +2503,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
             use_phrog_thresholds=plan.use_phrog_thresholds,
+            use_ecod_thresholds=plan.use_ecod_thresholds,
         )
         kept_hits = qualifying_cazyme_hits
         contig_ids = list(dict.fromkeys(hit.contig for hit in kept_hits))
@@ -2376,6 +2517,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             min_hmm_hits=plan.min_hmm_hits,
             total_hmm_models=total_models,
             queried_model_ids=queried_model_ids,
+            model_units=_query_units(query),
             kofam_metadata_by_model=kofam_metadata_by_model,
             use_kofam_thresholds=plan.use_kofam_thresholds,
             dbcan_model_ids=dbcan_model_ids,
@@ -2383,6 +2525,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
             database_model_ids=query.normalized_models,
             min_protein_coverage=plan.min_protein_coverage,
             use_phrog_thresholds=plan.use_phrog_thresholds,
+            use_ecod_thresholds=plan.use_ecod_thresholds,
         )
 
     if query.all_puls:
@@ -2506,6 +2649,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
                 "user_model_min_hmm_coverage": plan.min_hmm_coverage,
                 "min_protein_coverage": plan.min_protein_coverage,
                 "use_phrog_thresholds": plan.use_phrog_thresholds,
+                "use_ecod_thresholds": plan.use_ecod_thresholds,
                 "dbcan_independent_evalue": "<1e-15",
                 "dbcan_hmm_coverage": ">0.35",
             },

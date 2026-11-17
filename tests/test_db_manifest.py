@@ -1,9 +1,11 @@
 import copy
 import hashlib
+import io
 import json
 import runpy
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 
 import pyhmmer
@@ -41,6 +43,11 @@ CONTRACT_MEMBERS = frozenset(
         "phu-db/avg/filters_areg.tsv",
         "phu-db/phrog/profiles.hmm",
         "phu-db/phrog/annotations.tsv",
+        "phu-db/ecod/profiles.hmm",
+        "phu-db/ecod/msa_a3m.tar.gz",
+        "phu-db/ecod/sequences.fa",
+        "phu-db/ecod/families.tsv",
+        "phu-db/ecod/domains.tsv",
     }
 )
 
@@ -63,6 +70,15 @@ CONTRACT_STEPS = (
     "extract:MSA_phrogs.tar.gz -> MSA_Phrogs_M50_FASTA/",
     "build-hmm:MSA_Phrogs_M50_FASTA/*.fma -> profiles.hmm",
     "rename:phrog_annot_v4.tsv -> annotations.tsv",
+    "rename:ecod.v295.2.F70.fa -> inputs/ecod.v295.2.F70.fa",
+    "rename:ecod.v295.2.F70.domains.txt -> inputs/ecod.v295.2.F70.domains.txt",
+    "gunzip:ecod.v295.2.f_id_pfam_acc.txt.gz -> inputs/ecod.v295.2.f_id_pfam_acc.txt",
+    "ecod-sequences:inputs/ecod.v295.2.F70.fa -> sequences.fa",
+    "align-families:sequences.fa -> alignments.sto",
+    "build-family-hmms:alignments.sto -> profiles.hmm",
+    "build-family-a3m:alignments.sto -> msa_a3m.tar.gz",
+    "ecod-families:inputs/* -> families.tsv",
+    "ecod-domains:inputs/* -> domains.tsv",
 )
 
 # First lines of the published 0.1.0 bundle (Zenodo 22928399). The three
@@ -107,7 +123,7 @@ def test_fixture_manifest_loads():
 
     assert manifest.bundle_version == "phu-db-0.2.0-fixture"
     assert manifest.layout_version == 1
-    assert list(manifest.databases) == ["pfam", "kofam", "dbcan", "avg", "phrog"]
+    assert list(manifest.databases) == ["pfam", "kofam", "dbcan", "avg", "phrog", "ecod"]
     assert manifest.expected_members() == CONTRACT_MEMBERS
     assert MANIFEST_MEMBER in manifest.expected_members()
     assert manifest.member_path("kofam", "ko_list.tsv") == "phu-db/kofam/ko_list.tsv"
@@ -282,7 +298,7 @@ PFAM_PREPARED = ("databases", "pfam", "prepared_files", 0)
         pytest.param(_set(*PFAM_PREPARED, "bytes", value=-5), "negative", id="prepared-bytes-negative"),
         pytest.param(_set(*PFAM_PREPARED, "count", value="2"), "wrong type", id="prepared-count-string"),
         pytest.param(_set(*PFAM_PREPARED, "count", value=-1), "negative", id="prepared-count-negative"),
-        pytest.param(_set(*PFAM_PREPARED, "format", value="fasta"), "format", id="prepared-format-unknown"),
+        pytest.param(_set(*PFAM_PREPARED, "format", value="fasta.gz"), "format", id="prepared-format-unknown"),
         pytest.param(_duplicate_prepared, "duplicate paths", id="prepared-duplicate"),
         pytest.param(_set("bundle_version", value="../phu-db"), "unsafe", id="bundle-version-unsafe"),
     ],
@@ -469,6 +485,11 @@ def test_fixture_files_match_manifest():
             lines = data.split(b"\n")
             if item["format"] == "hmm":
                 count = sum(1 for line in lines if line.startswith(b"NAME "))
+            elif item["format"] == "fasta":
+                count = sum(1 for line in lines if line.startswith(b">"))
+            elif item["format"] == "tar.gz":
+                with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+                    count = sum(1 for member in archive.getmembers() if member.isfile())
             else:
                 count = sum(1 for line in lines if line.strip())
             assert item["bytes"] == len(data), item["path"]

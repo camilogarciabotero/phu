@@ -1,0 +1,8 @@
+#ECOD version v295.2
+uid	ecod_domain_id	manual_rep	f_id	pdb	chain	pdb_range	seqid_range	architecture_name	x_name	h_name	t_name	f_name
+101	e1abcA1	False	1.1.1.2	1abc	A	1-21	1-21	beta barrels	cradle loop barrel	RIFT-related	acid protease	acid protease
+102	Q54GG3_F1_nD1	False	1.1.1.2			1-21	1-21	beta barrels	cradle loop barrel	RIFT-related	acid protease	acid protease
+103	P12345_nD1	False	1.1.1.10			1-17	1-17	beta barrels	cradle loop barrel	RIFT-related	acid protease	fixture family B
+104	e2xyzB1	False	1.1.1.10	2xyz	B	1-17	1-17	beta barrels	cradle loop barrel	RIFT-related	acid protease	fixture family B
+105	EPP00012345_nD1	False	2.1.1.1			1-19	1-19	beta barrels	OB-fold-like	OB-fold	OB-fold	fixture family C
+106	A0A061DM17_nD1	False	3.1.1.0			1-15	1-15	alpha arrays	fixture x	fixture homology	fixture topology	

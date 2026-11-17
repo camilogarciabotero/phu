@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import csv
 import json
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -142,7 +142,15 @@ def _scan_offsets(hmm_path: Path) -> dict[str, list[int]]:
     return offsets
 
 
-def _offsets(hmm_path: Path) -> dict[str, list[int]]:
+def _offsets(
+    hmm_path: Path, scan: Callable[[Path], dict[str, list[int]]] | None = None
+) -> dict[str, list[int]]:
+    """The byte range of every model, indexed once and kept with the derived files.
+
+    ``scan`` maps a model file to its offsets; PHROG's own by default. ECOD
+    reuses this index with its scanner (its database has its own derived dir).
+    """
+    scan = scan or _scan_offsets
     offsets = _read_offsets(hmm_path)
     if offsets is not None:
         return offsets
@@ -152,7 +160,7 @@ def _offsets(hmm_path: Path) -> dict[str, list[int]]:
         # Another job may have indexed the file while this one waited.
         offsets = _read_offsets(hmm_path)
         if offsets is None:
-            offsets = _scan_offsets(hmm_path)
+            offsets = scan(hmm_path)
             write_atomically(
                 _offsets_path(hmm_path),
                 json.dumps({**_source_stamp(hmm_path), "offsets": offsets}).encode(),

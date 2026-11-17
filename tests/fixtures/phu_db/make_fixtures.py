@@ -164,6 +164,34 @@ FILTER_ROWS = {
     ),
 }
 
+# ECOD F70 fixture: uid, ecod_domain_id, f_id, pdb, chain, sequence. Members of
+# a family share one length and no gaps, so they are already aligned and every
+# column is a match state. The last row is classified to the T level only.
+ECOD_DOMAINS = (
+    ("101", "e1abcA1", "1.1.1.2", "1abc", "A", "MKVLAAGIVGHRLDEQPRTSW"),
+    ("102", "Q54GG3_F1_nD1", "1.1.1.2", "", "", "MKVLSAGIVGHRLEEQPRTAW"),
+    ("103", "P12345_nD1", "1.1.1.10", "", "", "GSHMTTKELIDRAVAEL"),
+    ("104", "e2xyzB1", "1.1.1.10", "2xyz", "B", "GSHMSTKELIERAIAEL"),
+    ("105", "EPP00012345_nD1", "2.1.1.1", "", "", "MDNPKFVLTGCSGYIGRRA"),
+    ("106", "A0A061DM17_nD1", "3.1.1.0", "", "", "MSTRKQWLEEAGLKP"),
+)
+ECOD_NAMES = {
+    "1.1.1.2": ("acid protease", "acid protease", "RIFT-related", "cradle loop barrel", "beta barrels"),
+    "1.1.1.10": ("fixture family B", "acid protease", "RIFT-related", "cradle loop barrel", "beta barrels"),
+    "2.1.1.1": ("fixture family C", "OB-fold", "OB-fold", "OB-fold-like", "beta barrels"),
+    "3.1.1.0": ("", "fixture topology", "fixture homology", "fixture x", "alpha arrays"),
+}
+ECOD_PFAM = {"1.1.1.2": "PF00026", "2.1.1.1": "PF00001,PF00002"}
+ECOD_DOMAINS_HEADER = (
+    "uid\tecod_domain_id\tmanual_rep\tf_id\tpdb\tchain\tpdb_range\tseqid_range\t"
+    "architecture_name\tx_name\th_name\tt_name\tf_name"
+)
+ECOD_FAMILY_COLUMNS = (
+    "f_id\tf_name\tt_id\tt_name\th_id\th_name\tx_id\tx_name\tarchitecture\t"
+    "pfam_acc\tn_domains\tn_pdb\tn_predicted"
+)
+ECOD_DOMAIN_COLUMNS = "uid\tecod_domain_id\tf_id\tsource\taccession\tpdb\tchain\tseqid_range"
+
 # Per-database manifest metadata, steps and prepared files, in manifest order.
 DATABASES = {
     "pfam": {
@@ -266,6 +294,41 @@ DATABASES = {
         "build": {
             "source_repo": "https://doi.org/10.5281/zenodo.23342382",
             "source_tag": "PHROGs v4 (annotations of 2022-06-15)",
+            "tool_version_key": "pyhmmer",
+        },
+    },
+    "ecod": {
+        "provenance": "build",
+        "redistribution": "pin-only",
+        "upstream_version": "v295.2",
+        "license": "CC-BY-4.0",
+        "citation": "Schaeffer RD, et al. Nucleic Acids Res. 2025. doi:10.1093/nar/gkae1029",
+        "sources": (
+            "ecod.v295.2.F70.fa",
+            "ecod.v295.2.F70.domains.txt",
+            "ecod.v295.2.f_id_pfam_acc.txt.gz",
+        ),
+        "steps": (
+            "rename:ecod.v295.2.F70.fa -> inputs/ecod.v295.2.F70.fa",
+            "rename:ecod.v295.2.F70.domains.txt -> inputs/ecod.v295.2.F70.domains.txt",
+            "gunzip:ecod.v295.2.f_id_pfam_acc.txt.gz -> inputs/ecod.v295.2.f_id_pfam_acc.txt",
+            "ecod-sequences:inputs/ecod.v295.2.F70.fa -> sequences.fa",
+            "align-families:sequences.fa -> alignments.sto",
+            "build-family-hmms:alignments.sto -> profiles.hmm",
+            "build-family-a3m:alignments.sto -> msa_a3m.tar.gz",
+            "ecod-families:inputs/* -> families.tsv",
+            "ecod-domains:inputs/* -> domains.tsv",
+        ),
+        "prepared_files": (
+            ("profiles.hmm", "hmm"),
+            ("msa_a3m.tar.gz", "tar.gz"),
+            ("sequences.fa", "fasta"),
+            ("families.tsv", "tsv"),
+            ("domains.tsv", "tsv"),
+        ),
+        "build": {
+            "source_repo": "https://doi.org/10.5281/zenodo.23168816",
+            "source_tag": "ECOD v295.2, F70 representatives; aligned with pyfamsa, models with pyhmmer",
             "tool_version_key": "pyhmmer",
         },
     },
@@ -481,6 +544,29 @@ def upstream_files() -> dict[str, dict[str, bytes]]:
             ),
             "phrog_annot_v4.tsv": _table(PHROG_ANNOTATION_HEADER, PHROG_ANNOTATION_ROWS),
         },
+        "ecod": {
+            "ecod.v295.2.F70.fa": "".join(
+                f">{uid}|{domain}|{f_id}\n{sequence}\n"
+                for uid, domain, f_id, _, _, sequence in ECOD_DOMAINS
+            ).encode(),
+            "ecod.v295.2.F70.domains.txt": _table(
+                "#ECOD version v295.2\n" + ECOD_DOMAINS_HEADER,
+                tuple(
+                    "\t".join(
+                        (uid, domain, "False", f_id, pdb, chain, f"1-{len(sequence)}",
+                         f"1-{len(sequence)}", ECOD_NAMES[f_id][4], ECOD_NAMES[f_id][3],
+                         ECOD_NAMES[f_id][2], ECOD_NAMES[f_id][1], ECOD_NAMES[f_id][0])
+                    )  # fmt: skip
+                    for uid, domain, f_id, pdb, chain, sequence in ECOD_DOMAINS
+                ),
+            ),
+            "ecod.v295.2.f_id_pfam_acc.txt.gz": _gzip(
+                _table(
+                    "# ECOD v295.2 F-group to Pfam Accession Mapping\nf_id,pfam_acc",
+                    tuple(f'{f_id},"{acc}"' for f_id, acc in ECOD_PFAM.items()),
+                )
+            ),
+        },
     }
 
 
@@ -542,13 +628,94 @@ def _pul_table(data: bytes) -> bytes:
     return ("\n".join(lines) + "\n").encode()
 
 
+def _ecod_members(fasta: bytes) -> list[tuple[str, str, str]]:
+    """(header, f_id, sequence) of every F-group member, in file order."""
+    lines = fasta.decode().split("\n")
+    records = zip(lines[0::2], lines[1::2], strict=False)
+    members = []
+    for header, sequence in records:
+        f_id = header[1:].split("|")[2]
+        if not f_id.endswith(".0"):
+            members.append((header[1:], f_id, sequence))
+    return members
+
+
+def _ecod_step(verb: str, source: str, workdir: dict[str, bytes]) -> bytes:
+    """The ECOD verbs, for fixture families whose members are already aligned."""
+    if verb == "ecod-sequences":
+        return "".join(
+            f">{header}\n{sequence}\n" for header, _, sequence in _ecod_members(workdir[source])
+        ).encode()
+    if verb == "align-families":
+        families: dict[str, list[str]] = {}
+        for header, f_id, sequence in _ecod_members(workdir[source]):
+            families.setdefault(f_id, []).append(f"{header} {sequence}")
+        return "".join(
+            f"# STOCKHOLM 1.0\n#=GF ID {f_id}\n" + "\n".join(families[f_id]) + "\n//\n"
+            for f_id in sorted(families)
+        ).encode()
+    if verb in ("build-family-hmms", "build-family-a3m"):
+        blocks = [block for block in workdir[source].decode().split("//\n") if block.strip()]
+        models, members = [], {}
+        for block in blocks:
+            lines = block.strip().split("\n")
+            name = lines[1].removeprefix("#=GF ID ")
+            rows = [line.split(" ") for line in lines[2:]]
+            fasta = "".join(f">{header}\n{sequence}\n" for header, sequence in rows)
+            models.append(_build_hmm(name, fasta.encode()))
+            members[f"a3m/{name}.a3m"] = fasta.encode()
+        if verb == "build-family-hmms":
+            return b"".join(models)
+        return _tar_gz((), members)
+    fasta = workdir["inputs/ecod.v295.2.F70.fa"]
+    members = _ecod_members(fasta)
+    if verb == "ecod-domains":
+        rows = []
+        for header, f_id, sequence in members:
+            uid, domain, _ = header.split("|")
+            _, _, _, pdb, chain, _ = next(row for row in ECOD_DOMAINS if row[0] == uid)
+            if pdb:
+                source_name, accession = "pdb", ""
+            else:
+                accession = domain.split("_")[0]
+                source_name = "epp" if accession.startswith("EPP") else "afdb"
+            rows.append(
+                f"{uid}\t{domain}\t{f_id}\t{source_name}\t{accession}\t{pdb}\t{chain}\t"
+                f"1-{len(sequence)}"
+            )
+        return _table(ECOD_DOMAIN_COLUMNS, tuple(rows))
+    counts: dict[str, list[int]] = {}
+    for header, f_id, _ in members:
+        pdb = next(row for row in ECOD_DOMAINS if row[0] == header.split("|")[0])[3]
+        counts.setdefault(f_id, [0, 0])[0 if pdb else 1] += 1
+    rows = []
+    for f_id in sorted(counts):
+        f_name, t_name, h_name, x_name, architecture = ECOD_NAMES[f_id]
+        parts = f_id.split(".")
+        n_pdb, n_predicted = counts[f_id]
+        rows.append(
+            "\t".join(
+                (f_id, f_name, ".".join(parts[:3]), t_name, ".".join(parts[:2]), h_name,
+                 parts[0], x_name, architecture, ECOD_PFAM.get(f_id, ""),
+                 str(n_pdb + n_predicted), str(n_pdb), str(n_predicted))
+            )  # fmt: skip
+        )
+    return _table(ECOD_FAMILY_COLUMNS, tuple(rows))
+
+
 def run_steps(steps: tuple[str, ...], downloads: dict[str, bytes]) -> dict[str, bytes]:
     """Apply the contract verbs to in-memory files; returns the workdir contents."""
     workdir: dict[str, bytes] = {}
     for step in steps:
         verb, source, target = re.fullmatch(
-            r"(gunzip|extract|concatenate|build-hmm|rename|pul-table):(\S+) -> (\S+)", step
+            r"(gunzip|extract|concatenate|build-hmm|rename|pul-table|ecod-sequences|"
+            r"align-families|build-family-hmms|build-family-a3m|ecod-families|ecod-domains)"
+            r":(\S+) -> (\S+)",
+            step,
         ).groups()
+        if verb.startswith(("ecod-", "align-", "build-family-")):
+            workdir[target] = _ecod_step(verb, source, workdir)
+            continue
         data = workdir.get(source, downloads.get(source))
         if verb == "gunzip":
             workdir[target] = gzip.decompress(data)
@@ -582,6 +749,11 @@ def _count(data: bytes, kind: str) -> int:
     lines = data.split(b"\n")
     if kind == "hmm":
         return sum(1 for line in lines if line.startswith(b"NAME "))
+    if kind == "fasta":
+        return sum(1 for line in lines if line.startswith(b">"))
+    if kind == "tar.gz":
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
+            return sum(1 for member in archive.getmembers() if member.isfile())
     return sum(1 for line in lines if line.strip())
 
 

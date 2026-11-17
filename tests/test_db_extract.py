@@ -71,7 +71,7 @@ def _assert_matches_fixture(root: Path, members) -> None:
 
 
 def test_fixture_pins_cover_the_full_bundle(fixture_pins, fixture_manifest, fixture_bundle):
-    assert len(fixture_pins.expected_members) == 16
+    assert len(fixture_pins.expected_members) == 21
     assert fixture_pins.expected_members == fixture_manifest.expected_members()
     assert fixture_pins.bundle_version == "phu-db-0.2.0-fixture"
     data = fixture_bundle.read_bytes()
@@ -301,7 +301,7 @@ def test_extraction_uses_the_data_filter(extract, fixture_bundle, monkeypatch):
     monkeypatch.setattr(tarfile.TarFile, "extract", recording)
 
     extract(fixture_bundle)
-    assert filters == ["data"] * 16
+    assert filters == ["data"] * 21
 
 
 def test_extraction_without_the_data_filter(extract, fixture_bundle, fixture_pins, monkeypatch):

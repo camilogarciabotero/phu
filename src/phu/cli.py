@@ -112,7 +112,9 @@ def dbs_prepare(
     all_dbs: bool = typer.Option(False, "--all", hidden=True),
     force_refresh: bool = typer.Option(False, "--force-refresh", hidden=True),
 ) -> None:
-    """Download, verify and install the pinned phu-db bundle (Pfam, KOfam, dbCAN, AVG).
+    """Download, verify and install the pinned phu-db bundle.
+
+    The bundle holds Pfam, KOfam, dbCAN, AVG, PHROG and ECOD.
 
     Optional: `screen` and `avger` install the bundle on first use. Run this
     first on a login node, or before submitting many jobs at once.
@@ -590,7 +592,7 @@ def screen(
     ),
     hmms: list[Path] = typer.Argument(
         None,
-        help="HMM files, or database names: PF00001, K00001, phrog_216, GH128, PUL0621.",
+        help="HMM files, or database names: PF00001, K00001, phrog_216, ecod:2004.1.1.5, GH128, PUL0621.",
         metavar="[QUERY]...",
         rich_help_panel="Query",
     ),
@@ -659,6 +661,12 @@ def screen(
         True,
         "--use-phrog-thresholds/--no-use-phrog-thresholds",
         help="For PHROGs, need 60 bits and half of model and protein aligned.",
+        rich_help_panel="Hit thresholds",
+    ),
+    use_ecod_thresholds: bool = typer.Option(
+        True,
+        "--use-ecod-thresholds/--no-use-ecod-thresholds",
+        help="For ECOD families, need half of the model aligned.",
         rich_help_panel="Hit thresholds",
     ),
     combine_mode: str = typer.Option(
@@ -757,8 +765,10 @@ def screen(
 
     Proteins are predicted from the contigs and searched with each QUERY: your
     own HMM files, or families from the phu databases by name: Pfam (PF00001),
-    KOfam (K00001), PHROG (phrog_216; find them with `phu phrogs`), dbCAN
-    (GH128) or one dbCAN PUL (PUL0621). Each database's own cutoffs apply.
+    KOfam (K00001), PHROG (phrog_216; find them with `phu phrogs`), ECOD
+    (ecod:2004.1.1.5 for one family, or a T, H or X group such as ecod:2004.1.1
+    for all its families), dbCAN (GH128) or one dbCAN PUL (PUL0621). Each
+    database's own cutoffs apply.
 
     Examples:
         phu screen -i contigs.fa PF00001 PF00589
@@ -842,6 +852,7 @@ def screen(
         cut_ga=cut_ga,
         use_kofam_thresholds=use_kofam_thresholds,
         use_phrog_thresholds=use_phrog_thresholds,
+        use_ecod_thresholds=use_ecod_thresholds,
         top_per_contig=top_per_contig,
         min_protein_len_aa=min_protein_len_aa,
         translation_table=translation_table,

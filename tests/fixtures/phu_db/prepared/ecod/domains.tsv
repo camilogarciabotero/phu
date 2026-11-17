@@ -1,0 +1,6 @@
+uid	ecod_domain_id	f_id	source	accession	pdb	chain	seqid_range
+101	e1abcA1	1.1.1.2	pdb		1abc	A	1-21
+102	Q54GG3_F1_nD1	1.1.1.2	afdb	Q54GG3			1-21
+103	P12345_nD1	1.1.1.10	afdb	P12345			1-17
+104	e2xyzB1	1.1.1.10	pdb		2xyz	B	1-17
+105	EPP00012345_nD1	2.1.1.1	epp	EPP00012345			1-19

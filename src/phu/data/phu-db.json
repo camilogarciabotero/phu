@@ -1,9 +1,9 @@
 {
-  "bundle_version": "phu-db-0.3.0",
+  "bundle_version": "phu-db-0.4.0",
   "layout_version": 1,
   "generator": {
     "name": "phu-db-prep",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "bundle": {
     "name": "phu-db.tar.gz",
@@ -336,6 +336,91 @@
       "build": {
         "source_repo": "https://doi.org/10.5281/zenodo.23342382",
         "source_tag": "PHROGs v4 (annotations of 2022-06-15)",
+        "tool_version_key": "pyhmmer"
+      }
+    },
+    "ecod": {
+      "provenance": "build",
+      "redistribution": "pin-only",
+      "upstream_version": "v295.2",
+      "license": "CC-BY-4.0",
+      "citation": "Schaeffer RD, et al. Nucleic Acids Res. 2025. doi:10.1093/nar/gkae1029",
+      "layout_dir": "ecod",
+      "sources": [
+        {
+          "name": "ecod.v295.2.F70.fa",
+          "url": "https://zenodo.org/records/24291646/files/ecod.v295.2.F70.fa",
+          "sha256": "eecce39072c2d0f287f9ae70f491aaf862b8984b595711fc2e72cac1eabe6c8e",
+          "bytes": 193879503
+        },
+        {
+          "name": "ecod.v295.2.F70.domains.txt",
+          "url": "https://zenodo.org/records/24291646/files/ecod.v295.2.F70.domains.txt",
+          "sha256": "44b4fd95107f7f3b289e353422ed73430aaab8f41019aa46434703a35d196a0e",
+          "bytes": 171022518
+        },
+        {
+          "name": "ecod.v295.2.f_id_pfam_acc.txt.gz",
+          "url": "https://zenodo.org/records/23168816/files/ecod.v295.2.f_id_pfam_acc.txt.gz",
+          "sha256": "281337056b9fb1e4fa10e7d040cbf6bdc6814983eecb323be49ccb51b7eb53dd",
+          "bytes": 185581
+        }
+      ],
+      "steps": [
+        "rename:ecod.v295.2.F70.fa -> inputs/ecod.v295.2.F70.fa",
+        "rename:ecod.v295.2.F70.domains.txt -> inputs/ecod.v295.2.F70.domains.txt",
+        "gunzip:ecod.v295.2.f_id_pfam_acc.txt.gz -> inputs/ecod.v295.2.f_id_pfam_acc.txt",
+        "ecod-sequences:inputs/ecod.v295.2.F70.fa -> sequences.fa",
+        "align-families:sequences.fa -> alignments.sto",
+        "build-family-hmms:alignments.sto -> profiles.hmm",
+        "build-family-a3m:alignments.sto -> msa_a3m.tar.gz",
+        "ecod-families:inputs/* -> families.tsv",
+        "ecod-domains:inputs/* -> domains.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 3107971876,
+          "sha256": "f85e275c2a07b59a1805d07b6e5658a20149a0bdcba872473933fda342aeccc6",
+          "count": 32041
+        },
+        {
+          "path": "msa_a3m.tar.gz",
+          "format": "tar.gz",
+          "bytes": 89776016,
+          "sha256": "c4413a81939b28a8d4fdcf068d2cfb556b0390531d431a04634bfcecd6b35c0d",
+          "count": 32041
+        },
+        {
+          "path": "sequences.fa",
+          "format": "fasta",
+          "bytes": 156335405,
+          "sha256": "506de0d888c82ecec79ebfce9b55a7489d2d8e13fcd0e24516541ff963feeb09",
+          "count": 691203
+        },
+        {
+          "path": "families.tsv",
+          "format": "tsv",
+          "bytes": 5035040,
+          "sha256": "d38411a0f18a130010caa9e6d241d14cfadb4f7a0d795b839fa4f438b354b537",
+          "count": 32042
+        },
+        {
+          "path": "domains.tsv",
+          "format": "tsv",
+          "bytes": 39307612,
+          "sha256": "4110449099fbbd1cf3a5969c71d297f3f80478e506cc8b572e0d772211c5b2f9",
+          "count": 691204
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": {
+        "source_repo": "https://doi.org/10.5281/zenodo.23168816",
+        "source_tag": "ECOD v295.2, F70 representatives; aligned with pyfamsa, models with pyhmmer",
         "tool_version_key": "pyhmmer"
       }
     }

@@ -391,3 +391,110 @@ def test_dbs_prepare_connections_option_sets_the_download_setting(installed, mon
     assert result.exit_code == 0, result.output
     assert os.environ["PHU_DB_CONNECTIONS"] == "2"
     assert CliRunner().invoke(app, ["dbs", "prepare", "--connections", "0"]).exit_code == 2
+
+
+def test_screen_resolves_ecod_groups_at_every_level(installed, tmp_path):
+    from phu.db import ecod as ecod_db
+
+    expanded, missing = ecod_db.expand_ecod_ids(
+        ["ECOD:1.1.1.2", "ecod:1", "ecod:2.1", "ecod:3.1.1", "ecod:9"]
+    )
+    # X-group 1 holds two F-groups; 3.1.1 only has a T-level-only domain.
+    assert expanded == {
+        "ecod:1.1.1.2": ["ecod:1.1.1.2"],
+        "ecod:1": ["ecod:1.1.1.2", "ecod:1.1.1.10"],
+        "ecod:2.1": ["ecod:2.1.1.1"],
+    }
+    assert missing == ["ecod:3.1.1", "ecod:9"]
+
+    paths, missing = ecod_db.extract_ecod_models(["ecod:1.1.1.10", "ecod:5.1.1.1"], tmp_path / "x")
+    assert [path.name for path in paths] == ["ecod:1.1.1.10.hmm"]
+    assert missing == ["ecod:5.1.1.1"]
+    assert _model_names(paths[0]) == ["ecod:1.1.1.10"]
+    assert (installed / "ecod" / "offsets.json").is_file()
+
+    hmms, _, query = screen._resolve_hmm_inputs(
+        [Path("ecod:1.1.1"), Path("phrog_2")], tmp_path / "out", return_query=True
+    )
+    assert [path.name for path in hmms] == [
+        "phrog_2.hmm",
+        "ecod:1.1.1.2.hmm",
+        "ecod:1.1.1.10.hmm",
+    ]
+    assert query.normalized_models == ("phrog_2", "ecod:1.1.1.2", "ecod:1.1.1.10")
+    assert query.databases == ("phrog", "ecod")
+    manifest = screen._query_manifest(query, "any")
+    assert manifest["ecod_expansions"] == {"ecod:1.1.1": ["ecod:1.1.1.2", "ecod:1.1.1.10"]}
+    assert manifest["ecod_families"]["ecod:1.1.1.2"] == {
+        "f_name": "acid protease",
+        "t_name": "acid protease",
+        "h_name": "RIFT-related",
+        "x_name": "cradle loop barrel",
+        "pfam_acc": "PF00026",
+    }
+    assert any(name.startswith("ecod/") for name in manifest["database_hashes"])
+
+    with pytest.raises(FileNotFoundError, match="ecod:3.1.1"):
+        screen._resolve_hmm_inputs([Path("ecod:3.1.1")], tmp_path / "out2")
+    pins, bundle_manifest, _ = db_bundle._pinned(None, None)
+    assert db_bundle.installed_problems(installed.parent.parent, pins, bundle_manifest, deep=True) == []
+
+
+def test_screen_searches_ecod_groups_end_to_end(installed, tmp_path, monkeypatch):
+    """A real search: ids, coverage rule, combine modes, outputs and labels."""
+    import json
+
+    from phu.core.gene_prediction import CacheArtifact
+
+    family_a = "MKVLAAGIVGHRLDEQPRTSW"  # 1.1.1.2
+    family_b = "GSHMTTKELIDRAVAEL"  # 1.1.1.10
+    family_c = "MDNPKFVLTGCSGYIGRRA"  # 2.1.1.1
+    proteins = tmp_path / "cache" / "proteins.faa"
+    proteins.parent.mkdir()
+    proteins.write_text(
+        f">c1|gene1\n{family_a}\n>c1|gene2\n{family_c}\n>c2|gene1\n{family_b}\n"
+        ">c3|gene1\nWWWWPPPPWWWWPPPPWWWW\n"
+    )
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c1\nACGT\n>c2\nACGT\n>c3\nACGT\n")
+    monkeypatch.setattr(
+        screen,
+        "get_or_predict_proteins",
+        lambda inputs, use_cache=True, threads=1: CacheArtifact(
+            proteins, 4, False, "key", cache_dir=proteins.parent
+        ),
+    )
+
+    def run(name, tokens, **options):
+        out = tmp_path / name
+        screen._screen(
+            screen.ScreenConfig(
+                input_contigs=contigs,
+                hmms=[Path(token) for token in tokens],
+                outdir=out,
+                cut_ga=False,
+                min_protein_len_aa=1,
+                save_target_proteins=True,
+                **options,
+            )
+        )
+        return out, (out / "matched-contig-ids.txt").read_text().split()
+
+    # One T-group token: both of its families are searched; either one keeps a contig.
+    out, kept = run("any", ["ecod:1.1.1"])
+    assert kept == ["c1", "c2"]
+    assert sorted(path.name for path in out.glob("*-hmmsearch-domains.tbl")) == [
+        "ecod_1.1.1.10-hmmsearch-domains.tbl",
+        "ecod_1.1.1.2-hmmsearch-domains.tbl",
+    ]
+    query = json.loads((out / ".phu" / "query.json").read_text())
+    assert query["normalized_models"] == ["ecod:1.1.1.2", "ecod:1.1.1.10"]
+    assert query["ecod_expansions"] == {"ecod:1.1.1": ["ecod:1.1.1.2", "ecod:1.1.1.10"]}
+    header = (out / "target-proteins" / "ecod_1.1.1.2.faa").read_text().splitlines()[0]
+    assert header.startswith(">c1|gene1") and "ecod:1.1.1.2|acid protease|RIFT-related" in header
+
+    # --combine-mode all: each token is one unit, met by any of its families.
+    _, kept = run("all", ["ecod:1", "ecod:2"], combine_mode="all")
+    assert kept == ["c1"]
+    _, kept = run("threshold", ["ecod:1"], combine_mode="threshold", min_hmm_hits=2)
+    assert kept == []

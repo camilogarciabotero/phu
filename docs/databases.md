@@ -65,14 +65,15 @@ Inside that folder:
 
 ```text
 phu-db/
-  phu-db-0.3.0/
+  phu-db-0.4.0/
     installed.json        # source, tarball SHA-256, install time
     phu-db.json           # the bundle manifest: upstream URLs, digests, steps
     pfam/  profiles.hmm
     kofam/ profiles.hmm, ko_list.tsv
     dbcan/ profiles.hmm, family_substrate.tsv, pul_rules.tsv
     avg/   v_scores.tsv, positive_{amg,apg,areg}.tsv, filters_{amg,apg,areg}.tsv
-    phrog/ profiles.hmm, annotations.tsv
+    phrog/ profiles.hmm, msa_a3m.tar.gz, annotations.tsv
+    ecod/  profiles.hmm, msa_a3m.tar.gz, sequences.fa, families.tsv, domains.tsv
 ```
 
 When a new PHU release pins a newer bundle, it installs the new version beside
@@ -95,7 +96,7 @@ Compute nodes often have no internet access, or many jobs would download the
 same bundle at once. Download it once and point PHU at it:
 
 ```bash
-# On a node with internet access: get phu-db.tar.gz for phu-db-0.3.0 from
+# On a node with internet access: get phu-db.tar.gz for phu-db-0.4.0 from
 # https://doi.org/10.5281/zenodo.19503347 (the page lists every version).
 export PHU_DB_FOLDER=/shared/project/phu-db      # on a shared filesystem
 phu dbs prepare --bundle /shared/project/phu-db.tar.gz   # installs once
@@ -127,7 +128,7 @@ it and says so. Download the version named in the error.
 
 ## What the bundle contains
 
-`phu-db-0.3.0` contains these pinned upstream releases. PHU records them in
+`phu-db-0.4.0` contains these pinned upstream releases. PHU records them in
 each run's provenance.
 
 | Database | Used by | Upstream release | Files |
@@ -137,6 +138,7 @@ each run's provenance.
 | `dbcan` | `screen` | dbCAN HMMdb V15; dbCAN-PUL substrate table 12-12-2023; dbCAN-PUL workbook snapshot of 2026-09-30 | `profiles.hmm`, `family_substrate.tsv`, `pul_rules.tsv` |
 | `avg` | `avger` | CheckAMG v1.1.1 reference tables | V-scores, AMG/APG/AReG positive tables and filter tables |
 | `phrog` | `avger` | PHROGs v4 (CC-BY-4.0) | `profiles.hmm` (38,880 models), `msa_a3m.tar.gz` (38,880 alignments), `annotations.tsv` |
+| `ecod` | `screen` | ECOD v295.2, F70 representatives (CC-BY-4.0) | `profiles.hmm` (32,041 models), `msa_a3m.tar.gz` (32,041 alignments), `sequences.fa`, `families.tsv`, `domains.tsv` |
 
 PHROGs is published as HH-suite profiles and MMseqs2 databases, which HMMER
 cannot search. The PHROG models in the bundle were built from the official
@@ -148,6 +150,21 @@ model per PHROG, named `phrog_1` to `phrog_38880`.
 upstream alignments already mark insert columns in lowercase; the A3M files
 keep those states and only drop the gap padding in insert columns. phu itself
 does not read this file.
+
+ECOD (Evolutionary Classification of protein Domains) publishes no HMMs or
+alignments. The bundle has one model per F-group (family), named by its id
+(`2004.1.1.5`; `phu screen` reports it as `ecod:2004.1.1.5`), built with
+default `hmmbuild` settings from a FAMSA alignment of the family's F70
+representatives (ECOD's domains clustered at 70% identity), from experimental
+and predicted structures alike. Domains classified only to the T level are left
+out. `ecod/msa_a3m.tar.gz` holds those alignments as `a3m/<f_id>.a3m`, with the
+model's own match columns. `sequences.fa` holds the 691,203 member sequences
+with ECOD's headers (`uid|ecod_domain_id|f_id`); `families.tsv` gives each
+family's F, T, H and X ids and names, architecture, Pfam accessions and member
+counts; `domains.tsv` gives each member's source (`pdb`, `afdb`, `epp` or
+`uniparc`) and accession. The ECOD sequences come from a Zenodo mirror
+(doi:10.5281/zenodo.24291646) of ECOD's own release files; cite ECOD:
+Schaeffer RD, et al. *Nucleic Acids Res.* 2025, doi:10.1093/nar/gkae1029.
 
 The bundle's own manifest, `phu-db.json`, lists every upstream URL, SHA-256,
 byte size, license and record count, and the exact preparation steps that turn
@@ -166,7 +183,7 @@ Keep these files with your results.
 
 Cite the bundle version you used:
 
-> García-Botero C. *Phu Databases*, version phu-db-0.3.0. Zenodo.
+> García-Botero C. *Phu Databases*, version phu-db-0.4.0. Zenodo.
 > <https://doi.org/10.5281/zenodo.19503347>
 
 Also cite the upstream databases your analysis relied on, following each

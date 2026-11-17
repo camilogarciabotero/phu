@@ -330,6 +330,91 @@
         "source_tag": "PHROGs v4 (annotations of 2022-06-15)",
         "tool_version_key": "pyhmmer"
       }
+    },
+    "ecod": {
+      "provenance": "build",
+      "redistribution": "pin-only",
+      "upstream_version": "v295.2",
+      "license": "CC-BY-4.0",
+      "citation": "Schaeffer RD, et al. Nucleic Acids Res. 2025. doi:10.1093/nar/gkae1029",
+      "layout_dir": "ecod",
+      "sources": [
+        {
+          "name": "ecod.v295.2.F70.fa",
+          "url": "https://phu-db-fixture.invalid/ecod/ecod.v295.2.F70.fa",
+          "sha256": "0b2dadf4f77fb75edfc6820063841190679eb5f2d9d815325965ae3fe3b1786b",
+          "bytes": 268
+        },
+        {
+          "name": "ecod.v295.2.F70.domains.txt",
+          "url": "https://phu-db-fixture.invalid/ecod/ecod.v295.2.F70.domains.txt",
+          "sha256": "e3f0ca9217ff139863e2f77a8adf1cc8e529987fddccb2168ff62812f95eb896",
+          "bytes": 813
+        },
+        {
+          "name": "ecod.v295.2.f_id_pfam_acc.txt.gz",
+          "url": "https://phu-db-fixture.invalid/ecod/ecod.v295.2.f_id_pfam_acc.txt.gz",
+          "sha256": "7f2f01a626d0d9cd3aa6dab0c77758a28092fd306669058b5f5bf9a0dd0de848",
+          "bytes": 129
+        }
+      ],
+      "steps": [
+        "rename:ecod.v295.2.F70.fa -> inputs/ecod.v295.2.F70.fa",
+        "rename:ecod.v295.2.F70.domains.txt -> inputs/ecod.v295.2.F70.domains.txt",
+        "gunzip:ecod.v295.2.f_id_pfam_acc.txt.gz -> inputs/ecod.v295.2.f_id_pfam_acc.txt",
+        "ecod-sequences:inputs/ecod.v295.2.F70.fa -> sequences.fa",
+        "align-families:sequences.fa -> alignments.sto",
+        "build-family-hmms:alignments.sto -> profiles.hmm",
+        "build-family-a3m:alignments.sto -> msa_a3m.tar.gz",
+        "ecod-families:inputs/* -> families.tsv",
+        "ecod-domains:inputs/* -> domains.tsv"
+      ],
+      "prepared_files": [
+        {
+          "path": "profiles.hmm",
+          "format": "hmm",
+          "bytes": 29533,
+          "sha256": "3bc00e4ffd4bed8512e196014640ed020b6d7d72676987988c59b1fb3379769f",
+          "count": 3
+        },
+        {
+          "path": "msa_a3m.tar.gz",
+          "format": "tar.gz",
+          "bytes": 10263,
+          "sha256": "6d1b54376e9fee8a2653840506113cb6ec56275691bee375c911aa621430bf56",
+          "count": 3
+        },
+        {
+          "path": "sequences.fa",
+          "format": "fasta",
+          "bytes": 224,
+          "sha256": "ac15ffc85973c59c1e0a3e0dda74fa829fff117598298391ad6caf204a5f359c",
+          "count": 5
+        },
+        {
+          "path": "families.tsv",
+          "format": "tsv",
+          "bytes": 410,
+          "sha256": "3f9075733e0871c2f4aea9ac82cdd0de2e51132764bde985b1792ac5e1d0646f",
+          "count": 4
+        },
+        {
+          "path": "domains.tsv",
+          "format": "tsv",
+          "bytes": 277,
+          "sha256": "9ccb8ff17d7037dac605100bdc612ebde1a646bd1620434f597a8a41ccd07c43",
+          "count": 6
+        }
+      ],
+      "validation": {
+        "passed": true,
+        "reason": null
+      },
+      "build": {
+        "source_repo": "https://doi.org/10.5281/zenodo.23168816",
+        "source_tag": "ECOD v295.2, F70 representatives; aligned with pyfamsa, models with pyhmmer",
+        "tool_version_key": "pyhmmer"
+      }
     }
   }
 }

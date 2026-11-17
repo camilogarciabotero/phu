@@ -436,3 +436,48 @@ def test_extract_target_proteins_adds_phrog_annotation_to_headers(
 
     content = (tmp_path / "target-proteins" / "phrog_7.faa").read_text()
     assert ">contigA|gene1|phrog_7|anti-restriction|moron" in content
+
+
+def test_ecod_queries_need_half_of_the_model_aligned():
+    def hit(model, hmm_coverage, protein_coverage):
+        return screen.Hit(
+            contig=f"{model}-{hmm_coverage}-{protein_coverage}",
+            prot_id="p|gene1",
+            model=model,
+            bitscore=25.0,
+            domain_bitscore=25.0,
+            evalue=1e-20,
+            hmm_coverage=hmm_coverage,
+            protein_coverage=protein_coverage,
+        )
+
+    hits = [
+        hit("ecod:1.1.1.2", 0.5, 0.1),  # at the limit; a domain of a long protein
+        hit("ecod:1.1.1.2", 0.49, 1.0),
+        hit("ecod:1.1.1.2", None, None),
+    ]
+
+    def kept(**kwargs):
+        return [
+            (item.model, item.hmm_coverage)
+            for item in screen._filter_qualifying_hits(
+                hits, None, 1e-6, database_model_ids=("ecod:1.1.1.2",), **kwargs
+            )
+        ]
+
+    assert kept() == [("ecod:1.1.1.2", 0.5)]
+    assert len(kept(use_ecod_thresholds=False)) == 3
+
+
+def test_ecod_ids_parse_at_every_level():
+    from phu.db.ecod import ecod_level, is_ecod_id, normalize_ecod_id
+
+    assert [is_ecod_id(token) for token in ("ecod:2004", "ECOD:2004.1.1.5", "2004.1.1.5")] == [
+        True,
+        True,
+        False,
+    ]
+    assert not is_ecod_id("ecod:2004.1.1.5.3")
+    assert not is_ecod_id("ecod:2004.x")
+    assert normalize_ecod_id(" ECOD:02004.01.1 ") == "ecod:2004.1.1"
+    assert [ecod_level(f"ecod:{i}") for i in ("1", "1.1", "1.1.1", "1.1.1.2")] == ["X", "H", "T", "F"]

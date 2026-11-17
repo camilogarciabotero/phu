@@ -14,7 +14,7 @@ For implementation-level details on pass/fail decisions, see [screen thresholds 
 phu screen --input-contigs [INPUT_CONTIGS] [HMMS...]
 ```
 
-`[HMMS...]` accepts local HMM paths, PFAM/KOfam/PHROG identifiers, dbCAN families
+`[HMMS...]` accepts local HMM paths, PFAM/KOfam/PHROG identifiers, ECOD groups (`ecod:<id>`), dbCAN families
 (for example `GH128` or `CBM89`), and one dbCAN PUL identifier such as
 `PUL0621`.
 
@@ -212,7 +212,7 @@ All saved protein FASTA files contain only proteins that come from contigs that 
 | `matched-contigs.fna` | always | Nucleotide FASTA of the contigs that passed the screen |
 | `matched-contig-ids.txt` | always | IDs of those contigs, one per line |
 | `{hmm}-hmmsearch-domains.tbl` | `--keep-domtbl` (default) | hmmsearch per-domain table, one per input HMM file |
-| `.phu/query.json` | always, except `--all-cazymes` / `--all-puls` | Original query, expansion and matching rule; for Pfam, KOfam, PHROG and dbCAN queries also the `phu-db` bundle version (and for PHROG the function and category of each family) and database file hashes |
+| `.phu/query.json` | always, except `--all-cazymes` / `--all-puls` | Original query, expansion and matching rule; for Pfam, KOfam, PHROG, ECOD and dbCAN queries also the `phu-db` bundle version (for PHROG the function and category of each family; for ECOD what each `ecod:` id expanded to and the names of each F-group) and database file hashes |
 | `.phu/run.json` | `--all-cazymes` / `--all-puls` | Run manifest with counts, thresholds and `generated_files` |
 | `query-hmms/pfam/`, `query-hmms/kofam/`, `query-hmms/dbcan/` | Pfam, KO, dbCAN-family or PUL queries | The HMM files resolved from the local databases |
 | `predicted-proteins.faa` | `--keep-proteins` | Protein FASTA of all predicted proteins |
@@ -280,27 +280,29 @@ These outputs respect your HMM mode settings and combination logic, ensuring con
 ## Command Options
 
 ```bash
-
- Usage: phu screen [OPTIONS] [QUERY]...
-
- Find contigs that carry given protein families.
-
- Proteins are predicted from the contigs and searched with each QUERY: your
- own HMM files, or families from the phu databases by name: Pfam (PF00001),
- KOfam (K00001), PHROG (phrog_216; find them with `phu phrogs`), dbCAN
- (GH128) or one dbCAN PUL (PUL0621). Each database's own cutoffs apply.
-
- Examples:
-     phu screen -i contigs.fa PF00001 PF00589
-     phu screen -i contigs.fa my-models/*.hmm
-     phu screen -i contigs.fa --combine-mode all K00001 K00002
-     phu screen -i contigs.fa --all-cazymes
-
- Full guide: https://camilogarciabotero.github.io/phu/commands/screen/
-
+                                                                                
+ Usage: phu screen [OPTIONS] [QUERY]...                                         
+                                                                                
+ Find contigs that carry given protein families.                                
+                                                                                
+ Proteins are predicted from the contigs and searched with each QUERY: your     
+ own HMM files, or families from the phu databases by name: Pfam (PF00001),     
+ KOfam (K00001), PHROG (phrog_216; find them with `phu phrogs`), ECOD           
+ (ecod:2004.1.1.5 for one family, or a T, H or X group such as ecod:2004.1.1    
+ for all its families), dbCAN (GH128) or one dbCAN PUL (PUL0621). Each          
+ database's own cutoffs apply.                                                  
+                                                                                
+ Examples:                                                                      
+     phu screen -i contigs.fa PF00001 PF00589                                   
+     phu screen -i contigs.fa my-models/*.hmm                                   
+     phu screen -i contigs.fa --combine-mode all K00001 K00002                  
+     phu screen -i contigs.fa --all-cazymes                                     
+                                                                                
+ Full guide: https://camilogarciabotero.github.io/phu/commands/screen/          
+                                                                                
 ╭─ Query ──────────────────────────────────────────────────────────────────────╮
 │   [QUERY]...      <path>  HMM files, or database names: PF00001, K00001,     │
-│                           phrog_216, GH128, PUL0621.                         │
+│                           phrog_216, ecod:2004.1.1.5, GH128, PUL0621.        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ *  --input-contigs  -i      <path>  Contigs to screen (FASTA). [required]    │
@@ -343,6 +345,12 @@ These outputs respect your HMM mode settings and combination logic, ensuring con
 │                                                            protein aligned.  │
 │                                                            [default:         │
 │                                                            use-phrog-thresh… │
+│ --use-ecod-thre…      --no-use-ecod-t…                     For ECOD          │
+│                                                            families, need    │
+│                                                            half of the model │
+│                                                            aligned.          │
+│                                                            [default:         │
+│                                                            use-ecod-thresho… │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Which contigs are kept ─────────────────────────────────────────────────────╮
 │ --combine-mode    -c      <str>  Keep contigs hit by 'any' query, 'all' of   │
@@ -418,6 +426,8 @@ Use `--min-hmm-coverage` to control how much of one of your own HMMs a hit must 
 Use `--min-protein-coverage` to control how much of the protein a hit must cover. It is off by default. With `--min-protein-coverage 0.5`, a hit is kept only when its domains align to at least half of the protein, which rejects a small domain found inside a long protein. Unlike `--min-hmm-coverage`, it applies to every kind of model, including Pfam, KOfam and dbCAN, so expect it to remove single-domain matches in multi-domain proteins.
 
 PHROG families are queried by identifier, for example `phu screen phrog_216 -i contigs.fna`, and can be mixed with other identifiers and your own HMMs. Models exist for `phrog_1` to `phrog_38880`. PHROG has no curated per-model cutoffs, so a PHROG hit must score at least 60 bits and align to at least half of both the model and the protein, the rule `phu avger` uses. `--no-use-phrog-thresholds` drops that rule and leaves only `--max-evalue` and `--min-bitscore`. The function and category of each queried PHROG are printed and recorded in `.phu/query.json`. To pick PHROGs by name or category instead of number, use [`phu phrogs`](phrogs.md), for example `phu screen -i contigs.fna $(phu phrogs resolve alias:mcp --ids-only)`.
+
+ECOD families are queried as `ecod:<id>` at any level of the ECOD hierarchy. A four-part F-group id such as `ecod:2004.1.1.5` is one family; a shorter id stands for every F-group inside it: `ecod:2004.1.1` (a T-group), `ecod:2004.1` (an H-group, a homology group) or `ecod:2004` (an X-group). The bundle has one model per F-group (32,041 in ECOD v295.2), built from ECOD's F70 representatives; names are in `families.tsv` of the installed `ecod` database. Hits report models as `ecod:<f_id>`. With `--combine-mode all` or `threshold`, each `ecod:` id you give counts as one query, met by a hit to any of its families: `phu screen --combine-mode all ecod:2004.1.1 PF00589` keeps contigs with at least one family of that T-group and PF00589. ECOD models are single domains, often of longer proteins, and have no curated cutoffs, so an ECOD hit must align to at least half of the model; protein coverage is not required. `--no-use-ecod-thresholds` drops that rule. What each `ecod:` id expanded to, and the F-, T-, H- and X-group names and Pfam accessions of every family, are recorded in `.phu/query.json`.
 
 `--cut-ga` is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).
 

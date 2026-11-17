@@ -1,18 +1,18 @@
 """The phu-db bundle this phu release installs.
 
-phu-db-0.3.0, Zenodo record 24290671 (https://doi.org/10.5281/zenodo.24290671),
-built by phu-db-prep 0.3.0. The vendored phu/data/phu-db.json is the manifest
+phu-db-0.4.0, Zenodo record 24296611 (https://doi.org/10.5281/zenodo.24296611),
+built by phu-db-prep 0.4.0. The vendored phu/data/phu-db.json is the manifest
 inside that tarball; its digest is pinned here too.
 """
 
 from phu.db.bundle import BundlePins
 
 PRODUCTION_PINS = BundlePins(
-    url="https://zenodo.org/records/24290671/files/phu-db.tar.gz",
-    sha256="866153874ac37bfea9e88197f97baec9cd9b5b5b4fb1608b0aede60f047af641",
-    size=2286259337,
-    bundle_version="phu-db-0.3.0",
-    manifest_sha256="fefa64508b1cea0d77e38604e67f6c9181dfc93fbe8dbaa1b8817377297c502d",
+    url="https://zenodo.org/records/24296611/files/phu-db.tar.gz",
+    sha256="93bd0b9d2f5efb85064b36a4a8d879f5b8689ec92e677d391be1c14fdc25e6e5",
+    size=2885279568,
+    bundle_version="phu-db-0.4.0",
+    manifest_sha256="a1f3bfd79f26f87cbecde33010171cc2a0f016c438020722860f45479f4827fe",
     expected_members=frozenset(
         {
             "phu-db/phu-db.json",
@@ -32,6 +32,11 @@ PRODUCTION_PINS = BundlePins(
             "phu-db/phrog/profiles.hmm",
             "phu-db/phrog/msa_a3m.tar.gz",
             "phu-db/phrog/annotations.tsv",
+            "phu-db/ecod/profiles.hmm",
+            "phu-db/ecod/msa_a3m.tar.gz",
+            "phu-db/ecod/sequences.fa",
+            "phu-db/ecod/families.tsv",
+            "phu-db/ecod/domains.tsv",
         }
     ),
 )

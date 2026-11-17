@@ -1010,14 +1010,15 @@ installs and the others wait for it, then reuse its result.</p>
 </table>
 <p>Inside that folder:</p>
 <div class="highlight"><pre><span></span><code>phu-db/
-  phu-db-0.3.0/
+  phu-db-0.4.0/
     installed.json        # source, tarball SHA-256, install time
     phu-db.json           # the bundle manifest: upstream URLs, digests, steps
     pfam/  profiles.hmm
     kofam/ profiles.hmm, ko_list.tsv
     dbcan/ profiles.hmm, family_substrate.tsv, pul_rules.tsv
     avg/   v_scores.tsv, positive_{amg,apg,areg}.tsv, filters_{amg,apg,areg}.tsv
-    phrog/ profiles.hmm, annotations.tsv
+    phrog/ profiles.hmm, msa_a3m.tar.gz, annotations.tsv
+    ecod/  profiles.hmm, msa_a3m.tar.gz, sequences.fa, families.tsv, domains.tsv
 </code></pre></div>
 <p>When a new PHU release pins a newer bundle, it installs the new version beside
 the old one. PHU never deletes other versions, because another PHU release
@@ -1053,7 +1054,7 @@ folder yourself once nothing needs it.</p>
 <h2 id="offline-and-hpc-use">Offline and HPC use<a class="headerlink" href="#offline-and-hpc-use" title="Permanent link">&para;</a></h2>
 <p>Compute nodes often have no internet access, or many jobs would download the
 same bundle at once. Download it once and point PHU at it:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># On a node with internet access: get phu-db.tar.gz for phu-db-0.3.0 from</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># On a node with internet access: get phu-db.tar.gz for phu-db-0.4.0 from</span>
 <span class="c1"># https://doi.org/10.5281/zenodo.19503347 (the page lists every version).</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PHU_DB_FOLDER</span><span class="o">=</span>/shared/project/phu-db<span class="w">      </span><span class="c1"># on a shared filesystem</span>
 phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>--bundle<span class="w"> </span>/shared/project/phu-db.tar.gz<span class="w">   </span><span class="c1"># installs once</span>
@@ -1080,7 +1081,7 @@ PHU keeps them in your own cache folder instead (<code>PHU_CACHE_DIR</code>, def
 <p>If the tarball does not match the version this PHU release pins, PHU refuses
 it and says so. Download the version named in the error.</p>
 <h2 id="what-the-bundle-contains">What the bundle contains<a class="headerlink" href="#what-the-bundle-contains" title="Permanent link">&para;</a></h2>
-<p><code>phu-db-0.3.0</code> contains these pinned upstream releases. PHU records them in
+<p><code>phu-db-0.4.0</code> contains these pinned upstream releases. PHU records them in
 each run's provenance.</p>
 <table>
 <thead>
@@ -1122,6 +1123,12 @@ each run's provenance.</p>
 <td>PHROGs v4 (CC-BY-4.0)</td>
 <td><code>profiles.hmm</code> (38,880 models), <code>msa_a3m.tar.gz</code> (38,880 alignments), <code>annotations.tsv</code></td>
 </tr>
+<tr>
+<td><code>ecod</code></td>
+<td><code>screen</code></td>
+<td>ECOD v295.2, F70 representatives (CC-BY-4.0)</td>
+<td><code>profiles.hmm</code> (32,041 models), <code>msa_a3m.tar.gz</code> (32,041 alignments), <code>sequences.fa</code>, <code>families.tsv</code>, <code>domains.tsv</code></td>
+</tr>
 </tbody>
 </table>
 <p>PHROGs is published as HH-suite profiles and MMseqs2 databases, which HMMER
@@ -1133,6 +1140,20 @@ model per PHROG, named <code>phrog_1</code> to <code>phrog_38880</code>.</p>
 upstream alignments already mark insert columns in lowercase; the A3M files
 keep those states and only drop the gap padding in insert columns. phu itself
 does not read this file.</p>
+<p>ECOD (Evolutionary Classification of protein Domains) publishes no HMMs or
+alignments. The bundle has one model per F-group (family), named by its id
+(<code>2004.1.1.5</code>; <code>phu screen</code> reports it as <code>ecod:2004.1.1.5</code>), built with
+default <code>hmmbuild</code> settings from a FAMSA alignment of the family's F70
+representatives (ECOD's domains clustered at 70% identity), from experimental
+and predicted structures alike. Domains classified only to the T level are left
+out. <code>ecod/msa_a3m.tar.gz</code> holds those alignments as <code>a3m/&lt;f_id&gt;.a3m</code>, with the
+model's own match columns. <code>sequences.fa</code> holds the 691,203 member sequences
+with ECOD's headers (<code>uid|ecod_domain_id|f_id</code>); <code>families.tsv</code> gives each
+family's F, T, H and X ids and names, architecture, Pfam accessions and member
+counts; <code>domains.tsv</code> gives each member's source (<code>pdb</code>, <code>afdb</code>, <code>epp</code> or
+<code>uniparc</code>) and accession. The ECOD sequences come from a Zenodo mirror
+(doi:10.5281/zenodo.24291646) of ECOD's own release files; cite ECOD:
+Schaeffer RD, et al. <em>Nucleic Acids Res.</em> 2025, doi:10.1093/nar/gkae1029.</p>
 <p>The bundle's own manifest, <code>phu-db.json</code>, lists every upstream URL, SHA-256,
 byte size, license and record count, and the exact preparation steps that turn
 each upstream download into the installed file.</p>
@@ -1146,7 +1167,7 @@ Keep these files with your results.</p>
 <h2 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">&para;</a></h2>
 <p>Cite the bundle version you used:</p>
 <blockquote>
-<p>García-Botero C. <em>Phu Databases</em>, version phu-db-0.3.0. Zenodo.
+<p>García-Botero C. <em>Phu Databases</em>, version phu-db-0.4.0. Zenodo.
 <a href="https://doi.org/10.5281/zenodo.19503347">https://doi.org/10.5281/zenodo.19503347</a></p>
 </blockquote>
 <p>Also cite the upstream databases your analysis relied on, following each

@@ -1044,7 +1044,7 @@
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>--input-contigs<span class="w"> </span><span class="o">[</span>INPUT_CONTIGS<span class="o">]</span><span class="w"> </span><span class="o">[</span>HMMS...<span class="o">]</span>
 </code></pre></div>
-<p><code>[HMMS...]</code> accepts local HMM paths, PFAM/KOfam/PHROG identifiers, dbCAN families
+<p><code>[HMMS...]</code> accepts local HMM paths, PFAM/KOfam/PHROG identifiers, ECOD groups (<code>ecod:&lt;id&gt;</code>), dbCAN families
 (for example <code>GH128</code> or <code>CBM89</code>), and one dbCAN PUL identifier such as
 <code>PUL0621</code>.</p>
 <p><strong>Example:</strong>
@@ -1210,7 +1210,7 @@ download). For install location, offline use and disk needs, see
 <tr>
 <td><code>.phu/query.json</code></td>
 <td>always, except <code>--all-cazymes</code> / <code>--all-puls</code></td>
-<td>Original query, expansion and matching rule; for Pfam, KOfam, PHROG and dbCAN queries also the <code>phu-db</code> bundle version (and for PHROG the function and category of each family) and database file hashes</td>
+<td>Original query, expansion and matching rule; for Pfam, KOfam, PHROG, ECOD and dbCAN queries also the <code>phu-db</code> bundle version (for PHROG the function and category of each family; for ECOD what each <code>ecod:</code> id expanded to and the names of each F-group) and database file hashes</td>
 </tr>
 <tr>
 <td><code>.phu/run.json</code></td>
@@ -1324,26 +1324,28 @@ a warning is printed.</p>
 - <code>target-hmms/{model}.hmm</code> - HMMs built from target proteins after FAMSA alignment (if <code>--save-target-hmms</code>)</p>
 <p>These outputs respect your HMM mode settings and combination logic, ensuring consistency between your screening criteria and extracted data.</p>
 <h2 id="command-options">Command Options<a class="headerlink" href="#command-options" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>QUERY<span class="o">]</span>...
+<div class="highlight"><pre><span></span><code><span class="w"> </span>Usage:<span class="w"> </span>phu<span class="w"> </span>screen<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>QUERY<span class="o">]</span>...<span class="w">                                         </span>
 
-<span class="w"> </span>Find<span class="w"> </span>contigs<span class="w"> </span>that<span class="w"> </span>carry<span class="w"> </span>given<span class="w"> </span>protein<span class="w"> </span>families.
+<span class="w"> </span>Find<span class="w"> </span>contigs<span class="w"> </span>that<span class="w"> </span>carry<span class="w"> </span>given<span class="w"> </span>protein<span class="w"> </span>families.<span class="w">                                </span>
 
-<span class="w"> </span>Proteins<span class="w"> </span>are<span class="w"> </span>predicted<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>contigs<span class="w"> </span>and<span class="w"> </span>searched<span class="w"> </span>with<span class="w"> </span>each<span class="w"> </span>QUERY:<span class="w"> </span>your
-<span class="w"> </span>own<span class="w"> </span>HMM<span class="w"> </span>files,<span class="w"> </span>or<span class="w"> </span>families<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>phu<span class="w"> </span>databases<span class="w"> </span>by<span class="w"> </span>name:<span class="w"> </span>Pfam<span class="w"> </span><span class="o">(</span>PF00001<span class="o">)</span>,
-<span class="w"> </span>KOfam<span class="w"> </span><span class="o">(</span>K00001<span class="o">)</span>,<span class="w"> </span>PHROG<span class="w"> </span><span class="o">(</span>phrog_216<span class="p">;</span><span class="w"> </span>find<span class="w"> </span>them<span class="w"> </span>with<span class="w"> </span><span class="sb">`</span>phu<span class="w"> </span>phrogs<span class="sb">`</span><span class="o">)</span>,<span class="w"> </span>dbCAN
-<span class="w"> </span><span class="o">(</span>GH128<span class="o">)</span><span class="w"> </span>or<span class="w"> </span>one<span class="w"> </span>dbCAN<span class="w"> </span>PUL<span class="w"> </span><span class="o">(</span>PUL0621<span class="o">)</span>.<span class="w"> </span>Each<span class="w"> </span>database<span class="s1">'s own cutoffs apply.</span>
+<span class="w"> </span>Proteins<span class="w"> </span>are<span class="w"> </span>predicted<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>contigs<span class="w"> </span>and<span class="w"> </span>searched<span class="w"> </span>with<span class="w"> </span>each<span class="w"> </span>QUERY:<span class="w"> </span>your<span class="w">     </span>
+<span class="w"> </span>own<span class="w"> </span>HMM<span class="w"> </span>files,<span class="w"> </span>or<span class="w"> </span>families<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>phu<span class="w"> </span>databases<span class="w"> </span>by<span class="w"> </span>name:<span class="w"> </span>Pfam<span class="w"> </span><span class="o">(</span>PF00001<span class="o">)</span>,<span class="w">     </span>
+<span class="w"> </span>KOfam<span class="w"> </span><span class="o">(</span>K00001<span class="o">)</span>,<span class="w"> </span>PHROG<span class="w"> </span><span class="o">(</span>phrog_216<span class="p">;</span><span class="w"> </span>find<span class="w"> </span>them<span class="w"> </span>with<span class="w"> </span><span class="sb">`</span>phu<span class="w"> </span>phrogs<span class="sb">`</span><span class="o">)</span>,<span class="w"> </span>ECOD<span class="w">           </span>
+<span class="w"> </span><span class="o">(</span>ecod:2004.1.1.5<span class="w"> </span><span class="k">for</span><span class="w"> </span>one<span class="w"> </span>family,<span class="w"> </span>or<span class="w"> </span>a<span class="w"> </span>T,<span class="w"> </span>H<span class="w"> </span>or<span class="w"> </span>X<span class="w"> </span>group<span class="w"> </span>such<span class="w"> </span>as<span class="w"> </span>ecod:2004.1.1<span class="w">    </span>
+<span class="w"> </span><span class="k">for</span><span class="w"> </span>all<span class="w"> </span>its<span class="w"> </span>families<span class="o">)</span>,<span class="w"> </span>dbCAN<span class="w"> </span><span class="o">(</span>GH128<span class="o">)</span><span class="w"> </span>or<span class="w"> </span>one<span class="w"> </span>dbCAN<span class="w"> </span>PUL<span class="w"> </span><span class="o">(</span>PUL0621<span class="o">)</span>.<span class="w"> </span>Each<span class="w">          </span>
+<span class="w"> </span>database<span class="s1">'s own cutoffs apply.                                                  </span>
 
-<span class="s1"> Examples:</span>
-<span class="s1">     phu screen -i contigs.fa PF00001 PF00589</span>
-<span class="s1">     phu screen -i contigs.fa my-models/*.hmm</span>
-<span class="s1">     phu screen -i contigs.fa --combine-mode all K00001 K00002</span>
-<span class="s1">     phu screen -i contigs.fa --all-cazymes</span>
+<span class="s1"> Examples:                                                                      </span>
+<span class="s1">     phu screen -i contigs.fa PF00001 PF00589                                   </span>
+<span class="s1">     phu screen -i contigs.fa my-models/*.hmm                                   </span>
+<span class="s1">     phu screen -i contigs.fa --combine-mode all K00001 K00002                  </span>
+<span class="s1">     phu screen -i contigs.fa --all-cazymes                                     </span>
 
-<span class="s1"> Full guide: https://camilogarciabotero.github.io/phu/commands/screen/</span>
+<span class="s1"> Full guide: https://camilogarciabotero.github.io/phu/commands/screen/          </span>
 
 <span class="s1">╭─ Query ──────────────────────────────────────────────────────────────────────╮</span>
 <span class="s1">│   [QUERY]...      &lt;path&gt;  HMM files, or database names: PF00001, K00001,     │</span>
-<span class="s1">│                           phrog_216, GH128, PUL0621.                         │</span>
+<span class="s1">│                           phrog_216, ecod:2004.1.1.5, GH128, PUL0621.        │</span>
 <span class="s1">╰──────────────────────────────────────────────────────────────────────────────╯</span>
 <span class="s1">╭─ Options ────────────────────────────────────────────────────────────────────╮</span>
 <span class="s1">│ *  --input-contigs  -i      &lt;path&gt;  Contigs to screen (FASTA). [required]    │</span>
@@ -1386,6 +1388,12 @@ a warning is printed.</p>
 <span class="s1">│                                                            protein aligned.  │</span>
 <span class="s1">│                                                            [default:         │</span>
 <span class="s1">│                                                            use-phrog-thresh… │</span>
+<span class="s1">│ --use-ecod-thre…      --no-use-ecod-t…                     For ECOD          │</span>
+<span class="s1">│                                                            families, need    │</span>
+<span class="s1">│                                                            half of the model │</span>
+<span class="s1">│                                                            aligned.          │</span>
+<span class="s1">│                                                            [default:         │</span>
+<span class="s1">│                                                            use-ecod-thresho… │</span>
 <span class="s1">╰──────────────────────────────────────────────────────────────────────────────╯</span>
 <span class="s1">╭─ Which contigs are kept ─────────────────────────────────────────────────────╮</span>
 <span class="s1">│ --combine-mode    -c      &lt;str&gt;  Keep contigs hit by '</span>any<span class="s1">' query, '</span>all<span class="s1">' of   │</span>
@@ -1453,6 +1461,7 @@ a warning is printed.</p>
 <p>Use <code>--min-hmm-coverage</code> to control how much of one of your own HMMs a hit must cover. The default is 0.35: a hit is kept only when its domains align to more than 35% of the model (every reported domain counts, overlaps once), which removes matches to a small fragment of the family. It applies only to HMMs you supply; Pfam and KOfam models keep their curated score thresholds, and dbCAN models always use the same 0.35 rule. Set it to 0 to turn it off. The coverage of every hit is written to the result tables as <code>hmm_coverage</code>.</p>
 <p>Use <code>--min-protein-coverage</code> to control how much of the protein a hit must cover. It is off by default. With <code>--min-protein-coverage 0.5</code>, a hit is kept only when its domains align to at least half of the protein, which rejects a small domain found inside a long protein. Unlike <code>--min-hmm-coverage</code>, it applies to every kind of model, including Pfam, KOfam and dbCAN, so expect it to remove single-domain matches in multi-domain proteins.</p>
 <p>PHROG families are queried by identifier, for example <code>phu screen phrog_216 -i contigs.fna</code>, and can be mixed with other identifiers and your own HMMs. Models exist for <code>phrog_1</code> to <code>phrog_38880</code>. PHROG has no curated per-model cutoffs, so a PHROG hit must score at least 60 bits and align to at least half of both the model and the protein, the rule <code>phu avger</code> uses. <code>--no-use-phrog-thresholds</code> drops that rule and leaves only <code>--max-evalue</code> and <code>--min-bitscore</code>. The function and category of each queried PHROG are printed and recorded in <code>.phu/query.json</code>. To pick PHROGs by name or category instead of number, use <a href="../phrogs/"><code>phu phrogs</code></a>, for example <code>phu screen -i contigs.fna $(phu phrogs resolve alias:mcp --ids-only)</code>.</p>
+<p>ECOD families are queried as <code>ecod:&lt;id&gt;</code> at any level of the ECOD hierarchy. A four-part F-group id such as <code>ecod:2004.1.1.5</code> is one family; a shorter id stands for every F-group inside it: <code>ecod:2004.1.1</code> (a T-group), <code>ecod:2004.1</code> (an H-group, a homology group) or <code>ecod:2004</code> (an X-group). The bundle has one model per F-group (32,041 in ECOD v295.2), built from ECOD's F70 representatives; names are in <code>families.tsv</code> of the installed <code>ecod</code> database. Hits report models as <code>ecod:&lt;f_id&gt;</code>. With <code>--combine-mode all</code> or <code>threshold</code>, each <code>ecod:</code> id you give counts as one query, met by a hit to any of its families: <code>phu screen --combine-mode all ecod:2004.1.1 PF00589</code> keeps contigs with at least one family of that T-group and PF00589. ECOD models are single domains, often of longer proteins, and have no curated cutoffs, so an ECOD hit must align to at least half of the model; protein coverage is not required. <code>--no-use-ecod-thresholds</code> drops that rule. What each <code>ecod:</code> id expanded to, and the F-, T-, H- and X-group names and Pfam accessions of every family, are recorded in <code>.phu/query.json</code>.</p>
 <p><code>--cut-ga</code> is enabled by default. pyHMMER applies model-specific GA gathering cutoffs embedded in HMM profiles (especially useful with PFAM models).</p>
 <p>Use <code>--no-cut-ga</code> if you want to disable GA filtering and rely only on explicit score/E-value filters.</p>
 <p>Use <code>--save-target-proteins</code> if you want to get the actual protein sequences from the contigs that matched each model. The saved proteins are taken only from contigs that passed final filtering and are grouped per-model (see "HMM modes" above).</p>

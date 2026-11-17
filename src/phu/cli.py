@@ -112,7 +112,9 @@ def dbs_prepare(
     all_dbs: bool = typer.Option(False, "--all", hidden=True),
     force_refresh: bool = typer.Option(False, "--force-refresh", hidden=True),
 ) -> None:
-    """Download, verify and install the pinned phu-db bundle (Pfam, KOfam, dbCAN, AVG).
+    """Download, verify and install the pinned phu-db bundle.
+
+    The bundle holds Pfam, KOfam, dbCAN, AVG, PHROG and ECOD.
 
     Optional: `screen` and `avger` install the bundle on first use. Run this
     first on a login node, or before submitting many jobs at once.

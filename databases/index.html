@@ -925,11 +925,41 @@
 
 
 <h1 id="databases-and-provenance">Databases and Provenance<a class="headerlink" href="#databases-and-provenance" title="Permanent link">&para;</a></h1>
-<p><code>phu screen</code> and <code>phu avger</code> need reference databases: Pfam, KOfam, dbCAN
-and the CheckAMG-derived AVG tables (<code>phu jack</code> uses none). PHU ships them as one pinned
-bundle, <code>phu-db</code>, and installs it automatically the first time a command needs
-it. You can also install it ahead of time with
+<p>phu searches six reference databases: Pfam, KOfam, dbCAN, PHROG, ECOD and
+the CheckAMG tables for auxiliary viral genes (AVG). They come as one pinned,
+checksummed bundle, <code>phu-db</code>, which phu installs the first time a command
+needs it. You can also install it ahead of time with
 <a href="#installing-ahead-of-time"><code>phu dbs prepare</code></a>.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Uses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>phu screen</code></td>
+<td>Pfam, KOfam, PHROG, ECOD, dbCAN</td>
+</tr>
+<tr>
+<td><code>phu jack --phrog</code></td>
+<td>PHROG (as seeds)</td>
+</tr>
+<tr>
+<td><code>phu phrogs</code></td>
+<td>PHROG annotations</td>
+</tr>
+<tr>
+<td><code>phu avger</code></td>
+<td>Pfam, KOfam, PHROG and the AVG tables</td>
+</tr>
+<tr>
+<td><code>phu cluster</code>, <code>phu normalize-lineage</code></td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
 <h2 id="installing-ahead-of-time">Installing ahead of time<a class="headerlink" href="#installing-ahead-of-time" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>dbs<span class="w"> </span>prepare
 </code></pre></div>
@@ -960,14 +990,16 @@ command only checks it and returns.</p>
 </tr>
 </tbody>
 </table>
-<p>The bundle always holds all four databases, so database names given to
+<p>The bundle always holds all six databases, so database names given to
 <code>phu dbs prepare</code> are accepted and ignored.</p>
 <h2 id="what-happens-on-first-use">What happens on first use<a class="headerlink" href="#what-happens-on-first-use" title="Permanent link">&para;</a></h2>
 <p><code>phu dbs prepare</code>, or the first database-backed command if you skipped it:</p>
 <ol>
-<li>Checks free disk space. The install needs about <strong>16 GB</strong> free while it
-   runs and keeps about <strong>13 GB</strong> afterwards.</li>
-<li>Downloads <code>phu-db.tar.gz</code> (about 2.2 GB) from Zenodo, or uses a local copy
+<li>Checks free disk space. The install needs about <strong>20 GB</strong> free while it
+   runs: the 2.9 GB download plus the 16.2 GB of databases. Once the
+   download is removed and the fast-loading models are built, it takes about
+   <strong>21 GB</strong>.</li>
+<li>Downloads <code>phu-db.tar.gz</code> (about 2.9 GB) from Zenodo, or uses a local copy
    if <a href="#offline-and-hpc-use"><code>PHU_DB_BUNDLE</code></a> is set.</li>
 <li>Verifies the tarball's exact size and SHA-256 against the values pinned in
    this PHU release. A mismatch stops the install; nothing is used.</li>
@@ -1047,7 +1079,7 @@ folder yourself once nothing needs it.</p>
 </tr>
 <tr>
 <td><code>PHU_DB_VERIFY=1</code></td>
-<td>Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 13 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls.</td>
+<td>Re-hash every installed file of every database on this run instead of checking sizes only, and discard the indexes and per-model files PHU built from them (they are rebuilt on next use). Reads about 16 GB, so use it when you suspect corruption, not routinely. A failed check reinstalls.</td>
 </tr>
 </tbody>
 </table>
@@ -1119,7 +1151,7 @@ each run's provenance.</p>
 </tr>
 <tr>
 <td><code>phrog</code></td>
-<td><code>avger</code></td>
+<td><code>screen</code>, <code>jack</code>, <code>phrogs</code>, <code>avger</code></td>
 <td>PHROGs v4 (CC-BY-4.0)</td>
 <td><code>profiles.hmm</code> (38,880 models), <code>msa_a3m.tar.gz</code> (38,880 alignments), <code>annotations.tsv</code></td>
 </tr>
@@ -1171,8 +1203,14 @@ Keep these files with your results.</p>
 <a href="https://doi.org/10.5281/zenodo.19503347">https://doi.org/10.5281/zenodo.19503347</a></p>
 </blockquote>
 <p>Also cite the upstream databases your analysis relied on, following each
-project's own citation guidance. Pfam: Mistry J, et al. <em>Nucleic Acids Res.</em>
-2021;49(D1):D412–D419. For KOfam, dbCAN and CheckAMG, see their project pages.</p>
+project's own citation guidance:</p>
+<ul>
+<li>Pfam: Mistry J, et al. <em>Nucleic Acids Res.</em> 2021;49(D1):D412–D419.</li>
+<li>ECOD: Schaeffer RD, et al. <em>Nucleic Acids Res.</em> 2025.
+  doi:10.1093/nar/gkae1029.</li>
+<li>PHROGs: Terzian P, et al. <em>NAR Genom. Bioinform.</em> 2021;3(3):lqab067.</li>
+<li>KOfam, dbCAN and CheckAMG: see their project pages.</li>
+</ul>
 <h2 id="upgrading-from-phu-09x-and-earlier">Upgrading from PHU 0.9.x and earlier<a class="headerlink" href="#upgrading-from-phu-09x-and-earlier" title="Permanent link">&para;</a></h2>
 <p>Earlier releases downloaded each database separately and managed them with
 <code>phu dbs</code>. <code>phu dbs prepare</code> remains and now installs the single bundle. The

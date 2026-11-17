@@ -141,6 +141,14 @@ behavior in the unreleased branch and may change before a release.
   `phrog_scored_gene_count` and `zhou_phrog_candidate`. The output schema
   version in `.phu/run.json` is now 2.
 
+### Databases
+
+- phu now installs phu-db 0.3.0 (doi:10.5281/zenodo.24290671). It adds
+  `phrog/msa_a3m.tar.gz`, the 38,880 PHROG alignments as A3M files for
+  HH-suite or MMseqs2; every other file is identical to 0.2.0. The bundle
+  manifest accepts the `build-a3m` step and the `tar.gz` file format, checked
+  by size and SHA-256.
+
 ### Internal
 
 - `phu avger` and `phu screen` check the memory available, honouring a batch

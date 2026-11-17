@@ -315,6 +315,21 @@ def test_concatenate_glob_may_range_over_earlier_file_targets():
     assert entry.parsed_steps[-1].is_glob
 
 
+def test_phrog_may_ship_its_a3m_alignments_as_an_archive():
+    raw = _raw()
+    entry = raw["databases"]["phrog"]
+    entry["steps"].append("build-a3m:MSA_Phrogs_M50_FASTA/*.fma -> msa_a3m.tar.gz")
+    prepared = copy.deepcopy(entry["prepared_files"][0])
+    prepared.update(path="msa_a3m.tar.gz", format="tar.gz")
+    entry["prepared_files"].append(prepared)
+
+    phrog = _loads(raw).databases["phrog"]
+
+    assert phrog.parsed_steps[-1] == Step("build-a3m", "MSA_Phrogs_M50_FASTA/*.fma", "msa_a3m.tar.gz")
+    assert phrog.parsed_steps[-1].is_glob
+    assert phrog.prepared_files[-1].format == "tar.gz"
+
+
 def test_step_target_may_sit_inside_an_earlier_directory():
     raw = _raw()
     _extend_kofam("rename:ko_list.gz -> profiles/ko_list.gz", "profiles/ko_list.gz")(raw)

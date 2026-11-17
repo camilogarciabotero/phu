@@ -1,9 +1,9 @@
 {
-  "bundle_version": "phu-db-0.2.0",
+  "bundle_version": "phu-db-0.3.0",
   "layout_version": 1,
   "generator": {
     "name": "phu-db-prep",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "bundle": {
     "name": "phu-db.tar.gz",
@@ -303,7 +303,8 @@
       "steps": [
         "extract:MSA_phrogs.tar.gz -> MSA_Phrogs_M50_FASTA/",
         "build-hmm:MSA_Phrogs_M50_FASTA/*.fma -> profiles.hmm",
-        "rename:phrog_annot_v4.tsv -> annotations.tsv"
+        "rename:phrog_annot_v4.tsv -> annotations.tsv",
+        "build-a3m:MSA_Phrogs_M50_FASTA/*.fma -> msa_a3m.tar.gz"
       ],
       "prepared_files": [
         {
@@ -311,6 +312,13 @@
           "format": "hmm",
           "bytes": 3291465588,
           "sha256": "71c08168d8fc987027febfb5994dfbcaef6b76f0edae07c3318bcfe9cc5d54f4",
+          "count": 38880
+        },
+        {
+          "path": "msa_a3m.tar.gz",
+          "format": "tar.gz",
+          "bytes": 43423693,
+          "sha256": "5a16d44602bbaf18e6867a7b4ddf4f3d1723c0e4cbe77f178855010b50b89913",
           "count": 38880
         },
         {

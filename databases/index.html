@@ -1010,7 +1010,7 @@ installs and the others wait for it, then reuse its result.</p>
 </table>
 <p>Inside that folder:</p>
 <div class="highlight"><pre><span></span><code>phu-db/
-  phu-db-0.2.0/
+  phu-db-0.3.0/
     installed.json        # source, tarball SHA-256, install time
     phu-db.json           # the bundle manifest: upstream URLs, digests, steps
     pfam/  profiles.hmm
@@ -1053,7 +1053,7 @@ folder yourself once nothing needs it.</p>
 <h2 id="offline-and-hpc-use">Offline and HPC use<a class="headerlink" href="#offline-and-hpc-use" title="Permanent link">&para;</a></h2>
 <p>Compute nodes often have no internet access, or many jobs would download the
 same bundle at once. Download it once and point PHU at it:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># On a node with internet access: get phu-db.tar.gz for phu-db-0.2.0 from</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># On a node with internet access: get phu-db.tar.gz for phu-db-0.3.0 from</span>
 <span class="c1"># https://doi.org/10.5281/zenodo.19503347 (the page lists every version).</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PHU_DB_FOLDER</span><span class="o">=</span>/shared/project/phu-db<span class="w">      </span><span class="c1"># on a shared filesystem</span>
 phu<span class="w"> </span>dbs<span class="w"> </span>prepare<span class="w"> </span>--bundle<span class="w"> </span>/shared/project/phu-db.tar.gz<span class="w">   </span><span class="c1"># installs once</span>
@@ -1080,7 +1080,7 @@ PHU keeps them in your own cache folder instead (<code>PHU_CACHE_DIR</code>, def
 <p>If the tarball does not match the version this PHU release pins, PHU refuses
 it and says so. Download the version named in the error.</p>
 <h2 id="what-the-bundle-contains">What the bundle contains<a class="headerlink" href="#what-the-bundle-contains" title="Permanent link">&para;</a></h2>
-<p><code>phu-db-0.2.0</code> contains these pinned upstream releases. PHU records them in
+<p><code>phu-db-0.3.0</code> contains these pinned upstream releases. PHU records them in
 each run's provenance.</p>
 <table>
 <thead>
@@ -1120,7 +1120,7 @@ each run's provenance.</p>
 <td><code>phrog</code></td>
 <td><code>avger</code></td>
 <td>PHROGs v4 (CC-BY-4.0)</td>
-<td><code>profiles.hmm</code> (38,880 models), <code>annotations.tsv</code></td>
+<td><code>profiles.hmm</code> (38,880 models), <code>msa_a3m.tar.gz</code> (38,880 alignments), <code>annotations.tsv</code></td>
 </tr>
 </tbody>
 </table>
@@ -1128,6 +1128,11 @@ each run's provenance.</p>
 cannot search. The PHROG models in the bundle were built from the official
 per-PHROG alignments with pyhmmer, using the default <code>hmmbuild</code> settings, one
 model per PHROG, named <code>phrog_1</code> to <code>phrog_38880</code>.</p>
+<p><code>phrog/msa_a3m.tar.gz</code> holds the same per-PHROG alignments as A3M files
+(<code>a3m/phrog_&lt;n&gt;.a3m</code>), for searching PHROGs with HH-suite or MMseqs2. The
+upstream alignments already mark insert columns in lowercase; the A3M files
+keep those states and only drop the gap padding in insert columns. phu itself
+does not read this file.</p>
 <p>The bundle's own manifest, <code>phu-db.json</code>, lists every upstream URL, SHA-256,
 byte size, license and record count, and the exact preparation steps that turn
 each upstream download into the installed file.</p>
@@ -1141,7 +1146,7 @@ Keep these files with your results.</p>
 <h2 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">&para;</a></h2>
 <p>Cite the bundle version you used:</p>
 <blockquote>
-<p>García-Botero C. <em>Phu Databases</em>, version phu-db-0.2.0. Zenodo.
+<p>García-Botero C. <em>Phu Databases</em>, version phu-db-0.3.0. Zenodo.
 <a href="https://doi.org/10.5281/zenodo.19503347">https://doi.org/10.5281/zenodo.19503347</a></p>
 </blockquote>
 <p>Also cite the upstream databases your analysis relied on, following each

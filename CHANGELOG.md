@@ -19,6 +19,12 @@ behavior in the unreleased branch and may change before a release.
 
 ### Screen
 
+- Fixed: Pfam's gathering cutoffs were dropped for the whole run when Pfam
+  families were queried together with any model without them (your own
+  HMMs, KOfam, PHROG, ECOD, dbCAN): the search failed on the missing cutoffs
+  and was repeated without any, with only a warning. With `--cut-ga` (the
+  default), models that have gathering cutoffs are now searched with them and
+  the others without, in the same run.
 - `phu screen --help` is shorter and grouped by question: the query, other
   ways to query, hit thresholds, which contigs are kept, output, gene
   prediction and runtime. Option names, short flags and defaults are

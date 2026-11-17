@@ -219,79 +219,50 @@ def test_extract_target_proteins_adds_ko_definition_to_headers(
     assert ">contigA|gene1|K00001|hexokinase" in content
 
 
-def test_hmmsearch_retries_without_gathering_cutoffs_on_missing_cutoffs(
-    tmp_path: Path, monkeypatch, capsys
-):
-    hmm_path = tmp_path / "K22014.hmm"
-    hmm_path.write_text("HMMER3/f\nNAME  K22014\n//\n")
+def _model(name, sequence, gathering=None):
+    import pyhmmer
 
+    alphabet = pyhmmer.easel.Alphabet.amino()
+    seq = pyhmmer.easel.TextSequence(name=name.encode(), sequence=sequence)
+    hmm, _, _ = pyhmmer.plan7.Builder(alphabet).build(
+        seq.digitize(alphabet), pyhmmer.plan7.Background(alphabet)
+    )
+    hmm.name = name.encode()
+    if gathering is not None:
+        hmm.cutoffs.gathering = (gathering, gathering)
+    return hmm
+
+
+def test_gathering_cutoffs_survive_models_without_them(tmp_path, capsys):
+    # A Pfam-like model with a gathering cutoff too high for the protein, and
+    # a model without cutoffs (own HMM, KOfam, PHROG, ECOD) searched with it.
+    # The first must stay filtered by its cutoff: before, the missing cutoff
+    # of the second made the whole search run without any.
+    protein = "MKKLLAAVAGWAAAPAAACDEFGHIKLMNPQRSTVWYMKKLLAAVAGWAAAPAAACDEFGHIK"
+    paths = []
+    for name, gathering in (("pfam_like", 1000.0), ("no_cutoffs", None)):
+        path = tmp_path / f"{name}.hmm"
+        with path.open("wb") as handle:
+            _model(name, protein, gathering).write(handle)
+        paths.append(path)
     proteins_fa = tmp_path / "proteins.faa"
-    proteins_fa.write_text(">contig1|gene1\nMPEPTIDE\n")
+    proteins_fa.write_text(f">contig1|gene1\n{protein}\n")
 
-    class _FakeHMMFile:
-        def __init__(self, _path):
-            self._hmm = object()
-
-        def __enter__(self):
-            return [self._hmm]
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-    class _FakeSequenceFile:
-        def __init__(self, _path, digital=True, alphabet=None):
-            self._proteins = object()
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def read_block(self):
-            return self._proteins
-
-    class _FakeMissingCutoffs(Exception):
-        pass
-
-    calls = []
-
-    def _fake_hmmsearch(hmms, proteins, cpus, parallel, bit_cutoffs):
-        assert parallel == "queries"
-        calls.append(bit_cutoffs)
-        if bit_cutoffs == "gathering":
-            raise _FakeMissingCutoffs("missing gathering cutoffs")
-        return []
-
-    monkeypatch.setattr(screen.pyhmmer.plan7, "HMMFile", _FakeHMMFile)
-    monkeypatch.setattr(screen.pyhmmer.easel, "SequenceFile", _FakeSequenceFile)
-    monkeypatch.setattr(screen.pyhmmer.plan7, "MissingCutoffs", _FakeMissingCutoffs)
-    monkeypatch.setattr(screen.pyhmmer, "hmmsearch", _fake_hmmsearch)
-
-    from phu.core import log as _log
-
-    monkeypatch.setattr(_log, "_verbose", True)
-    hits = list(
-        screen._hmmsearch(
-            hmm_paths=[hmm_path],
+    def search(cut_ga):
+        hits = screen._hmmsearch(
+            hmm_paths=paths,
             proteins_fa=proteins_fa,
             domtbl_paths={},
             threads=1,
             hmm_mode="pure",
             keep_domtbl=False,
-            cut_ga=True,
+            cut_ga=cut_ga,
         )
-    )
+        return sorted(hit.model for hit in hits)
 
-    assert hits == []
-    assert calls == ["gathering", None]
-    # The verbose log records the search that actually produced the hits.
-    retry_lines = [
-        line for line in capsys.readouterr().out.splitlines() if line.startswith("[cmd]")
-    ]
-    assert len(retry_lines) == 1
-    assert "pyhmmer.hmmsearch" in retry_lines[0]
-    assert "bit_cutoffs=none" in retry_lines[0]
+    assert search(cut_ga=True) == ["no_cutoffs"]
+    assert search(cut_ga=False) == ["no_cutoffs", "pfam_like"]
+    assert "retrying without --cut-ga" not in capsys.readouterr().out
 
 
 def _coverage_hit(model, coverage, evalue=1e-20):

@@ -1533,50 +1533,35 @@ def _hmmsearch(
                 # input files share a stem. It is the model ID in pure mode.
                 hmm_names.append(label)
 
-    # Run hmmsearch with pyHMMER
-    bit_cutoffs = "gathering" if cut_ga else None
-    try:
-        with _protein_targets(proteins_fa) as proteins:
-            hits_list = list(
-                pyhmmer.hmmsearch(
-                    hmms,
-                    proteins,
-                    cpus=threads,
-                    parallel="queries",
-                    bit_cutoffs=bit_cutoffs,
-                )
-            )
-    except Exception as exc:
-        missing_cutoffs_exc = getattr(pyhmmer.plan7, "MissingCutoffs", None)
-        if (
-            cut_ga
-            and missing_cutoffs_exc is not None
-            and isinstance(exc, missing_cutoffs_exc)
-        ):
-            print(
-                " Warning: One or more models are missing gathering cutoffs; "
-                "retrying without --cut-ga."
-            )
+    # Run hmmsearch with pyHMMER. Gathering cutoffs exist only in some models
+    # (Pfam's); with --cut-ga those models are searched with them and the rest
+    # without, so mixing kinds of model never turns Pfam's cutoffs off.
+    with_ga = [
+        i for i, hmm in enumerate(hmms) if cut_ga and hmm.cutoffs.gathering_available()
+    ]
+    without_ga = [i for i in range(len(hmms)) if i not in set(with_ga)]
+    hits_list: list = [None] * len(hmms)
+    for indices, bit_cutoffs in ((with_ga, "gathering"), (without_ga, None)):
+        if not indices:
+            continue
+        if with_ga and without_ga:
             log_call(
                 "pyhmmer.hmmsearch",
-                retry="models without gathering cutoffs",
-                models=len(hmms),
+                models=len(indices),
                 cpus=threads,
                 parallel="queries",
-                bit_cutoffs="none",
+                bit_cutoffs=bit_cutoffs or "none",
             )
-            with _protein_targets(proteins_fa) as proteins:
-                hits_list = list(
-                    pyhmmer.hmmsearch(
-                        hmms,
-                        proteins,
-                        cpus=threads,
-                        parallel="queries",
-                        bit_cutoffs=None,
-                    )
-                )
-        else:
-            raise
+        with _protein_targets(proteins_fa) as proteins:
+            results = pyhmmer.hmmsearch(
+                [hmms[i] for i in indices],
+                proteins,
+                cpus=threads,
+                parallel="queries",
+                bit_cutoffs=bit_cutoffs,
+            )
+            for i, top_hits in zip(indices, results):
+                hits_list[i] = top_hits
 
     # Write domtbl files if requested
     if keep_domtbl:

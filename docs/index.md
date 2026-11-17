@@ -10,50 +10,147 @@
 
 ---
 
-## What is phu?
+**phu** (phage utilities) is a command-line toolkit for working with phage
+and other viral sequences. Each command answers one common question about
+your contigs, from "which of them carry this protein family?" to "which of
+them belong to the same species?", and records what it did so the result can
+be reproduced.
 
-**phu** (phage utilities) is a command-line toolkit designed to streamline viral genomics workflows. It provides intuitive commands that wrap complex bioinformatics utilities behind a consistent interface, making phage and viral sequence analysis more accessible and reproducible.
+- **One install, no external programs** for searching: gene prediction, HMM
+  searches and alignments run inside phu (only `cluster` calls `vclust`).
+- **Reference databases included**: Pfam, KOfam, PHROG, ECOD, dbCAN and the
+  CheckAMG tables come as one pinned bundle that installs itself on first
+  use.
+- **Reproducible**: every run writes the exact query, thresholds, database
+  versions and file checksums to a `.phu/` folder beside its results.
 
-### Key Features
-
-- **Modular Design**: Clean, focused commands for specific tasks.
-- **Easy Installation**: Available through Bioconda, PyPI.
-- **Reproducible**: Consistent interface across different utilities.
-- **Well Documented**: Comprehensive documentation and examples.
-
-## Quick Start
-
-### Installation
-
-Install `phu` using mamba or conda from the bioconda channel:
+## Install
 
 ```bash
 mamba create -n phu bioconda::phu
 mamba activate phu
-```
-
-### Basic Usage
-
-```bash
-phu --version
 phu --help
 ```
 
+The databases download on first use (about 2.9 GB). On a cluster, install
+them once on a shared filesystem first; see [Databases](databases.md).
+
+## What do you want to do?
+
+| I want to… | Command | Example |
+| --- | --- | --- |
+| Find contigs that carry given protein families | [`screen`](commands/screen.md) | `phu screen -i contigs.fa PF00589 phrog_2 ecod:2004.1` |
+| Find contigs carrying relatives of proteins I already have | [`jack`](commands/jack.md) | `phu jack -i contigs.fa seeds.faa` |
+| Look up PHROG families by name or function | [`phrogs`](commands/phrogs.md) | `phu phrogs search "tail fiber"` |
+| Find putative auxiliary viral genes (AVGs) | [`avger`](commands/avger.md) | `phu avger -i viral-contigs.fa` |
+| Dereplicate, or group genomes into vOTUs, genera or species | [`cluster`](commands/cluster.md) | `phu cluster --mode votu -i genomes.fa` |
+| Tidy vContact lineage predictions | [`normalize-lineage`](commands/normalize-lineage.md) | |
+| Install the databases ahead of time | [`dbs prepare`](databases.md#installing-ahead-of-time) | `phu dbs prepare` |
+| Free disk space | `clean` | `phu clean --cache` |
+
+## The commands
+
+### `screen`: find contigs by their protein families
+
+Predicts the proteins of your contigs, searches them with profile HMMs, and
+keeps the contigs that match. Queries can be your own HMM files or families
+named from the databases: Pfam (`PF00589`), KOfam (`K00001`), PHROG
+(`phrog_216`), ECOD domains at any level of its hierarchy (`ecod:2004.1`),
+dbCAN CAZymes (`GH128`) or a dbCAN PUL (`PUL0621`). Each database's own cutoffs
+apply; combine queries with `--combine-mode any|all|threshold`.
+
+```bash
+phu screen -i assembly.fasta --combine-mode all capsid.hmm portal.hmm
+```
+
+[Screen guide →](commands/screen.md) · [How hits are judged →](screen-thresholds.md)
+
+### `jack`: find relatives of seed proteins
+
+Builds a profile from each seed protein by iterative search
+(`pyhmmer.jackhmmer`) and keeps the contigs that carry relatives. Seeds can be
+your own proteins or PHROG families.
+
+```bash
+phu jack -i assembly.fasta marker_seeds.faa --combine-mode all
+phu jack -i assembly.fasta --phrog alias:portal
+```
+
+[Jack guide →](commands/jack.md)
+
+### `phrogs`: find PHROG families by name
+
+Turns names into PHROG identifiers for `screen` and `jack`: curated aliases
+(`alias:mcp`, `alias:terl`), functional categories (`category:tail`) or a
+forgiving search of the annotations.
+
+```bash
+phu phrogs search "tail fiber"
+phu screen -i assembly.fasta $(phu phrogs resolve alias:mcp alias:terl --ids-only)
+```
+
+[PHROG lookup guide →](commands/phrogs.md)
+
+### `avger`: auxiliary viral genes
+
+Annotates the proteins of viral contigs against Pfam, KOfam and PHROG, and
+applies CheckAMG-style rules to flag putative auxiliary metabolic,
+physiology and regulatory genes.
+
+```bash
+phu avger -i viral-contigs.fasta -o phu-avger
+```
+
+[AVG guide →](commands/avger.md)
+
+### `cluster`: group sequences
+
+Clusters viral sequences with vclust in four modes: `dereplication`, `votu`,
+`genus` (complete genomes, tANI ≥ 70%) and `species` (tANI ≥ 95%).
+
+```bash
+phu cluster --mode votu -i viral-genomes.fasta
+```
+
+[Clustering guide →](commands/cluster.md)
+
+### `normalize-lineage`: tidy vContact lineages
+
+Normalizes vContact lineage predictions while keeping the input table's
+columns. [Lineage guide →](commands/normalize-lineage.md)
+
+### `dbs` and `clean`: databases and disk space
+
+`phu dbs prepare` installs the database bundle ahead of time;
+`phu clean` lists what phu keeps between runs (cached protein predictions,
+installed databases) and removes it on request.
+
+```bash
+phu dbs prepare                          # install the databases now
+phu dbs prepare --bundle phu-db.tar.gz   # from a pre-downloaded copy
+phu clean                                # show what phu keeps and its size
+phu clean --cache                        # remove cached predictions
+```
+
+Set `PHU_DB_FOLDER` to a shared folder so every job reuses one install.
+[Databases →](databases.md) · [Cache →](cache.md)
+
+## All commands
+
 ```text
-Usage: phu [OPTIONS] COMMAND [ARGS]...
-
- Phage utilities CLI
-
+                                                                                
+ Usage: phu [OPTIONS] COMMAND [ARGS]...                                         
+                                                                                
+ Phage utilities CLI                                                            
+                                                                                
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --version  -v        Show version and exit.                                  │
 │ --help     -h        Show this message and exit.                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Main ───────────────────────────────────────────────────────────────────────╮
-│ screen             Screen contigs using protein-family or PUL CAZyme         │
-│                    signatures.                                               │
-│ jack               Iteratively screen contigs from one or more seed protein  │
-│                    markers with                                              │
-│                    pyhmmer.jackhmmer.                                        │
+│ screen             Find contigs that carry given protein families.           │
+│ jack               Find contigs carrying relatives of seed proteins, by      │
+│                    iterative search.                                         │
 │ avger              Predict and curate putative auxiliary viral genes.        │
 │ cluster            Sequence clustering wrapper around external 'vclust'.     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -69,148 +166,19 @@ Usage: phu [OPTIONS] COMMAND [ARGS]...
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
+## Learn more
 
-## Available Commands
-
-### `screen` - Protein Family Screening
-
-Screen DNA contigs for specific protein families using HMMER on predicted coding sequences. This is particularly useful for identifying viral contigs in metagenomic assemblies or filtering assemblies based on protein content.
-
-**Example:**
-```bash
- phu screen --input-contigs assembly.fasta --combine-mode all viral_capsid.hmm portal.hmm
-```
-
-[Learn more about protein screening →](commands/screen.md)
-
-For pass/fail and threshold rules (PFAM and KOfam), see [Screen Thresholds and Decision Logic](screen-thresholds.md).
-
-### `jack` - Seed-Based Iterative Screening
-
-Iteratively screen DNA contigs from one or more seed marker proteins using `pyhmmer.hmmer.jackhmmer`.
-When multiple seeds are provided, you can combine evidence with `--combine-mode any|all|threshold`.
-
-**Example:**
-```bash
-phu jack --input-contigs assembly.fasta marker_seeds.faa --combine-mode all
-phu jack --input-contigs assembly.fasta --phrog alias:portal   # PHROG families as seeds
-```
-
-[Learn more about iterative jack screening →](commands/jack.md)
-
-### `avger` - Auxiliary Viral Genes
-
-Predict proteins from viral contigs, annotate them against Pfam, KOfam and
-PHROG, and apply the provisional auxiliary viral gene (AVG) candidate and
-curation rules.
-
-**Example:**
-```bash
-phu avger --input-contigs viral-contigs.fasta --output-folder phu-avger
-```
-
-[Learn more about auxiliary viral genes →](commands/avger.md)
-
-### `cluster` - Sequence Clustering
-
-
-Cluster viral sequences with four modes:
-
-- **`dereplication`** - Remove duplicate sequences
-- **`votu`** - Group sequences into viral Operational Taxonomic Units
-- **`genus`** - Group complete genomes into genus-level clusters (tANI ≥ 70%)
-- **`species`** - Group complete genomes into species-level clusters (tANI ≥ 95%)
-
-**Example:**
-```bash
-phu cluster --mode votu --input-contigs viral-genomes.fasta
-```
-
-[Learn more about clustering →](commands/cluster.md)
-
-
-### Databases
-
-`screen`, `jack` and `avger` use Pfam, KOfam, PHROG, dbCAN and the CheckAMG
-AVG tables. PHU ships them as one pinned and checksummed bundle, `phu-db`,
-which installs automatically on first use and shows its download progress.
-
-**Example:**
-```bash
-phu dbs prepare                              # install ahead of time
-phu dbs prepare --bundle phu-db.tar.gz       # from a pre-downloaded tarball
-```
-
-Set `PHU_DB_FOLDER` to a shared folder so every job reuses one install.
-
-[Learn more about databases and provenance →](databases.md)
-
-
-### `phrogs` - Find PHROG Families by Name
-
-Turn names into PHROG identifiers for `screen` and `jack`: curated aliases
-(`alias:mcp`, `alias:terl`), functional categories (`category:tail`) or
-annotations, with a forgiving search to explore.
-
-**Example:**
-```bash
-phu phrogs search "tail fiber"
-phu screen -i assembly.fasta $(phu phrogs resolve alias:mcp alias:terl --ids-only)
-```
-
-[Learn more about PHROG lookups →](commands/phrogs.md)
-
-### `clean` - Remove Cache and Databases
-
-List what PHU keeps between runs and remove it: the prediction cache
-(`--cache`) and the installed databases (`--dbs`, which asks first).
-
-```bash
-phu clean            # list what PHU keeps and its size
-phu clean --cache    # remove cached protein predictions
-```
-
-### `normalize-lineage` - Normalize vContact Lineage
-
-Normalize vContact lineage predictions while preserving the input table schema.
-
-[Learn more about lineage normalization →](commands/normalize-lineage.md)
-
-## Use Cases
-
-- **Viral Identification**: Screen metagenomic assemblies for viral contigs using protein markers
-- **Multi-marker Analysis**: Find contigs with complete sets of viral proteins (e.g., capsid, portal, primase, terminase)
-- **Viral Metagenomics**: Dereplicate and cluster viral contigs from metagenomic assemblies
-- **Phage Genomics**: Organize phage genomes into taxonomic groups
-- **Comparative Analysis**: Prepare datasets for phylogenetic and comparative genomic studies
-- **Database Construction**: Build reference databases of viral sequences
-
-## Cache Handling
-
-`phu` caches predicted proteins for both `screen` and `jack`. That means repeated searches can skip the gene-prediction step when the contigs and prediction inputs are unchanged. Changing HMMs, seed markers, combine mode, or output folders does not invalidate the cache.
-
-The cache is rebuilt when you change the contigs, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` affect cache reuse.
-
-To clear previous predictions manually, run `phu clean --cache`.
-
-See the full cache guide in [Cache Handling](https://camilogarciabotero.github.io/phu/cache).
-
-## Contributing
-
-See the repository's [contribution guide](https://github.com/camilogarciabotero/phu/blob/avg/CONTRIBUTING.md),
-and [changelog](https://github.com/camilogarciabotero/phu/blob/avg/CHANGELOG.md)
-before opening a change.
-
-## Citation
-
-Citation metadata for this development revision is maintained in
-[`CITATION.cff`](https://github.com/camilogarciabotero/phu/blob/avg/CITATION.cff).
-See [Citation](citation.md) for the distinction between development citations,
-the Zenodo concept DOI, and immutable release DOIs.
+- [Databases and provenance](databases.md): what the bundle holds, offline
+  and HPC installs, and what each run records.
+- [Cache handling](cache.md): when predicted proteins are reused.
+- [Troubleshooting](troubleshooting.md): install problems and run logs.
+- [Citation](citation.md): how to cite phu and the databases.
+- [Contributing](https://github.com/camilogarciabotero/phu/blob/main/CONTRIBUTING.md)
+  and the [changelog](https://github.com/camilogarciabotero/phu/blob/main/CHANGELOG.md).
 
 ## References
 
-This program uses several key tools and libraries, make sure to acknowledge them when using `phu`:
+phu builds on these tools and databases; please cite the ones your analysis used:
 
 - [vclust](https://github.com/refresh-bio/vclust): A high-performance clustering tool for viral sequences:
 > Zielezinski A, Gudyś A, Barylski J, Siminski K, Rozwalak P, Dutilh BE, Deorowicz S. Ultrafast and accurate sequence alignment and clustering of viral genomes. Nat Methods. https://doi.org/10.1038/s41592-025-02701-7
@@ -233,5 +201,11 @@ This program uses several key tools and libraries, make sure to acknowledge them
 - [pyHMMER](https://pyhmmer.readthedocs.io/en/latest/): Python bindings for HMMER.
 > Larralde, M., & Zeller, G. (2023). PyHMMER: a Python library binding to HMMER for efficient sequence analysis. Bioinformatics, 39(5). https://doi.org/10.1093/bioinformatics/btad214
 
-- [Pfams](https://pfam.xfam.org/): A comprehensive collection of protein families and domains based on hidden Markov models.
+- [Pfam](https://www.ebi.ac.uk/interpro/entry/pfam/): A comprehensive collection of protein families and domains based on hidden Markov models.
 > Pfam: The protein families database in 2021: J. Mistry, S. Chuguransky, L. Williams, M. Qureshi, G.A. Salazar, E.L.L. Sonnhammer, S.C.E. Tosatto, L. Paladin, S. Raj, L.J. Richardson, R.D. Finn, A. Bateman, Nucleic Acids Research (2021) doi: 10.1093/nar/gkaa913
+
+- [PHROGs](https://phrogs.lmge.uca.fr/): Prokaryotic virus remote homologous groups.
+> Terzian P, et al. (2021). PHROG: families of prokaryotic virus proteins clustered using remote homology. NAR Genomics and Bioinformatics, 3(3), lqab067. https://doi.org/10.1093/nargab/lqab067
+
+- [ECOD](http://prodata.swmed.edu/ecod/): Evolutionary Classification of protein Domains.
+> Schaeffer RD, et al. (2025). Nucleic Acids Research, 53(D1), D411–D418. https://doi.org/10.1093/nar/gkae1029

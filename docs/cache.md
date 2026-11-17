@@ -1,6 +1,6 @@
 # Cache Handling
 
-`phu` caches predicted proteins for both `screen` and `jack` so repeated runs can skip the gene-prediction step when the contigs and prediction inputs are unchanged.
+Predicting proteins is often the slowest step of a run. `phu screen`, `phu jack` and `phu avger` keep the predicted proteins in a cache, so a second run on the same contigs, with different queries or thresholds, starts straight at the search.
 
 ## What the cache stores
 
@@ -10,8 +10,9 @@ The cache stores the translated protein FASTA generated from the input contigs. 
 
 The cached proteins are reused when all prediction inputs are the same:
 
-- the translation table is unchanged
-`--ttable` when explicitly provided
+- the same contigs (same file content);
+- the same `--mode`, `--min-protein-len-aa` and, in `phu jack`, `--min-gene-len`;
+- the same `--ttable`, when you give one.
 
 ## When the cache is rebuilt
 
@@ -22,7 +23,7 @@ The cache is invalidated and rebuilt when any of these prediction inputs change:
 - `--min-protein-len-aa`
 - an explicit `--ttable`
 
-For `phu screen`, changing `--min-protein-len-aa`, `--mode`, or an explicit `--ttable` forces a rebuild. For `phu jack`, changing either `--min-gene-len` or `--min-protein-len-aa` forces a rebuild because both values feed the shared protein-prediction cache key. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv.
+Without `--ttable`, pyrodigal-gv picks the genetic code of each contig in meta mode, and that choice is part of the cached result.
 
 ## How to control it
 

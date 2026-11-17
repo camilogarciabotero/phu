@@ -1,7 +1,7 @@
 # Citation
 
 `CITATION.cff` is the source of truth for PHU citation metadata. This
-This documentation describes the `0.9.1` release.
+documentation describes the `0.9.1` release.
 
 For a published study, cite the immutable PHU release used for the analysis
 and record its version in the run manifest. Use the Zenodo concept DOI for
@@ -14,5 +14,9 @@ including their versions or immutable releases. The relevant scientific
 citations and database provenance belong in the run manifest alongside the PHU
 version.
 
-See the repository's [`CITATION.cff`](https://github.com/camilogarciabotero/phu/blob/avg/CITATION.cff)
+See the repository's [`CITATION.cff`](https://github.com/camilogarciabotero/phu/blob/main/CITATION.cff)
 for the machine-readable author and software metadata.
+
+For the databases, cite the `phu-db` bundle version recorded in `.phu/` and
+the upstream databases you relied on; see
+[Databases and Provenance](databases.md#citation).

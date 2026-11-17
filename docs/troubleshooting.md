@@ -18,7 +18,7 @@ binary automatically.
 Databases install automatically on first use, or with `phu dbs prepare`; see
 [Databases and Provenance](databases.md). Common causes of a failed install:
 
-- **Not enough disk space.** The install needs about 16 GB free in
+- **Not enough disk space.** The install needs about 20 GB free in
   `PHU_DB_FOLDER` and reports the exact amount when it stops.
 - **No internet access** on the node. Download the bundle elsewhere and set
   `PHU_DB_BUNDLE` to its path.

@@ -65,14 +65,15 @@ Inside that folder:
 
 ```text
 phu-db/
-  phu-db-0.3.0/
+  phu-db-0.4.0/
     installed.json        # source, tarball SHA-256, install time
     phu-db.json           # the bundle manifest: upstream URLs, digests, steps
     pfam/  profiles.hmm
     kofam/ profiles.hmm, ko_list.tsv
     dbcan/ profiles.hmm, family_substrate.tsv, pul_rules.tsv
     avg/   v_scores.tsv, positive_{amg,apg,areg}.tsv, filters_{amg,apg,areg}.tsv
-    phrog/ profiles.hmm, annotations.tsv
+    phrog/ profiles.hmm, msa_a3m.tar.gz, annotations.tsv
+    ecod/  profiles.hmm, msa_a3m.tar.gz, sequences.fa, families.tsv, domains.tsv
 ```
 
 When a new PHU release pins a newer bundle, it installs the new version beside
@@ -95,7 +96,7 @@ Compute nodes often have no internet access, or many jobs would download the
 same bundle at once. Download it once and point PHU at it:
 
 ```bash
-# On a node with internet access: get phu-db.tar.gz for phu-db-0.3.0 from
+# On a node with internet access: get phu-db.tar.gz for phu-db-0.4.0 from
 # https://doi.org/10.5281/zenodo.19503347 (the page lists every version).
 export PHU_DB_FOLDER=/shared/project/phu-db      # on a shared filesystem
 phu dbs prepare --bundle /shared/project/phu-db.tar.gz   # installs once
@@ -127,7 +128,7 @@ it and says so. Download the version named in the error.
 
 ## What the bundle contains
 
-`phu-db-0.3.0` contains these pinned upstream releases. PHU records them in
+`phu-db-0.4.0` contains these pinned upstream releases. PHU records them in
 each run's provenance.
 
 | Database | Used by | Upstream release | Files |
@@ -182,7 +183,7 @@ Keep these files with your results.
 
 Cite the bundle version you used:
 
-> García-Botero C. *Phu Databases*, version phu-db-0.3.0. Zenodo.
+> García-Botero C. *Phu Databases*, version phu-db-0.4.0. Zenodo.
 > <https://doi.org/10.5281/zenodo.19503347>
 
 Also cite the upstream databases your analysis relied on, following each

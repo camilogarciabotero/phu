@@ -152,7 +152,13 @@ behavior in the unreleased branch and may change before a release.
 
 ### Databases
 
-- phu now installs phu-db 0.3.0 (doi:10.5281/zenodo.24290671). It adds
+- phu now installs phu-db 0.4.0 (doi:10.5281/zenodo.24296611). It adds the
+  `ecod` database (ECOD v295.2, F70 representatives, CC-BY-4.0):
+  `profiles.hmm` (one model per F-group, 32,041), `msa_a3m.tar.gz` (the
+  alignments the models were built from), `sequences.fa`, `families.tsv` and
+  `domains.tsv`; every other file is identical to 0.3.0. The bundle manifest
+  accepts the ECOD preparation steps and the `fasta` file format.
+- phu-db 0.3.0 (doi:10.5281/zenodo.24290671) added
   `phrog/msa_a3m.tar.gz`, the 38,880 PHROG alignments as A3M files for
   HH-suite or MMseqs2; every other file is identical to 0.2.0. The bundle
   manifest accepts the `build-a3m` step and the `tar.gz` file format, checked

@@ -57,12 +57,9 @@ Pfam accessions are resolved to the bundle's Pfam models. With `--cut-ga`
 the search. With `--no-cut-ga`, only `--min-bitscore` and `--max-evalue`
 apply.
 
-!!! warning "Pfam cutoffs are lost when Pfam is mixed with other models"
-    Gathering cutoffs exist only in Pfam models. If any model in the run has
-    none (your own HMMs, KOfam, PHROG and ECOD models), the whole search is
-    repeated without them, Pfam models included, and a warning is printed.
-    To keep Pfam's curated cutoffs, query Pfam families in a run of their
-    own, or set `--min-bitscore` for the mixed run.
+Gathering cutoffs exist only in Pfam models. In a run that mixes Pfam with
+other models (your own, KOfam, PHROG, ECOD, dbCAN), the Pfam models are
+searched with their cutoffs and the others without.
 
 ## KOfam
 

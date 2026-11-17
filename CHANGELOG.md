@@ -160,8 +160,6 @@ behavior in the unreleased branch and may change before a release.
   command uses which database, download and disk sizes, PHROG and ECOD
   citations. The `avger` page shows its current options, links no longer
   point to the old `avg` branch, and the cache page lists `avger` too.
-- The thresholds and screen pages say that Pfam's gathering cutoffs are not
-  applied when Pfam is queried together with models that have none.
 
 ### Databases
 

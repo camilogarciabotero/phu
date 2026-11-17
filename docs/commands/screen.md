@@ -46,15 +46,9 @@ in [Screen thresholds](../screen-thresholds.md).
 ### Pfam and KOfam
 
 Pfam accessions may carry a version (`PF00589.17` is read as `PF00589`).
-Pfam models keep their curated gathering (GA) cutoffs; `--no-cut-ga` turns
-them off and leaves only `--max-evalue` and `--min-bitscore`.
-
-!!! warning
-    Gathering cutoffs exist only in Pfam models. In a run that also has
-    models without them (your own, KOfam, PHROG or ECOD), the search runs
-    without cutoffs for every model, Pfam included, and a warning is printed.
-    Query Pfam families in a run of their own to keep their cutoffs. KOfam models
-use the per-KO threshold and score type (full sequence or domain) from
+Pfam models keep their curated gathering (GA) cutoffs, also when queried
+together with other kinds of model; `--no-cut-ga` turns them off and leaves
+only `--max-evalue` and `--min-bitscore`. KOfam models use the per-KO threshold and score type (full sequence or domain) from
 KOfam's `ko_list`; `--no-use-kofam-thresholds` turns them off.
 
 ### PHROG

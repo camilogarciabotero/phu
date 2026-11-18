@@ -145,7 +145,7 @@ def test_query_model_ids_rejects_an_empty_pure_file(tmp_path: Path):
         screen._query_model_ids([hmm_path], "pure")
 
 
-def test_a_pure_file_with_several_models_is_one_query(tmp_path: Path):
+def test_a_pure_file_with_several_models_is_one_query(tmp_path: Path, capsys):
     # Several profiles of one marker in one file: in pure mode the file is one
     # query, so --combine-mode threshold counts markers, not profiles.
     protein = "MKKLLAAVAGWAAAPAAACDEFGHIKLMNPQRSTVWYMKKLLAAVAGWAAAPAAACDEFGHIK"
@@ -159,6 +159,9 @@ def test_a_pure_file_with_several_models_is_one_query(tmp_path: Path):
         _model("profile_3", other).write(handle)
 
     assert screen._query_model_ids([marker_a, marker_b], "pure") == ["marker_a", "marker_b"]
+    note = capsys.readouterr().out
+    assert "marker_a.hmm holds 2 models; they count as one query, 'marker_a'" in note
+    assert "marker_b.hmm" not in note
     assert screen._query_model_ids([marker_a, marker_b], "mixed") == [
         "profile_1", "profile_2", "profile_3"
     ]

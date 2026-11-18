@@ -1679,11 +1679,13 @@ def _query_model_ids(hmm_paths: list[Path], hmm_mode: str) -> list[str]:
         with pyhmmer.plan7.HMMFile(hmm_path) as hmm_file:
             models = list(hmm_file)
 
-        if hmm_mode == "pure" and len(models) != 1:
-            raise ValueError(
-                f"Pure HMM mode requires exactly one model per file: {hmm_path} "
-                f"contains {len(models)}"
-            )
+        if hmm_mode == "pure":
+            if not models:
+                raise ValueError(f"No HMM model in {hmm_path}")
+            # In pure mode a file is one query, however many models it holds
+            # (for example several profiles of one marker): its models' hits
+            # are pooled under the file's label.
+            models = models[:1]
 
         for model in models:
             model_name = model.name

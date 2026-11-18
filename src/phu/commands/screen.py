@@ -1930,15 +1930,20 @@ def _choose_best_contigs(
         elif combine_mode == "threshold":
             model_names = units(hit.model for hit in contig_hits)
             if len(model_names) >= min_hmm_hits:
-                contig_hits.sort(
-                    key=lambda hit: _hit_sort_key(
-                        hit,
-                        kofam_metadata_by_model[hit.model].score_type
-                        if hit.model in kofam_metadata_by_model
-                        else "full",
-                    )
-                )
-                kept.extend(contig_hits[: max(1, top_per_contig)])
+                # Like "any": the best hits of each matched model, not the
+                # best hits of the contig overall, so every query that met
+                # the threshold keeps its hits (and its target proteins).
+                hits_per_model = defaultdict(list)
+                for hit in contig_hits:
+                    hits_per_model[hit.model].append(hit)
+                for model_hits in hits_per_model.values():
+                    score_type = "full"
+                    if model_hits[0].model in kofam_metadata_by_model:
+                        score_type = kofam_metadata_by_model[
+                            model_hits[0].model
+                        ].score_type
+                    model_hits.sort(key=lambda hit: _hit_sort_key(hit, score_type))
+                    kept.extend(model_hits[: max(1, top_per_contig)])
                 kept_contigs.append(contig)
 
     return kept, kept_contigs

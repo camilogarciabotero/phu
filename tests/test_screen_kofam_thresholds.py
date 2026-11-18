@@ -452,3 +452,24 @@ def test_ecod_ids_parse_at_every_level():
     assert not is_ecod_id("ecod:2004.x")
     assert normalize_ecod_id(" ECOD:02004.01.1 ") == "ecod:2004.1.1"
     assert [ecod_level(f"ecod:{i}") for i in ("1", "1.1", "1.1.1", "1.1.1.2")] == ["X", "H", "T", "F"]
+
+
+def test_threshold_mode_keeps_the_best_hit_of_each_matched_query():
+    # Before, threshold mode kept the contig's single best hit, so the other
+    # matched queries lost their hits (and --save-target-proteins their files).
+    hits = [
+        screen.Hit(contig="c1", prot_id="c1|gene1", model="TerL", bitscore=900.0, evalue=1e-200),
+        screen.Hit(contig="c1", prot_id="c1|gene2", model="MCP", bitscore=500.0, evalue=1e-100),
+        screen.Hit(contig="c1", prot_id="c1|gene3", model="MCP", bitscore=100.0, evalue=1e-20),
+        screen.Hit(contig="c2", prot_id="c2|gene1", model="MCP", bitscore=400.0, evalue=1e-90),
+    ]
+    kept, contigs = screen._choose_best_contigs(
+        hits,
+        min_bitscore=None,
+        max_evalue=1e-5,
+        combine_mode="threshold",
+        min_hmm_hits=2,
+        queried_model_ids=["TerL", "MCP", "portal"],
+    )
+    assert contigs == ["c1"]
+    assert sorted((h.model, h.prot_id) for h in kept) == [("MCP", "c1|gene2"), ("TerL", "c1|gene1")]

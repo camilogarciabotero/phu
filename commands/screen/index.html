@@ -1191,6 +1191,15 @@ show that the contig carries that PUL or predict its substrate.</p>
 <p>Each <code>ecod:</code> id counts as <strong>one</strong> query, met by a hit to any of
 its families: <code>--combine-mode all ecod:2004.1.1 PF00589</code> keeps contigs with
 some family of that T-group and PF00589.</p>
+<p>The same holds for your own HMM files: in the default <code>--hmm-mode pure</code>, a
+file is one query even when it holds several models. To ask for "two of three
+markers" when each marker has several profiles, put each marker's profiles in
+one file:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>terl/*.hmm<span class="w"> </span>&gt;<span class="w"> </span>TerL.hmm<span class="p">;</span><span class="w"> </span>cat<span class="w"> </span>mcp/*.hmm<span class="w"> </span>&gt;<span class="w"> </span>MCP.hmm<span class="p">;</span><span class="w"> </span>cat<span class="w"> </span>portal/*.hmm<span class="w"> </span>&gt;<span class="w"> </span>portal.hmm
+phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>threshold<span class="w"> </span>--min-hmm-hits<span class="w"> </span><span class="m">2</span><span class="w"> </span>TerL.hmm<span class="w"> </span>MCP.hmm<span class="w"> </span>portal.hmm
+</code></pre></div>
+<p>A hit to any profile in <code>TerL.hmm</code> counts once, as <code>TerL</code>. With
+<code>--hmm-mode mixed</code>, every model counts as its own query instead.</p>
 <p>For each kept contig, the best hit of each matched query is reported
 (<code>--top-per-contig</code> raises this). <code>all</code> and <code>threshold</code> check the queries you
 gave, not the biology: a contig with every marker you asked for is not proof
@@ -1263,14 +1272,15 @@ of a complete genome, so record the exact queries with your results.</p>
 <p class="admonition-title">How models are named in output files</p>
 <p><code>{model}</code> is the model id made safe for file names (unusual characters
 become <code>_</code>). For your own HMMs in the default <code>--hmm-mode pure</code>, each file
-is one model and its file name (without extension) is the model id. If
+is one query and its file name (without extension) is the model id, also
+when the file holds several models. If
 two files share a name (<code>a/foo.hmm</code>, <code>b/foo.hmm</code>), the <code>NAME</code> inside each
 HMM tells them apart; if that is identical too, phu warns and pools their
 hits. If two different models would get the same file name (<code>beta/1</code> and
 <code>beta_1</code>), phu refuses the query rather than mix their results.</p>
-<p>With <code>--hmm-mode mixed</code>, one file may hold many models (for example a
-concatenated or pressed database), and outputs are written per model
-name inside the file.</p>
+<p>With <code>--hmm-mode mixed</code>, each model in a file is its own query (for
+example a concatenated database), and outputs are written per model name
+inside the file.</p>
 </div>
 <h2 id="saving-matched-proteins-and-building-hmms">Saving matched proteins and building HMMs<a class="headerlink" href="#saving-matched-proteins-and-building-hmms" title="Permanent link">&para;</a></h2>
 <p><code>--save-target-proteins</code> writes the proteins that matched each model, taken
@@ -1421,8 +1431,9 @@ matched:</p>
 <span class="s1">│                               QUERY.                                         │</span>
 <span class="s1">│ --all-puls                    Search for every dbCAN PUL signature instead   │</span>
 <span class="s1">│                               of QUERY.                                      │</span>
-<span class="s1">│ --hmm-mode     -M      &lt;str&gt;  '</span>pure<span class="s1">': one model per HMM file; '</span>mixed<span class="s1">': files │</span>
-<span class="s1">│                               with many models.                              │</span>
+<span class="s1">│ --hmm-mode     -M      &lt;str&gt;  '</span>pure<span class="s1">': each HMM file is one query, even with  │</span>
+<span class="s1">│                               several models in it; '</span>mixed<span class="s1">': each model is   │</span>
+<span class="s1">│                               one query.                                     │</span>
 <span class="s1">│                               [default: pure]                                │</span>
 <span class="s1">╰──────────────────────────────────────────────────────────────────────────────╯</span>
 <span class="s1">╭─ Hit thresholds ─────────────────────────────────────────────────────────────╮</span>

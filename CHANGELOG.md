@@ -23,8 +23,15 @@ behavior in the unreleased branch and may change before a release.
   and counts as one query: concatenate the profiles of one marker into one
   file, and `--combine-mode all` or `threshold` counts markers instead of
   profiles. Hits to any model in the file are reported under the file's
-  name. Before, such a file was refused; `--hmm-mode mixed` still makes each
-  model its own query.
+  name, and a note names each such file and its model count. Before, such
+  a file was refused; `--hmm-mode mixed` still makes each model its own
+  query.
+- Fixed: `--combine-mode threshold` kept only the best hits of each contig
+  overall, not of each matched query, so `--save-target-proteins` (and
+  `--save-target-hmms`) missed the proteins of every query but the
+  top-scoring one. It now keeps the best hits of each matched query, as
+  `any` and `all` do and as the docs said. Which contigs are kept is
+  unchanged.
 - Fixed: Pfam's gathering cutoffs were dropped for the whole run when Pfam
   families were queried together with any model without them (your own
   HMMs, KOfam, PHROG, ECOD, dbCAN): the search failed on the missing cutoffs

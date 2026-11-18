@@ -138,30 +138,59 @@ def test_threshold_counts_distinct_queried_models():
     assert contigs == []
 
 
-@pytest.mark.parametrize("model_count", [0, 2])
-def test_query_model_ids_rejects_non_single_pure_files(
-    tmp_path: Path, monkeypatch, model_count: int
-):
-    hmm_path = tmp_path / "models.hmm"
-
-    class FakeModel:
-        def __init__(self, name: str):
-            self.name = name.encode()
-
-    class FakeHMMFile:
-        def __init__(self, _path):
-            self.models = [FakeModel(f"model-{i}") for i in range(model_count)]
-
-        def __enter__(self):
-            return iter(self.models)
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-    monkeypatch.setattr(screen.pyhmmer.plan7, "HMMFile", FakeHMMFile)
-
-    with pytest.raises(ValueError, match="exactly one model"):
+def test_query_model_ids_rejects_an_empty_pure_file(tmp_path: Path):
+    hmm_path = tmp_path / "empty.hmm"
+    hmm_path.write_bytes(b"")
+    with pytest.raises(Exception):
         screen._query_model_ids([hmm_path], "pure")
+
+
+def test_a_pure_file_with_several_models_is_one_query(tmp_path: Path, capsys):
+    # Several profiles of one marker in one file: in pure mode the file is one
+    # query, so --combine-mode threshold counts markers, not profiles.
+    protein = "MKKLLAAVAGWAAAPAAACDEFGHIKLMNPQRSTVWYMKKLLAAVAGWAAAPAAACDEFGHIK"
+    other = "MSTNPKPQRKTKRNTNRRPQDVKFPGGGQIVGGVYLLPRRGPRLGVRATRKTSERSQPRG"
+    marker_a = tmp_path / "marker_a.hmm"
+    with marker_a.open("wb") as handle:
+        _model("profile_1", protein).write(handle)
+        _model("profile_2", protein[::-1]).write(handle)
+    marker_b = tmp_path / "marker_b.hmm"
+    with marker_b.open("wb") as handle:
+        _model("profile_3", other).write(handle)
+
+    assert screen._query_model_ids([marker_a, marker_b], "pure") == ["marker_a", "marker_b"]
+    note = capsys.readouterr().out
+    assert "marker_a.hmm holds 2 models; they count as one query, 'marker_a'" in note
+    assert "marker_b.hmm" not in note
+    assert screen._query_model_ids([marker_a, marker_b], "mixed") == [
+        "profile_1", "profile_2", "profile_3"
+    ]
+
+    proteins_fa = tmp_path / "proteins.faa"
+    proteins_fa.write_text(f">contig1|gene1\n{protein}\n>contig1|gene2\n{protein[::-1]}\n")
+    hits = list(
+        screen._hmmsearch(
+            hmm_paths=[marker_a, marker_b],
+            proteins_fa=proteins_fa,
+            domtbl_paths={},
+            threads=1,
+            hmm_mode="pure",
+            keep_domtbl=False,
+            cut_ga=False,
+        )
+    )
+    # Both profiles of marker_a hit, and both hits are reported as marker_a.
+    assert {hit.model for hit in hits} == {"marker_a"}
+    assert {hit.prot_id for hit in hits} == {"contig1|gene1", "contig1|gene2"}
+    _, contigs = screen._choose_best_contigs(
+        hits,
+        min_bitscore=None,
+        max_evalue=1e-5,
+        combine_mode="threshold",
+        min_hmm_hits=2,
+        queried_model_ids=["marker_a", "marker_b"],
+    )
+    assert contigs == []  # one marker, however many of its profiles hit
 
 
 def test_generated_hmm_does_not_store_command_line(tmp_path: Path):

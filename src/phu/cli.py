@@ -612,7 +612,7 @@ def screen(
         "pure",
         "--hmm-mode",
         "-M",
-        help="'pure': one model per HMM file; 'mixed': files with many models.",
+        help="'pure': each HMM file is one query, even with several models in it; 'mixed': each model is one query.",
         rich_help_panel="Other ways to query",
     ),
     max_evalue: Optional[float] = typer.Option(

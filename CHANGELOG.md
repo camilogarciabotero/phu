@@ -19,6 +19,13 @@ behavior in the unreleased branch and may change before a release.
 
 ### Screen
 
+- In the default `--hmm-mode pure`, an HMM file may now hold several models
+  and counts as one query: concatenate the profiles of one marker into one
+  file, and `--combine-mode all` or `threshold` counts markers instead of
+  profiles. Hits to any model in the file are reported under the file's
+  name, and a note names each such file and its model count. Before, such
+  a file was refused; `--hmm-mode mixed` still makes each model its own
+  query.
 - Fixed: `--combine-mode threshold` kept only the best hits of each contig
   overall, not of each matched query, so `--save-target-proteins` (and
   `--save-target-hmms`) missed the proteins of every query but the

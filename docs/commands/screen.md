@@ -121,6 +121,19 @@ Each `ecod:` id counts as **one** query, met by a hit to any of
 its families: `--combine-mode all ecod:2004.1.1 PF00589` keeps contigs with
 some family of that T-group and PF00589.
 
+The same holds for your own HMM files: in the default `--hmm-mode pure`, a
+file is one query even when it holds several models. To ask for "two of three
+markers" when each marker has several profiles, put each marker's profiles in
+one file:
+
+```bash
+cat terl/*.hmm > TerL.hmm; cat mcp/*.hmm > MCP.hmm; cat portal/*.hmm > portal.hmm
+phu screen -i contigs.fa --combine-mode threshold --min-hmm-hits 2 TerL.hmm MCP.hmm portal.hmm
+```
+
+A hit to any profile in `TerL.hmm` counts once, as `TerL`. With
+`--hmm-mode mixed`, every model counts as its own query instead.
+
 For each kept contig, the best hit of each matched query is reported
 (`--top-per-contig` raises this). `all` and `threshold` check the queries you
 gave, not the biology: a contig with every marker you asked for is not proof
@@ -147,15 +160,16 @@ Proteins are named `<contig>|gene<n>`; contig names may themselves contain
 !!! info "How models are named in output files"
     `{model}` is the model id made safe for file names (unusual characters
     become `_`). For your own HMMs in the default `--hmm-mode pure`, each file
-    is one model and its file name (without extension) is the model id. If
+    is one query and its file name (without extension) is the model id, also
+    when the file holds several models. If
     two files share a name (`a/foo.hmm`, `b/foo.hmm`), the `NAME` inside each
     HMM tells them apart; if that is identical too, phu warns and pools their
     hits. If two different models would get the same file name (`beta/1` and
     `beta_1`), phu refuses the query rather than mix their results.
 
-    With `--hmm-mode mixed`, one file may hold many models (for example a
-    concatenated or pressed database), and outputs are written per model
-    name inside the file.
+    With `--hmm-mode mixed`, each model in a file is its own query (for
+    example a concatenated database), and outputs are written per model name
+    inside the file.
 
 ## Saving matched proteins and building HMMs
 
@@ -326,8 +340,9 @@ phu screen -i 'scaffolds|assembly.fa' protein_family.hmm
 │                               QUERY.                                         │
 │ --all-puls                    Search for every dbCAN PUL signature instead   │
 │                               of QUERY.                                      │
-│ --hmm-mode     -M      <str>  'pure': one model per HMM file; 'mixed': files │
-│                               with many models.                              │
+│ --hmm-mode     -M      <str>  'pure': each HMM file is one query, even with  │
+│                               several models in it; 'mixed': each model is   │
+│                               one query.                                     │
 │                               [default: pure]                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Hit thresholds ─────────────────────────────────────────────────────────────╮

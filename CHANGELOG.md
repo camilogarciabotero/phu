@@ -3,7 +3,7 @@
 All notable changes to PHU are recorded here. Development entries describe
 behavior in the unreleased branch and may change before a release.
 
-## Unreleased
+## 0.10.0 — 2026-11-18
 
 ### CLI
 

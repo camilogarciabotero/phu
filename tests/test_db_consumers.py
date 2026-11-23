@@ -498,3 +498,72 @@ def test_screen_searches_ecod_groups_end_to_end(installed, tmp_path, monkeypatch
     assert kept == ["c1"]
     _, kept = run("threshold", ["ecod:1"], combine_mode="threshold", min_hmm_hits=2)
     assert kept == []
+
+
+def test_screen_counts_each_phrog_group_as_one_query(installed, tmp_path, monkeypatch):
+    """alias:/category:/annot: tokens are one query each under all/threshold."""
+    import json
+
+    from phu.core.gene_prediction import CacheArtifact
+    from phu.db.phrog_lookup import Alias, AliasTable
+
+    integrase, anti_restriction, hth = "HCDYRKTWNAVEFIL", "DMPQIFEWGYSHTNR", "YNCQSLWDHRFMEKT"
+    proteins = tmp_path / "cache" / "proteins.faa"
+    proteins.parent.mkdir()
+    proteins.write_text(
+        f">c1|gene1\n{integrase}\n>c1|gene2\n{hth}\n"
+        f">c2|gene1\n{anti_restriction}\n>c3|gene1\n{hth}\n"
+    )
+    contigs = tmp_path / "contigs.fna"
+    contigs.write_text(">c1\nACGT\n>c2\nACGT\n>c3\nACGT\n")
+    monkeypatch.setattr(
+        screen,
+        "get_or_predict_proteins",
+        lambda inputs, use_cache=True, threads=1: CacheArtifact(
+            proteins, 4, False, "key", cache_dir=proteins.parent
+        ),
+    )
+    # alias:fx selects two PHROGs (phrog_1, phrog_2).
+    table = AliasTable(
+        aliases={"fx": Alias("fx", "fixture pair", ("fixture integrase", "fixture anti-restriction protein"))},
+        categories={},
+    )
+    monkeypatch.setattr(screen, "load_aliases", lambda: table)
+
+    def run(name, tokens, **options):
+        out = tmp_path / name
+        screen._screen(
+            screen.ScreenConfig(
+                input_contigs=contigs,
+                hmms=[Path(token) for token in tokens],
+                outdir=out,
+                cut_ga=False,
+                use_phrog_thresholds=False,
+                min_protein_len_aa=1,
+                **options,
+            )
+        )
+        return out, (out / "matched-contig-ids.txt").read_text().split()
+
+    out, kept = run("any", ["alias:fx"])
+    assert kept == ["c1", "c2"]
+    query = json.loads((out / ".phu" / "query.json").read_text())
+    assert query["phrog_groups"] == {"alias:fx": ["phrog_1", "phrog_2"]}
+
+    # all: the alias is met by either member, the category by phrog_3.
+    _, kept = run("all", ["alias:fx", "category:transcription regulation"], combine_mode="all")
+    assert kept == ["c1"]
+    # The same PHROGs named one by one must all be present: no contig has all three.
+    _, kept = run("flat", ["phrog_1", "phrog_2", "phrog_3"], combine_mode="all")
+    assert kept == []
+    # threshold counts the alias once.
+    _, kept = run("threshold", ["alias:fx"], combine_mode="threshold", min_hmm_hits=2)
+    assert kept == []
+    # A PHROG named alone beside a group containing it still counts for itself.
+    _, kept = run("both", ["alias:fx", "phrog_1"], combine_mode="all")
+    assert kept == ["c1"]
+    _, kept = run("annot", ["annot:fixture integrase", "category:transcription"], combine_mode="all")
+    assert kept == ["c1"]
+
+    with pytest.raises(ValueError, match="Unknown alias"):
+        run("bad", ["alias:nope"])

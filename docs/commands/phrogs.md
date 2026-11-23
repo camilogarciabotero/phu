@@ -10,8 +10,9 @@ phu phrogs aliases                    # short names such as mcp, terl, portal
 phu phrogs search "tail fiber"        # explore annotations
 phu phrogs resolve alias:mcp category:lysis --ids-only
 
-# Screen contigs for major capsid and terminase large subunit families
-phu screen -i contigs.fna $(phu phrogs resolve alias:mcp alias:terl --ids-only)
+# Contigs with a major capsid and a terminase large subunit family
+# (each alias is one query in screen)
+phu screen -i contigs.fna --combine-mode all alias:mcp alias:terl
 
 # The same queries seed iterative searches in jack
 phu jack -i contigs.fna --phrog alias:portal --max-phrog-seeds 60

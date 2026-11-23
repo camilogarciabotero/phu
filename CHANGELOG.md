@@ -5,6 +5,11 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Packaging
+
+- The source archive (sdist) no longer ships the test files, which could not
+  run without their fixtures. It now carries `CHANGELOG.md` and `CITATION.cff`.
+
 ### Fixes
 
 - Input FASTA files with a repeated or empty record id are now rejected

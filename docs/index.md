@@ -73,7 +73,7 @@ your own proteins or PHROG families.
 
 ```bash
 phu jack -i assembly.fasta marker_seeds.faa --combine-mode all
-phu jack -i assembly.fasta --phrog alias:portal
+phu jack -i assembly.fasta --phrog alias:portal --max-phrog-seeds 60
 ```
 
 [Jack guide →](commands/jack.md)

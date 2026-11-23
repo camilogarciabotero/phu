@@ -180,7 +180,7 @@ def test_download_progress_logs_every_tenth_when_not_a_terminal() -> None:
 
 def test_download_progress_draws_a_spinner_and_bar_on_a_terminal() -> None:
     out = StringIO()
-    console = Console(file=out, force_terminal=True, width=100)
+    console = Console(file=out, force_terminal=True, width=100, _environ={"TERM": "xterm-256color"})
     lines: list[str] = []
 
     with download_progress("downloading phu-db", 1000, log=lines.append, console=console) as update:
@@ -218,3 +218,13 @@ def test_download_progress_is_silent_when_quiet() -> None:
         update(100)
 
     assert lines == [] and out.getvalue() == ""
+
+
+def test_download_progress_logs_lines_on_a_dumb_terminal() -> None:
+    console = Console(file=StringIO(), force_terminal=True, width=100, _environ={"TERM": "dumb"})
+    lines: list[str] = []
+
+    with download_progress("downloading phu-db", 1000, log=lines.append, console=console) as update:
+        update(1000)
+
+    assert lines

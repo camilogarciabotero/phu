@@ -10,7 +10,17 @@ behavior in the unreleased branch and may change before a release.
 - The source archive (sdist) no longer ships the test files, which could not
   run without their fixtures. It now carries `CHANGELOG.md` and `CITATION.cff`.
 
+### Development
+
+- New `docs` dependency group: `uv sync --group docs` then
+  `uv run mkdocs build --strict`; the docs workflow uses the same locked group.
+
 ### Fixes
+
+- The `phu jack` examples with `alias:terl` (54 PHROGs) and `alias:portal`
+  (51) add `--max-phrog-seeds`, since both exceed the default cap of 50.
+- On a dumb terminal (`TERM=dumb`), database downloads now log progress lines
+  instead of showing nothing; the progress tests no longer depend on `TERM`.
 
 - Input FASTA files with a repeated or empty record id are now rejected
   before gene prediction, naming the id and the record numbers. Before, a

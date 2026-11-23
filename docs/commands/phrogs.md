@@ -14,7 +14,7 @@ phu phrogs resolve alias:mcp category:lysis --ids-only
 phu screen -i contigs.fna $(phu phrogs resolve alias:mcp alias:terl --ids-only)
 
 # The same queries seed iterative searches in jack
-phu jack -i contigs.fna --phrog alias:portal
+phu jack -i contigs.fna --phrog alias:portal --max-phrog-seeds 60
 ```
 
 Only the 38,880 PHROG families with a model (`phrog_1` to `phrog_38880`) are

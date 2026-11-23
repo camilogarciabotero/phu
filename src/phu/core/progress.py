@@ -271,7 +271,8 @@ def download_progress(
         return
 
     console = console or Console(stderr=True)
-    if console.is_terminal:
+    # is_interactive, not is_terminal: a dumb terminal draws no live bar.
+    if console.is_interactive:
         progress = Progress(
             SpinnerColumn(),
             TextColumn("{task.description}"),

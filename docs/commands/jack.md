@@ -20,7 +20,7 @@ phu jack -i <INPUT_CONTIGS> [OPTIONS] [<SEED_MARKER>] [--phrog QUERY ...]
 phu jack -i contigs.fa marker_seed.faa
 phu jack -i contigs.fa --combine-mode all marker_seeds.faa
 phu jack -i contigs.fa --iterations 7 --inc-evalue 1e-4 marker_seed.faa
-phu jack -i contigs.fa --phrog alias:portal
+phu jack -i contigs.fa --phrog alias:portal --max-phrog-seeds 60
 phu jack -i contigs.fa --combine-mode all --phrog phrog_2 marker_seed.faa
 ```
 
@@ -61,7 +61,7 @@ see what a query selects.
   Each FASTA sequence is a group, and each `--phrog` query is one group
   however many PHROGs it selects: the 54 PHROGs of `alias:terl` are
   alternatives for one marker. So `--combine-mode all --phrog alias:terl
-  --phrog alias:portal` keeps contigs with a terminase *and* a portal hit,
+  --phrog alias:portal --max-phrog-seeds 110` keeps contigs with a terminase *and* a portal hit,
   and `--min-seed-hits 2` needs two different queries. A PHROG selected by
   two queries belongs to the first. Within a group, a protein hit by several
   PHROGs is kept once, by its best hit.
@@ -104,7 +104,7 @@ phu-jack/
  Examples:
      phu jack -i contigs.fa seeds.faa
      phu jack -i contigs.fa --combine-mode all seeds.faa
-     phu jack -i contigs.fa --phrog alias:terl --phrog alias:portal
+     phu jack -i contigs.fa --phrog alias:terl --max-phrog-seeds 60
      phu jack -i contigs.fa --iterations 1 --phrog phrog_216
 
  Full guide: https://camilogarciabotero.github.io/phu/commands/jack/

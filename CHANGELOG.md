@@ -5,6 +5,14 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### Documentation
+
+- New [Quickstart](docs/quickstart.md): a first `phu screen` run on phage
+  phiX174 and a shuffled decoy with a bundled HMM, no database download, and
+  the expected result. The example files are published with the docs; tests
+  and the installed-wheel CI check run the same commands. The homepage links
+  it and states the database footprint (2.9 GB download, ~21 GB installed).
+
 ### Packaging
 
 - The source archive (sdist) no longer ships the test files, which could not

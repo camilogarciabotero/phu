@@ -5,6 +5,7 @@
 set -euo pipefail
 
 wheel=$(ls "$PWD"/dist/*.whl)
+quickstart="$PWD/docs/quickstart"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 export UV_TOOL_DIR="$work/tools" UV_TOOL_BIN_DIR="$work/bin"
@@ -55,6 +56,10 @@ export PATH=/usr/bin:/bin
 
 "$phu" screen -i contigs.fna -o screen-out planted.hmm
 test "$(cat screen-out/matched-contig-ids.txt)" = "hit"
+
+# The documented quickstart (docs/quickstart.md) gives its documented result.
+"$phu" screen -i "$quickstart/contigs.fna" -o qs-out "$quickstart/major_head.hmm"
+test "$(cat qs-out/matched-contig-ids.txt)" = "NC_001422.1"
 
 "$phu" cluster -i genomes.fna -o cluster-out --mode dereplication
 test "$(grep -c "^genome_" cluster-out/cluster-representative-ids.txt)" -eq 2

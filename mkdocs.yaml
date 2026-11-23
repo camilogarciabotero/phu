@@ -65,6 +65,7 @@ plugins:
 
 nav:
   - Home: index.md
+  - Quickstart: quickstart.md
   - Commands:
       - commands/screen.md
       - commands/jack.md

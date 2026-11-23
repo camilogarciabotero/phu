@@ -1097,10 +1097,16 @@ a hit must score at least 60 bits and align to at least half of both the
 model and the protein, the rule <a href="../avger/"><code>phu avger</code></a> uses.
 <code>--no-use-phrog-thresholds</code> drops that rule. The function and category of
 each queried PHROG are printed and recorded in <code>.phu/query.json</code>.</p>
-<p>To pick PHROGs by name or category instead of number, use
-<a href="../phrogs/"><code>phu phrogs</code></a>:</p>
-<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span><span class="k">$(</span>phu<span class="w"> </span>phrogs<span class="w"> </span>resolve<span class="w"> </span>alias:mcp<span class="w"> </span>alias:terl<span class="w"> </span>--ids-only<span class="k">)</span>
+<p>To pick PHROGs by name or category instead of number, give a group:
+<code>alias:&lt;name&gt;</code>, <code>category:&lt;name&gt;</code> or <code>'annot:&lt;annotation&gt;'</code>, the queries of
+<a href="../phrogs/"><code>phu phrogs resolve</code></a>. Each group is <strong>one query</strong>, however many
+PHROGs it selects, so this keeps contigs with a major capsid <em>and</em> a
+terminase hit:</p>
+<div class="highlight"><pre><span></span><code>phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>alias:mcp<span class="w"> </span>alias:terl
 </code></pre></div>
+<p>The PHROGs each group selected are recorded under <code>phrog_groups</code> in
+<code>.phu/query.json</code>. A PHROG selected by two groups counts for both. Piping
+<code>phu phrogs resolve --ids-only</code> instead turns every PHROG into its own query.</p>
 <h3 id="ecod">ECOD<a class="headerlink" href="#ecod" title="Permanent link">&para;</a></h3>
 <p>ECOD classifies protein <strong>domains</strong> by evolutionary relationship, at four
 levels. You can query any of them with <code>ecod:</code> and a dotted id:</p>
@@ -1405,22 +1411,26 @@ matched:</p>
 
 <span class="w"> </span>Proteins<span class="w"> </span>are<span class="w"> </span>predicted<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>contigs<span class="w"> </span>and<span class="w"> </span>searched<span class="w"> </span>with<span class="w"> </span>each<span class="w"> </span>QUERY:<span class="w"> </span>your<span class="w">     </span>
 <span class="w"> </span>own<span class="w"> </span>HMM<span class="w"> </span>files,<span class="w"> </span>or<span class="w"> </span>families<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>phu<span class="w"> </span>databases<span class="w"> </span>by<span class="w"> </span>name:<span class="w"> </span>Pfam<span class="w"> </span><span class="o">(</span>PF00001<span class="o">)</span>,<span class="w">     </span>
-<span class="w"> </span>KOfam<span class="w"> </span><span class="o">(</span>K00001<span class="o">)</span>,<span class="w"> </span>PHROG<span class="w"> </span><span class="o">(</span>phrog_216<span class="p">;</span><span class="w"> </span>find<span class="w"> </span>them<span class="w"> </span>with<span class="w"> </span><span class="sb">`</span>phu<span class="w"> </span>phrogs<span class="sb">`</span><span class="o">)</span>,<span class="w"> </span>ECOD<span class="w">           </span>
+<span class="w"> </span>KOfam<span class="w"> </span><span class="o">(</span>K00001<span class="o">)</span>,<span class="w"> </span>PHROG<span class="w"> </span><span class="o">(</span>phrog_216,<span class="w"> </span>or<span class="w"> </span>a<span class="w"> </span>group:<span class="w"> </span>alias:mcp,<span class="w"> </span>category:tail,<span class="w">        </span>
+<span class="w"> </span><span class="s1">'annot:&lt;annotation&gt;'</span><span class="p">;</span><span class="w"> </span>find<span class="w"> </span>them<span class="w"> </span>with<span class="w"> </span><span class="sb">`</span>phu<span class="w"> </span>phrogs<span class="sb">`</span><span class="o">)</span>,<span class="w"> </span>ECOD<span class="w">                       </span>
 <span class="w"> </span><span class="o">(</span>ecod:2004.1.1.5<span class="w"> </span><span class="k">for</span><span class="w"> </span>one<span class="w"> </span>family,<span class="w"> </span>or<span class="w"> </span>a<span class="w"> </span>T,<span class="w"> </span>H<span class="w"> </span>or<span class="w"> </span>X<span class="w"> </span>group<span class="w"> </span>such<span class="w"> </span>as<span class="w"> </span>ecod:2004.1.1<span class="w">    </span>
 <span class="w"> </span><span class="k">for</span><span class="w"> </span>all<span class="w"> </span>its<span class="w"> </span>families<span class="o">)</span>,<span class="w"> </span>dbCAN<span class="w"> </span><span class="o">(</span>GH128<span class="o">)</span><span class="w"> </span>or<span class="w"> </span>one<span class="w"> </span>dbCAN<span class="w"> </span>PUL<span class="w"> </span><span class="o">(</span>PUL0621<span class="o">)</span>.<span class="w"> </span>Each<span class="w">          </span>
-<span class="w"> </span>database<span class="s1">'s own cutoffs apply.                                                  </span>
+<span class="w"> </span>database<span class="s1">'s own cutoffs apply. A PHROG group or ECOD group counts as one        </span>
+<span class="s1"> query in --combine-mode all and threshold.                                     </span>
 
 <span class="s1"> Examples:                                                                      </span>
 <span class="s1">     phu screen -i contigs.fa PF00001 PF00589                                   </span>
 <span class="s1">     phu screen -i contigs.fa my-models/*.hmm                                   </span>
 <span class="s1">     phu screen -i contigs.fa --combine-mode all K00001 K00002                  </span>
+<span class="s1">     phu screen -i contigs.fa --combine-mode all alias:mcp alias:terl           </span>
 <span class="s1">     phu screen -i contigs.fa --all-cazymes                                     </span>
 
 <span class="s1"> Full guide: https://camilogarciabotero.github.io/phu/commands/screen/          </span>
 
 <span class="s1">╭─ Query ──────────────────────────────────────────────────────────────────────╮</span>
 <span class="s1">│   [QUERY]...      &lt;path&gt;  HMM files, or database names: PF00001, K00001,     │</span>
-<span class="s1">│                           phrog_216, ecod:2004.1.1.5, GH128, PUL0621.        │</span>
+<span class="s1">│                           phrog_216, alias:mcp, ecod:2004.1.1.5, GH128,      │</span>
+<span class="s1">│                           PUL0621.                                           │</span>
 <span class="s1">╰──────────────────────────────────────────────────────────────────────────────╯</span>
 <span class="s1">╭─ Options ────────────────────────────────────────────────────────────────────╮</span>
 <span class="s1">│ *  --input-contigs  -i      &lt;path&gt;  Contigs to screen (FASTA). [required]    │</span>

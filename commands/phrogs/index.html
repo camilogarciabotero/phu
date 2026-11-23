@@ -847,8 +847,9 @@ phu<span class="w"> </span>phrogs<span class="w"> </span>aliases<span class="w">
 phu<span class="w"> </span>phrogs<span class="w"> </span>search<span class="w"> </span><span class="s2">"tail fiber"</span><span class="w">        </span><span class="c1"># explore annotations</span>
 phu<span class="w"> </span>phrogs<span class="w"> </span>resolve<span class="w"> </span>alias:mcp<span class="w"> </span>category:lysis<span class="w"> </span>--ids-only
 
-<span class="c1"># Screen contigs for major capsid and terminase large subunit families</span>
-phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fna<span class="w"> </span><span class="k">$(</span>phu<span class="w"> </span>phrogs<span class="w"> </span>resolve<span class="w"> </span>alias:mcp<span class="w"> </span>alias:terl<span class="w"> </span>--ids-only<span class="k">)</span>
+<span class="c1"># Contigs with a major capsid and a terminase large subunit family</span>
+<span class="c1"># (each alias is one query in screen)</span>
+phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fna<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>alias:mcp<span class="w"> </span>alias:terl
 
 <span class="c1"># The same queries seed iterative searches in jack</span>
 phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fna<span class="w"> </span>--phrog<span class="w"> </span>alias:portal<span class="w"> </span>--max-phrog-seeds<span class="w"> </span><span class="m">60</span>

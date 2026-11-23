@@ -120,7 +120,7 @@ For screening pass/fail and threshold rules, see [Screen thresholds](https://cam
 
 `phu` caches predicted proteins for `screen`, `jack` and `avger` so repeated runs can reuse the same translated proteins when the prediction inputs have not changed. Search settings such as HMM files, seed markers, combine mode, and output folder do not affect the cache.
 
-The cache is rebuilt when you change the contig input, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` participate in the cache key.
+The cache is rebuilt when you change the contig input (its content, not its name or timestamp), the installed pyrodigal/pyrodigal-gv version, `--mode`, an explicit `--ttable`, or the protein-length filter. Without `--ttable`, meta-mode contigs use the translation table selected by pyrodigal-gv. For `phu screen`, that is `--min-protein-len-aa`. For `phu jack`, both `--min-gene-len` and `--min-protein-len-aa` participate in the cache key.
 
 To remove previously cached predictions, run `phu clean --cache`.
 

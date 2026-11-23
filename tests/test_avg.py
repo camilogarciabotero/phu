@@ -409,3 +409,36 @@ def test_an_unclassified_candidate_lands_in_the_filtered_table_with_its_reason(
     assert filtered["status"] == "unclassified_candidate"
     assert filtered["reason"] == "no_supported_class"
     assert filtered["candidate_databases"] == "phrog"
+
+
+@pytest.mark.parametrize(("env", "expected"), [("on", True), ("off", False)])
+def test_run_avg_honours_phu_cache_off(monkeypatch, tmp_path, env, expected):
+    input_contigs = tmp_path / "contigs.fna"
+    input_contigs.write_text(">contig-1\nATG\n")
+    seen = {}
+
+    def fake_predict(*args, **kwargs):
+        seen["use_cache"] = kwargs["use_cache"]
+        return CacheArtifact(
+            proteins_path=tmp_path / "proteins.faa",
+            protein_count=0,
+            cache_hit=False,
+            cache_key="",
+        )
+
+    monkeypatch.setenv("PHU_CACHE", env)
+    monkeypatch.setattr(avg, "require_databases", lambda phrog: None)
+    monkeypatch.setattr(avg, "has_binary_models", lambda name: True)
+    monkeypatch.setattr(avg, "get_or_predict_proteins", fake_predict)
+    monkeypatch.setattr(avg, "write_avg_outputs", lambda *args, **kwargs: ())
+    monkeypatch.setattr(
+        avg,
+        "annotate_avg_tracks",
+        lambda *args, **kwargs: AvgAnnotationResults(
+            AnnotationResults({}, {}, 0, 0, 0), AnnotationResults({}, {}, 0, 0, 0)
+        ),
+    )
+
+    avg.run_avg(avg.AvgConfig(input_contigs=input_contigs))
+
+    assert seen["use_cache"] is expected

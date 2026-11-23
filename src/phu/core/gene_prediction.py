@@ -85,25 +85,40 @@ class CacheArtifact:
     genes: Optional[list[PredictedGene]] = None
 
 
+def prediction_cache_enabled() -> bool:
+    """Return False when the user disabled the prediction cache (PHU_CACHE=off)."""
+    return os.environ.get("PHU_CACHE", "on").strip().lower() != "off"
+
+
+def _file_digest(path: Path) -> str:
+    """SHA-256 of a file's bytes, read in chunks."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def compute_cache_key(inputs: PredictionInputs) -> str:
     """
     Generate stable, deterministic cache key from prediction inputs.
 
-    Key includes file identity (mtime as quick invalidation) and all prediction params.
+    Key includes the input's content digest, the versions of the gene-finding
+    libraries and all prediction params, so a changed file or library never
+    reuses old predictions. The path is left out: identical content found
+    under another name reuses the same predictions.
     Seeds/HMMs/markers are explicitly excluded to allow reuse across different searches.
     """
-    stat = inputs.input_contigs.stat()
-
-    seed = (
-        str(inputs.input_contigs)
-        + str(stat.st_mtime_ns)
-        + str(stat.st_size)
-        + package_version("pyrodigal-gv")
-        + inputs.mode
-        + str(inputs.min_gene_len)
-        + str(inputs.min_protein_len_aa)
-        + str(inputs.translation_table)
-    )
+    identity = {
+        "input_sha256": _file_digest(inputs.input_contigs),
+        "pyrodigal": package_version("pyrodigal"),
+        "pyrodigal_gv": package_version("pyrodigal-gv"),
+        "mode": inputs.mode,
+        "min_gene_len": inputs.min_gene_len,
+        "min_protein_len_aa": inputs.min_protein_len_aa,
+        "translation_table": inputs.translation_table,
+    }
+    seed = json.dumps(identity, sort_keys=True)
     return hashlib.sha256(seed.encode()).hexdigest()[:16]
 
 
@@ -174,7 +189,8 @@ def _read_fasta_python(fp: Path) -> Iterable[tuple[str, str]]:
                 if seq_id is not None:
                     yield seq_id, "".join(seq_chunks)
                 # FASTA header id is first token after '>'
-                seq_id = line[1:].split(None, 1)[0]
+                fields = line[1:].split(None, 1)
+                seq_id = fields[0] if fields else ""
                 seq_chunks = []
                 continue
 
@@ -187,6 +203,23 @@ def _read_fasta_python(fp: Path) -> Iterable[tuple[str, str]]:
 
         if seq_id is not None:
             yield seq_id, "".join(seq_chunks)
+
+
+def _check_unique_ids(fp: Path, contigs: list[tuple[str, str]]) -> None:
+    """Refuse empty or repeated record ids: genes, hits and extracted contigs
+    are all keyed by the id, so a repeat would mix records silently."""
+    seen: dict[str, int] = {}
+    for index, (contig_id, _seq) in enumerate(contigs, start=1):
+        if not contig_id:
+            raise ValueError(f"Record {index} in {fp} has an empty id (header '>')")
+        if contig_id in seen:
+            raise ValueError(
+                f"Duplicate sequence id '{contig_id}' in {fp} "
+                f"(records {seen[contig_id]} and {index}). "
+                "Ids (header text up to the first space) must be unique; "
+                "rename the records, e.g. with `seqkit rename`."
+            )
+        seen[contig_id] = index
 
 
 def predict_genes_pyrodigal(
@@ -235,6 +268,7 @@ def predict_genes_pyrodigal(
     contigs = list(_read_fasta_python(inputs.input_contigs))
     if not contigs:
         return []
+    _check_unique_ids(inputs.input_contigs, contigs)
 
     log_call(
         "pyrodigal_gv.ViralGeneFinder",
@@ -347,18 +381,21 @@ def get_or_predict_proteins(
                 if manifest.get("protein_fasta_format") != PROTEIN_FASTA_FORMAT_VERSION:
                     raise ValueError("outdated protein FASTA format")
                 n_prot = manifest.get("protein_count", 0)
+                cached_genes = [
+                    PredictedGene(**item)
+                    for item in json.loads(cache_genes.read_text())
+                ]
+                if len(cached_genes) != n_prot:
+                    raise ValueError("cached genes disagree with protein count")
                 return CacheArtifact(
                     proteins_path=cache_proteins,
                     protein_count=n_prot,
                     cache_hit=True,
                     cache_key=cache_key,
                     cache_dir=cache_subdir,
-                    genes=[
-                        PredictedGene(**item)
-                        for item in json.loads(cache_genes.read_text())
-                    ],
+                    genes=cached_genes,
                 )
-            except (json.JSONDecodeError, KeyError, ValueError):
+            except (json.JSONDecodeError, KeyError, ValueError, TypeError):
                 # Corrupted manifest; treat as miss and rebuild
                 cache_manifest.unlink(missing_ok=True)
 

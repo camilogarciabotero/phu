@@ -10,7 +10,8 @@ The cache stores the translated protein FASTA generated from the input contigs. 
 
 The cached proteins are reused when all prediction inputs are the same:
 
-- the same contigs (same file content);
+- the same contigs: the key holds a SHA-256 of the file's bytes, so any edit
+  invalidates it, and an identical copy under another name reuses it;
 - the same `--mode`, `--min-protein-len-aa` and, in `phu jack`, `--min-gene-len`;
 - the same `--ttable`, when you give one.
 
@@ -22,14 +23,19 @@ The cache is invalidated and rebuilt when any of these prediction inputs change:
 - `--min-gene-len` in `phu jack`
 - `--min-protein-len-aa`
 - an explicit `--ttable`
+- the installed pyrodigal or pyrodigal-gv version
 
 Without `--ttable`, pyrodigal-gv picks the genetic code of each contig in meta mode, and that choice is part of the cached result.
+
+A cache entry that cannot be read back (for example a damaged `genes.json`)
+is treated as a miss and rebuilt.
 
 ## How to control it
 
 Cache behavior is controlled by environment variables:
 
-- `PHU_CACHE=off` disables caching and always recomputes proteins.
+- `PHU_CACHE=off` disables caching and always recomputes proteins, in
+  `screen`, `jack` and `avger`.
 - `PHU_CACHE_DIR` overrides the cache location.
 - If `PHU_CACHE_DIR` is not set, `phu` uses an XDG-style cache directory under your home cache path.
 

@@ -103,8 +103,8 @@ class TestCacheKey:
         key2 = compute_cache_key(inputs2)
         assert key1 != key2
 
-    def test_cache_key_includes_file_stat(self, tmp_path):
-        """Cache key includes file stat for quick invalidation."""
+    def test_cache_key_is_short_hex(self, tmp_path):
+        """Cache key is a 16-character hex digest."""
         contigs = tmp_path / "contigs.fa"
         contigs.write_text(">c1\nATGC\n")
 
@@ -566,3 +566,68 @@ def test_write_predicted_proteins_fasta_writes_expected_records(tmp_path):
 
     assert count == 2
     assert out.read_text() == ">c1|gene1\nMK\n>c2|gene1\nMP\n"
+
+
+GENE_CONTIG = "ATG" + "A" * 87 + "TAA"
+
+
+class TestAssessmentRegressions:
+    """Cache identity, cache recovery and input-id checks."""
+
+    def test_same_size_same_mtime_edit_changes_key(self, tmp_path):
+        import os
+
+        contigs = tmp_path / "contigs.fa"
+        contigs.write_text(">c1\nACGT\n")
+        stat = contigs.stat()
+        key1 = compute_cache_key(PredictionInputs(input_contigs=contigs))
+        contigs.write_text(">c1\nTTTT\n")
+        os.utime(contigs, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+        assert contigs.stat().st_size == stat.st_size
+        assert compute_cache_key(PredictionInputs(input_contigs=contigs)) != key1
+
+    def test_same_content_elsewhere_shares_key(self, tmp_path):
+        a = tmp_path / "a.fa"
+        b = tmp_path / "b.fa"
+        a.write_text(">c1\nACGT\n")
+        b.write_text(">c1\nACGT\n")
+        assert compute_cache_key(PredictionInputs(input_contigs=a)) == compute_cache_key(
+            PredictionInputs(input_contigs=b)
+        )
+
+    @pytest.mark.parametrize("payload", ["[{}]", '[{"gene_id": "x"}]', "[]"])
+    def test_invalid_cached_genes_are_rebuilt(self, tmp_path, monkeypatch, payload):
+        monkeypatch.setenv("PHU_CACHE_DIR", str(tmp_path / "cache"))
+        contigs = tmp_path / "contigs.fa"
+        contigs.write_text(f">c1\n{GENE_CONTIG}\n")
+        inputs = PredictionInputs(input_contigs=contigs, min_gene_len=60)
+        first = get_or_predict_proteins(inputs, use_cache=True)
+        assert first.protein_count >= 1
+        (first.cache_dir / "genes.json").write_text(payload)
+
+        again = get_or_predict_proteins(inputs, use_cache=True)
+
+        assert not again.cache_hit
+        assert len(again.genes) == first.protein_count
+
+    def test_duplicate_ids_are_rejected(self, tmp_path):
+        contigs = tmp_path / "contigs.fa"
+        contigs.write_text(f">dup first\n{GENE_CONTIG}\n>other\nACGT\n>dup second\nACGT\n")
+        with pytest.raises(ValueError, match=r"Duplicate sequence id 'dup'.*records 1 and 3"):
+            predict_genes_pyrodigal(PredictionInputs(input_contigs=contigs, min_gene_len=60))
+
+    def test_empty_id_is_rejected(self, tmp_path):
+        contigs = tmp_path / "contigs.fa"
+        contigs.write_text(f">\n{GENE_CONTIG}\n")
+        with pytest.raises(ValueError, match="empty id"):
+            predict_genes_pyrodigal(PredictionInputs(input_contigs=contigs, min_gene_len=60))
+
+    @pytest.mark.parametrize(("value", "expected"), [(None, True), ("on", True), ("off", False), ("OFF", False)])
+    def test_prediction_cache_enabled_reads_env(self, monkeypatch, value, expected):
+        from phu.core.gene_prediction import prediction_cache_enabled
+
+        if value is None:
+            monkeypatch.delenv("PHU_CACHE", raising=False)
+        else:
+            monkeypatch.setenv("PHU_CACHE", value)
+        assert prediction_cache_enabled() is expected

@@ -29,6 +29,7 @@ from phu.core.gene_prediction import (
     CacheArtifact,
     PredictionInputs,
     get_or_predict_proteins,
+    prediction_cache_enabled,
 )
 from phu.db.binary import build_binary_models, has_binary_models
 from phu.db.bundle import bundle_provenance, resolve_db
@@ -129,7 +130,7 @@ def run_avg(
                 min_protein_len_aa=config.min_protein_len_aa,
                 translation_table=config.translation_table,
             ),
-            use_cache=True,
+            use_cache=prediction_cache_enabled(),
             threads=config.threads,
         )
         reporter.succeed_task(prediction_task)

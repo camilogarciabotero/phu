@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -887,7 +887,8 @@
 <h2 id="when-the-cache-is-reused">When the cache is reused<a class="headerlink" href="#when-the-cache-is-reused" title="Permanent link">&para;</a></h2>
 <p>The cached proteins are reused when all prediction inputs are the same:</p>
 <ul>
-<li>the same contigs (same file content);</li>
+<li>the same contigs: the key holds a SHA-256 of the file's bytes, so any edit
+  invalidates it, and an identical copy under another name reuses it;</li>
 <li>the same <code>--mode</code>, <code>--min-protein-len-aa</code> and, in <code>phu jack</code>, <code>--min-gene-len</code>;</li>
 <li>the same <code>--ttable</code>, when you give one.</li>
 </ul>
@@ -898,12 +899,16 @@
 <li><code>--min-gene-len</code> in <code>phu jack</code></li>
 <li><code>--min-protein-len-aa</code></li>
 <li>an explicit <code>--ttable</code></li>
+<li>the installed pyrodigal or pyrodigal-gv version</li>
 </ul>
 <p>Without <code>--ttable</code>, pyrodigal-gv picks the genetic code of each contig in meta mode, and that choice is part of the cached result.</p>
+<p>A cache entry that cannot be read back (for example a damaged <code>genes.json</code>)
+is treated as a miss and rebuilt.</p>
 <h2 id="how-to-control-it">How to control it<a class="headerlink" href="#how-to-control-it" title="Permanent link">&para;</a></h2>
 <p>Cache behavior is controlled by environment variables:</p>
 <ul>
-<li><code>PHU_CACHE=off</code> disables caching and always recomputes proteins.</li>
+<li><code>PHU_CACHE=off</code> disables caching and always recomputes proteins, in
+  <code>screen</code>, <code>jack</code> and <code>avger</code>.</li>
 <li><code>PHU_CACHE_DIR</code> overrides the cache location.</li>
 <li>If <code>PHU_CACHE_DIR</code> is not set, <code>phu</code> uses an XDG-style cache directory under your home cache path.</li>
 </ul>

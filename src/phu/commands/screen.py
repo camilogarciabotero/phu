@@ -5,7 +5,6 @@ import dataclasses
 import gzip
 import json
 import logging
-import os
 import re
 import shutil
 import tempfile
@@ -47,6 +46,7 @@ from phu.db.dbcan import (
 from phu.core.gene_prediction import (
     PredictionInputs,
     get_or_predict_proteins,
+    prediction_cache_enabled,
     predict_genes_pyrodigal,
     write_predicted_proteins_fasta,
     write_prediction_metadata,
@@ -2293,7 +2293,7 @@ def _screen_impl(cfg: ScreenConfig, bulk_work_dir: Path | None) -> ScreenPlan:
         min_protein_len_aa=plan.min_protein_len_aa,
         translation_table=plan.translation_table,
     )
-    cache_enabled = os.environ.get("PHU_CACHE", "on") != "off"
+    cache_enabled = prediction_cache_enabled()
     cache_artifact = run_click_task(
         "Predicting proteins",
         get_or_predict_proteins,

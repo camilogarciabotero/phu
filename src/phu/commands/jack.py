@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import shutil
 import tempfile
@@ -24,6 +23,7 @@ from phu.core.log import log_call
 from phu.core.gene_prediction import (
     PredictionInputs,
     get_or_predict_proteins,
+    prediction_cache_enabled,
     write_prediction_metadata,
 )
 from phu.commands.screen import (
@@ -542,7 +542,7 @@ def _jack(cfg: JackConfig) -> None:
         translation_table=cfg.translation_table,
         min_protein_len_aa=cfg.min_protein_len_aa,
     )
-    cache_enabled = os.environ.get("PHU_CACHE", "on") != "off"
+    cache_enabled = prediction_cache_enabled()
     cache_artifact = get_or_predict_proteins(
         pred_inputs,
         use_cache=cache_enabled,

@@ -3,6 +3,22 @@
 All notable changes to PHU are recorded here. Development entries describe
 behavior in the unreleased branch and may change before a release.
 
+## Unreleased
+
+### Fixes
+
+- Input FASTA files with a repeated or empty record id are now rejected
+  before gene prediction, naming the id and the record numbers. Before, a
+  repeated id let `screen` and `jack` write every record sharing a hit's id
+  to `matched-contigs.fna`.
+- The prediction cache key now uses a SHA-256 of the input's contents and the
+  pyrodigal and pyrodigal-gv versions, instead of the path, size and
+  modification time. An edit that keeps size and mtime no longer reuses old
+  predictions; an identical copy of a file reuses them.
+- `phu avger` honours `PHU_CACHE=off`, like `screen` and `jack`.
+- A cache entry whose `genes.json` is malformed or disagrees with the protein
+  count is rebuilt instead of raising `TypeError`.
+
 ## 0.10.0 — 2026-11-18
 
 ### CLI

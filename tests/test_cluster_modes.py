@@ -257,10 +257,17 @@ def _tani(ani_table: Path) -> dict[frozenset[str], float]:
     }
 
 
-@pytest.mark.skipif(
-    shutil.which("vclust") is None and shutil.which("vclust.py") is None,
-    reason="vclust is not installed",
-)
+def _vclust_installed() -> bool:
+    from phu.core.exec import CmdNotFound, _executable
+
+    try:
+        _executable(["vclust", "vclust.py"])
+    except CmdNotFound:
+        return False
+    return True
+
+
+@pytest.mark.skipif(not _vclust_installed(), reason="vclust is not installed")
 @pytest.mark.parametrize("threads", [1, 0])  # 0 = all cores, the CLI default
 def test_real_vclust_separates_genus_from_species(tmp_path, threads):
     genomes = tmp_path / "g.fna"
@@ -304,10 +311,17 @@ def test_single_character_ids_are_detected(tmp_path):
     assert not cluster.has_single_character_ids(fasta)
 
 
-@pytest.mark.skipif(
-    shutil.which("vclust") is None and shutil.which("vclust.py") is None,
-    reason="vclust is not installed",
-)
+def _vclust_installed() -> bool:
+    from phu.core.exec import CmdNotFound, _executable
+
+    try:
+        _executable(["vclust", "vclust.py"])
+    except CmdNotFound:
+        return False
+    return True
+
+
+@pytest.mark.skipif(not _vclust_installed(), reason="vclust is not installed")
 def test_real_vclust_single_character_names_keep_every_pair(tmp_path):
     """vclust 1.3.1 drops these pairs on several threads; phu aligns on one."""
     genomes = tmp_path / "g.fna"
@@ -327,3 +341,15 @@ def test_real_vclust_single_character_names_keep_every_pair(tmp_path):
     )
     assert plan.align_threads == 1
     assert _groups(plan.output) == {frozenset({"A", "D", "B"}), frozenset({"C"})}
+
+
+def test_representative_ids_are_listed_once_per_cluster(tmp_path):
+    from phu.commands.cluster import _extract_cluster_ids
+
+    tsv = tmp_path / "clusters.tsv"
+    tsv.write_text("object\tcluster\na\ta\na_copy\ta\nb\tb\nc\ta\n")
+    out = tmp_path / "ids.txt"
+
+    _extract_cluster_ids(tsv, out)
+
+    assert out.read_text() == "a\nb\n"

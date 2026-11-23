@@ -59,6 +59,8 @@ from phu.db.kofam import (
     is_kofam_id,
     normalize_kofam_id,
 )
+from phu.db.phrog_lookup import QUERY_KINDS as PHROG_GROUP_KINDS
+from phu.db.phrog_lookup import load_aliases, resolve as resolve_phrog_queries
 from phu.db.ecod import (
     ECOD_PREFIX,
     ecod_level,
@@ -75,6 +77,7 @@ from phu.db.phrog import (
     get_all_phrog_annotations,
     is_phrog_id,
     normalize_phrog_id,
+    phrogs_with_models,
 )
 from phu.db.pfam import (
     ensure_pfam_database,
@@ -162,6 +165,10 @@ class ScreenQuery:
     databases: tuple[str, ...] = ()
     # Function and category of each PHROG in the query, keyed by identifier.
     phrog_annotations: tuple[tuple[str, str, str], ...] = ()
+    # Each PHROG group token (alias:, category:, annot:) and the PHROGs it selects.
+    phrog_groups: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    # PHROG identifiers named on their own, beside any groups.
+    direct_phrogs: tuple[str, ...] = ()
     # Each ecod:<id> token and the F-groups it stands for.
     ecod_expansions: tuple[tuple[str, tuple[str, ...]], ...] = ()
     # Names of each ECOD F-group in the query: (ecod:<f_id>, f_name, t_name, h_name, x_name, pfam_acc).
@@ -194,11 +201,20 @@ def _dbcan_hashes() -> dict[str, str]:
 
 
 def _query_units(query: ScreenQuery) -> dict[str, frozenset[str]]:
-    """Each ECOD F-group model -> the ``ecod:`` query tokens it answers."""
+    """Each grouped model -> the query tokens it answers.
+
+    ``ecod:`` tokens and PHROG groups (``alias:``, ``category:``, ``annot:``)
+    each count as one query however many models they select; a model
+    selected by several tokens answers each. A PHROG also named on its own
+    keeps that identifier as a unit too.
+    """
     units: dict[str, set[str]] = defaultdict(set)
-    for token, f_ids in query.ecod_expansions:
-        for f_id in f_ids:
-            units[f_id].add(token)
+    for token, ids in (*query.ecod_expansions, *query.phrog_groups):
+        for model in ids:
+            units[model].add(token)
+    for model in query.direct_phrogs:
+        if model in units:
+            units[model].add(model)
     return {model: frozenset(tokens) for model, tokens in units.items()}
 
 
@@ -232,6 +248,10 @@ def _query_manifest(query: ScreenQuery, combine_mode: str) -> dict[str, object]:
         manifest["phrog_annotations"] = {
             phrog_id: {"annotation": annotation, "category": category}
             for phrog_id, annotation, category in query.phrog_annotations
+        }
+    if query.phrog_groups:
+        manifest["phrog_groups"] = {
+            token: list(ids) for token, ids in query.phrog_groups
         }
     if query.ecod_expansions:
         manifest["ecod_expansions"] = {
@@ -864,6 +884,7 @@ def _resolve_hmm_inputs(
     ko_ids: list[str] = []
     phrog_ids: list[str] = []
     ecod_tokens: list[str] = []
+    phrog_group_tokens: list[str] = []
     dbcan_ids: list[str] = []
     pul_ids: list[str] = []
 
@@ -890,6 +911,11 @@ def _resolve_hmm_inputs(
             ecod_tokens.append(normalize_ecod_id(token))
             continue
 
+        kind, sep, value = token.partition(":")
+        if sep and value.strip() and kind.strip().lower() in PHROG_GROUP_KINDS:
+            phrog_group_tokens.append(f"{kind.strip().lower()}:{value.strip()}")
+            continue
+
         if is_dbcan_pul_id(token):
             pul_ids.append(normalize_dbcan_pul_id(token))
             continue
@@ -902,6 +928,22 @@ def _resolve_hmm_inputs(
 
     dedup_pfam_ids = list(dict.fromkeys(pfam_ids))
     dedup_ko_ids = list(dict.fromkeys(ko_ids))
+    direct_phrogs = tuple(dict.fromkeys(phrog_ids))
+    phrog_groups: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    if phrog_group_tokens:
+        run_click_task("Preparing PHROG database", ensure_phrog_database)
+        searchable, aliases = phrogs_with_models(), load_aliases()
+        groups: dict[str, tuple[str, ...]] = {}
+        for group_token in dict.fromkeys(phrog_group_tokens):
+            selected, notes = resolve_phrog_queries([group_token], searchable, aliases)
+            for note in notes:
+                print(f"Note: {note}")
+            groups[group_token] = tuple(r.phrog.phrog_id for r in selected)
+            print(
+                f"{group_token} selects {len(selected)} PHROG(s); they count as one query"
+            )
+            phrog_ids.extend(groups[group_token])
+        phrog_groups = tuple(groups.items())
     dedup_phrog_ids = list(dict.fromkeys(phrog_ids))
     dedup_ecod_tokens = list(dict.fromkeys(ecod_tokens))
     dedup_dbcan_ids = list(dict.fromkeys(dbcan_ids))
@@ -1000,7 +1042,12 @@ def _resolve_hmm_inputs(
             f"Resolved {len(phrog_hmms)} PHROG model(s) from local database: "
             + ", ".join(
                 f"{phrog_id} ({annotation or 'unknown function'})"
-                for phrog_id, annotation, _ in phrog_annotations
+                for phrog_id, annotation, _ in phrog_annotations[:20]
+            )
+            + (
+                f", and {len(phrog_annotations) - 20} more (see .phu/query.json)"
+                if len(phrog_annotations) > 20
+                else ""
             )
         )
         resolved.extend(phrog_hmms)
@@ -1147,6 +1194,8 @@ def _resolve_hmm_inputs(
         query,
         databases=tuple(name for name, ids in used.items() if ids),
         phrog_annotations=phrog_annotations,
+        phrog_groups=phrog_groups,
+        direct_phrogs=direct_phrogs,
         ecod_expansions=ecod_expansions,
         ecod_families=ecod_families,
     )

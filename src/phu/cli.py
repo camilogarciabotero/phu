@@ -363,7 +363,7 @@ def cluster(
     except CmdNotFound as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         typer.echo(
-            "Required executable on PATH: 'vclust' (or 'vclust.py')"
+            "vclust is a phu dependency; reinstall phu, or put 'vclust' on PATH"
         )
         raise typer.Exit(1)
 

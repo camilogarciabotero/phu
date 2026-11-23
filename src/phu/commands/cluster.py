@@ -464,12 +464,12 @@ def _summarize_tsv(tsv: Path) -> tuple[int, int]:
 
 
 def _extract_cluster_ids(tsv: Path, out_ids: Path) -> None:
-    with tsv.open() as fh, out_ids.open("w") as out:
-        first = True
+    """Write each cluster's representative once, in first-seen order."""
+    representatives: dict[str, None] = {}
+    with tsv.open() as fh:
+        next(fh, None)  # header
         for line in fh:
-            if first:
-                first = False
-                continue
             parts = line.rstrip("\n").split("\t")
             if len(parts) >= 2:
-                out.write(parts[1] + "\n")
+                representatives.setdefault(parts[1])
+    out_ids.write_text("".join(f"{rep}\n" for rep in representatives))

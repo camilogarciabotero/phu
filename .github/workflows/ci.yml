@@ -44,3 +44,8 @@ jobs:
           uv venv .venv-smoke --python ${{ matrix.python-version }}
           uv pip install --python .venv-smoke/bin/python dist/*.whl
           .venv-smoke/bin/phu --version
+
+      - name: Run screen and cluster from the installed wheel
+        run: .github/scripts/smoke_installed.sh
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}

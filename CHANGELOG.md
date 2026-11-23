@@ -12,10 +12,19 @@ behavior in the unreleased branch and may change before a release.
 
 ### Development
 
+- CI installs the built wheel with `uv tool install` and runs `phu screen`
+  and `phu cluster` on synthetic inputs with a minimal `PATH`.
+
 - New `docs` dependency group: `uv sync --group docs` then
   `uv run mkdocs build --strict`; the docs workflow uses the same locked group.
 
 ### Fixes
+
+- `phu cluster` finds vclust beside the running Python before searching
+  `PATH`, so it works after `uv tool install phu` or pipx, which do not put
+  dependency scripts on `PATH`.
+- `cluster-representative-ids.txt` lists each representative once; it
+  repeated the representative for every member of its cluster.
 
 - The `phu jack` examples with `alias:terl` (54 PHROGs) and `alias:portal`
   (51) add `--max-phrog-seeds`, since both exceed the default cap of 50.

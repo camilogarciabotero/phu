@@ -217,7 +217,7 @@ def _check_unique_ids(fp: Path, contigs: list[tuple[str, str]]) -> None:
                 f"Duplicate sequence id '{contig_id}' in {fp} "
                 f"(records {seen[contig_id]} and {index}). "
                 "Ids (header text up to the first space) must be unique; "
-                "rename the records, e.g. with `seqkit rename`."
+                "rename the duplicated records."
             )
         seen[contig_id] = index
 

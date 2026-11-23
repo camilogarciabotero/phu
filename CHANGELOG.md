@@ -5,6 +5,15 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### screen
+
+- PHROG groups as queries: `alias:<name>`, `category:<name>` and
+  `'annot:<annotation>'` (the `phu phrogs resolve` queries) are accepted
+  directly. Each group counts as one query under `--combine-mode all` and
+  `threshold`, like an `ecod:` group, so `--combine-mode all alias:mcp
+  alias:terl` asks for a capsid *and* a terminase. The PHROGs each group
+  selected are recorded under `phrog_groups` in `.phu/query.json`.
+
 ### Packaging
 
 - The source archive (sdist) no longer ships the test files, which could not

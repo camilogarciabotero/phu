@@ -86,7 +86,7 @@ forgiving search of the annotations.
 
 ```bash
 phu phrogs search "tail fiber"
-phu screen -i assembly.fasta $(phu phrogs resolve alias:mcp alias:terl --ids-only)
+phu screen -i assembly.fasta --combine-mode all alias:mcp alias:terl
 ```
 
 [PHROG lookup guide →](commands/phrogs.md)

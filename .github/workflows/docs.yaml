@@ -22,8 +22,8 @@ jobs:
 
       - uses: astral-sh/setup-uv@v3
 
-      - run: uv pip install --system -U mkdocs mkdocs-material "mkdocstrings[python]"
-      - run: mkdocs build --strict
+      - run: uv sync --locked --group docs
+      - run: uv run mkdocs build --strict
 
       - uses: peaceiris/actions-gh-pages@v3
         with:

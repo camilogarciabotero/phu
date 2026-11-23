@@ -1031,7 +1031,7 @@ def jack(
     Examples:
         phu jack -i contigs.fa seeds.faa
         phu jack -i contigs.fa --combine-mode all seeds.faa
-        phu jack -i contigs.fa --phrog alias:terl --phrog alias:portal
+        phu jack -i contigs.fa --phrog alias:terl --max-phrog-seeds 60
         phu jack -i contigs.fa --iterations 1 --phrog phrog_216
 
     Full guide: https://camilogarciabotero.github.io/phu/commands/jack/

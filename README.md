@@ -153,7 +153,7 @@ uv tool install phu
 Run the test suite and documentation build from a synced development checkout:
 
 ```bash
-uv sync
+uv sync --group docs
 uv run pytest
 uv run mkdocs build --strict
 ```

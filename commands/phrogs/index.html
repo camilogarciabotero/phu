@@ -851,7 +851,7 @@ phu<span class="w"> </span>phrogs<span class="w"> </span>resolve<span class="w">
 phu<span class="w"> </span>screen<span class="w"> </span>-i<span class="w"> </span>contigs.fna<span class="w"> </span><span class="k">$(</span>phu<span class="w"> </span>phrogs<span class="w"> </span>resolve<span class="w"> </span>alias:mcp<span class="w"> </span>alias:terl<span class="w"> </span>--ids-only<span class="k">)</span>
 
 <span class="c1"># The same queries seed iterative searches in jack</span>
-phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fna<span class="w"> </span>--phrog<span class="w"> </span>alias:portal
+phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fna<span class="w"> </span>--phrog<span class="w"> </span>alias:portal<span class="w"> </span>--max-phrog-seeds<span class="w"> </span><span class="m">60</span>
 </code></pre></div>
 <p>Only the 38,880 PHROG families with a model (<code>phrog_1</code> to <code>phrog_38880</code>) are
 listed, so every identifier printed can be searched. About 5,100 of them have

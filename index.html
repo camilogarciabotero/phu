@@ -1121,7 +1121,7 @@ apply; combine queries with <code>--combine-mode any|all|threshold</code>.</p>
 (<code>pyhmmer.jackhmmer</code>) and keeps the contigs that carry relatives. Seeds can be
 your own proteins or PHROG families.</p>
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>assembly.fasta<span class="w"> </span>marker_seeds.faa<span class="w"> </span>--combine-mode<span class="w"> </span>all
-phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>assembly.fasta<span class="w"> </span>--phrog<span class="w"> </span>alias:portal
+phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>assembly.fasta<span class="w"> </span>--phrog<span class="w"> </span>alias:portal<span class="w"> </span>--max-phrog-seeds<span class="w"> </span><span class="m">60</span>
 </code></pre></div>
 <p><a href="commands/jack/">Jack guide →</a></p>
 <h3 id="phrogs-find-phrog-families-by-name"><code>phrogs</code>: find PHROG families by name<a class="headerlink" href="#phrogs-find-phrog-families-by-name" title="Permanent link">&para;</a></h3>

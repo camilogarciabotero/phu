@@ -894,7 +894,7 @@
 <div class="highlight"><pre><span></span><code>phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>marker_seed.faa
 phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>marker_seeds.faa
 phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--iterations<span class="w"> </span><span class="m">7</span><span class="w"> </span>--inc-evalue<span class="w"> </span>1e-4<span class="w"> </span>marker_seed.faa
-phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--phrog<span class="w"> </span>alias:portal
+phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--phrog<span class="w"> </span>alias:portal<span class="w"> </span>--max-phrog-seeds<span class="w"> </span><span class="m">60</span>
 phu<span class="w"> </span>jack<span class="w"> </span>-i<span class="w"> </span>contigs.fa<span class="w"> </span>--combine-mode<span class="w"> </span>all<span class="w"> </span>--phrog<span class="w"> </span>phrog_2<span class="w"> </span>marker_seed.faa
 </code></pre></div>
 <h2 id="iterative-search">Iterative search<a class="headerlink" href="#iterative-search" title="Permanent link">&para;</a></h2>
@@ -931,7 +931,7 @@ see what a query selects.</p>
   Each FASTA sequence is a group, and each <code>--phrog</code> query is one group
   however many PHROGs it selects: the 54 PHROGs of <code>alias:terl</code> are
   alternatives for one marker. So <code>--combine-mode all --phrog alias:terl
-  --phrog alias:portal</code> keeps contigs with a terminase <em>and</em> a portal hit,
+  --phrog alias:portal --max-phrog-seeds 110</code> keeps contigs with a terminase <em>and</em> a portal hit,
   and <code>--min-seed-hits 2</code> needs two different queries. A PHROG selected by
   two queries belongs to the first. Within a group, a protein hit by several
   PHROGs is kept once, by its best hit.</li>
@@ -965,7 +965,7 @@ see what a query selects.</p>
  Examples:
      phu jack -i contigs.fa seeds.faa
      phu jack -i contigs.fa --combine-mode all seeds.faa
-     phu jack -i contigs.fa --phrog alias:terl --phrog alias:portal
+     phu jack -i contigs.fa --phrog alias:terl --max-phrog-seeds 60
      phu jack -i contigs.fa --iterations 1 --phrog phrog_216
 
  Full guide: https://camilogarciabotero.github.io/phu/commands/jack/

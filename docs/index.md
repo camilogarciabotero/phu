@@ -32,8 +32,12 @@ mamba activate phu
 phu --help
 ```
 
-The databases download on first use (about 2.9 GB). On a cluster, install
-them once on a shared filesystem first; see [Databases](databases.md).
+New to phu? The [Quickstart](quickstart.md) is a first run on phage phiX174
+in a few minutes, with no database download, and shows the expected result.
+
+The databases download on first use: about 2.9 GB, which needs about 20 GB
+free while installing and keeps about 21 GB. On a cluster, install them once
+on a shared filesystem first; see [Databases](databases.md).
 
 ## What do you want to do?
 

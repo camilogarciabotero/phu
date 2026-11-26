@@ -82,7 +82,9 @@ def _flank_summary(
     """
     out = {}
     for db in DATABASES:
-        pairs = [scores[g.gene_id][db] for g in genes if db in scores.get(g.gene_id, {})]
+        pairs = [
+            scores[g.gene_id][db] for g in genes if db in scores.get(g.gene_id, {})
+        ]
         v = [p[0] for p in pairs]
         vl = [p[1] for p in pairs]
         out[db] = {
@@ -153,9 +155,7 @@ def build_context(
         for i, g in enumerate(contig_genes)
     }
     anchor_ids = [a for a in sorted(anchors) if a in position]
-    sequences = _contig_sequences(
-        contigs_path, {position[a][0] for a in anchor_ids}
-    )
+    sequences = _contig_sequences(contigs_path, {position[a][0] for a in anchor_ids})
 
     neighborhoods: list[dict[str, object]] = []
     flanks: list[dict[str, object]] = []
@@ -259,4 +259,3 @@ def write_genbank(records: list, path: Path) -> None:
     with tempfile.NamedTemporaryFile(delete=False, dir=path.parent) as handle:
         gb_io.dump(records, handle)
     Path(handle.name).replace(path)
-

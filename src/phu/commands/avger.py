@@ -11,7 +11,12 @@ from io import StringIO
 from pathlib import Path
 
 from phu import __version__
-from phu.avger.context import FLANK_COLUMNS, NEIGHBORHOOD_COLUMNS, build_context, write_genbank
+from phu.avger.context import (
+    FLANK_COLUMNS,
+    NEIGHBORHOOD_COLUMNS,
+    build_context,
+    write_genbank,
+)
 from phu.avger.reference import load_avg_reference
 from phu.avger.tracks import AvgAnnotationResults, annotate_avg_tracks
 from phu.avger.decisions import (
@@ -717,9 +722,7 @@ def write_avg_outputs(
     context = None
     if config.context:
         anchors = {r["protein_id"]: r["avg_class"] for r in predictions}
-        anchors.update(
-            {r["protein_id"]: "filtered" for r in filtered_rows}
-        )
+        anchors.update({r["protein_id"]: "filtered" for r in filtered_rows})
         scores = {
             pid: {db: (rec.v_score, rec.vl_score) for db, rec in by_db.items()}
             for pid, by_db in scoring_by_protein.items()
@@ -847,7 +850,9 @@ def write_avg_outputs(
             list(NEIGHBORHOOD_COLUMNS),
             context.neighborhoods,
         )
-        write_table(detailed / "context-flanks.tsv", list(FLANK_COLUMNS), context.flanks)
+        write_table(
+            detailed / "context-flanks.tsv", list(FLANK_COLUMNS), context.flanks
+        )
         genbank_path = detailed / "context-windows.gbk"
         write_genbank(windows, genbank_path)
         output_counts["detailed/context-windows.gbk"] = len(windows)

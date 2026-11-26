@@ -8,7 +8,9 @@ from phu.avger import context as ctx
 from phu.core.gene_prediction import PredictedGene
 
 CODE = {
-    a + b + c: "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"[16 * i + 4 * j + k]
+    a + b + c: "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"[
+        16 * i + 4 * j + k
+    ]
     for i, a in enumerate("TCAG")
     for j, b in enumerate("TCAG")
     for k, c in enumerate("TCAG")
@@ -55,8 +57,13 @@ def test_shared_neighbourhoods_share_a_family_and_flanks_are_summarised(tmp_path
     work = tmp_path / "work"
     work.mkdir()
     result, records = ctx.build_context(
-        contigs_path=fasta, genes=genes, anchors=anchors, scores=scores,
-        flank=2, threads=1, workdir=work,
+        contigs_path=fasta,
+        genes=genes,
+        anchors=anchors,
+        scores=scores,
+        flank=2,
+        threads=1,
+        workdir=work,
     )
     rows = {r["protein_id"]: r for r in result.neighborhoods}
     assert rows["a|3"]["gcf_id"] == rows["b|4"]["gcf_id"] != rows["c|3"]["gcf_id"]
@@ -66,11 +73,14 @@ def test_shared_neighbourhoods_share_a_family_and_flanks_are_summarised(tmp_path
     assert len(records) == 3 and result.gcfs == 2
     assert result.versions.keys() == {"igua", "pymmseqs", "gb-io"}
 
-    flank = {
-        (r["protein_id"], r["side"], r["database"]): r for r in result.flanks
-    }
+    flank = {(r["protein_id"], r["side"], r["database"]): r for r in result.flanks}
     left = flank[("a|3", "left", "pfam")]
-    assert (left["genes"], left["scored_genes"], left["max_v"], left["mean_vl"]) == (2, 2, 4.0, 2.0)
+    assert (left["genes"], left["scored_genes"], left["max_v"], left["mean_vl"]) == (
+        2,
+        2,
+        4.0,
+        2.0,
+    )
     right = flank[("a|3", "right", "kofam")]
     assert (right["genes"], right["scored_genes"], right["max_v"]) == (2, 0, "")
 
@@ -80,8 +90,13 @@ def test_a_window_at_a_contig_end_is_short_on_that_side(tmp_path):
     work = tmp_path / "work"
     work.mkdir()
     result, records = ctx.build_context(
-        contigs_path=fasta, genes=genes, anchors={"a|1": "filtered"}, scores={},
-        flank=3, threads=1, workdir=work,
+        contigs_path=fasta,
+        genes=genes,
+        anchors={"a|1": "filtered"},
+        scores={},
+        flank=3,
+        threads=1,
+        workdir=work,
     )
     (row,) = result.neighborhoods
     assert (row["genes_left"], row["genes_right"]) == (0, 3)

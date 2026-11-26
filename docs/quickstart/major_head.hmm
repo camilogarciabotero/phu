@@ -8,8 +8,6 @@ MM    no
 CONS  yes
 CS    no
 MAP   no
-DATE  Sun Nov 22 23:32:19 2026
-COM   [1] docs/quickstart/make_quickstart.py /hpcfs/home/ciencias_biologicas/ca.garcia2/.tmp/phix/phix.gb
 NSEQ  1
 STATS LOCAL MSV      -10.9823  0.69885
 STATS LOCAL VITERBI  -12.4378  0.69885

@@ -31,7 +31,7 @@ jobs:
       #   run: uv run ruff check .
 
       - name: Check formatting
-        run: uv run ruff format --check src/phu/core/exec.py src/phu/commands/avger.py src/phu/commands/cluster.py src/phu/core/gene_prediction.py src/phu/commands/jack.py src/phu/commands/screen.py tests/test_screen_dbcan_resolution.py
+        run: uv run ruff format --check src/phu/core/exec.py src/phu/commands/avger.py src/phu/avger/context.py tests/test_avg_context.py src/phu/commands/cluster.py src/phu/core/gene_prediction.py src/phu/commands/jack.py src/phu/commands/screen.py tests/test_screen_dbcan_resolution.py
 
       - name: Run test suite
         run: uv run pytest -q

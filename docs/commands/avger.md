@@ -18,13 +18,14 @@ phu avger -i contigs.fa -o phu-avger
 ### Options
 
 `phu avger --help` groups the options into **Input**, **Output**, **Runtime**,
-**Prediction** and **Scoring** panels:
+**Prediction**, **Scoring** and **Context** panels:
 
 ```text
-Usage: phu avger [OPTIONS]
-
- Predict and curate putative auxiliary viral genes.
-
+                                                                                
+ Usage: phu avger [OPTIONS]                                                     
+                                                                                
+ Predict and curate putative auxiliary viral genes.                             
+                                                                                
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --help  -h        Show this message and exit.                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -92,6 +93,18 @@ Usage: phu avger [OPTIONS]
 │                                                          database (0 turns   │
 │                                                          it off)             │
 │                                                          [default: 0.5]      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Context ────────────────────────────────────────────────────────────────────╮
+│ --context          --no-context                        Group candidate       │
+│                                                        neighbourhoods into   │
+│                                                        gene cluster families │
+│                                                        (IGUA) and summarise  │
+│                                                        flank scores          │
+│                                                        [default: context]    │
+│ --context-flank                    <int range> [x>=1]  Genes taken on each   │
+│                                                        side of a candidate   │
+│                                                        for its neighbourhood │
+│                                                        [default: 5]          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -348,11 +361,39 @@ The Pfam, KOfam and PHROG branches represented by this flow are independent;
 their AVL values are never mixed. AVL is therefore an active candidate-selection
 criterion, not merely a reported summary value.
 
-## Flank evidence
+## Neighbourhood context
 
-The current registered `avger` command does not apply flank-support criteria.
-Its context evidence comes from the reference tables, AMG weighting, and class
-filters described below.
+By default (`--context`), `avger` also describes where each candidate sits.
+For every candidate, predicted or filtered, it takes a window of the gene and
+up to `--context-flank` genes on each side (default `5`; fewer at a contig
+end) and:
+
+- summarises the flanking genes per side and database: how many genes, how
+  many have a V/VL-score, their highest V-score and mean VL-score
+  (`detailed/context-flanks.tsv`). A flank of viral-like genes supports a
+  prophage or phage origin of the candidate's neighbourhood; a flank without
+  scored genes says nothing either way.
+- groups all windows into gene cluster families (GCFs) with
+  [IGUA](https://github.com/zellerlab/IGUA) (Larralde *et al.*), which
+  deduplicates and clusters the windows by nucleotide identity and then
+  groups them by shared protein content, with MMseqs2. Windows in one family
+  share most of their genes, so a function predicted in one family across many
+  contigs or genera sits in a recurring neighbourhood rather than being a
+  single observation. A family says nothing about gene order: windows with the
+  same genes in a different order can share one, so conserved synteny needs a
+  separate check, for example by aligning the windows in
+  `context-windows.gbk`.
+
+The family of each candidate is added to `avg-predictions.tsv` and
+`filtered-candidates.tsv` (`context_gcf`, and for predictions the family's
+size in windows and contigs). Context is descriptive: it does not change
+which genes are candidates or predictions.
+
+If the context step fails, including while writing its files, `avger` warns,
+writes every other output without the context files or columns, and records
+the error under `context` in `.phu/run.json`. `--no-context` skips the step.
+Either way, context files left in the output folder by an earlier run are
+removed, so the folder never mixes runs.
 
 ## Outputs
 
@@ -386,6 +427,14 @@ Under `detailed/`:
 - `avg-evidence.tsv`: audit records from relaxed/strict hits and reference matches.
 - `hmm-hits-relaxed.tsv.gz` and `hmm-hits-strict.tsv.gz`: all annotation hits when
     `--keep-hits` is supplied.
+- `context-neighborhoods.tsv`: one row per candidate with its window (id,
+    coordinates, genes on each side) and gene cluster family (id, windows,
+    contigs and predictions in it). Written unless `--no-context`.
+- `context-flanks.tsv`: per candidate, side and database, the flanking genes,
+    scored genes, highest V-score and mean VL-score.
+- `context-windows.gbk`: the windows as GenBank records (the window id is the
+    LOCUS name; each CDS carries the phu gene id as `/locus_tag`), e.g. for
+    gene-arrangement plots.
 
 And `.phu/run.json`: automatically generated provenance metadata containing
 parameters, database manifests, cache information, schema version, output

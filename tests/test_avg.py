@@ -132,7 +132,7 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
     assert "avg_reference" not in run
 
 
-def _phrog_outputs(monkeypatch, tmp_path, strict_ids):
+def _phrog_outputs(monkeypatch, tmp_path, strict_ids, **config):
     """One contig, two genes; gene1 is a candidate through its PHROG scores."""
     input_contigs = tmp_path / "contigs.fna"
     input_contigs.write_text(">contig-1\nATG\n")
@@ -201,7 +201,7 @@ def _phrog_outputs(monkeypatch, tmp_path, strict_ids):
     )
     prediction = CacheArtifact(tmp_path / "proteins.faa", 2, True, "key", genes=genes)
     out = tmp_path / "out"
-    avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=out), prediction, annotations)
+    avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=out, **config), prediction, annotations)
     lines = (out / "detailed" / "gene-annotations.tsv").read_text().splitlines()
     header = lines[0].split("\t")
     return [dict(zip(header, line.split("\t"))) for line in lines[1:]], out
@@ -223,7 +223,7 @@ def test_phrog_alone_can_make_and_classify_a_candidate(monkeypatch, tmp_path):
     assert len((out / "avg-predictions.tsv").read_text().splitlines()) == 2
     run = json.loads((out / ".phu" / "run.json").read_text())
     assert run["parameters"]["phrog"] is True
-    assert run["output_schema_version"] == 3
+    assert run["output_schema_version"] == 4
 
 
 def test_phrog_columns_stay_in_the_tables_when_phrog_is_off(monkeypatch, tmp_path):

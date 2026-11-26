@@ -537,6 +537,8 @@ def avger(
     scoring_evalue: float = typer.Option(1e-5, "--scoring-evalue", min=0.0, help="E-value cutoff for scoring searches", rich_help_panel="Scoring"),
     phrog: bool = typer.Option(True, "--phrog/--no-phrog", help="Search PHROG as a third database, beside Pfam and KOfam", rich_help_panel="Scoring"),
     min_coverage: float = typer.Option(0.5, "--min-coverage", min=0.0, max=1.0, help="Fraction of model and protein a strict hit must align, every database (0 turns it off)", rich_help_panel="Scoring"),
+    context: bool = typer.Option(True, "--context/--no-context", help="Group candidate neighbourhoods into gene cluster families (IGUA) and summarise flank scores", rich_help_panel="Context"),
+    context_flank: int = typer.Option(5, "--context-flank", min=1, help="Genes taken on each side of a candidate for its neighbourhood", rich_help_panel="Context"),
     quiet: bool = typer.Option(
         False, "--quiet", help="Suppress routine progress output.", rich_help_panel="Runtime"
     ),
@@ -564,6 +566,8 @@ def avger(
             scoring_evalue=scoring_evalue,
             phrog=phrog,
             min_coverage=min_coverage,
+            context=context,
+            context_flank=context_flank,
         )
         if quiet or verbose:
             result = run_avg(

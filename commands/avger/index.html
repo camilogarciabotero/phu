@@ -608,10 +608,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#flank-evidence" class="md-nav__link">
+  <a href="#neighbourhood-context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flank evidence
+        Neighbourhood context
       
     </span>
   </a>
@@ -1074,10 +1074,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#flank-evidence" class="md-nav__link">
+  <a href="#neighbourhood-context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flank evidence
+        Neighbourhood context
       
     </span>
   </a>
@@ -1178,10 +1178,10 @@ not exposed as separate subcommands.</p>
 </code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
 <p><code>phu avger --help</code> groups the options into <strong>Input</strong>, <strong>Output</strong>, <strong>Runtime</strong>,
-<strong>Prediction</strong> and <strong>Scoring</strong> panels:</p>
-<div class="highlight"><pre><span></span><code>Usage: phu avger [OPTIONS]
+<strong>Prediction</strong>, <strong>Scoring</strong> and <strong>Context</strong> panels:</p>
+<div class="highlight"><pre><span></span><code> Usage: phu avger [OPTIONS]                                                     
 
- Predict and curate putative auxiliary viral genes.
+ Predict and curate putative auxiliary viral genes.                             
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --help  -h        Show this message and exit.                                │
@@ -1250,6 +1250,18 @@ not exposed as separate subcommands.</p>
 │                                                          database (0 turns   │
 │                                                          it off)             │
 │                                                          [default: 0.5]      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Context ────────────────────────────────────────────────────────────────────╮
+│ --context          --no-context                        Group candidate       │
+│                                                        neighbourhoods into   │
+│                                                        gene cluster families │
+│                                                        (IGUA) and summarise  │
+│                                                        flank scores          │
+│                                                        [default: context]    │
+│ --context-flank                    &lt;int range&gt; [x&gt;=1]  Genes taken on each   │
+│                                                        side of a candidate   │
+│                                                        for its neighbourhood │
+│                                                        [default: 5]          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 </code></pre></div>
 <p>The exact spacing and formatting may vary slightly with the Typer/Rich version
@@ -1504,10 +1516,37 @@ database-specific candidate is true. The cutoffs are configurable with <code>--s
 <p>The Pfam, KOfam and PHROG branches represented by this flow are independent;
 their AVL values are never mixed. AVL is therefore an active candidate-selection
 criterion, not merely a reported summary value.</p>
-<h2 id="flank-evidence">Flank evidence<a class="headerlink" href="#flank-evidence" title="Permanent link">&para;</a></h2>
-<p>The current registered <code>avger</code> command does not apply flank-support criteria.
-Its context evidence comes from the reference tables, AMG weighting, and class
-filters described below.</p>
+<h2 id="neighbourhood-context">Neighbourhood context<a class="headerlink" href="#neighbourhood-context" title="Permanent link">&para;</a></h2>
+<p>By default (<code>--context</code>), <code>avger</code> also describes where each candidate sits.
+For every candidate, predicted or filtered, it takes a window of the gene and
+up to <code>--context-flank</code> genes on each side (default <code>5</code>; fewer at a contig
+end) and:</p>
+<ul>
+<li>summarises the flanking genes per side and database: how many genes, how
+  many have a V/VL-score, their highest V-score and mean VL-score
+  (<code>detailed/context-flanks.tsv</code>). A flank of viral-like genes supports a
+  prophage or phage origin of the candidate's neighbourhood; a flank without
+  scored genes says nothing either way.</li>
+<li>groups all windows into gene cluster families (GCFs) with
+  <a href="https://github.com/zellerlab/IGUA">IGUA</a> (Larralde <em>et al.</em>), which
+  deduplicates and clusters the windows by nucleotide identity and then
+  groups them by shared protein content, with MMseqs2. Windows in one family
+  share most of their genes, so a function predicted in one family across many
+  contigs or genera sits in a recurring neighbourhood rather than being a
+  single observation. A family says nothing about gene order: windows with the
+  same genes in a different order can share one, so conserved synteny needs a
+  separate check, for example by aligning the windows in
+  <code>context-windows.gbk</code>.</li>
+</ul>
+<p>The family of each candidate is added to <code>avg-predictions.tsv</code> and
+<code>filtered-candidates.tsv</code> (<code>context_gcf</code>, and for predictions the family's
+size in windows and contigs). Context is descriptive: it does not change
+which genes are candidates or predictions.</p>
+<p>If the context step fails, including while writing its files, <code>avger</code> warns,
+writes every other output without the context files or columns, and records
+the error under <code>context</code> in <code>.phu/run.json</code>. <code>--no-context</code> skips the step.
+Either way, context files left in the output folder by an earlier run are
+removed, so the folder never mixes runs.</p>
 <h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
 <p>Start with <code>output-info.txt</code>: it is written by every run and holds the run's
 counts, what each file is, and a data dictionary for every column of
@@ -1538,6 +1577,14 @@ counts, what each file is, and a data dictionary for every column of
 <li><code>avg-evidence.tsv</code>: audit records from relaxed/strict hits and reference matches.</li>
 <li><code>hmm-hits-relaxed.tsv.gz</code> and <code>hmm-hits-strict.tsv.gz</code>: all annotation hits when
     <code>--keep-hits</code> is supplied.</li>
+<li><code>context-neighborhoods.tsv</code>: one row per candidate with its window (id,
+    coordinates, genes on each side) and gene cluster family (id, windows,
+    contigs and predictions in it). Written unless <code>--no-context</code>.</li>
+<li><code>context-flanks.tsv</code>: per candidate, side and database, the flanking genes,
+    scored genes, highest V-score and mean VL-score.</li>
+<li><code>context-windows.gbk</code>: the windows as GenBank records (the window id is the
+    LOCUS name; each CDS carries the phu gene id as <code>/locus_tag</code>), e.g. for
+    gene-arrangement plots.</li>
 </ul>
 <p>And <code>.phu/run.json</code>: automatically generated provenance metadata containing
 parameters, database manifests, cache information, schema version, output

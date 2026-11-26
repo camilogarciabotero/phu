@@ -13,8 +13,11 @@ behavior in the unreleased branch and may change before a release.
   families with IGUA (`detailed/context-neighborhoods.tsv`,
   `detailed/context-windows.gbk`). The family is added to
   `avg-predictions.tsv` and `filtered-candidates.tsv` as `context_gcf`.
-  Context never changes the predictions; if it fails, avger warns and writes
-  everything else. `--no-context` turns it off. Output schema version 4.
+  A family means shared gene content, not conserved gene order. Context never
+  changes the predictions; if it fails, including while writing its files,
+  avger warns and writes everything else. `--no-context` turns it off; stale
+  context files from an earlier run in the same folder are removed. Output
+  schema version 4.
 - New dependencies: `igua` (GPL-3.0-or-later), `pymmseqs` (bundles MMseqs2)
   and `gb-io`.
 

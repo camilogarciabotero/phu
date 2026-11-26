@@ -789,6 +789,48 @@ def write_avg_outputs(
         output_counts[path.relative_to(config.output_folder).as_posix()] = len(selected)
         paths.append(path)
 
+    # Context files are written first, so that a failed export can still be
+    # left out of the main tables; stale ones from an earlier run are removed.
+    context_files = [
+        detailed / name
+        for name in (
+            "context-neighborhoods.tsv",
+            "context-flanks.tsv",
+            "context-windows.gbk",
+        )
+    ]
+    if context is not None:
+        try:
+            write_table(
+                context_files[0], list(NEIGHBORHOOD_COLUMNS), context.neighborhoods
+            )
+            write_table(context_files[1], list(FLANK_COLUMNS), context.flanks)
+            write_genbank(windows, context_files[2])
+            output_counts["detailed/context-windows.gbk"] = len(windows)
+            paths.append(context_files[2])
+        except Exception as exc:  # context must never cost the main results
+            print(
+                f"Warning: neighbourhood context not written ({type(exc).__name__}: "
+                f"{exc}); the AVG predictions are unaffected.",
+                file=sys.stderr,
+            )
+            context_info.update(status="failed", error=f"{type(exc).__name__}: {exc}")
+            context = None
+            for selected in (predictions, filtered_rows):
+                for r in selected:
+                    for key in (
+                        "context_gcf",
+                        "context_gcf_windows",
+                        "context_gcf_contigs",
+                    ):
+                        r.pop(key, None)
+    if context is None:
+        for path in context_files:
+            path.unlink(missing_ok=True)
+            output_counts.pop(path.relative_to(config.output_folder).as_posix(), None)
+            if path in paths:
+                paths.remove(path)
+
     write_table(
         config.output_folder / "avg-predictions.tsv",
         list(PREDICTION_COLUMNS),
@@ -844,19 +886,6 @@ def write_avg_outputs(
         "amg_level",
     ]
     write_table(detailed / "avg-evidence.tsv", evidence_fields, audit_rows)
-    if context is not None:
-        write_table(
-            detailed / "context-neighborhoods.tsv",
-            list(NEIGHBORHOOD_COLUMNS),
-            context.neighborhoods,
-        )
-        write_table(
-            detailed / "context-flanks.tsv", list(FLANK_COLUMNS), context.flanks
-        )
-        genbank_path = detailed / "context-windows.gbk"
-        write_genbank(windows, genbank_path)
-        output_counts["detailed/context-windows.gbk"] = len(windows)
-        paths.append(genbank_path)
 
     info_path = config.output_folder / "output-info.txt"
     _atomic_write_text(info_path, _output_info(output_counts, contig_stats))

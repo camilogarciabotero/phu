@@ -132,7 +132,7 @@ def test_avg_outputs_preserve_pfam_and_kofam_function_metadata(monkeypatch, tmp_
     assert "avg_reference" not in run
 
 
-def _phrog_outputs(monkeypatch, tmp_path, strict_ids):
+def _phrog_outputs(monkeypatch, tmp_path, strict_ids, **config):
     """One contig, two genes; gene1 is a candidate through its PHROG scores."""
     input_contigs = tmp_path / "contigs.fna"
     input_contigs.write_text(">contig-1\nATG\n")
@@ -201,7 +201,7 @@ def _phrog_outputs(monkeypatch, tmp_path, strict_ids):
     )
     prediction = CacheArtifact(tmp_path / "proteins.faa", 2, True, "key", genes=genes)
     out = tmp_path / "out"
-    avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=out), prediction, annotations)
+    avg.write_avg_outputs(avg.AvgConfig(input_contigs=input_contigs, output_folder=out, **config), prediction, annotations)
     lines = (out / "detailed" / "gene-annotations.tsv").read_text().splitlines()
     header = lines[0].split("\t")
     return [dict(zip(header, line.split("\t"))) for line in lines[1:]], out

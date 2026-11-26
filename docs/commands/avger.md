@@ -377,17 +377,23 @@ end) and:
   [IGUA](https://github.com/zellerlab/IGUA) (Larralde *et al.*), which
   deduplicates and clusters the windows by nucleotide identity and then
   groups them by shared protein content, with MMseqs2. Windows in one family
-  carry the same genes in the same neighbourhood, so a function predicted in
-  one family across many contigs or genera is a conserved arrangement rather
-  than a single observation.
+  share most of their genes, so a function predicted in one family across many
+  contigs or genera sits in a recurring neighbourhood rather than being a
+  single observation. A family says nothing about gene order: windows with the
+  same genes in a different order can share one, so conserved synteny needs a
+  separate check, for example by aligning the windows in
+  `context-windows.gbk`.
 
 The family of each candidate is added to `avg-predictions.tsv` and
 `filtered-candidates.tsv` (`context_gcf`, and for predictions the family's
 size in windows and contigs). Context is descriptive: it does not change
 which genes are candidates or predictions.
 
-If the context step fails, `avger` warns, writes every other output, and
-records the error under `context` in `.phu/run.json`. `--no-context` skips it.
+If the context step fails, including while writing its files, `avger` warns,
+writes every other output without the context files or columns, and records
+the error under `context` in `.phu/run.json`. `--no-context` skips the step.
+Either way, context files left in the output folder by an earlier run are
+removed, so the folder never mixes runs.
 
 ## Outputs
 

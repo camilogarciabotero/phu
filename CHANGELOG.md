@@ -5,6 +5,19 @@ behavior in the unreleased branch and may change before a release.
 
 ## Unreleased
 
+### avger
+
+- Neighbourhood context, on by default: each candidate's window of up to
+  `--context-flank` genes per side (default 5) is summarised for flank
+  V/VL-scores (`detailed/context-flanks.tsv`) and grouped into gene cluster
+  families with IGUA (`detailed/context-neighborhoods.tsv`,
+  `detailed/context-windows.gbk`). The family is added to
+  `avg-predictions.tsv` and `filtered-candidates.tsv` as `context_gcf`.
+  Context never changes the predictions; if it fails, avger warns and writes
+  everything else. `--no-context` turns it off. Output schema version 4.
+- New dependencies: `igua` (GPL-3.0-or-later), `pymmseqs` (bundles MMseqs2)
+  and `gb-io`.
+
 ### screen
 
 - PHROG groups as queries: `alias:<name>`, `category:<name>` and

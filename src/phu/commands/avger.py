@@ -11,6 +11,7 @@ from io import StringIO
 from pathlib import Path
 
 from phu import __version__
+from phu.avger.context import FLANK_COLUMNS, NEIGHBORHOOD_COLUMNS, build_context, write_genbank
 from phu.avger.reference import load_avg_reference
 from phu.avger.tracks import AvgAnnotationResults, annotate_avg_tracks
 from phu.avger.decisions import (
@@ -57,6 +58,8 @@ class AvgConfig:
     scoring_evalue: float = 1e-5
     phrog: bool = True
     min_coverage: float = 0.5
+    context: bool = True
+    context_flank: int = 5
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "input_contigs", Path(self.input_contigs))
@@ -87,6 +90,8 @@ class AvgConfig:
             raise ValueError("scoring_evalue must be >= 0")
         if not 0.0 <= self.min_coverage <= 1.0:
             raise ValueError("min_coverage must be between 0 and 1")
+        if self.context_flank < 1:
+            raise ValueError("context_flank must be >= 1")
 
 
 @dataclass(frozen=True)
@@ -231,6 +236,13 @@ PREDICTION_COLUMNS = {
     "pfam_id": "Best strict Pfam hit of the gene; empty when none.",
     "kofam_id": "Best strict KOfam hit of the gene; empty when none.",
     "phrog_id": "Best strict PHROG hit of the gene; empty when none.",
+    "context_gcf": (
+        "Gene cluster family of the gene's neighbourhood (the gene and up to "
+        "--context-flank genes on each side), grouped with IGUA across all "
+        "candidates; empty with --no-context."
+    ),
+    "context_gcf_windows": "Candidate neighbourhoods in that family.",
+    "context_gcf_contigs": "Distinct contigs those neighbourhoods come from.",
 }
 
 SUMMARY_COLUMNS = (
@@ -259,6 +271,7 @@ FILTERED_COLUMNS = (
     "amg_weight",
     "status",
     "reason",
+    "context_gcf",
 )
 
 _FILE_NOTES = {
@@ -268,6 +281,9 @@ _FILE_NOTES = {
     "detailed/gene-annotations.tsv": "One row per predicted gene, with every annotation, score and rule value.",
     "detailed/filtered-candidates.tsv": "Candidates that did not become predictions, with the reason.",
     "detailed/avg-evidence.tsv": "Every piece of evidence behind the tables above, one row each.",
+    "detailed/context-neighborhoods.tsv": "One row per candidate: its neighbourhood window and gene cluster family.",
+    "detailed/context-flanks.tsv": "Per candidate, side and database: flanking genes, scored genes, max V and mean VL.",
+    "detailed/context-windows.gbk": "The candidate neighbourhoods as GenBank records (window ids as LOCUS).",
     "detailed/hmm-hits-relaxed.tsv.gz": "With --keep-hits: every relaxed-track HMM hit.",
     "detailed/hmm-hits-strict.tsv.gz": "With --keep-hits: every strict-track HMM hit.",
     ".phu/run.json": "Versions, parameters, database provenance and output counts of this run.",
@@ -697,6 +713,48 @@ def write_avg_outputs(
                 }
             )
 
+    context_info: dict[str, object] = {"enabled": config.context}
+    context = None
+    if config.context:
+        anchors = {r["protein_id"]: r["avg_class"] for r in predictions}
+        anchors.update(
+            {r["protein_id"]: "filtered" for r in filtered_rows}
+        )
+        scores = {
+            pid: {db: (rec.v_score, rec.vl_score) for db, rec in by_db.items()}
+            for pid, by_db in scoring_by_protein.items()
+        }
+        try:
+            with tempfile.TemporaryDirectory(
+                prefix=".context-", dir=config.output_folder
+            ) as workdir:
+                context, windows = build_context(
+                    contigs_path=config.input_contigs,
+                    genes=prediction.genes or [],
+                    anchors=anchors,
+                    scores=scores,
+                    flank=config.context_flank,
+                    threads=config.threads,
+                    workdir=Path(workdir),
+                )
+            context_info.update(
+                status="completed", gcfs=context.gcfs, versions=context.versions
+            )
+        except Exception as exc:  # context must never cost the main results
+            print(
+                f"Warning: neighbourhood context skipped ({type(exc).__name__}: "
+                f"{exc}); the AVG predictions are unaffected.",
+                file=sys.stderr,
+            )
+            context_info.update(status="failed", error=f"{type(exc).__name__}: {exc}")
+        if context is not None:
+            for selected in (predictions, filtered_rows):
+                for r in selected:
+                    family = context.gcf_by_protein.get(r["protein_id"], {})
+                    r["context_gcf"] = family.get("gcf_id", "")
+                    r["context_gcf_windows"] = family.get("gcf_windows", "")
+                    r["context_gcf_contigs"] = family.get("gcf_contigs", "")
+
     fields = (
         list(rows[0])
         if rows
@@ -783,6 +841,17 @@ def write_avg_outputs(
         "amg_level",
     ]
     write_table(detailed / "avg-evidence.tsv", evidence_fields, audit_rows)
+    if context is not None:
+        write_table(
+            detailed / "context-neighborhoods.tsv",
+            list(NEIGHBORHOOD_COLUMNS),
+            context.neighborhoods,
+        )
+        write_table(detailed / "context-flanks.tsv", list(FLANK_COLUMNS), context.flanks)
+        genbank_path = detailed / "context-windows.gbk"
+        write_genbank(windows, genbank_path)
+        output_counts["detailed/context-windows.gbk"] = len(windows)
+        paths.append(genbank_path)
 
     info_path = config.output_folder / "output-info.txt"
     _atomic_write_text(info_path, _output_info(output_counts, contig_stats))
@@ -817,9 +886,12 @@ def write_avg_outputs(
             "scoring_evalue": config.scoring_evalue,
             "phrog": config.phrog,
             "min_coverage": config.min_coverage,
+            "context": config.context,
+            "context_flank": config.context_flank,
         },
+        "context": context_info,
         "phu_db": bundle_provenance(),
-        "output_schema_version": 3,
+        "output_schema_version": 4,
         "output_counts": output_counts,
         "run_started_at": run_started_at or completed_at,
         "run_completed_at": completed_at,

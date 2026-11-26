@@ -223,7 +223,7 @@ def test_phrog_alone_can_make_and_classify_a_candidate(monkeypatch, tmp_path):
     assert len((out / "avg-predictions.tsv").read_text().splitlines()) == 2
     run = json.loads((out / ".phu" / "run.json").read_text())
     assert run["parameters"]["phrog"] is True
-    assert run["output_schema_version"] == 3
+    assert run["output_schema_version"] == 4
 
 
 def test_phrog_columns_stay_in_the_tables_when_phrog_is_off(monkeypatch, tmp_path):

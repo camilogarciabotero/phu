@@ -46,6 +46,11 @@ builder = pyhmmer.plan7.Builder(alphabet, seed=42)
 hmm, _, _ = builder.build(seq, pyhmmer.plan7.Background(alphabet))
 hmm.name = b"major_head"
 hmm.description = b"phiX174 major head protein (gene F), from one sequence"
+# pyhmmer records sys.argv and the current time in the model header. Both
+# would put the maintainer's local path and the build date into a file that
+# ships with the docs, and would change the file on every rebuild.
+hmm.command_line = None
+hmm.creation_time = None
 with open(here / "major_head.hmm", "wb") as out:
     hmm.write(out)
 print(f"genome {len(genome)} bp, protein F {len(protein)} aa")
